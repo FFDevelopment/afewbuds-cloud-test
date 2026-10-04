@@ -42,7 +42,7 @@ jobs:
               m=re.search(r'^func '+re.escape(name)+r'\([^\n]*\)(?: -> [^:]+)?:\n.*?(?=^func |\Z)',text,re.M|re.S)
               return m.group(0).rstrip() if m else "<MISSING>"
           s=main_text("stable/index-accountsync10.pck")
-          c=main_text("cloud/index-cloudtest9.pck")
+          c=main_text("cloud/index-cloudtest11.pck")
           for name in ["_ready","_load_game","_save_game","_capture_runtime_state","_restore_runtime_state","_go_to_view","_pause_gameplay","_resume_gameplay"]:
               print("\n===== "+name+" =====")
               a=func(s,name).splitlines(); b=func(c,name).splitlines()
@@ -66,8 +66,16 @@ jobs:
                       return b[fb+off:fb+off+size].decode("utf-8","replace").rstrip(" \n\0")
               return "<MISSING>"
           print("\n===== CLOUD PERSONAL INVENTORY =====")
-          print(extract_file("cloud/index-cloudtest9.pck","scripts/personal_inventory.gd"))
+          print(extract_file("cloud/index-cloudtest11.pck","scripts/personal_inventory.gd"))
+          pi=extract_file("cloud/index-cloudtest11.pck","scripts/personal_inventory.gd")
+          print("\n===== PERSONAL INVENTORY STARTUP PATH =====")
+          lines=pi.splitlines()
+          for term in ["func setup","func refresh","func _build_backpack_button","func _build_backpack_panel","func _build_locker_panel"]:
+              hits=[i for i,l in enumerate(lines) if term in l]
+              for i in hits:
+                  print("\n--- "+term+" ---")
+                  print("\n".join(lines[i:min(len(lines),i+140)]))
           print("\n===== PROJECT.GODOT STABLE =====")
           print(extract_file("stable/index-accountsync10.pck","project.godot"))
           print("\n===== PROJECT.GODOT CLOUD9 =====")
-          print(extract_file("cloud/index-cloudtest9.pck","project.godot"))
+          print(extract_file("cloud/index-cloudtest11.pck","project.godot"))
