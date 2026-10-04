@@ -55,6 +55,7 @@ room_only = '''\tcurrent_room = "grow" if str(restored_runtime.get("current_room
 room_only_with_reset = room_only + '''\troom_target_yaw = 0.0
 \troom_target_pitch = 0.0
 \tcamera.rotation = Vector3.ZERO
+\t_stabilize_resume_camera.call_deferred()
 '''
 
 if room_only_with_reset not in text:
@@ -106,6 +107,32 @@ for old in [
 ''', 1)
         break
 
+
+# Re-apply the safe room camera after startup settles. Some resumed web sessions
+# can receive a late transform/state update during the first rendered frames.
+if 'func _stabilize_resume_camera() -> void:' not in text:
+    marker = 'func _restore_timer_remaining(timer: Timer, key: String) -> void:\n'
+    if marker not in text:
+        raise SystemExit("restore timer marker missing")
+    funcs = '''func _stabilize_resume_camera() -> void:
+\tawait get_tree().process_frame
+\tawait get_tree().process_frame
+\tvar safe_view: String = "grow_room_tent" if current_room == "grow" else "main_grow_door"
+\troom_ring = grow_room_ring if current_room == "grow" else main_room_ring
+\t_go_to_view(safe_view, false)
+\tvar safe_data: Dictionary = views.get(safe_view, {})
+\tvar safe_pos: Vector3 = safe_data.get("pos", Vector3(0, 1.64, -5.82 if current_room == "grow" else 1.20))
+\tsafe_pos.y = maxf(safe_pos.y, 1.60)
+\tcamera.position = safe_pos
+\troom_target_yaw = 0.0
+\troom_target_pitch = 0.0
+\tcamera.rotation = Vector3.ZERO
+\tcurrent_view = safe_view
+\t_refresh_navigation_ui()
+
+'''
+    text = text.replace(marker, funcs + marker, 1)
+
 # Remove obsolete safe-resume helper; room-only restore no longer calls it.
 safe_pat = r'func _safe_resume_view\(view_name: String, room_name: String\) -> String:\n.*?(?=\nfunc )'
 text = re.sub(safe_pat, '', text, count=1, flags=re.S)
@@ -127,7 +154,7 @@ bag_build = '''\tforward_button = Button.new()
 \thud.add_child(forward_button)
 
 \tvar cloud_test_marker: Label = Label.new()
-\tcloud_test_marker.text = "CLOUD TEST .3"
+\tcloud_test_marker.text = "CLOUD TEST .5"
 \tcloud_test_marker.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 \tcloud_test_marker.offset_left = -210
 \tcloud_test_marker.offset_top = 18
@@ -161,12 +188,12 @@ if 'backpack_quick_button.text = "BAG"' not in text:
         raise SystemExit("HUD marker missing")
     text = text.replace(build_marker, bag_build, 1)
 
-if 'CLOUD TEST .3' not in text:
+if 'CLOUD TEST .5' not in text:
     marker_anchor = '\thud.move_child(backpack_quick_button, hud.get_child_count() - 1)\n'
     marker_block = '''\thud.move_child(backpack_quick_button, hud.get_child_count() - 1)
 
 \tvar cloud_test_marker: Label = Label.new()
-\tcloud_test_marker.text = "CLOUD TEST .3"
+\tcloud_test_marker.text = "CLOUD TEST .5"
 \tcloud_test_marker.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 \tcloud_test_marker.offset_left = -220
 \tcloud_test_marker.offset_top = 18
@@ -219,13 +246,15 @@ P.write_bytes(blob)
 
 v = Path("version.json")
 meta = json.loads(v.read_text())
-meta["release_id"] = "0.7.9-beta.19-cloudtest.3"
+meta["release_id"] = "0.7.9-beta.19-cloudtest.5"
 v.write_text(json.dumps(meta, indent=2) + "\n")
 
 idx = Path("index.html")
 s = idx.read_text()
-s = s.replace("0.7.9-beta.19-cloudtest.1", "0.7.9-beta.19-cloudtest.3")
-s = s.replace("0.7.9-beta.19-cloudtest.2", "0.7.9-beta.19-cloudtest.3")
+s = s.replace("0.7.9-beta.19-cloudtest.1", "0.7.9-beta.19-cloudtest.5")
+s = s.replace("0.7.9-beta.19-cloudtest.2", "0.7.9-beta.19-cloudtest.5")
+s = s.replace("0.7.9-beta.19-cloudtest.3", "0.7.9-beta.19-cloudtest.5")
+s = s.replace("0.7.9-beta.19-cloudtest.4", "0.7.9-beta.19-cloudtest.5")
 idx.write_text(s)
 
 print("patched main bytes", len(data), "slot", size)
