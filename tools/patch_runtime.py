@@ -27,7 +27,23 @@ for _ in range(count):
     pos += 4
     entries.append((name, off, size, md5pos))
 
-name, off, size, md5pos = next(x for x in entries if x[0] == "scripts/main.gd")
+main_entry = next(x for x in entries if x[0] == "scripts/main.gd")
+project_entry = next(x for x in entries if x[0] == "project.godot")
+
+# Update project metadata so the running build identifies itself correctly.
+pname, poff, psize, pmd5pos = project_entry
+pstart = fb + poff
+ptext = bytes(blob[pstart:pstart+psize]).decode("utf-8").rstrip(" \n\0")
+ptext = ptext.replace("AFewBuds Beta v0.7.7.1-beta.1", "AFewBuds Cloud Test v0.7.9-beta.19")
+ptext = ptext.replace("0.7.7.1-beta.1", "0.7.9-beta.19")
+pdata = ptext.encode()
+if len(pdata) > psize:
+    raise SystemExit("project.godot metadata grew beyond slot")
+ppadded = pdata + b"\n" + b" " * (psize - len(pdata) - 1)
+blob[pstart:pstart+psize] = ppadded
+blob[pmd5pos:pmd5pos+16] = hashlib.md5(ppadded).digest()
+
+name, off, size, md5pos = main_entry
 start = fb + off
 text = bytes(blob[start:start+size]).decode("utf-8").rstrip(" \n\0")
 
@@ -59,6 +75,9 @@ variants = [
 new_view = '''\tcurrent_room = "grow" if str(restored_runtime.get("current_room", "main")) == "grow" else "main"
 \troom_ring = grow_room_ring if current_room == "grow" else main_room_ring
 \t_go_to_view("grow_room_tent" if current_room == "grow" else "main_grow_door", false)
+\troom_target_yaw = 0.0
+\troom_target_pitch = 0.0
+\tcamera.rotation = Vector3.ZERO
 '''
 for old in variants:
     if old in block:
@@ -98,6 +117,19 @@ build_marker = '''\tforward_button = Button.new()
 bag_build = '''\tforward_button = Button.new()
 \tforward_button.visible = false
 \thud.add_child(forward_button)
+
+\tvar cloud_test_marker: Label = Label.new()
+\tcloud_test_marker.text = "CLOUD TEST .3"
+\tcloud_test_marker.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+\tcloud_test_marker.offset_left = -210
+\tcloud_test_marker.offset_top = 18
+\tcloud_test_marker.offset_right = -18
+\tcloud_test_marker.offset_bottom = 58
+\tcloud_test_marker.z_index = 300
+\tcloud_test_marker.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+\tcloud_test_marker.add_theme_font_size_override("font_size", 20)
+\tcloud_test_marker.modulate = Color("9fe892")
+\thud.add_child(cloud_test_marker)
 
 \tbackpack_quick_button = Button.new()
 \tbackpack_quick_button.text = "BAG"
@@ -157,12 +189,12 @@ P.write_bytes(blob)
 
 v = Path("version.json")
 meta = json.loads(v.read_text())
-meta["release_id"] = "0.7.9-beta.19-cloudtest.2"
+meta["release_id"] = "0.7.9-beta.19-cloudtest.3"
 v.write_text(json.dumps(meta, indent=2) + "\n")
 
 idx = Path("index.html")
 s = idx.read_text()
-s = s.replace("0.7.9-beta.19-cloudtest.1", "0.7.9-beta.19-cloudtest.2")
+s = s.replace("0.7.9-beta.19-cloudtest.1", "0.7.9-beta.19-cloudtest.3").replace("0.7.9-beta.19-cloudtest.2", "0.7.9-beta.19-cloudtest.3")
 idx.write_text(s)
 
 print("patched main bytes", len(data), "slot", size)
