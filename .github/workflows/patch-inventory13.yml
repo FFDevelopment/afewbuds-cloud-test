@@ -1,0 +1,38 @@
+name: Patch locker and bag controls
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "tools/patch_inventory13.py"
+      - ".github/workflows/patch-inventory13.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: inventory13
+  cancel-in-progress: false
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: python tools/patch_inventory13.py
+      - name: Commit cloudtest13
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index-cloudtest13.pck index.html version.json
+          if git diff --cached --quiet; then
+            echo "No changes."
+          else
+            git commit -m "Publish cloudtest13 locker and bag fixes"
+            git fetch origin main
+            git rebase origin/main
+            git push origin HEAD:main
+          fi
