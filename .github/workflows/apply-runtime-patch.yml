@@ -27,11 +27,11 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index-accountsync11.pck index-cloudtest7.pck index.html version.json
+          git add index-accountsync11.pck index-cloudtest8.pck index.html version.json
           if git diff --cached --quiet; then
             echo "No runtime changes."
           else
-            git commit -m "Publish cache-busted cloudtest7 runtime"
+            git commit -m "Publish cache-busted cloudtest8 runtime"
             git fetch origin main
             git rebase origin/main
             git push origin HEAD:main

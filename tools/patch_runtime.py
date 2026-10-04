@@ -2,9 +2,9 @@ from pathlib import Path
 import struct, hashlib, re, json
 
 SOURCE_PCK = Path("index-accountsync11.pck")
-VERSIONED_PCK = Path("index-cloudtest7.pck")
-RELEASE_ID = "0.7.9-beta.19-cloudtest.7"
-HUD_MARKER = "CLOUD TEST .7"
+VERSIONED_PCK = Path("index-cloudtest8.pck")
+RELEASE_ID = "0.7.9-beta.19-cloudtest.8"
+HUD_MARKER = "CLOUD TEST .8"
 
 def align(n, a=32):
     return (n + a - 1) // a * a
@@ -33,63 +33,66 @@ def parse_pck(path):
     return blob, file_base, entries
 
 def patch_main(text):
-    existing_room_restore = '''\tcurrent_room = "grow" if str(restored_runtime.get("current_room", "main")) == "grow" else "main"
+    # Restore the exact room/view persistence used by the working afewbuds-beta
+    # runtime: save the real current_view/current_room and restore saved_view.
+    text = text.replace(
+        '\t\t"current_view": "grow_room_tent" if current_room == "grow" else "main_grow_door",\n\t\t"current_room": current_room,',
+        '\t\t"current_view": current_view,\n\t\t"current_room": current_room,',
+        1
+    )
+
+    main_restore = '''\tcurrent_room = str(restored_runtime.get("current_room", "main"))
 \troom_ring = grow_room_ring if current_room == "grow" else main_room_ring
-\t_go_to_view("grow_room_tent" if current_room == "grow" else "main_grow_door", false)
-\troom_target_yaw = 0.0
-\troom_target_pitch = 0.0
-\tcamera.rotation = Vector3.ZERO
+\tvar saved_view: String = str(restored_runtime.get("current_view", "main_grow_door"))
+\tif views.has(saved_view):
+\t\t_go_to_view(saved_view, false)
 '''
-    compact_room_restore = '''\tcurrent_room = "grow" if str(restored_runtime.get("current_room", "main")) == "grow" else "main"
+
+    restore_variants = [
+'''\tcurrent_room = "grow" if str(restored_runtime.get("current_room", "main")) == "grow" else "main"
 \troom_ring = grow_room_ring if current_room == "grow" else main_room_ring
 \tif current_room == "grow":
 \t\t_go_to_view("grow_room_tent", false)
 \telse:
 \t\tcamera.position = Vector3(0, 1.64, 1.20)
 \t\t_finish_leave_grow_room()
-'''
-    if existing_room_restore in text:
-        text = text.replace(existing_room_restore, compact_room_restore, 1)
-    else:
-        previous_compact = '''\tcurrent_room = "grow" if str(restored_runtime.get("current_room", "main")) == "grow" else "main"
+''',
+'''\tcurrent_room = "grow" if str(restored_runtime.get("current_room", "main")) == "grow" else "main"
 \troom_ring = grow_room_ring if current_room == "grow" else main_room_ring
 \tif current_room == "grow":
 \t\t_go_to_view("grow_room_tent", false)
 \telse:
 \t\t_finish_leave_grow_room()
-'''
-        if previous_compact in text:
-            text = text.replace(previous_compact, compact_room_restore, 1)
-        elif compact_room_restore not in text:
-            raise SystemExit("expected .6 resume block not found")
-
-    for old in [
-        '''\t\t"current_view": _safe_resume_view(current_view, current_room),
-\t\t"current_room": current_room,
 ''',
-        '''\t\t"current_view": current_view,
-\t\t"current_room": current_room,
+'''\tcurrent_room = "grow" if str(restored_runtime.get("current_room", "main")) == "grow" else "main"
+\troom_ring = grow_room_ring if current_room == "grow" else main_room_ring
+\t_go_to_view("grow_room_tent" if current_room == "grow" else "main_grow_door", false)
+\troom_target_yaw = 0.0
+\troom_target_pitch = 0.0
+\tcamera.rotation = Vector3.ZERO
 '''
+    ]
+    if main_restore not in text:
+        for old in restore_variants:
+            if old in text:
+                text = text.replace(old, main_restore, 1)
+                break
+        else:
+            raise SystemExit("cloud-test restore block not found")
+
+    for old_marker in [
+        "CLOUD TEST .3", "CLOUD TEST .4", "CLOUD TEST .5",
+        "CLOUD TEST .6", "CLOUD TEST .7"
     ]:
-        if old in text:
-            text = text.replace(old, '''\t\t"current_view": "grow_room_tent" if current_room == "grow" else "main_grow_door",
-\t\t"current_room": current_room,
-''', 1)
-            break
-
-    text = re.sub(
-        r'func _safe_resume_view\(view_name: String, room_name: String\) -> String:\n.*?(?=\nfunc )',
-        '',
-        text,
-        count=1,
-        flags=re.S
-    )
-
-    for old_marker in ["CLOUD TEST .3", "CLOUD TEST .4", "CLOUD TEST .5", "CLOUD TEST .6"]:
         text = text.replace(old_marker, HUD_MARKER)
 
+    # Keep the cloud-test BAG shortcut, but do not alter room/view persistence.
     if 'var backpack_quick_button: Button' not in text:
-        text = text.replace('var back_button: Button\n', 'var back_button: Button\nvar backpack_quick_button: Button\n', 1)
+        text = text.replace(
+            'var back_button: Button\n',
+            'var back_button: Button\nvar backpack_quick_button: Button\n',
+            1
+        )
 
     if 'backpack_quick_button.text = "BAG"' not in text:
         marker = '''\tforward_button = Button.new()
@@ -98,7 +101,7 @@ def patch_main(text):
 '''
         addition = marker + '''
 \tvar cloud_test_marker: Label = Label.new()
-\tcloud_test_marker.text = "CLOUD TEST .7"
+\tcloud_test_marker.text = "CLOUD TEST .8"
 \tcloud_test_marker.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 \tcloud_test_marker.offset_left = -210
 \tcloud_test_marker.offset_top = 18
@@ -149,6 +152,10 @@ def patch_main(text):
             block += '\tif backpack_quick_button != null:\n\t\tbackpack_quick_button.visible = true\n'
             text = text[:vm.start()] + block + text[vm.end():]
 
+    if '\t\t"current_view": current_view,' not in text:
+        raise SystemExit("main-repo capture parity missing")
+    if main_restore not in text:
+        raise SystemExit("main-repo restore parity missing")
     return text
 
 def rebuild_pck(original_blob, file_base, entries):
@@ -192,8 +199,7 @@ for entry in entries:
     name, content, flags = entry
     if name == "scripts/main.gd":
         text = content.decode("utf-8").rstrip(" \n\0")
-        patched = patch_main(text).encode()
-        entry[1] = patched
+        entry[1] = patch_main(text).encode()
         found_main = True
     elif name == "project.godot":
         text = content.decode("utf-8").rstrip(" \n\0")
@@ -211,7 +217,12 @@ VERSIONED_PCK.write_bytes(rebuilt)
 idx = Path("index.html")
 html = idx.read_text()
 html = re.sub(r'const AFB_TEST_RELEASE = "[^"]+";', f'const AFB_TEST_RELEASE = "{RELEASE_ID}";', html, count=1)
-html = re.sub(r'"fileSizes":\{[^}]*\}', f'"fileSizes":{{"{VERSIONED_PCK.name}":{len(rebuilt)},"index.wasm":37902138}}', html, count=1)
+html = re.sub(
+    r'"fileSizes":\{[^}]*\}',
+    f'"fileSizes":{{"{VERSIONED_PCK.name}":{len(rebuilt)},"index.wasm":37902138}}',
+    html,
+    count=1
+)
 html = re.sub(r'"mainPack":"[^"]+"', f'"mainPack":"{VERSIONED_PCK.name}"', html, count=1)
 idx.write_text(html)
 
@@ -226,4 +237,4 @@ v.write_text(json.dumps(meta, indent=2) + "\n")
 print("rebuilt PCK bytes", len(rebuilt))
 print("mainPack", VERSIONED_PCK.name)
 print("release", RELEASE_ID)
-print("known-good main resume", "_finish_leave_grow_room()" in patch_main(next(e[1].decode("utf-8") for e in entries if e[0] == "scripts/main.gd")))
+print("room/view persistence matches afewbuds-beta")
