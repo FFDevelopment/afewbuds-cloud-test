@@ -1,4 +1,5 @@
 name: Deploy standalone cloud test
+# Standalone cloud-test deploy
 
 on:
   push:
