@@ -1,0 +1,43 @@
+name: Diagnose active PCK metadata
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/diagnose-pck.yml"
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Locate old version and patched code
+        shell: python
+        run: |
+          from pathlib import Path
+          import struct, hashlib
+
+          p=Path("index-accountsync11.pck")
+          blob=p.read_bytes()
+          print("PCK_SHA256", hashlib.sha256(blob).hexdigest())
+          fb=struct.unpack_from("<Q",blob,24)[0]
+          do=struct.unpack_from("<Q",blob,32)[0]
+          count=struct.unpack_from("<I",blob,do)[0]
+          pos=do+4
+          hits=[]
+          for _ in range(count):
+              plen=struct.unpack_from("<I",blob,pos)[0]; pos+=4
+              raw=blob[pos:pos+plen]; pos+=plen
+              name=raw.rstrip(b"\0").decode("utf-8","replace")
+              off=struct.unpack_from("<Q",blob,pos)[0]; pos+=8
+              size=struct.unpack_from("<Q",blob,pos)[0]; pos+=8
+              md5=blob[pos:pos+16]; pos+=16
+              flags=struct.unpack_from("<I",blob,pos)[0]; pos+=4
+              content=blob[fb+off:fb+off+size]
+              for term in [b"0.7.7.1-beta.1",b"v0.7.7.1-beta.1",b"backpack_quick_button.text = \"BAG\"",b"grow_room_tent\" if current_room == \"grow\" else \"main_grow_door"]:
+                  idx=content.find(term)
+                  if idx>=0:
+                      hits.append((name,term.decode("utf-8","replace"),idx,size))
+          for h in hits:
+              print("HIT",h)
