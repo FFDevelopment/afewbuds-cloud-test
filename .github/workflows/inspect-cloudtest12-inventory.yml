@@ -3,7 +3,7 @@ on:
   push:
     branches: [main]
     paths:
-      - ".github/workflows/inspect-cloudtest13-inventory.yml"
+      - ".github/workflows/inspect-cloudtest12-inventory.yml"
   workflow_dispatch:
 
 jobs:
