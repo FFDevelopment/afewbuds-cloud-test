@@ -1,0 +1,54 @@
+name: Rebuild cloud test from main
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "tools/rebuild_from_main.py"
+      - ".github/workflows/rebuild-from-main.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: main-based-cloud-rebuild
+  cancel-in-progress: false
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout cloud-test repo
+        uses: actions/checkout@v4
+        with:
+          path: cloud
+          fetch-depth: 0
+
+      - name: Checkout working main repo
+        uses: actions/checkout@v4
+        with:
+          repository: FFDevelopment/afewbuds-beta
+          ref: main
+          path: stable
+
+      - name: Rebuild runtime from working main
+        run: |
+          python cloud/tools/rebuild_from_main.py stable/index-accountsync10.pck cloud/index-accountsync11.pck cloud
+          cp stable/index-accountsync10.js cloud/index-accountsync10.js
+          cp stable/index.wasm cloud/index.wasm
+
+      - name: Commit rebuilt cloud-test
+        run: |
+          cd cloud
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index-cloudtest11.pck index.html version.json BUILD_VERSION.txt index-accountsync10.js index.wasm
+          if git diff --cached --quiet; then
+            echo "No rebuild changes."
+          else
+            git commit -m "Rebuild cloud-test .11 from working main"
+            git fetch origin main
+            git rebase origin/main
+            git push origin HEAD:main
+          fi
