@@ -1,0 +1,43 @@
+name: Inspect resume views and HUD build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/inspect-resume-hud.yml"
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect packed main and project metadata
+        shell: python
+        run: |
+          from pathlib import Path
+          import struct
+
+          p=Path("index-accountsync11.pck")
+          blob=p.read_bytes()
+          fb=int.from_bytes(blob[24:32],"little")
+          do=int.from_bytes(blob[32:40],"little")
+          count=int.from_bytes(blob[do:do+4],"little")
+          pos=do+4
+          files={}
+          for _ in range(count):
+              plen=int.from_bytes(blob[pos:pos+4],"little"); pos+=4
+              name=blob[pos:pos+plen].rstrip(b"\0").decode(); pos+=plen
+              off=int.from_bytes(blob[pos:pos+8],"little"); pos+=8
+              size=int.from_bytes(blob[pos:pos+8],"little"); pos+=8
+              pos+=16+4
+              files[name]=blob[fb+off:fb+off+size].decode("utf-8","replace")
+          main=files["scripts/main.gd"]
+          project=files["project.godot"]
+          print("===== PROJECT.GODOT =====")
+          print(project)
+          for term in ['"main_grow_door":','"grow_room_tent":','func _build_ui() -> void:','backpack_quick_button.text = "BAG"','func _set_world_controls_visible']:
+              i=main.find(term)
+              print("\nTERM",term,"AT",i)
+              if i>=0:
+                  print(main[max(0,i-1400):i+3500])
