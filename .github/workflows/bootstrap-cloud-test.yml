@@ -119,5 +119,6 @@ jobs:
             echo "Standalone runtime already current."
           else
             git commit -m "Import standalone AFewBuds cloud-test runtime [skip bootstrap]"
+            git pull --rebase origin main
             git push origin HEAD:main
           fi
