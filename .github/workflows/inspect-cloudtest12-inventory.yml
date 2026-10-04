@@ -1,0 +1,38 @@
+name: Inspect cloudtest12 inventory integration
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/inspect-cloudtest12-inventory.yml"
+  workflow_dispatch:
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect packed inventory integration
+        shell: python
+        run: |
+          from pathlib import Path
+          import struct,re
+          p=Path("index-cloudtest12.pck")
+          b=p.read_bytes(); fb=struct.unpack_from("<Q",b,24)[0]; do=struct.unpack_from("<Q",b,32)[0]
+          n=struct.unpack_from("<I",b,do)[0]; pos=do+4; files={}
+          for _ in range(n):
+              plen=struct.unpack_from("<I",b,pos)[0]; pos+=4
+              name=b[pos:pos+plen].rstrip(b"\0").decode(); pos+=plen
+              off=struct.unpack_from("<Q",b,pos)[0]; pos+=8
+              size=struct.unpack_from("<Q",b,pos)[0]; pos+=8
+              pos+=20
+              files[name]=b[fb+off:fb+off+size].decode("utf-8","replace").rstrip(" \n\0") if name.endswith(".gd") else ""
+          main=files["scripts/main.gd"]; inv=files["scripts/personal_inventory.gd"]
+          def fn(text,name):
+              m=re.search(r'^func '+re.escape(name)+r'\([^\n]*\)(?: -> [^:]+)?:\n.*?(?=^func |\Z)',text,re.M|re.S)
+              return m.group(0).rstrip() if m else "<MISSING>"
+          for name in ["_ready","_init_personal_inventory_deferred","_open_backpack_direct","_nav","_context_action","_set_world_controls_visible","_any_modal_open"]:
+              print("\n===== MAIN "+name+" =====")
+              print(fn(main,name))
+          for name in ["setup","toggle_backpack","close_backpack","open_locker","close_locker","refresh","_refresh_backpack","_refresh_locker","_inventory_drop"]:
+              print("\n===== INV "+name+" =====")
+              print(fn(inv,name))
