@@ -1,0 +1,30 @@
+name: Inspect standalone build metadata
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/inspect-build-metadata.yml"
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Search packed metadata
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          data=Path("index-accountsync11.pck").read_bytes()
+          terms=[
+              b"0.7.7.1-beta.1",
+              b"v0.7.7.1-beta.1",
+              b"AFewBuds Beta",
+              b"DEBUG",
+              b"0.7.9-beta.19",
+          ]
+          for term in terms:
+              print(term.decode("utf-8","replace"), "=>", data.find(term))
+          PY
