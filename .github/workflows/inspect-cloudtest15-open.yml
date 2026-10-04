@@ -1,0 +1,43 @@
+name: Inspect cloudtest15 inventory open paths
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/inspect-cloudtest15-open.yml"
+  workflow_dispatch:
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect packed runtime
+        shell: python
+        run: |
+          from pathlib import Path
+          import struct,re
+          b=Path("index-cloudtest15.pck").read_bytes()
+          fb=struct.unpack_from("<Q",b,24)[0]; do=struct.unpack_from("<Q",b,32)[0]
+          n=struct.unpack_from("<I",b,do)[0]; p=do+4; files={}
+          for _ in range(n):
+              plen=struct.unpack_from("<I",b,p)[0]; p+=4
+              name=b[p:p+plen].rstrip(b"\0").decode(); p+=plen
+              off=struct.unpack_from("<Q",b,p)[0]; p+=8
+              size=struct.unpack_from("<Q",b,p)[0]; p+=8
+              p+=20
+              data=b[fb+off:fb+off+size]
+              if name.endswith(".gd"): files[name]=data.decode("utf-8","replace").rstrip(" \n\0")
+          m=files["scripts/main.gd"]; inv=files["scripts/personal_inventory.gd"]
+          def fn(text,name):
+              x=re.search(r'^func '+re.escape(name)+r'\([^\n]*\)(?: -> [^:]+)?:\n.*?(?=^func |\Z)',text,re.M|re.S)
+              return x.group(0).rstrip() if x else "<MISSING>"
+          for name in ["_build_ui","_open_backpack_direct","_init_personal_inventory_deferred","_context_action","_approach_station_then_open","_finish_direct_station_approach","_handle_station_pointer","_refresh_navigation_ui","_nav"]:
+              print("\n===== MAIN "+name+" =====")
+              print(fn(m,name))
+          for name in ["setup","toggle_backpack","open_locker","close_locker","_build_backpack_panel","_build_locker_panel","_refresh_backpack","_refresh_locker"]:
+              print("\n===== INV "+name+" =====")
+              print(fn(inv,name))
+          print("\n===== LOCKER REFERENCES =====")
+          for i,line in enumerate(m.splitlines(),1):
+              if "locker" in line.lower():
+                  print(i,line)
