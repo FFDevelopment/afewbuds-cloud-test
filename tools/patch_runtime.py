@@ -106,6 +106,10 @@ for old in [
 ''', 1)
         break
 
+# Remove obsolete safe-resume helper; room-only restore no longer calls it.
+safe_pat = r'func _safe_resume_view\(view_name: String, room_name: String\) -> String:\n.*?(?=\nfunc )'
+text = re.sub(safe_pat, '', text, count=1, flags=re.S)
+
 # Main-script-owned BAG button so it cannot depend on helper initialization.
 if 'var backpack_quick_button: Button' not in text:
     text = text.replace(
