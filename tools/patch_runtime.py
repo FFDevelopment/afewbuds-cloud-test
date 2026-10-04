@@ -53,10 +53,14 @@ room_only = '''\tcurrent_room = "grow" if str(restored_runtime.get("current_room
 \troom_ring = grow_room_ring if current_room == "grow" else main_room_ring
 \t_go_to_view("grow_room_tent" if current_room == "grow" else "main_grow_door", false)
 '''
-room_only_with_reset = room_only + '''\troom_target_yaw = 0.0
-\troom_target_pitch = 0.0
-\tcamera.rotation = Vector3.ZERO
-\tget_tree().create_timer(0.12).timeout.connect(_go_to_view.bind("grow_room_tent" if current_room == "grow" else "main_grow_door", false), CONNECT_ONE_SHOT)
+room_only_with_reset = '''\tcurrent_room = "grow" if str(restored_runtime.get("current_room", "main")) == "grow" else "main"
+\troom_ring = grow_room_ring if current_room == "grow" else main_room_ring
+\tif current_room == "grow":
+\t\t_go_to_view("grow_room_tent", false)
+\t\troom_target_yaw = 0.0
+\t\troom_target_pitch = 0.0
+\telse:
+\t\t_finish_leave_grow_room()
 '''
 
 if room_only_with_reset not in text:
@@ -110,46 +114,13 @@ for old in [
 
 
 
-# Force the resumed room to the same known-good camera state used by normal
-# room transitions. Returning from the grow room already proves this main-room
-# transform is correct on the live build.
-if 'func _stabilize_resume_room() -> void:' not in text:
-    marker = 'func _restore_timer_remaining(timer: Timer, key: String) -> void:\n'
-    if marker not in text:
-        raise SystemExit("restore timer marker missing")
-    funcs = '''func _stabilize_resume_room() -> void:
-\tawait get_tree().process_frame
-\tawait get_tree().process_frame
-\t_cancel_camera_view_tween()
-\tif current_room == "grow":
-\t\troom_ring = grow_room_ring
-\t\tcurrent_view = "grow_room_tent"
-\t\tcamera.position = Vector3(0, 1.66, -5.82)
-\t\tcamera.rotation = Vector3.ZERO
-\t\troom_target_yaw = 0.0
-\t\troom_target_pitch = 0.0
-\t\tcamera.fov = 86.0
-\telse:
-\t\tcurrent_room = "main"
-\t\troom_ring = main_room_ring
-\t\tcurrent_view = "main_door"
-\t\tcamera.position = Vector3(0, 1.64, 1.20)
-\t\tcamera.rotation = Vector3(0, PI, 0)
-\t\troom_target_yaw = PI
-\t\troom_target_pitch = 0.0
-\t\tcamera.fov = 70.0
-\t_refresh_navigation_ui()
-
-'''
-    text = text.replace(marker, funcs + marker, 1)
-
 # Remove obsolete safe-resume helper; room-only restore no longer calls it.
 safe_pat = r'func _safe_resume_view\(view_name: String, room_name: String\) -> String:\n.*?(?=\nfunc )'
 text = re.sub(safe_pat, '', text, count=1, flags=re.S)
 
 text = text.replace('CLOUD TEST .3', 'CLOUD TEST .6')
 text = text.replace('CLOUD TEST .4', 'CLOUD TEST .6')
-text = text.replace('CLOUD TEST .5', 'CLOUD TEST .6')
+text = text.replace('CLOUD TEST .6', 'CLOUD TEST .6')
 text = text.replace('CLOUD TEST .4', 'CLOUD TEST .6')
 
 # Main-script-owned BAG button so it cannot depend on helper initialization.
