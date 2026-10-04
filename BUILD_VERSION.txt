@@ -1,5 +1,5 @@
 AFewBuds Cloud Test
 Game build: 0.7.9-beta.19
-Cloud test: .16
+Cloud test: .17
 Base runtime: FFDevelopment/afewbuds-beta index-accountsync10.pck
 Overlay: portraits, inventory, genetics/seeds, clickable approaches, grow-tent plant interaction
