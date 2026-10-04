@@ -43,11 +43,11 @@ jobs:
           cd cloud
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index-cloudtest14.pck index.html version.json BUILD_VERSION.txt index-accountsync10.js index.wasm
+          git add index-cloudtest15.pck index.html version.json BUILD_VERSION.txt index-accountsync10.js index.wasm
           if git diff --cached --quiet; then
             echo "No rebuild changes."
           else
-            git commit -m "Rebuild cloud-test .14 from working main"
+            git commit -m "Rebuild cloud-test .15 from working main"
             git fetch origin main
             git rebase origin/main
             git push origin HEAD:main

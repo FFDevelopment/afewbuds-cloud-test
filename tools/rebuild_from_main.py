@@ -7,9 +7,9 @@ if len(sys.argv) != 4:
 STABLE_PCK = Path(sys.argv[1])
 FEATURE_PCK = Path(sys.argv[2])
 ROOT = Path(sys.argv[3])
-OUT_PCK = ROOT / "index-cloudtest14.pck"
-RELEASE_ID = "0.7.9-beta.19-cloudtest.14"
-HUD_MARKER = "CLOUD TEST .14"
+OUT_PCK = ROOT / "index-cloudtest15.pck"
+RELEASE_ID = "0.7.9-beta.19-cloudtest.15"
+HUD_MARKER = "CLOUD TEST .15"
 
 def align(n, a=32):
     return (n + a - 1) // a * a
@@ -173,7 +173,37 @@ for name,(data,flags) in feature.items():
     ]:
         if name == "scripts/personal_inventory.gd":
             text=data.decode("utf-8","replace").rstrip(" \n\0")
+            text=text.replace('const InventorySlot = preload("res://scripts/inventory_slot.gd")\n','',1)
             text=text.replace("\t_build_backpack_button()\n","",1)
+
+            grid_pat = re.compile(r'^func _add_grid\(parent: VBoxContainer, kind: String, slots: int\) -> void:\n.*?(?=^func |\\Z)', re.M|re.S)
+            grid_match = grid_pat.search(text)
+            if not grid_match:
+                raise SystemExit("inventory grid function missing")
+            grid_func = '''func _add_grid(parent: VBoxContainer, kind: String, slots: int) -> void:
+\tvar grid := GridContainer.new()
+\tgrid.columns = 4
+\tgrid.add_theme_constant_override("h_separation",8)
+\tgrid.add_theme_constant_override("v_separation",8)
+\tparent.add_child(grid)
+\tvar items := _items(kind)
+\tfor i in range(slots):
+\t\tvar cell := Button.new()
+\t\tcell.disabled = true
+\t\tcell.focus_mode = Control.FOCUS_NONE
+\t\tcell.custom_minimum_size = Vector2(112,72)
+\t\tif i < items.size():
+\t\t\tvar item: Dictionary = items[i]
+\t\t\tif str(item.get("type","")) == "cash":
+\t\t\t\tcell.text = "CASH\\n$%d" % int(item.get("amount",0))
+\t\t\telse:
+\t\t\t\tcell.text = "%s\\n%dg" % [str(item.get("name","ITEM")),int(item.get("amount",0))]
+\t\telse:
+\t\t\tcell.text = "EMPTY"
+\t\tgrid.add_child(cell)
+
+'''
+            text=text[:grid_match.start()] + grid_func + text[grid_match.end():]
             text=text.replace(
                 '\t_add_grid(left,"backpack",BACKPACK_SLOTS)\n',
                 '\t_add_grid(left,"backpack",BACKPACK_SLOTS)\n\tfor item in _items("backpack"):\n\t\t_source_button(left,"MOVE %s -> LOCKER" % str(item.get("name","ITEM")),_inventory_drop.bind({"source":"backpack","item":item},"locker"))\n',
@@ -227,7 +257,7 @@ vf.write_text(json.dumps(meta,indent=2)+"\n")
 (ROOT/"BUILD_VERSION.txt").write_text(
     "AFewBuds Cloud Test\n"
     "Game build: 0.7.9-beta.19\n"
-    "Cloud test: .14\n"
+    "Cloud test: .15\n"
     "Base runtime: FFDevelopment/afewbuds-beta index-accountsync10.pck\n"
     "Overlay: portraits, inventory, genetics/seeds, clickable approaches, grow-tent plant interaction\n"
 )
@@ -240,3 +270,4 @@ for name in sorted(approved_added):
 print("MAIN STARTUP/SAVE/RESUME/LIFECYCLE restored from working main")
 print("Personal Inventory deferred until after main _ready completes")
 print("PROJECT.GODOT copied byte-for-byte from working main")
+print("Backpack/locker grids use plain Godot controls; no InventorySlot dependency")
