@@ -48,13 +48,25 @@ start = fb + off
 text = bytes(blob[start:start+size]).decode("utf-8").rstrip(" \n\0")
 
 # Resume by room only, never by close-up/station view.
-pat = r'func _restore_runtime_state\(\) -> void:\n.*?(?=\nfunc )'
-m = re.search(pat, text, re.S)
-if not m:
-    raise SystemExit("restore function missing")
-block = m.group(0)
+room_only = '''\tcurrent_room = "grow" if str(restored_runtime.get("current_room", "main")) == "grow" else "main"
+\troom_ring = grow_room_ring if current_room == "grow" else main_room_ring
+\t_go_to_view("grow_room_tent" if current_room == "grow" else "main_grow_door", false)
+'''
+room_only_with_reset = room_only + '''\troom_target_yaw = 0.0
+\troom_target_pitch = 0.0
+\tcamera.rotation = Vector3.ZERO
+'''
 
-variants = [
+if room_only_with_reset not in text:
+    if room_only in text:
+        text = text.replace(room_only, room_only_with_reset, 1)
+    else:
+        pat = r'func _restore_runtime_state\(\) -> void:\n.*?(?=\nfunc )'
+        m = re.search(pat, text, re.S)
+        if not m:
+            raise SystemExit("restore function missing")
+        block = m.group(0)
+        variants = [
 '''\tcurrent_room = str(restored_runtime.get("current_room", "main"))
 \troom_ring = grow_room_ring if current_room == "grow" else main_room_ring
 \tvar saved_view: String = _safe_resume_view(str(restored_runtime.get("current_view", "main_grow_door")), current_room)
@@ -71,22 +83,14 @@ variants = [
 \tif views.has(saved_view):
 \t\t_go_to_view(saved_view, false)
 '''
-]
-new_view = '''\tcurrent_room = "grow" if str(restored_runtime.get("current_room", "main")) == "grow" else "main"
-\troom_ring = grow_room_ring if current_room == "grow" else main_room_ring
-\t_go_to_view("grow_room_tent" if current_room == "grow" else "main_grow_door", false)
-\troom_target_yaw = 0.0
-\troom_target_pitch = 0.0
-\tcamera.rotation = Vector3.ZERO
-'''
-for old in variants:
-    if old in block:
-        block = block.replace(old, new_view, 1)
-        break
-else:
-    raise SystemExit("restore view block missing")
-
-text = text[:m.start()] + block + text[m.end():]
+        ]
+        for old in variants:
+            if old in block:
+                block = block.replace(old, room_only_with_reset, 1)
+                text = text[:m.start()] + block + text[m.end():]
+                break
+        else:
+            raise SystemExit("restore view block missing")
 
 for old in [
 '''\t\t"current_view": _safe_resume_view(current_view, current_room),
