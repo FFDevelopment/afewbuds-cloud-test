@@ -1,0 +1,68 @@
+name: Inventory selective rebuild inputs
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/inventory-rebuild-inputs.yml"
+  workflow_dispatch:
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: cloud
+      - uses: actions/checkout@v4
+        with:
+          repository: FFDevelopment/afewbuds-beta
+          ref: main
+          path: stable
+      - name: Inspect PCK file differences
+        shell: python
+        run: |
+          from pathlib import Path
+          import struct,hashlib,re
+
+          def entries(path):
+              b=Path(path).read_bytes()
+              fb=struct.unpack_from("<Q",b,24)[0]
+              do=struct.unpack_from("<Q",b,32)[0]
+              n=struct.unpack_from("<I",b,do)[0]
+              p=do+4; out={}
+              for _ in range(n):
+                  plen=struct.unpack_from("<I",b,p)[0]; p+=4
+                  name=b[p:p+plen].rstrip(b"\0").decode(); p+=plen
+                  off=struct.unpack_from("<Q",b,p)[0]; p+=8
+                  size=struct.unpack_from("<Q",b,p)[0]; p+=8
+                  p+=16
+                  flags=struct.unpack_from("<I",b,p)[0]; p+=4
+                  data=b[fb+off:fb+off+size]
+                  out[name]=(hashlib.sha256(data).hexdigest(),len(data),data)
+              return out
+
+          a=entries("stable/index-accountsync10.pck")
+          b=entries("cloud/index-accountsync11.pck")
+          added=sorted(set(b)-set(a))
+          removed=sorted(set(a)-set(b))
+          changed=sorted(k for k in set(a)&set(b) if a[k][0]!=b[k][0])
+
+          print("ADDED",len(added))
+          for x in added: print("+",x,b[x][1])
+          print("\nREMOVED",len(removed))
+          for x in removed: print("-",x,a[x][1])
+          print("\nCHANGED",len(changed))
+          for x in changed: print("*",x,a[x][1],"->",b[x][1])
+
+          m=b["scripts/main.gd"][2].decode("utf-8","replace")
+          terms=[
+            "peephole","portrait","genetics","seed","approach","locker",
+            "personal_inventory","grow_supply_shelf","plant_direct",
+            "_handle_station_pointer","_handle_room_pointer","_context_action"
+          ]
+          lines=m.splitlines()
+          for term in terms:
+              print("\n### TERM",term)
+              hits=[i for i,l in enumerate(lines) if term.lower() in l.lower()]
+              for i in hits[:30]:
+                  print(f"{i+1}: {lines[i]}")
