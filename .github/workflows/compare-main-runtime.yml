@@ -1,0 +1,91 @@
+name: Compare main runtime behavior
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/compare-main-runtime.yml"
+  workflow_dispatch:
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout cloud-test
+        uses: actions/checkout@v4
+        with:
+          path: cloud
+      - name: Checkout working main repo
+        uses: actions/checkout@v4
+        with:
+          repository: FFDevelopment/afewbuds-beta
+          ref: main
+          path: stable
+      - name: Compare packed runtime
+        shell: python
+        run: |
+          from pathlib import Path
+          import struct, re, difflib
+
+          def extract_main(path):
+              blob=Path(path).read_bytes()
+              fb=struct.unpack_from("<Q",blob,24)[0]
+              do=struct.unpack_from("<Q",blob,32)[0]
+              count=struct.unpack_from("<I",blob,do)[0]
+              pos=do+4
+              for _ in range(count):
+                  plen=struct.unpack_from("<I",blob,pos)[0]; pos+=4
+                  name=blob[pos:pos+plen].rstrip(b"\0").decode(); pos+=plen
+                  off=struct.unpack_from("<Q",blob,pos)[0]; pos+=8
+                  size=struct.unpack_from("<Q",blob,pos)[0]; pos+=8
+                  pos+=16+4
+                  if name=="scripts/main.gd":
+                      return blob[fb+off:fb+off+size].decode("utf-8","replace").rstrip(" \n\0")
+              raise RuntimeError("main.gd missing")
+
+          stable=extract_main("stable/index-accountsync10.pck")
+          cloud=extract_main("cloud/index-cloudtest8.pck")
+
+          def func(text,name):
+              m=re.search(r'^func '+re.escape(name)+r'\([^\n]*\)(?: -> [^:]+)?:\n.*?(?=^func |\Z)',text,re.M|re.S)
+              return m.group(0).rstrip() if m else "<MISSING>"
+
+          names=[
+              "_ready",
+              "_apply_cloud_boot_save",
+              "_load_game",
+              "_save_game",
+              "_capture_runtime_state",
+              "_restore_runtime_state",
+              "_go_to_view",
+              "_finish_enter_grow_room",
+              "_finish_leave_grow_room",
+          ]
+          for name in names:
+              a=func(stable,name).splitlines()
+              b=func(cloud,name).splitlines()
+              print("\n================",name,"================")
+              for line in difflib.unified_diff(a,b,fromfile="afewbuds-beta",tofile="cloud-test",lineterm=""):
+                  print(line)
+
+          def around(text,needle,radius=18):
+              lines=text.splitlines()
+              hits=[i for i,l in enumerate(lines) if needle in l]
+              out=[]
+              for i in hits[:8]:
+                  out.extend(lines[max(0,i-radius):min(len(lines),i+radius+1)])
+                  out.append("---")
+              return out
+
+          for needle in [
+              '"main_grow_door":',
+              '"grow_room_tent":',
+              '"current_view":',
+              '"current_room":',
+              'restored_runtime =',
+              'runtime_state',
+              'camera.position =',
+          ]:
+              print("\n================ NEEDLE",needle,"STABLE ================")
+              print("\n".join(around(stable,needle)))
+              print("\n================ NEEDLE",needle,"CLOUD ================")
+              print("\n".join(around(cloud,needle)))
