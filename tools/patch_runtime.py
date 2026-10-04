@@ -34,7 +34,7 @@ project_entry = next(x for x in entries if x[0] == "project.godot")
 pname, poff, psize, pmd5pos = project_entry
 pstart = fb + poff
 ptext = bytes(blob[pstart:pstart+psize]).decode("utf-8").rstrip(" \n\0")
-ptext = ptext.replace("AFewBuds Beta v0.7.7.1-beta.1", "AFewBuds Cloud Test v0.7.9-beta.19")
+ptext = ptext.replace("AFewBuds Beta v0.7.7.1-beta.1", "AFB Test v0.7.9-b19")
 ptext = ptext.replace("0.7.7.1-beta.1", "0.7.9-beta.19")
 pdata = ptext.encode()
 if len(pdata) > psize:
@@ -148,9 +148,31 @@ bag_build = '''\tforward_button = Button.new()
 \thud.add_child(backpack_quick_button)
 \thud.move_child(backpack_quick_button, hud.get_child_count() - 1)
 '''
-if build_marker not in text:
-    raise SystemExit("HUD marker missing")
-text = text.replace(build_marker, bag_build, 1)
+if 'backpack_quick_button.text = "BAG"' not in text:
+    if build_marker not in text:
+        raise SystemExit("HUD marker missing")
+    text = text.replace(build_marker, bag_build, 1)
+
+if 'CLOUD TEST .3' not in text:
+    marker_anchor = '\thud.move_child(backpack_quick_button, hud.get_child_count() - 1)\n'
+    marker_block = '''\thud.move_child(backpack_quick_button, hud.get_child_count() - 1)
+
+\tvar cloud_test_marker: Label = Label.new()
+\tcloud_test_marker.text = "CLOUD TEST .3"
+\tcloud_test_marker.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+\tcloud_test_marker.offset_left = -220
+\tcloud_test_marker.offset_top = 18
+\tcloud_test_marker.offset_right = -18
+\tcloud_test_marker.offset_bottom = 58
+\tcloud_test_marker.z_index = 300
+\tcloud_test_marker.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+\tcloud_test_marker.add_theme_font_size_override("font_size", 20)
+\tcloud_test_marker.modulate = Color("9fe892")
+\thud.add_child(cloud_test_marker)
+'''
+    if marker_anchor not in text:
+        raise SystemExit("BAG HUD anchor missing")
+    text = text.replace(marker_anchor, marker_block, 1)
 
 if 'func _open_backpack_direct() -> void:' not in text:
     marker = 'func _build_phone_panel() -> void:\n'
@@ -194,7 +216,8 @@ v.write_text(json.dumps(meta, indent=2) + "\n")
 
 idx = Path("index.html")
 s = idx.read_text()
-s = s.replace("0.7.9-beta.19-cloudtest.1", "0.7.9-beta.19-cloudtest.3").replace("0.7.9-beta.19-cloudtest.2", "0.7.9-beta.19-cloudtest.3")
+s = s.replace("0.7.9-beta.19-cloudtest.1", "0.7.9-beta.19-cloudtest.3")
+s = s.replace("0.7.9-beta.19-cloudtest.2", "0.7.9-beta.19-cloudtest.3")
 idx.write_text(s)
 
 print("patched main bytes", len(data), "slot", size)
