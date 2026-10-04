@@ -1,0 +1,103 @@
+name: Fix locker lazy init for cloudtest17
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/fix-cloudtest17-locker.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Patch packed runtime
+        shell: python
+        run: |
+          from pathlib import Path
+          import struct,hashlib,re,json
+
+          src=Path("index-cloudtest16.pck")
+          outp=Path("index-cloudtest17.pck")
+          b=src.read_bytes()
+          fb=struct.unpack_from("<Q",b,24)[0]
+          do=struct.unpack_from("<Q",b,32)[0]
+          n=struct.unpack_from("<I",b,do)[0]
+          p=do+4
+          entries=[]
+          for _ in range(n):
+              q=struct.unpack_from("<I",b,p)[0]; p+=4
+              name=b[p:p+q].rstrip(b"\0").decode(); p+=q
+              off=struct.unpack_from("<Q",b,p)[0]; p+=8
+              size=struct.unpack_from("<Q",b,p)[0]; p+=8
+              p+=16
+              flags=struct.unpack_from("<I",b,p)[0]; p+=4
+              data=b[fb+off:fb+off+size]
+              entries.append([name,data,flags])
+
+          for row in entries:
+              if row[0]!="scripts/main.gd":
+                  continue
+              t=row[1].decode("utf-8","replace").rstrip(" \n\0")
+              t=t.replace("CLOUD TEST .16","CLOUD TEST .17")
+              pat=re.compile(r'^func _finish_direct_station_approach\(action_id: String\) -> void:\n.*?(?=^func |\Z)',re.M|re.S)
+              m=pat.search(t)
+              if not m:
+                  raise SystemExit("approach function missing")
+              f=m.group(0)
+              old='''\t\t"station_locker":
+\t\t\tif personal_inventory != null:
+\t\t\t\tpersonal_inventory.open_locker()'''
+              new='''\t\t"station_locker":
+\t\t\tif personal_inventory == null:
+\t\t\t\t_init_personal_inventory_deferred()
+\t\t\tif personal_inventory != null:
+\t\t\t\tpersonal_inventory.open_locker()'''
+              if old not in f:
+                  raise SystemExit("old locker block missing")
+              f=f.replace(old,new,1)
+              t=t[:m.start()]+f+t[m.end():]
+              if "_init_personal_inventory_deferred()" not in f:
+                  raise SystemExit("locker lazy init verification failed")
+              row[1]=t.encode()
+
+          out=bytearray(b[:fb]); cur=0; directory=[]
+          for name,data,flags in entries:
+              a=(cur+31)//32*32
+              out.extend(b"\0"*(a-cur))
+              off=a
+              out.extend(data)
+              cur=off+len(data)
+              directory.append((name,off,len(data),hashlib.md5(data).digest(),flags))
+          ndo=(len(out)+31)//32*32
+          out.extend(b"\0"*(ndo-len(out)))
+          struct.pack_into("<Q",out,32,ndo)
+          out.extend(struct.pack("<I",len(directory)))
+          for name,off,size,md5,flags in directory:
+              raw=name.encode(); q=(len(raw)+3)//4*4
+              out.extend(struct.pack("<I",q)); out.extend(raw); out.extend(b"\0"*(q-len(raw)))
+              out.extend(struct.pack("<Q",off)); out.extend(struct.pack("<Q",size)); out.extend(md5); out.extend(struct.pack("<I",flags))
+          outp.write_bytes(out)
+
+          h=Path("index.html").read_text()
+          h=re.sub(r'const AFB_TEST_RELEASE = "[^"]+";','const AFB_TEST_RELEASE = "0.7.9-beta.19-cloudtest.17";',h,1)
+          h=re.sub(r'"fileSizes":\{[^}]*\}',f'"fileSizes":{{"{outp.name}":{len(out)},"index.wasm":37902138}}',h,1)
+          h=re.sub(r'"mainPack":"[^"]+"',f'"mainPack":"{outp.name}"',h,1)
+          Path("index.html").write_text(h)
+
+          v=json.loads(Path("version.json").read_text())
+          v["release_id"]="0.7.9-beta.19-cloudtest.17"
+          Path("version.json").write_text(json.dumps(v,indent=2)+"\n")
+          print("cloudtest17 locker lazy init verified")
+      - name: Commit result
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index-cloudtest17.pck index.html version.json
+          git commit -m "Publish cloudtest17 locker init fix"
+          git push origin HEAD:main
