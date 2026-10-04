@@ -37,6 +37,14 @@ jobs:
           for name in ["setup","toggle_backpack","open_locker","close_locker","_build_backpack_panel","_build_locker_panel","_refresh_backpack","_refresh_locker"]:
               print("\n===== INV "+name+" =====")
               print(fn(inv,name))
+          print("\n===== INVENTORY SLOT REFERENCES =====")
+          for i,line in enumerate(inv.splitlines(),1):
+              if "InventorySlot" in line or "inventory_slot" in line.lower():
+                  print(i,line)
+          print("\n===== MAIN INVENTORY DECLARATIONS =====")
+          for i,line in enumerate(m.splitlines(),1):
+              if "PersonalInventory" in line or "personal_inventory" in line:
+                  print(i,line)
           print("\n===== LOCKER REFERENCES =====")
           for i,line in enumerate(m.splitlines(),1):
               if "locker" in line.lower():
