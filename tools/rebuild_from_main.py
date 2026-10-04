@@ -7,9 +7,9 @@ if len(sys.argv) != 4:
 STABLE_PCK = Path(sys.argv[1])
 FEATURE_PCK = Path(sys.argv[2])
 ROOT = Path(sys.argv[3])
-OUT_PCK = ROOT / "index-cloudtest11.pck"
-RELEASE_ID = "0.7.9-beta.19-cloudtest.11"
-HUD_MARKER = "CLOUD TEST .11"
+OUT_PCK = ROOT / "index-cloudtest12.pck"
+RELEASE_ID = "0.7.9-beta.19-cloudtest.12"
+HUD_MARKER = "CLOUD TEST .12"
 
 def align(n, a=32):
     return (n + a - 1) // a * a
@@ -94,7 +94,10 @@ feature_main = feature["scripts/main.gd"][0].decode("utf-8","replace").rstrip(" 
 # Start with the feature gameplay script so the approved cloud-test work is retained.
 # Then force save/resume/lifecycle primitives back to the exact working main runtime.
 stable_funcs = funcs(stable_main)
+stable_funcs["_ready"] = stable_funcs["_ready"] + '\n\tcall_deferred("_init_personal_inventory_deferred")'
+
 for name in [
+    "_ready",
     "_capture_runtime_state",
     "_restore_runtime_state",
     "_go_to_view",
@@ -105,6 +108,21 @@ for name in [
     "_on_browser_pause",
 ]:
     feature_main = replace_func(feature_main, stable_funcs, name)
+
+# Inventory initialization is isolated from the working main startup path.
+if 'func _init_personal_inventory_deferred() -> void:' not in feature_main:
+    helper = '''func _init_personal_inventory_deferred() -> void:
+\tif personal_inventory != null:
+\t\treturn
+\tpersonal_inventory = PersonalInventory.new()
+\tadd_child(personal_inventory)
+\tpersonal_inventory.setup(self)
+
+'''
+    marker = 'func _process(delta: float) -> void:\n'
+    if marker not in feature_main:
+        raise SystemExit("process marker missing for deferred inventory helper")
+    feature_main = feature_main.replace(marker, helper + marker, 1)
 
 # Visible test marker only. Internal app/save identity comes from main's project.godot.
 feature_main = re.sub(r'CLOUD TEST \.\d+', HUD_MARKER, feature_main)
@@ -174,7 +192,7 @@ vf.write_text(json.dumps(meta,indent=2)+"\n")
 (ROOT/"BUILD_VERSION.txt").write_text(
     "AFewBuds Cloud Test\n"
     "Game build: 0.7.9-beta.19\n"
-    "Cloud test: .11\n"
+    "Cloud test: .12\n"
     "Base runtime: FFDevelopment/afewbuds-beta index-accountsync10.pck\n"
     "Overlay: portraits, inventory, genetics/seeds, clickable approaches, grow-tent plant interaction\n"
 )
@@ -184,5 +202,6 @@ print("OUTPUT", OUT_PCK, len(rebuilt))
 print("APPROVED ADDED FILES", len(approved_added))
 for name in sorted(approved_added):
     print("+", name)
-print("MAIN SAVE/RESUME FUNCTIONS restored from working main")
+print("MAIN STARTUP/SAVE/RESUME/LIFECYCLE restored from working main")
+print("Personal Inventory deferred until after main _ready completes")
 print("PROJECT.GODOT copied byte-for-byte from working main")
