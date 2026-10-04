@@ -48,55 +48,27 @@ name, off, size, md5pos = main_entry
 start = fb + off
 text = bytes(blob[start:start+size]).decode("utf-8").rstrip(" \n\0")
 
-# Resume by room only, never by close-up/station view.
-room_only = '''\tcurrent_room = "grow" if str(restored_runtime.get("current_room", "main")) == "grow" else "main"
+# Resume by room only. Reuse the exact known-good main-room return routine.
+# This is deliberately an in-place/shorter replacement so it fits the fixed
+# scripts/main.gd slot inside the exported PCK.
+existing_room_restore = '''\tcurrent_room = "grow" if str(restored_runtime.get("current_room", "main")) == "grow" else "main"
 \troom_ring = grow_room_ring if current_room == "grow" else main_room_ring
 \t_go_to_view("grow_room_tent" if current_room == "grow" else "main_grow_door", false)
+\troom_target_yaw = 0.0
+\troom_target_pitch = 0.0
+\tcamera.rotation = Vector3.ZERO
 '''
-room_only_with_reset = '''\tcurrent_room = "grow" if str(restored_runtime.get("current_room", "main")) == "grow" else "main"
+compact_room_restore = '''\tcurrent_room = "grow" if str(restored_runtime.get("current_room", "main")) == "grow" else "main"
 \troom_ring = grow_room_ring if current_room == "grow" else main_room_ring
 \tif current_room == "grow":
 \t\t_go_to_view("grow_room_tent", false)
-\t\troom_target_yaw = 0.0
-\t\troom_target_pitch = 0.0
 \telse:
 \t\t_finish_leave_grow_room()
 '''
-
-if room_only_with_reset not in text:
-    if room_only in text:
-        text = text.replace(room_only, room_only_with_reset, 1)
-    else:
-        pat = r'func _restore_runtime_state\(\) -> void:\n.*?(?=\nfunc )'
-        m = re.search(pat, text, re.S)
-        if not m:
-            raise SystemExit("restore function missing")
-        block = m.group(0)
-        variants = [
-'''\tcurrent_room = str(restored_runtime.get("current_room", "main"))
-\troom_ring = grow_room_ring if current_room == "grow" else main_room_ring
-\tvar saved_view: String = _safe_resume_view(str(restored_runtime.get("current_view", "main_grow_door")), current_room)
-\tif views.has(saved_view):
-\t\t_go_to_view(saved_view, false)
-\telse:
-\t\tcurrent_room = "main"
-\t\troom_ring = main_room_ring
-\t\t_go_to_view("main_grow_door", false)
-''',
-'''\tcurrent_room = str(restored_runtime.get("current_room", "main"))
-\troom_ring = grow_room_ring if current_room == "grow" else main_room_ring
-\tvar saved_view: String = str(restored_runtime.get("current_view", "main_grow_door"))
-\tif views.has(saved_view):
-\t\t_go_to_view(saved_view, false)
-'''
-        ]
-        for old in variants:
-            if old in block:
-                block = block.replace(old, room_only_with_reset, 1)
-                text = text[:m.start()] + block + text[m.end():]
-                break
-        else:
-            raise SystemExit("restore view block missing")
+if existing_room_restore in text:
+    text = text.replace(existing_room_restore, compact_room_restore, 1)
+elif compact_room_restore not in text:
+    raise SystemExit("existing .5 room restore block missing")
 
 for old in [
 '''\t\t"current_view": _safe_resume_view(current_view, current_room),
