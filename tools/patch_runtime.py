@@ -2,9 +2,9 @@ from pathlib import Path
 import struct, hashlib, re, json
 
 SOURCE_PCK = Path("index-accountsync11.pck")
-VERSIONED_PCK = Path("index-cloudtest6.pck")
-RELEASE_ID = "0.7.9-beta.19-cloudtest.6"
-HUD_MARKER = "CLOUD TEST .6"
+VERSIONED_PCK = Path("index-cloudtest7.pck")
+RELEASE_ID = "0.7.9-beta.19-cloudtest.7"
+HUD_MARKER = "CLOUD TEST .7"
 
 def align(n, a=32):
     return (n + a - 1) // a * a
@@ -45,12 +45,23 @@ def patch_main(text):
 \tif current_room == "grow":
 \t\t_go_to_view("grow_room_tent", false)
 \telse:
+\t\tcamera.position = Vector3(0, 1.64, 1.20)
 \t\t_finish_leave_grow_room()
 '''
     if existing_room_restore in text:
         text = text.replace(existing_room_restore, compact_room_restore, 1)
-    elif compact_room_restore not in text:
-        raise SystemExit("expected .5 resume block not found")
+    else:
+        previous_compact = '''\tcurrent_room = "grow" if str(restored_runtime.get("current_room", "main")) == "grow" else "main"
+\troom_ring = grow_room_ring if current_room == "grow" else main_room_ring
+\tif current_room == "grow":
+\t\t_go_to_view("grow_room_tent", false)
+\telse:
+\t\t_finish_leave_grow_room()
+'''
+        if previous_compact in text:
+            text = text.replace(previous_compact, compact_room_restore, 1)
+        elif compact_room_restore not in text:
+            raise SystemExit("expected .6 resume block not found")
 
     for old in [
         '''\t\t"current_view": _safe_resume_view(current_view, current_room),
@@ -74,7 +85,7 @@ def patch_main(text):
         flags=re.S
     )
 
-    for old_marker in ["CLOUD TEST .3", "CLOUD TEST .4", "CLOUD TEST .5"]:
+    for old_marker in ["CLOUD TEST .3", "CLOUD TEST .4", "CLOUD TEST .5", "CLOUD TEST .6"]:
         text = text.replace(old_marker, HUD_MARKER)
 
     if 'var backpack_quick_button: Button' not in text:
@@ -87,7 +98,7 @@ def patch_main(text):
 '''
         addition = marker + '''
 \tvar cloud_test_marker: Label = Label.new()
-\tcloud_test_marker.text = "CLOUD TEST .6"
+\tcloud_test_marker.text = "CLOUD TEST .7"
 \tcloud_test_marker.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 \tcloud_test_marker.offset_left = -210
 \tcloud_test_marker.offset_top = 18
