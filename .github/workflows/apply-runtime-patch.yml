@@ -10,6 +10,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: runtime-patch
+  cancel-in-progress: false
+
 jobs:
   patch:
     runs-on: ubuntu-latest
@@ -28,6 +32,7 @@ jobs:
             echo "No runtime changes."
           else
             git commit -m "Publish cache-busted cloudtest7 runtime"
-            git pull --rebase origin main
+            git fetch origin main
+            git rebase origin/main
             git push origin HEAD:main
           fi
