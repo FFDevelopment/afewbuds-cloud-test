@@ -1,5 +1,5 @@
 {
-  "release_id": "0.7.9-beta.19-cloudtest.2",
+  "release_id": "0.7.9-beta.19-cloudtest.3",
   "game_build": "0.7.9-beta.19",
   "channel": "standalone-cloud-test",
   "updater": "network-only-no-service-worker"
