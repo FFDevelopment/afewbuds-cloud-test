@@ -2,9 +2,9 @@ from pathlib import Path
 import struct, hashlib, re, json
 
 SOURCE_PCK = Path("index-accountsync11.pck")
-VERSIONED_PCK = Path("index-cloudtest8.pck")
-RELEASE_ID = "0.7.9-beta.19-cloudtest.8"
-HUD_MARKER = "CLOUD TEST .8"
+VERSIONED_PCK = Path("index-cloudtest9.pck")
+RELEASE_ID = "0.7.9-beta.19-cloudtest.9"
+HUD_MARKER = "CLOUD TEST .9"
 
 def align(n, a=32):
     return (n + a - 1) // a * a
@@ -80,9 +80,18 @@ def patch_main(text):
         else:
             raise SystemExit("cloud-test restore block not found")
 
+    # Remove all old cloud-test-only post-restore camera overrides. The working
+    # main repo restores saved_view once and leaves that exact approach/view intact.
+    delayed_override = '''\tget_tree().create_timer(0.12).timeout.connect(_go_to_view.bind("grow_room_tent" if current_room == "grow" else "main_grow_door", false), CONNECT_ONE_SHOT)
+\troom_target_yaw = 0.0
+\troom_target_pitch = 0.0
+\tcamera.rotation = Vector3.ZERO
+'''
+    text = text.replace(delayed_override, '', 1)
+
     for old_marker in [
         "CLOUD TEST .3", "CLOUD TEST .4", "CLOUD TEST .5",
-        "CLOUD TEST .6", "CLOUD TEST .7"
+        "CLOUD TEST .6", "CLOUD TEST .7", "CLOUD TEST .8"
     ]:
         text = text.replace(old_marker, HUD_MARKER)
 
@@ -101,7 +110,7 @@ def patch_main(text):
 '''
         addition = marker + '''
 \tvar cloud_test_marker: Label = Label.new()
-\tcloud_test_marker.text = "CLOUD TEST .8"
+\tcloud_test_marker.text = "CLOUD TEST .9"
 \tcloud_test_marker.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 \tcloud_test_marker.offset_left = -210
 \tcloud_test_marker.offset_top = 18
@@ -156,6 +165,8 @@ def patch_main(text):
         raise SystemExit("main-repo capture parity missing")
     if main_restore not in text:
         raise SystemExit("main-repo restore parity missing")
+    if 'get_tree().create_timer(0.12).timeout.connect(_go_to_view.bind(' in text:
+        raise SystemExit("stale delayed room override still present")
     return text
 
 def rebuild_pck(original_blob, file_base, entries):
