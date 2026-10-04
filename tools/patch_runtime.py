@@ -2,6 +2,7 @@ from pathlib import Path
 import struct, hashlib, re, json
 
 P = Path("index-accountsync11.pck")
+VERSIONED_PCK = Path("index-cloudtest5.pck")
 blob = bytearray(P.read_bytes())
 if blob[:4] != b"GDPC":
     raise SystemExit("not pck")
@@ -221,6 +222,7 @@ padded = data + b"\n" + b" " * (size - len(data) - 1)
 blob[start:start+size] = padded
 blob[md5pos:md5pos+16] = hashlib.md5(padded).digest()
 P.write_bytes(blob)
+VERSIONED_PCK.write_bytes(blob)
 
 v = Path("version.json")
 meta = json.loads(v.read_text())
@@ -229,6 +231,8 @@ v.write_text(json.dumps(meta, indent=2) + "\n")
 
 idx = Path("index.html")
 s = idx.read_text()
+s = s.replace('"index-accountsync11.pck":25520848', '"index-cloudtest5.pck":25520848')
+s = s.replace('"mainPack":"index-accountsync11.pck"', '"mainPack":"index-cloudtest5.pck"')
 s = s.replace("0.7.9-beta.19-cloudtest.1", "0.7.9-beta.19-cloudtest.5")
 s = s.replace("0.7.9-beta.19-cloudtest.2", "0.7.9-beta.19-cloudtest.5")
 s = s.replace("0.7.9-beta.19-cloudtest.3", "0.7.9-beta.19-cloudtest.5")
@@ -238,3 +242,4 @@ idx.write_text(s)
 print("patched main bytes", len(data), "slot", size)
 print("room-only resume", '"grow_room_tent" if current_room == "grow" else "main_grow_door"' in text)
 print("direct BAG button", 'backpack_quick_button.text = "BAG"' in text)
+print("versioned pck", VERSIONED_PCK, VERSIONED_PCK.stat().st_size)
