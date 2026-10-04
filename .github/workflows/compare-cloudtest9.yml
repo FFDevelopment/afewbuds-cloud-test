@@ -67,3 +67,7 @@ jobs:
               return "<MISSING>"
           print("\n===== CLOUD PERSONAL INVENTORY =====")
           print(extract_file("cloud/index-cloudtest9.pck","scripts/personal_inventory.gd"))
+          print("\n===== PROJECT.GODOT STABLE =====")
+          print(extract_file("stable/index-accountsync10.pck","project.godot"))
+          print("\n===== PROJECT.GODOT CLOUD9 =====")
+          print(extract_file("cloud/index-cloudtest9.pck","project.godot"))
