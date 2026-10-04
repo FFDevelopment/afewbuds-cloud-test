@@ -1,7 +1,7 @@
 (function(){
   'use strict';
 
-  const LOCAL_RELEASE = '0.7.9-beta.19-cloudtest.1';
+  const LOCAL_RELEASE = '0.7.9-beta.19-cloudtest.3';
 
   function overlay(show, title, detail){
     const root=document.getElementById('afb-prelaunch');
@@ -22,12 +22,16 @@
         const live=await response.json();
         const release=String(live.release_id||'');
         if(release && release!==LOCAL_RELEASE){
-          overlay(true,'Cloud test updated','Reloading '+release+'…');
           const url=new URL(location.href);
-          url.searchParams.set('release',release);
-          url.searchParams.set('t',String(Date.now()));
-          location.replace(url.toString());
-          await new Promise(()=>{});
+          if(url.searchParams.get('release')!==release){
+            overlay(true,'Cloud test updated','Reloading '+release+'…');
+            url.searchParams.set('release',release);
+            url.searchParams.set('t',String(Date.now()));
+            location.replace(url.toString());
+            await new Promise(()=>{});
+          } else {
+            console.warn('Cloud-test release mismatch after reload; launching current files to avoid a reload loop.', {live:release, local:LOCAL_RELEASE});
+          }
         }
       }
     }catch(e){
