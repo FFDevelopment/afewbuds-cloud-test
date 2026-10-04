@@ -7,9 +7,9 @@ if len(sys.argv) != 4:
 STABLE_PCK = Path(sys.argv[1])
 FEATURE_PCK = Path(sys.argv[2])
 ROOT = Path(sys.argv[3])
-OUT_PCK = ROOT / "index-cloudtest12.pck"
-RELEASE_ID = "0.7.9-beta.19-cloudtest.12"
-HUD_MARKER = "CLOUD TEST .12"
+OUT_PCK = ROOT / "index-cloudtest13.pck"
+RELEASE_ID = "0.7.9-beta.19-cloudtest.13"
+HUD_MARKER = "CLOUD TEST .13"
 
 def align(n, a=32):
     return (n + a - 1) // a * a
@@ -126,6 +126,11 @@ if 'func _init_personal_inventory_deferred() -> void:' not in feature_main:
 
 # Visible test marker only. Internal app/save identity comes from main's project.godot.
 feature_main = re.sub(r'CLOUD TEST \.\d+', HUD_MARKER, feature_main)
+feature_main = feature_main.replace(
+    '\t\t"workbench": _go_to_view("main_workbench")\n\t\t"storage": _go_to_view("main_storage")',
+    '\t\t"workbench": _go_to_view("main_workbench")\n\t\t"locker": _go_to_view("main_workbench")\n\t\t"storage": _go_to_view("main_storage")',
+    1
+)
 
 # Verify exact-view resume survived the rebuild.
 required = [
@@ -150,6 +155,20 @@ for name,(data,flags) in feature.items():
         "scripts/inventory_slot.gd",
         "scripts/personal_inventory.gd",
     ]:
+        if name == "scripts/personal_inventory.gd":
+            text=data.decode("utf-8","replace").rstrip(" \n\0")
+            text=text.replace("\t_build_backpack_button()\n","",1)
+            text=text.replace(
+                '\t_add_grid(left,"backpack",BACKPACK_SLOTS)\n',
+                '\t_add_grid(left,"backpack",BACKPACK_SLOTS)\n\tfor item in _items("backpack"):\n\t\t_source_button(left,"MOVE %s -> LOCKER" % str(item.get("name","ITEM")),_inventory_drop.bind({"source":"backpack","item":item},"locker"))\n',
+                1
+            )
+            text=text.replace(
+                '\t_add_grid(right,"locker",LOCKER_SLOTS)\n',
+                '\t_add_grid(right,"locker",LOCKER_SLOTS)\n\tfor item in _items("locker"):\n\t\t_source_button(right,"MOVE %s -> BAG" % str(item.get("name","ITEM")),_inventory_drop.bind({"source":"locker","item":item},"backpack"))\n',
+                1
+            )
+            data=text.encode()
         out_map[name]=[data,flags]
         approved_added.append(name)
 
@@ -192,7 +211,7 @@ vf.write_text(json.dumps(meta,indent=2)+"\n")
 (ROOT/"BUILD_VERSION.txt").write_text(
     "AFewBuds Cloud Test\n"
     "Game build: 0.7.9-beta.19\n"
-    "Cloud test: .12\n"
+    "Cloud test: .13\n"
     "Base runtime: FFDevelopment/afewbuds-beta index-accountsync10.pck\n"
     "Overlay: portraits, inventory, genetics/seeds, clickable approaches, grow-tent plant interaction\n"
 )
