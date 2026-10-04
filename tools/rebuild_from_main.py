@@ -7,9 +7,9 @@ if len(sys.argv) != 4:
 STABLE_PCK = Path(sys.argv[1])
 FEATURE_PCK = Path(sys.argv[2])
 ROOT = Path(sys.argv[3])
-OUT_PCK = ROOT / "index-cloudtest16.pck"
-RELEASE_ID = "0.7.9-beta.19-cloudtest.16"
-HUD_MARKER = "CLOUD TEST .16"
+OUT_PCK = ROOT / "index-cloudtest17.pck"
+RELEASE_ID = "0.7.9-beta.19-cloudtest.17"
+HUD_MARKER = "CLOUD TEST .17"
 
 def align(n, a=32):
     return (n + a - 1) // a * a
@@ -131,6 +131,15 @@ feature_main = feature_main.replace(
     '\t\t"workbench": _go_to_view("main_workbench")\n\t\t"locker": _go_to_view("main_workbench")\n\t\t"storage": _go_to_view("main_storage")',
     1
 )
+
+# Locker must also initialize inventory on demand.
+feature_main = feature_main.replace(
+    '\t\t"station_locker":\n\t\t\tif personal_inventory != null:\n\t\t\t\tpersonal_inventory.open_locker()',
+    '\t\t"station_locker":\n\t\t\tif personal_inventory == null:\n\t\t\t\t_init_personal_inventory_deferred()\n\t\t\tif personal_inventory != null:\n\t\t\t\tpersonal_inventory.open_locker()',
+    1
+)
+if '\t\t"station_locker":\n\t\t\tif personal_inventory == null:' not in feature_main:
+    raise SystemExit("locker lazy init patch failed")
 
 # BAG must work even if deferred inventory setup has not run yet.
 bag_pat = re.compile(r'^func _open_backpack_direct\(\) -> void:\n.*?(?=^func |\\Z)', re.M|re.S)
@@ -274,7 +283,7 @@ vf.write_text(json.dumps(meta,indent=2)+"\n")
 (ROOT/"BUILD_VERSION.txt").write_text(
     "AFewBuds Cloud Test\n"
     "Game build: 0.7.9-beta.19\n"
-    "Cloud test: .16\n"
+    "Cloud test: .17\n"
     "Base runtime: FFDevelopment/afewbuds-beta index-accountsync10.pck\n"
     "Overlay: portraits, inventory, genetics/seeds, clickable approaches, grow-tent plant interaction\n"
 )
