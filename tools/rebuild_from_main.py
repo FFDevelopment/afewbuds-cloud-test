@@ -7,9 +7,9 @@ if len(sys.argv) != 4:
 STABLE_PCK = Path(sys.argv[1])
 FEATURE_PCK = Path(sys.argv[2])
 ROOT = Path(sys.argv[3])
-OUT_PCK = ROOT / "index-cloudtest15.pck"
-RELEASE_ID = "0.7.9-beta.19-cloudtest.15"
-HUD_MARKER = "CLOUD TEST .15"
+OUT_PCK = ROOT / "index-cloudtest16.pck"
+RELEASE_ID = "0.7.9-beta.19-cloudtest.16"
+HUD_MARKER = "CLOUD TEST .16"
 
 def align(n, a=32):
     return (n + a - 1) // a * a
@@ -175,6 +175,23 @@ for name,(data,flags) in feature.items():
             text=data.decode("utf-8","replace").rstrip(" \n\0")
             text=text.replace('const InventorySlot = preload("res://scripts/inventory_slot.gd")\n','',1)
             text=text.replace("\t_build_backpack_button()\n","",1)
+            setup_pat = re.compile(r'^func setup\(game_node\) -> void:\n.*?(?=^func |\\Z)', re.M|re.S)
+            setup_match = setup_pat.search(text)
+            if not setup_match:
+                raise SystemExit("inventory setup function missing")
+            setup_func = '''func setup(game_node) -> void:
+\tgame = game_node
+\tinventory_root = Control.new()
+\tinventory_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+\tinventory_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+\tinventory_root.z_index = 350
+\tgame.hud.add_child(inventory_root)
+\t_build_backpack_panel()
+\t_build_locker_panel()
+\trefresh()
+
+'''
+            text=text[:setup_match.start()] + setup_func + text[setup_match.end():]
 
             grid_pat = re.compile(r'^func _add_grid\(parent: VBoxContainer, kind: String, slots: int\) -> void:\n.*?(?=^func |\\Z)', re.M|re.S)
             grid_match = grid_pat.search(text)
@@ -257,7 +274,7 @@ vf.write_text(json.dumps(meta,indent=2)+"\n")
 (ROOT/"BUILD_VERSION.txt").write_text(
     "AFewBuds Cloud Test\n"
     "Game build: 0.7.9-beta.19\n"
-    "Cloud test: .15\n"
+    "Cloud test: .16\n"
     "Base runtime: FFDevelopment/afewbuds-beta index-accountsync10.pck\n"
     "Overlay: portraits, inventory, genetics/seeds, clickable approaches, grow-tent plant interaction\n"
 )
@@ -271,3 +288,5 @@ print("MAIN STARTUP/SAVE/RESUME/LIFECYCLE restored from working main")
 print("Personal Inventory deferred until after main _ready completes")
 print("PROJECT.GODOT copied byte-for-byte from working main")
 print("Backpack/locker grids use plain Godot controls; no InventorySlot dependency")
+print("Inventory root mounted directly under fullscreen HUD")
+print("Locker initializes inventory on demand")
