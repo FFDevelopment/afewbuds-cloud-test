@@ -1,9 +1,9 @@
-name: Inspect cloudtest12 inventory integration
+name: Inspect cloudtest13 inventory integration
 on:
   push:
     branches: [main]
     paths:
-      - ".github/workflows/inspect-cloudtest12-inventory.yml"
+      - ".github/workflows/inspect-cloudtest13-inventory.yml"
   workflow_dispatch:
 
 jobs:
@@ -16,7 +16,7 @@ jobs:
         run: |
           from pathlib import Path
           import struct,re
-          p=Path("index-cloudtest12.pck")
+          p=Path("index-cloudtest13.pck")
           b=p.read_bytes(); fb=struct.unpack_from("<Q",b,24)[0]; do=struct.unpack_from("<Q",b,32)[0]
           n=struct.unpack_from("<I",b,do)[0]; pos=do+4; files={}
           for _ in range(n):
