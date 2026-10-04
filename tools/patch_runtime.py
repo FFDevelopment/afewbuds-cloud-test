@@ -2,9 +2,9 @@ from pathlib import Path
 import struct, hashlib, re, json
 
 SOURCE_PCK = Path("index-accountsync11.pck")
-VERSIONED_PCK = Path("index-cloudtest9.pck")
-RELEASE_ID = "0.7.9-beta.19-cloudtest.9"
-HUD_MARKER = "CLOUD TEST .9"
+VERSIONED_PCK = Path("index-cloudtest10.pck")
+RELEASE_ID = "0.7.9-beta.19-cloudtest.10"
+HUD_MARKER = "CLOUD TEST .10"
 
 def align(n, a=32):
     return (n + a - 1) // a * a
@@ -91,7 +91,7 @@ def patch_main(text):
 
     for old_marker in [
         "CLOUD TEST .3", "CLOUD TEST .4", "CLOUD TEST .5",
-        "CLOUD TEST .6", "CLOUD TEST .7", "CLOUD TEST .8"
+        "CLOUD TEST .6", "CLOUD TEST .7", "CLOUD TEST .8", "CLOUD TEST .9"
     ]:
         text = text.replace(old_marker, HUD_MARKER)
 
@@ -110,7 +110,7 @@ def patch_main(text):
 '''
         addition = marker + '''
 \tvar cloud_test_marker: Label = Label.new()
-\tcloud_test_marker.text = "CLOUD TEST .9"
+\tcloud_test_marker.text = "CLOUD TEST .10"
 \tcloud_test_marker.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 \tcloud_test_marker.offset_left = -210
 \tcloud_test_marker.offset_top = 18
@@ -214,8 +214,12 @@ for entry in entries:
         found_main = True
     elif name == "project.godot":
         text = content.decode("utf-8").rstrip(" \n\0")
-        text = text.replace("AFewBuds Beta v0.7.7.1-beta.1", "AFB Test v0.7.9-b19")
-        text = text.replace("0.7.7.1-beta.1", "0.7.9-beta.19")
+        # CRITICAL: keep the established application name exactly the same as
+        # afewbuds-beta. Godot user:// persistence depends on this identity.
+        text = re.sub(r'config/name="[^"]+"', 'config/name="AFewBuds Beta v0.7.7.1-beta.1"', text, count=1)
+        text = re.sub(r'config/version="[^"]+"', 'config/version="0.7.9-beta.19"', text, count=1)
+        if 'config/name="AFewBuds Beta v0.7.7.1-beta.1"' not in text:
+            raise SystemExit("project identity parity missing")
         entry[1] = text.encode()
 
 if not found_main:
@@ -249,3 +253,4 @@ print("rebuilt PCK bytes", len(rebuilt))
 print("mainPack", VERSIONED_PCK.name)
 print("release", RELEASE_ID)
 print("room/view persistence matches afewbuds-beta")
+print("project identity matches afewbuds-beta: AFewBuds Beta v0.7.7.1-beta.1")
