@@ -1,0 +1,78 @@
+name: Build cloudtest13 inventory fixes
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/build-cloudtest13.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/checkout@v4
+        with:
+          repository: FFDevelopment/afewbuds-beta
+          ref: main
+          path: stable
+      - name: Update main-based builder
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path("tools/rebuild_from_main.py")
+          s=p.read_text()
+          s=s.replace("index-cloudtest12.pck","index-cloudtest13.pck")
+          s=s.replace("0.7.9-beta.19-cloudtest.12","0.7.9-beta.19-cloudtest.13")
+          s=s.replace("CLOUD TEST .12","CLOUD TEST .13")
+          s=s.replace("Cloud test: .12","Cloud test: .13")
+
+          mark="feature_main = re.sub(r'CLOUD TEST \\.\\d+', HUD_MARKER, feature_main)\n"
+          add='''feature_main = feature_main.replace(
+              '\\t\\t"workbench": _go_to_view("main_workbench")\\n\\t\\t"storage": _go_to_view("main_storage")',
+              '\\t\\t"workbench": _go_to_view("main_workbench")\\n\\t\\t"locker": _go_to_view("main_workbench")\\n\\t\\t"storage": _go_to_view("main_storage")',
+              1
+          )
+          '''
+          s=s.replace(mark,mark+add,1)
+
+          old='''        out_map[name]=[data,flags]
+                  approved_added.append(name)
+          '''
+          new='''        if name == "scripts/personal_inventory.gd":
+                      text=data.decode("utf-8","replace").rstrip(" \\n\\0")
+                      text=text.replace("\\t_build_backpack_button()\\n","",1)
+                      text=text.replace(
+                          '\\t_add_grid(left,"backpack",BACKPACK_SLOTS)\\n',
+                          '\\t_add_grid(left,"backpack",BACKPACK_SLOTS)\\n\\tfor item in _items("backpack"):\\n\\t\\t_source_button(left,"MOVE %s -> LOCKER" % str(item.get("name","ITEM")),_inventory_drop.bind({"source":"backpack","item":item},"locker"))\\n',
+                          1
+                      )
+                      text=text.replace(
+                          '\\t_add_grid(right,"locker",LOCKER_SLOTS)\\n',
+                          '\\t_add_grid(right,"locker",LOCKER_SLOTS)\\n\\tfor item in _items("locker"):\\n\\t\\t_source_button(right,"MOVE %s -> BAG" % str(item.get("name","ITEM")),_inventory_drop.bind({"source":"locker","item":item},"backpack"))\\n',
+                          1
+                      )
+                      data=text.encode()
+                  out_map[name]=[data,flags]
+                  approved_added.append(name)
+          '''
+          if old not in s:
+              raise SystemExit("overlay block not found")
+          s=s.replace(old,new,1)
+
+          p.write_text(s)
+      - name: Rebuild from working main
+        run: python tools/rebuild_from_main.py stable/index-accountsync10.pck index-accountsync11.pck .
+      - name: Commit result
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tools/rebuild_from_main.py index-cloudtest13.pck index.html version.json BUILD_VERSION.txt
+          git commit -m "Publish cloudtest13 inventory fixes"
+          git push origin HEAD:main
