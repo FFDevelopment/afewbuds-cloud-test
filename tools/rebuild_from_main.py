@@ -7,9 +7,9 @@ if len(sys.argv) != 4:
 STABLE_PCK = Path(sys.argv[1])
 FEATURE_PCK = Path(sys.argv[2])
 ROOT = Path(sys.argv[3])
-OUT_PCK = ROOT / "index-cloudtest13.pck"
-RELEASE_ID = "0.7.9-beta.19-cloudtest.13"
-HUD_MARKER = "CLOUD TEST .13"
+OUT_PCK = ROOT / "index-cloudtest14.pck"
+RELEASE_ID = "0.7.9-beta.19-cloudtest.14"
+HUD_MARKER = "CLOUD TEST .14"
 
 def align(n, a=32):
     return (n + a - 1) // a * a
@@ -132,6 +132,22 @@ feature_main = feature_main.replace(
     1
 )
 
+# BAG must work even if deferred inventory setup has not run yet.
+bag_pat = re.compile(r'^func _open_backpack_direct\(\) -> void:\n.*?(?=^func |\\Z)', re.M|re.S)
+bag_match = bag_pat.search(feature_main)
+if not bag_match:
+    raise SystemExit("bag launcher missing")
+bag_func = '''func _open_backpack_direct() -> void:
+\tif personal_inventory == null:
+\t\t_init_personal_inventory_deferred()
+\tif personal_inventory != null and personal_inventory.has_method("toggle_backpack"):
+\t\tpersonal_inventory.call("toggle_backpack")
+\t\treturn
+\tstatus_label.text = "Backpack inventory is unavailable."
+
+'''
+feature_main = feature_main[:bag_match.start()] + bag_func + feature_main[bag_match.end():]
+
 # Verify exact-view resume survived the rebuild.
 required = [
     '"current_view": current_view',
@@ -211,7 +227,7 @@ vf.write_text(json.dumps(meta,indent=2)+"\n")
 (ROOT/"BUILD_VERSION.txt").write_text(
     "AFewBuds Cloud Test\n"
     "Game build: 0.7.9-beta.19\n"
-    "Cloud test: .13\n"
+    "Cloud test: .14\n"
     "Base runtime: FFDevelopment/afewbuds-beta index-accountsync10.pck\n"
     "Overlay: portraits, inventory, genetics/seeds, clickable approaches, grow-tent plant interaction\n"
 )
