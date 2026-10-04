@@ -30,7 +30,7 @@ jobs:
           def fn(text,name):
               m=re.search(r'^func '+re.escape(name)+r'\([^\n]*\)(?: -> [^:]+)?:\n.*?(?=^func |\Z)',text,re.M|re.S)
               return m.group(0).rstrip() if m else "<MISSING>"
-          for name in ["_ready","_init_personal_inventory_deferred","_open_backpack_direct","_nav","_context_action","_set_world_controls_visible","_any_modal_open"]:
+          for name in ["_ready","_init_personal_inventory_deferred","_open_backpack_direct","_build_ui","_nav","_context_action","_set_world_controls_visible","_any_modal_open"]:
               print("\n===== MAIN "+name+" =====")
               print(fn(main,name))
           for name in ["setup","toggle_backpack","close_backpack","open_locker","close_locker","refresh","_refresh_backpack","_refresh_locker","_inventory_drop"]:
