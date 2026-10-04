@@ -1,4 +1,4 @@
-name: Inspect cloudtest13 inventory integration
+name: Inspect cloudtest14 inventory integration
 on:
   push:
     branches: [main]
@@ -16,7 +16,7 @@ jobs:
         run: |
           from pathlib import Path
           import struct,re
-          p=Path("index-cloudtest13.pck")
+          p=Path("index-cloudtest14.pck")
           b=p.read_bytes(); fb=struct.unpack_from("<Q",b,24)[0]; do=struct.unpack_from("<Q",b,32)[0]
           n=struct.unpack_from("<I",b,do)[0]; pos=do+4; files={}
           for _ in range(n):
