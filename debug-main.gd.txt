@@ -602,6 +602,7 @@ var grow_panel: PanelContainer
 var grow_list: VBoxContainer
 var plant_direct_panel: PanelContainer
 var plant_direct_box: VBoxContainer
+var plant_direct_scroll: PhoneTouchScroll
 var selected_plant_slot: int = -1
 var active_tool_prop: Node3D
 var bagging_panel: PanelContainer
@@ -789,6 +790,9 @@ func _input(event: InputEvent) -> void:
 		_reset_world_pointer()
 		return
 	if phone_open and phone_scroll != null and phone_scroll.handle_pointer(event):
+		get_viewport().set_input_as_handled()
+		return
+	if plant_direct_panel != null and plant_direct_panel.visible and plant_direct_scroll != null and plant_direct_scroll.handle_pointer(event):
 		get_viewport().set_input_as_handled()
 		return
 	if _handle_station_list_pointer(event):
@@ -2350,9 +2354,6 @@ func _build_living_furniture() -> void:
 func _build_apartment_details() -> void:
 	_add_box("WindowFrame", Vector3(-3.62, 2.15, 5.86), Vector3(2.10, 1.55, 0.08), Color("e5e0d8"), 0.58)
 	living_window_glass = _add_box("WindowGlass", Vector3(-3.62, 2.15, 5.80), Vector3(1.80, 1.28, 0.035), Color("7192a4"), 0.14, true)
-	_add_box("WindowBuildingA", Vector3(-4.18, 1.85, 5.74), Vector3(0.34, 0.58, 0.022), Color("202a31"), 0.92)
-	_add_box("WindowBuildingB", Vector3(-3.65, 1.72, 5.74), Vector3(0.46, 0.84, 0.022), Color("263038"), 0.92)
-	_add_box("WindowBuildingC", Vector3(-3.05, 1.90, 5.74), Vector3(0.38, 0.48, 0.022), Color("1e282f"), 0.92)
 	window_sun_disc = _add_sphere("WindowSun", Vector3(-4.05, 2.48, 5.70), Vector3(0.12, 0.12, 0.035), Color("ffd58a"), 0.22)
 	_add_box("CurtainL", Vector3(-4.68, 2.08, 5.68), Vector3(0.32, 1.88, 0.10), Color("9f917e"), 0.94, false, "res://assets/textures/fabric_bluegray.png")
 	_add_box("CurtainR", Vector3(-2.56, 2.08, 5.68), Vector3(0.32, 1.88, 0.10), Color("9f917e"), 0.94, false, "res://assets/textures/fabric_bluegray.png")
@@ -2365,41 +2366,41 @@ func _build_apartment_details() -> void:
 	var kitchen_green: Color = Color("77d996")
 
 	# Lower cabinet carcass and dark stone worktop.
-	_add_box("KitchenBase", Vector3(2.18, 0.46, -3.54), Vector3(2.48, 0.84, 0.76), kitchen_black, 0.54, false, "res://assets/textures/matte_plastic.png", Vector3(2.0, 1.0, 1.0))
-	_add_box("KitchenToeKick", Vector3(2.18, 0.11, -3.46), Vector3(2.42, 0.16, 0.56), Color("101214"), 0.62, false, "res://assets/textures/matte_plastic.png")
-	_add_box("KitchenCounter", Vector3(2.18, 0.94, -3.52), Vector3(2.62, 0.12, 0.88), kitchen_stone, 0.38, false, "res://assets/textures/matte_plastic.png", Vector3(2.2, 1.0, 1.0))
-	_add_box("KitchenCounterLip", Vector3(2.18, 0.98, -3.08), Vector3(2.62, 0.07, 0.06), Color("333936"), 0.34)
+	_add_box("KitchenBase", Vector3(2.42, 0.46, -3.54), Vector3(2.48, 0.84, 0.76), kitchen_black, 0.54, false, "res://assets/textures/matte_plastic.png", Vector3(2.0, 1.0, 1.0))
+	_add_box("KitchenToeKick", Vector3(2.42, 0.11, -3.46), Vector3(2.42, 0.16, 0.56), Color("101214"), 0.62, false, "res://assets/textures/matte_plastic.png")
+	_add_box("KitchenCounter", Vector3(2.42, 0.94, -3.52), Vector3(2.62, 0.12, 0.88), kitchen_stone, 0.38, false, "res://assets/textures/matte_plastic.png", Vector3(2.2, 1.0, 1.0))
+	_add_box("KitchenCounterLip", Vector3(2.42, 0.98, -3.08), Vector3(2.62, 0.07, 0.06), Color("333936"), 0.34)
 
 	# Three lower cabinet faces with recessed brushed-metal pulls.
-	var lower_centers: Array[float] = [1.40, 2.18, 2.96]
+	var lower_centers: Array[float] = [1.64, 2.42, 3.20]
 	for lower_index: int in range(lower_centers.size()):
 		var lower_x: float = lower_centers[lower_index]
 		_add_box("KitchenLowerDoor%d" % lower_index, Vector3(lower_x, 0.48, -3.135), Vector3(0.72, 0.68, 0.045), kitchen_panel, 0.48, false, "res://assets/textures/matte_plastic.png")
 		_add_box("KitchenLowerHandle%d" % lower_index, Vector3(lower_x, 0.77, -3.105), Vector3(0.30, 0.055, 0.035), kitchen_steel, 0.22, false, "res://assets/textures/brushed_metal.png")
 
 	# Full-height dark stone backsplash.
-	_add_box("KitchenBacksplash", Vector3(2.18, 1.49, -3.935), Vector3(2.62, 0.98, 0.055), Color("252a29"), 0.42, false, "res://assets/textures/matte_plastic.png", Vector3(2.0, 1.0, 1.0))
+	_add_box("KitchenBacksplash", Vector3(2.42, 1.49, -3.935), Vector3(2.62, 0.98, 0.055), Color("252a29"), 0.42, false, "res://assets/textures/matte_plastic.png", Vector3(2.0, 1.0, 1.0))
 
 	# Matte-black upper cabinet bank with three doors.
-	_add_box("KitchenUpper", Vector3(2.18, 2.36, -3.72), Vector3(2.56, 0.94, 0.44), kitchen_black, 0.50, false, "res://assets/textures/matte_plastic.png", Vector3(2.0, 1.0, 1.0))
-	var upper_centers: Array[float] = [1.40, 2.18, 2.96]
+	_add_box("KitchenUpper", Vector3(2.42, 2.36, -3.72), Vector3(2.56, 0.94, 0.44), kitchen_black, 0.50, false, "res://assets/textures/matte_plastic.png", Vector3(2.0, 1.0, 1.0))
+	var upper_centers: Array[float] = [1.64, 2.42, 3.20]
 	for upper_index: int in range(upper_centers.size()):
 		var upper_x: float = upper_centers[upper_index]
 		_add_box("KitchenUpperDoor%d" % upper_index, Vector3(upper_x, 2.36, -3.485), Vector3(0.72, 0.82, 0.045), kitchen_panel, 0.46, false, "res://assets/textures/matte_plastic.png")
 		_add_box("KitchenUpperHandle%d" % upper_index, Vector3(upper_x, 2.02, -3.455), Vector3(0.30, 0.05, 0.035), kitchen_steel, 0.22, false, "res://assets/textures/brushed_metal.png")
 
 	# Subtle green under-cabinet task light.
-	_add_box("KitchenUnderCabinetGlow", Vector3(2.18, 1.85, -3.47), Vector3(2.28, 0.025, 0.025), kitchen_green, 0.10, true)
+	_add_box("KitchenUnderCabinetGlow", Vector3(2.42, 1.85, -3.47), Vector3(2.28, 0.025, 0.025), kitchen_green, 0.10, true)
 
 	# Stainless inset sink and black rim.
-	_add_box("SinkRim", Vector3(2.18, 0.995, -3.46), Vector3(0.98, 0.045, 0.56), Color("111416"), 0.26)
-	_add_box("SinkBasin", Vector3(2.18, 1.005, -3.46), Vector3(0.88, 0.055, 0.46), kitchen_steel, 0.16, false, "res://assets/textures/brushed_metal.png")
+	_add_box("SinkRim", Vector3(2.42, 0.995, -3.46), Vector3(0.98, 0.045, 0.56), Color("111416"), 0.26)
+	_add_box("SinkBasin", Vector3(2.42, 1.005, -3.46), Vector3(0.88, 0.055, 0.46), kitchen_steel, 0.16, false, "res://assets/textures/brushed_metal.png")
 
 	# Tall gooseneck-style faucet built from stainless segments.
-	_add_cylinder("FaucetStem", Vector3(2.18, 1.25, -3.79), 0.035, 0.035, 0.48, kitchen_steel, 0.18)
-	_add_cylinder("FaucetTop", Vector3(2.18, 1.48, -3.70), 0.035, 0.035, 0.20, kitchen_steel, 0.18, Vector3(PI / 2.0, 0, 0))
-	_add_cylinder("FaucetSpout", Vector3(2.18, 1.43, -3.60), 0.032, 0.032, 0.15, kitchen_steel, 0.18)
-	_add_cylinder("FaucetControl", Vector3(2.45, 1.15, -3.77), 0.028, 0.028, 0.18, kitchen_steel, 0.20)
+	_add_cylinder("FaucetStem", Vector3(2.42, 1.25, -3.79), 0.035, 0.035, 0.48, kitchen_steel, 0.18)
+	_add_cylinder("FaucetTop", Vector3(2.42, 1.48, -3.70), 0.035, 0.035, 0.20, kitchen_steel, 0.18, Vector3(PI / 2.0, 0, 0))
+	_add_cylinder("FaucetSpout", Vector3(2.42, 1.43, -3.60), 0.032, 0.032, 0.15, kitchen_steel, 0.18)
+	_add_cylinder("FaucetControl", Vector3(2.69, 1.15, -3.77), 0.028, 0.028, 0.18, kitchen_steel, 0.20)
 	_add_box("LockerBody", Vector3(4.52, 1.28, -2.20), Vector3(0.82, 2.56, 0.80), Color("24262c"), 0.38, false, "res://assets/textures/brushed_metal.png", Vector3(1.0, 2.0, 1.0))
 	_add_box("LockerInnerDoor", Vector3(4.13, 1.30, -2.20), Vector3(0.05, 2.28, 0.58), Color("1b1d22"), 0.42, false, "res://assets/textures/matte_plastic.png")
 	_add_box("LockerDoorFrameTop", Vector3(4.13, 2.48, -2.20), Vector3(0.05, 0.08, 0.64), Color("33363d"), 0.34)
@@ -3611,25 +3612,40 @@ func _build_direct_plant_panel() -> void:
 	plant_direct_panel.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	plant_direct_panel.offset_left = 22
 	plant_direct_panel.offset_right = -22
-	plant_direct_panel.offset_top = -392
+	plant_direct_panel.offset_top = -450
 	plant_direct_panel.offset_bottom = -82
 	plant_direct_panel.visible = false
 	plant_direct_panel.add_theme_stylebox_override("panel", _style_box(Color("11191f"), Color("40515b"), 18, 2))
 	hud.add_child(plant_direct_panel)
+
+	plant_direct_scroll = PhoneTouchScroll.new()
+	plant_direct_scroll.name = "plant_direct_scroll"
+	plant_direct_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	plant_direct_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	plant_direct_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	plant_direct_scroll.scroll_deadzone = 10
+	plant_direct_panel.add_child(plant_direct_scroll)
+
 	plant_direct_box = VBoxContainer.new()
+	plant_direct_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	plant_direct_box.add_theme_constant_override("separation", 8)
-	plant_direct_panel.add_child(plant_direct_box)
+	plant_direct_scroll.add_child(plant_direct_box)
 
 func _open_direct_plant(slot_index: int) -> void:
 	if slot_index < 0 or slot_index >= plant_slots.size():
 		return
 	selected_plant_slot = slot_index
+	if plant_direct_scroll != null:
+		plant_direct_scroll.cancel_touch()
+		plant_direct_scroll.scroll_vertical = 0
 	plant_direct_panel.visible = true
 	_set_world_controls_visible(false)
 	_refresh_direct_plant_panel()
 
 func _close_direct_plant() -> void:
 	plant_direct_panel.visible = false
+	if plant_direct_scroll != null:
+		plant_direct_scroll.cancel_touch()
 	selected_plant_slot = -1
 	_set_world_controls_visible(true)
 	status_label.text = "Tent overview. Tap a plant or empty pot directly to interact."
@@ -3663,8 +3679,17 @@ func _refresh_direct_plant_panel() -> void:
 		seed_row.add_theme_constant_override("h_separation", 7)
 		seed_row.add_theme_constant_override("v_separation", 7)
 		plant_direct_box.add_child(seed_row)
+		var owned_seed_names: Array[String] = []
+		for seed_name: String in SEED_ORDER:
+			if int(seed_inventory.get(seed_name, 0)) > 0:
+				owned_seed_names.append(seed_name)
+		for seed_variant: Variant in seed_inventory.keys():
+			var extra_seed_name: String = str(seed_variant)
+			if int(seed_inventory.get(extra_seed_name, 0)) > 0 and not owned_seed_names.has(extra_seed_name):
+				owned_seed_names.append(extra_seed_name)
+
 		var shown: int = 0
-		for seed_name in SEED_ORDER:
+		for seed_name: String in owned_seed_names:
 			var seed_count: int = int(seed_inventory.get(seed_name, 0))
 			if seed_count <= 0:
 				continue
@@ -3675,8 +3700,6 @@ func _refresh_direct_plant_panel() -> void:
 			seed_button.pressed.connect(_direct_plant_seed.bind(seed_name))
 			seed_row.add_child(seed_button)
 			shown += 1
-			if shown >= 3:
-				break
 		if shown == 0:
 			var none: Label = Label.new()
 			none.text = "No seeds owned. Buy unlocked seeds from the phone."
@@ -10914,7 +10937,7 @@ func _build_hidden_wall_stash_visual() -> void:
 		return
 	hidden_stash_interior_root = Node3D.new()
 	hidden_stash_interior_root.name = "HiddenWallStash"
-	hidden_stash_interior_root.position = StorageVault.ANCHOR + Vector3(-0.24, 0.0, 0.0)
+	hidden_stash_interior_root.position = StorageVault.ANCHOR + Vector3(-0.36, 0.0, 0.0)
 	hidden_stash_interior_root.rotation.y = StorageVault.FACING
 	add_child(hidden_stash_interior_root)
 
