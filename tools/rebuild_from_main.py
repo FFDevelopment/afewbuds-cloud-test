@@ -7,9 +7,9 @@ if len(sys.argv) != 4:
 STABLE_PCK = Path(sys.argv[1])
 FEATURE_PCK = Path(sys.argv[2])
 ROOT = Path(sys.argv[3])
-OUT_PCK = ROOT / "index-cloudtest17.pck"
-RELEASE_ID = "0.7.9-beta.19-cloudtest.17"
-HUD_MARKER = "CLOUD TEST .17"
+OUT_PCK = ROOT / "index-cloudtest18.pck"
+RELEASE_ID = "0.7.9-beta.19-cloudtest.18"
+HUD_MARKER = "CLOUD TEST .18"
 
 def align(n, a=32):
     return (n + a - 1) // a * a
@@ -94,8 +94,7 @@ feature_main = feature["scripts/main.gd"][0].decode("utf-8","replace").rstrip(" 
 # Start with the feature gameplay script so the approved cloud-test work is retained.
 # Then force save/resume/lifecycle primitives back to the exact working main runtime.
 stable_funcs = funcs(stable_main)
-stable_funcs["_ready"] = stable_funcs["_ready"] + '\n\tcall_deferred("_init_personal_inventory_deferred")'
-
+# Keep the working main _ready byte-for-byte. Personal Inventory is disabled for now.
 for name in [
     "_ready",
     "_capture_runtime_state",
@@ -109,20 +108,29 @@ for name in [
 ]:
     feature_main = replace_func(feature_main, stable_funcs, name)
 
-# Inventory initialization is isolated from the working main startup path.
-if 'func _init_personal_inventory_deferred() -> void:' not in feature_main:
-    helper = '''func _init_personal_inventory_deferred() -> void:
-\tif personal_inventory != null:
-\t\treturn
-\tpersonal_inventory = PersonalInventory.new()
-\tadd_child(personal_inventory)
-\tpersonal_inventory.setup(self)
+# Personal Inventory is intentionally disabled in cloudtest18.
+if 'func _init_personal_inventory_deferred() -> void:' in feature_main:
+    init_pat = re.compile(r'^func _init_personal_inventory_deferred\(\) -> void:\n.*?(?=^func |\\Z)', re.M|re.S)
+    init_match = init_pat.search(feature_main)
+    if init_match:
+        feature_main = feature_main[:init_match.start()] + 'func _init_personal_inventory_deferred() -> void:\n\treturn\n\n' + feature_main[init_match.end():]
 
-'''
-    marker = 'func _process(delta: float) -> void:\n'
-    if marker not in feature_main:
-        raise SystemExit("process marker missing for deferred inventory helper")
-    feature_main = feature_main.replace(marker, helper + marker, 1)
+# Remove unfinished BAG HUD shortcut for the temporary inventory rollback.
+bag_ui_pat = re.compile(
+    r'\n\tbackpack_quick_button = Button\.new\(\)\n.*?\n\thud\.move_child\(backpack_quick_button, hud\.get_child_count\(\) - 1\)\n',
+    re.S
+)
+feature_main = bag_ui_pat.sub('\n', feature_main, count=1)
+
+# Temporarily disable locker interaction. Keep the physical prop decorative.
+approach_pat = re.compile(r'^func _approach_station_then_open\(action_id: String\) -> bool:\n', re.M)
+if not approach_pat.search(feature_main):
+    raise SystemExit("approach function missing")
+feature_main = approach_pat.sub(
+    'func _approach_station_then_open(action_id: String) -> bool:\n\tif action_id == "station_locker":\n\t\tstatus_label.text = "Locker storage is disabled for now."\n\t\treturn true\n',
+    feature_main,
+    count=1
+)
 
 # Visible test marker only. Internal app/save identity comes from main's project.godot.
 feature_main = re.sub(r'CLOUD TEST \.\d+', HUD_MARKER, feature_main)
@@ -141,21 +149,12 @@ feature_main = feature_main.replace(
 if '\t\t"station_locker":\n\t\t\tif personal_inventory == null:' not in feature_main:
     raise SystemExit("locker lazy init patch failed")
 
-# BAG must work even if deferred inventory setup has not run yet.
+# Personal Inventory/BAG is temporarily disabled.
 bag_pat = re.compile(r'^func _open_backpack_direct\(\) -> void:\n.*?(?=^func |\\Z)', re.M|re.S)
 bag_match = bag_pat.search(feature_main)
-if not bag_match:
-    raise SystemExit("bag launcher missing")
-bag_func = '''func _open_backpack_direct() -> void:
-\tif personal_inventory == null:
-\t\t_init_personal_inventory_deferred()
-\tif personal_inventory != null and personal_inventory.has_method("toggle_backpack"):
-\t\tpersonal_inventory.call("toggle_backpack")
-\t\treturn
-\tstatus_label.text = "Backpack inventory is unavailable."
-
-'''
-feature_main = feature_main[:bag_match.start()] + bag_func + feature_main[bag_match.end():]
+if bag_match:
+    bag_func = 'func _open_backpack_direct() -> void:\n\tstatus_label.text = "Personal inventory is disabled for now."\n\n'
+    feature_main = feature_main[:bag_match.start()] + bag_func + feature_main[bag_match.end():]
 
 # Verify exact-view resume survived the rebuild.
 required = [
@@ -283,7 +282,7 @@ vf.write_text(json.dumps(meta,indent=2)+"\n")
 (ROOT/"BUILD_VERSION.txt").write_text(
     "AFewBuds Cloud Test\n"
     "Game build: 0.7.9-beta.19\n"
-    "Cloud test: .17\n"
+    "Cloud test: .18\n"
     "Base runtime: FFDevelopment/afewbuds-beta index-accountsync10.pck\n"
     "Overlay: portraits, inventory, genetics/seeds, clickable approaches, grow-tent plant interaction\n"
 )
@@ -294,8 +293,5 @@ print("APPROVED ADDED FILES", len(approved_added))
 for name in sorted(approved_added):
     print("+", name)
 print("MAIN STARTUP/SAVE/RESUME/LIFECYCLE restored from working main")
-print("Personal Inventory deferred until after main _ready completes")
 print("PROJECT.GODOT copied byte-for-byte from working main")
-print("Backpack/locker grids use plain Godot controls; no InventorySlot dependency")
-print("Inventory root mounted directly under fullscreen HUD")
-print("Locker initializes inventory on demand")
+print("Personal Inventory/BAG/locker usage disabled for cloudtest18")
