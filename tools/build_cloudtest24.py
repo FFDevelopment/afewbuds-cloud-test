@@ -380,3 +380,5 @@ meta["dealer_storage_pause_fix"]="Dealer Storage hides and releases input during
 VERSION.write_text(json.dumps(meta,indent=2)+"\n")
 
 print("Built",RELEASE,len(packed))
+
+# finalized cloudtest50 deployment marker
