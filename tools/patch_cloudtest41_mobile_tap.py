@@ -1,2 +1,2 @@
-# cloudtest49 retry trigger
+# cloudtest50 build trigger
 import build_cloudtest24
