@@ -41,6 +41,7 @@ for i,line in enumerate(main.splitlines(),1):
     if any(k in low for k in ["dealer_","dealer ","locker","personal_inventory","production_worker","storage_level","storage_capacity"]):
         if i < 1200 or "func " in line or "const " in line or "var " in line:
             out.append(f"{i}: {line}")
+out+=["===== STORAGE VAULT SCRIPT =====", found.get("scripts/storage_vault.gd","<MISSING>"), ""]
 Path("debug-dealer-audit.txt").write_text("\n".join(out)+"\n")
 print("found",sorted(found))
 
@@ -49,3 +50,5 @@ print("found",sorted(found))
 # inspect cloudtest53 scale runtime
 
 # inspect storage vault anchor for cloudtest54
+
+# capture storage vault script in audit
