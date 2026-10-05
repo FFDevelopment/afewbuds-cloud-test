@@ -5,8 +5,8 @@ PCK=Path("index-cloudtest10.pck")
 HTML=Path("index.html")
 VERSION=Path("version.json")
 BUILD=Path("BUILD_VERSION.txt")
-RELEASE="0.7.9-beta.19-cloudtest.62"
-PACK_URL="index-cloudtest10.pck?build=62"
+RELEASE="0.7.9-beta.19-cloudtest.63"
+PACK_URL="index-cloudtest10.pck?build=63"
 
 def align(n,a=32): return (n+a-1)//a*a
 
@@ -486,7 +486,7 @@ meta["chapter4_milestones"]="Apartment at Capacity; Distribution Network; Crew O
 meta["chapter4_story"]="Rod sends one-time progression texts as the apartment operation outgrows its space"
 meta["chapter4_finale"]="Completing Chapter 4 persistently unlocks the first property opportunity for the upcoming house system"
 meta["expansion_lane"]="New Advancements lane appears only after Chapter 3 is complete"
-meta["runtime_payload"]="cloudtest62 PCK with complete Chapter 4 storyline/milestones and property-offer handoff state"
+meta["runtime_payload"]="cloudtest63 PCK with complete Chapter 4 storyline/milestones and property-offer handoff state"
 VERSION.write_text(json.dumps(meta,indent=2)+"\n")
 
 BUILD.write_text(
