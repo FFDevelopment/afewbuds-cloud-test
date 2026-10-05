@@ -1,2 +1,2 @@
-# cloudtest48 build trigger
+# cloudtest48 rebuild trigger
 import build_cloudtest24
