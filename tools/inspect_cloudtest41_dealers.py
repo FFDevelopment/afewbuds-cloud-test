@@ -56,3 +56,5 @@ print("found",sorted(found))
 # inspect cloudtest54 for room layout and kitchen55
 
 # inspect cloudtest55 kitchen for cloudtest56 frame clearance
+
+# inspect cloudtest58 advancement/story runtime for progression overhaul
