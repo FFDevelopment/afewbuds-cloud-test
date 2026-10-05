@@ -7,7 +7,7 @@ fb=struct.unpack_from("<Q",b,24)[0]
 do=struct.unpack_from("<Q",b,32)[0]
 n=struct.unpack_from("<I",b,do)[0]
 p=do+4
-wanted={"scripts/main.gd","scripts/personal_inventory.gd","scripts/touch_scroll.gd"}
+wanted={"scripts/main.gd","scripts/personal_inventory.gd","scripts/touch_scroll.gd","scripts/storage_vault.gd"}
 found={}
 for _ in range(n):
     q=struct.unpack_from("<I",b,p)[0]; p+=4
@@ -47,3 +47,5 @@ print("found",sorted(found))
 # trigger inspector
 # inspect cloudtest51 layout runtime
 # inspect cloudtest53 scale runtime
+
+# inspect storage vault anchor for cloudtest54
