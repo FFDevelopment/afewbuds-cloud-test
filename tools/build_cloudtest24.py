@@ -141,3 +141,5 @@ BUILD.write_text(
 )
 
 print("Built",RELEASE,len(packed))
+
+# finalized cloudtest58 deployment marker
