@@ -177,25 +177,11 @@
     return data.save_json;
   }
 
-  async function reportLeaderboard(player){
-    const a=api();
-    if(!a || !a.enabled || !player || !player.session_token) return false;
-    try{
-      await a.rpc('afb_leaderboard_report',{p_session_token:player.session_token});
-      return true;
-    }catch(error){
-      // Leaderboard reporting must never block or invalidate a successful career save.
-      console.warn('AFB leaderboard report skipped:',error&&error.message||error);
-      return false;
-    }
-  }
-
   async function putCloud(player,save){
     const a=api();
     if(!a || !a.enabled || !player || !player.session_token) throw new Error('cloud_account_unavailable');
     await a.rpc('afb_set_save',{p_session_token:player.session_token,p_save_json:save});
     setMarker(save,player);
-    await reportLeaderboard(player);
     return true;
   }
 
