@@ -1,0 +1,41 @@
+name: Inspect cloudtest23 phone navigation
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/inspect-cloudtest23-phone.yml"
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect packed phone functions
+        shell: python
+        run: |
+          from pathlib import Path
+          import struct,re
+          b=Path("index-cloudtest23.pck").read_bytes()
+          fb=struct.unpack_from("<Q",b,24)[0]; do=struct.unpack_from("<Q",b,32)[0]
+          n=struct.unpack_from("<I",b,do)[0]; p=do+4; main=""
+          for _ in range(n):
+              q=struct.unpack_from("<I",b,p)[0]; p+=4
+              name=b[p:p+q].rstrip(b"\0").decode(); p+=q
+              off=struct.unpack_from("<Q",b,p)[0]; p+=8
+              size=struct.unpack_from("<Q",b,p)[0]; p+=8
+              p+=20
+              if name=="scripts/main.gd":
+                  main=b[fb+off:fb+off+size].decode("utf-8","replace").rstrip(" \n\0")
+                  break
+          def fn(name):
+              m=re.search(r'^func '+re.escape(name)+r'\([^\n]*\)(?: -> [^:]+)?:\n.*?(?=^func |\Z)',main,re.M|re.S)
+              return m.group(0).rstrip() if m else "<MISSING>"
+          for name in ["_build_phone_panel","_refresh_phone","_phone_home","_phone_back","_phone_nav","_set_phone_page","_phone_button","_phone_menu_button"]:
+              print("\n===== "+name+" =====")
+              print(fn(name))
+          print("\n===== PHONE REFERENCES =====")
+          for i,line in enumerate(main.splitlines(),1):
+              if any(k in line for k in ["phone_page","phone_stack","Phone","Rewards","Genetics","Clients","Heat","Stats","Help","System","Storage","Business","Lights","Shop"]):
+                  if 2500 <= i <= 5200:
+                      print(i,line)
