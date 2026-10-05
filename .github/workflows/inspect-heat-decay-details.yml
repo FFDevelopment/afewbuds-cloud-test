@@ -1,0 +1,35 @@
+name: Inspect heat decay details
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/inspect-heat-decay-details.yml"
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect heat math and away persistence
+        shell: python
+        run: |
+          from pathlib import Path
+          import struct
+          b=Path("index-cloudtest10.pck").read_bytes()
+          fb=struct.unpack_from("<Q",b,24)[0]; do=struct.unpack_from("<Q",b,32)[0]
+          n=struct.unpack_from("<I",b,do)[0]; p=do+4; main=""
+          for _ in range(n):
+              q=struct.unpack_from("<I",b,p)[0]; p+=4
+              name=b[p:p+q].rstrip(b"\0").decode(); p+=q
+              off=struct.unpack_from("<Q",b,p)[0]; p+=8
+              size=struct.unpack_from("<Q",b,p)[0]; p+=8
+              p+=20
+              if name=="scripts/main.gd":
+                  main=b[fb+off:fb+off+size].decode("utf-8","replace").rstrip(" \n\0")
+                  break
+          for i,line in enumerate(main.splitlines(),1):
+              low=line.lower()
+              if ("heat =" in low or "heat -" in low or "heat +" in low or "away_started_unix" in low or
+                  '"heat"' in low or '"away_started' in low or "session_paused" in low and "data" in low):
+                  print(i,line)
