@@ -204,3 +204,5 @@ meta["grow_tent_slot_chain"]="Tent Slot 1 -> Slot 2 -> Slot 3"
 VERSION.write_text(json.dumps(meta,indent=2)+"\n")
 
 print("Built",RELEASE,"PCK bytes",len(packed))
+
+# finalized cloudtest46 deployment marker
