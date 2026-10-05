@@ -207,9 +207,11 @@ meta["release_id"]=RELEASE
 meta["storefront_control_location"]="BudShop top"
 meta["phone_home"]="BudShop, Task, Settings"
 meta["task_page"]="Chapter progress, Rewards"
-meta["visible_dev_wording"]="removed"\nmeta["paused_heat_decay"]="100 Heat over 72 real minutes"\nmeta["paused_lay_low_progress"]="1 Reeves quiet day per 24 real minutes while Lay Low is active"
+meta["visible_dev_wording"]="removed"
+meta["paused_heat_decay"]="100 Heat over 72 real minutes"
+meta["paused_lay_low_progress"]="1 Reeves quiet day per 24 real minutes while Lay Low is active"
 v.write_text(json.dumps(meta,indent=2)+"\n")
 
 print("Built",RELEASE)
-print("Removed Reeves fictional wording")
-print("Removed Rewards developer intro")
+print("Paused Heat decays 100 points over 72 real minutes")
+print("Lay Low pause time counts toward Reeves quiet days")
