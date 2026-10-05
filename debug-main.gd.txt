@@ -10,6 +10,7 @@ const GrowSupplyShelf = preload("res://scripts/grow_supply_shelf.gd")
 const RoomSurfaces = preload("res://scripts/room_surfaces.gd")
 const PersonalInventory = preload("res://scripts/personal_inventory.gd")
 const VAULT_SUPPLY: String = "AFB Storage Vault"
+const HIDDEN_STASH_SUPPLY: String = "Hidden Wall Stash"
 
 const APP_LOGO: Texture2D = preload("res://assets/branding/afb_logo.png")
 
@@ -98,6 +99,11 @@ var lifetime_revenue: int = 0
 var bagging_level: int = 1
 var storage_level: int = 1
 var storage_vault: StorageVault
+var hidden_stash_frame_pivot: Node3D
+var hidden_stash_interior_root: Node3D
+var hidden_stash_frame_open: bool = false
+var hidden_stash_frame_tween: Tween
+var hidden_stash_art_texture: Texture2D
 var storage_world_label: Label3D
 var personal_inventory: Node
 var personal_weed: Dictionary = {}
@@ -134,6 +140,7 @@ var production_worker_route_destination: Vector3 = Vector3.ZERO
 var production_worker_route_valid: bool = false
 var production_worker_friend_name: String = ""
 var friend_staff_roles: Dictionary = {}
+var friend_dealer_stats: Dictionary = {}
 var dealer_count: int = 0
 var dealers_active: bool = false
 var dealer_sales_today: int = 0
@@ -167,6 +174,7 @@ var reeves_payment_level: int = 0
 var reeves_relationship: int = 0
 var reeves_total_paid: int = 0
 var reeves_quiet_days: int = 0
+var reeves_quiet_pause_seconds: float = 0.0
 var reeves_visit_pending: bool = false
 var reeves_visit_reason: String = ""
 var enforcement_risk: float = 0.0
@@ -370,7 +378,7 @@ var advancement_catalog: Array[Dictionary] = [
 	{"id": "heat_watched", "category": "Heat", "tier": 3, "title": "People Are Watching", "description": "Reach 50 Heat and unlock the pressure-contact storyline.", "state": "heat_peak", "target": 50, "reward_cash": 0, "reward_xp": 140, "reward_rep": 6},
 	{"id": "heat_pressure", "category": "Heat", "tier": 3, "title": "Pressure Building", "description": "Experience 2 Heat pressure events.", "metric": "pressure_events", "target": 2, "reward_cash": 0, "reward_xp": 120, "reward_rep": 5},
 	{"id": "heat_lay_low", "category": "Heat", "tier": 3, "title": "Lay Low", "description": "Reduce 15 total Heat through downtime or contacts.", "state": "heat_reduced", "target": 15, "reward_cash": 0, "reward_xp": 130, "reward_rep": 5},
-	{"id": "heat_contact", "category": "Heat", "tier": 3, "title": "Make the Call", "description": "Use the fictional Reeves contact once to reduce Heat.", "metric": "contact_calls", "target": 1, "reward_cash": 0, "reward_xp": 100, "reward_rep": 3},
+	{"id": "heat_contact", "category": "Heat", "tier": 3, "title": "Make the Call", "description": "Use the Reeves contact once to reduce Heat.", "metric": "contact_calls", "target": 1, "reward_cash": 0, "reward_xp": 100, "reward_rep": 3},
 	{"id": "reeves_meeting", "category": "Heat", "tier": 3, "title": "Talk It Out", "description": "Meet Agent Reeves at the door for the first time.", "metric": "reeves_meetings", "target": 1, "reward_cash": 0, "reward_xp": 120, "reward_rep": 4},
 	{"id": "reeves_deal", "category": "Heat", "tier": 3, "title": "Make a Deal", "description": "Agree to Reeves's recurring protection arrangement.", "metric": "reeves_arrangements", "target": 1, "reward_cash": 0, "reward_xp": 150, "reward_rep": 5},
 	{"id": "reeves_payments", "category": "Heat", "tier": 4, "title": "Keep Your End", "description": "Make 3 on-time Reeves payments.", "metric": "reeves_payments", "target": 3, "reward_cash": 0, "reward_xp": 180, "reward_rep": 6},
@@ -398,6 +406,13 @@ var business_open: bool = true
 var away_message: String = "Be back in a few hours - away from the house."
 var paused_listing_snapshot: Dictionary = {}
 var last_customer_broadcast: String = ""
+var phone_text_messages: Array[Dictionary] = []
+var phone_text_unread: int = 0
+var critical_staff_event_active: bool = false
+var dealer_arrested: bool = false
+var dealer_bail_due: int = 0
+var production_worker_arrested: bool = false
+var production_worker_bail_due: int = 0
 var product_launch_seen: Dictionary = {}
 var hype_visits_remaining: int = 0
 var hype_product_name: String = ""
@@ -480,6 +495,7 @@ var supply_catalog: Dictionary = {
 	"Tent Upgrade II": {"unlock": 3, "cost": 320, "description": "Improve output from all installed grow tents."},
 	"Storage Shelving III": {"unlock": 5, "cost": 650, "description": "Expand storage to 160g with a second shelving bank."},
 	"AFB Storage Vault": {"unlock": 7, "cost": 1800, "description": "Replace all storage shelves with the AFB steel-and-green vault. 400g TOTAL sellable storage. Requires Storage Shelving III. Existing stock, reservations and listings stay unchanged."},
+	"Hidden Wall Stash": {"unlock": 9, "cost": 3250, "description": "Replace the 400g vault with a framed concealed wall stash. 1000g TOTAL sellable storage. Federal raids cannot find stored product. Requires the AFB Storage Vault."},
 	"Grow Tent Slot 3": {"unlock": 6, "cost": 1050, "description": "Install a third grow tent in Grow Room expansion bay 3 and add another 3 plant slots."},
 	"Auto Water Kit": {"unlock": 4, "cost": 420, "description": "Keeps thirsty plants from drying out. This is equipment, not an employee."}
 }
@@ -672,9 +688,6 @@ func _ready() -> void:
 	_build_world()
 	_apply_visual_upgrades()
 	_build_ui()
-	personal_inventory = PersonalInventory.new()
-	add_child(personal_inventory)
-	personal_inventory.setup(self)
 	get_viewport().size_changed.connect(_reset_world_pointer)
 	_build_audio_players()
 	_update_day_night_visuals()
@@ -702,6 +715,13 @@ func _ready() -> void:
 		_schedule_next_customer()
 		_check_reeves_trigger()
 		_maybe_start_reeves_visit()
+
+func _init_personal_inventory_deferred() -> void:
+	if personal_inventory != null:
+		return
+	personal_inventory = PersonalInventory.new()
+	add_child(personal_inventory)
+	personal_inventory.setup(self)
 
 func _process(delta: float) -> void:
 	_refresh_door_alert()
@@ -944,6 +964,9 @@ func _direct_station_view(action_id: String) -> String:
 	return ""
 
 func _approach_station_then_open(action_id: String) -> bool:
+	if action_id == "station_locker":
+		status_label.text = "Locker storage is unavailable for now."
+		return true
 	var target_view: String = _direct_station_view(action_id)
 	if target_view.is_empty() or not views.has(target_view):
 		return false
@@ -1145,7 +1168,7 @@ func _prepare_daily_report(closing_day: int) -> void:
 	if daily_report_pending:
 		return
 	var dealer_wages: int = 0
-	if _total_dealer_count() > 0 and dealers_active:
+	if _total_dealer_count() > 0 and (dealers_active or dealer_sales_today > 0):
 		dealer_wages = _total_dealer_count() * DEALER_DAILY_WAGE
 	var dealer_gross: int = dealer_cash_held
 	var dealer_commission: int = dealer_commission_held
@@ -1155,6 +1178,7 @@ func _prepare_daily_report(closing_day: int) -> void:
 	var total_cost: int = recorded_expenses + power_cost + dealer_commission + dealer_wages
 	var operating_profit: int = gross_revenue - total_cost
 	var dealer_net: int = dealer_gross - dealer_commission - dealer_wages
+	var friend_dealer_report: Array[Dictionary] = _friend_dealer_daily_report(dealer_wages > 0)
 	daily_report_data = {
 		"day": closing_day,
 		"next_day": closing_day + 1,
@@ -1170,7 +1194,8 @@ func _prepare_daily_report(closing_day: int) -> void:
 		"profit": operating_profit,
 		"dealer_count": _total_dealer_count(),
 		"personal_sales": int(advancement_stats.get("sales", 0)),
-		"dealer_sales_count": dealer_sales_today
+		"dealer_sales_count": dealer_sales_today,
+		"friend_dealers": friend_dealer_report
 	}
 	daily_report_pending = true
 	_hide_learning_panels()
@@ -1185,6 +1210,7 @@ func _prepare_daily_report(closing_day: int) -> void:
 	daily_sales_by_product = {}
 	daily_expenses_by_category = {}
 	dealer_sales_today = 0
+	_reset_friend_dealer_daily_stats()
 	production_worker_tasks_today = 0
 	last_production_payroll_cost = 0
 	if visit_timer != null:
@@ -1302,7 +1328,11 @@ func _show_daily_report() -> void:
 			settlement_line = "Dealer cash collected: $%d\nCommission + wages: $%d\nCASH THEY HAND YOU AFTER PAY: $%d" % [dealer_gross, dealer_commission + dealer_wages, dealer_net]
 		else:
 			settlement_line = "Dealer cash collected: $%d\nCommission + wages: $%d\nYOU OWE THE CREW: $%d" % [dealer_gross, dealer_commission + dealer_wages, -dealer_net]
-	daily_report_body.text = "PRODUCT SOLD\n%s\n\nREVENUE / COSTS\nGross product revenue: $%d\n%s\n\nTotal operating cost: $%d\nDAY PROFIT: $%d\n\n%s\n\nPower charges are posted to Utilities and can be paid from the Business app." % [_daily_report_sales_text(report), gross, _daily_report_expense_text(report), total_cost, profit, settlement_line]
+	var friend_section: String = ""
+	var friend_text: String = _daily_report_friend_dealers_text(report)
+	if not friend_text.is_empty():
+		friend_section = "\n\nFRIEND DEALERS\n%s" % friend_text
+	daily_report_body.text = "PRODUCT SOLD\n%s\n\nREVENUE / COSTS\nGross product revenue: $%d\n%s\n\nTotal operating cost: $%d\nDAY PROFIT: $%d\n\n%s%s\n\nPower charges are posted to Utilities and can be paid from the Business app." % [_daily_report_sales_text(report), gross, _daily_report_expense_text(report), total_cost, profit, settlement_line, friend_section]
 	daily_report_action.text = ("SETTLE DEALERS  |  START DAY %d" % next_day) if dealer_count_report > 0 else ("START DAY %d" % next_day)
 	daily_report_panel.visible = true
 	_set_world_controls_visible(false)
@@ -1422,6 +1452,8 @@ func _add_heat(amount: float, cause: String, show_feedback: bool = false) -> voi
 		_trigger_heat_threshold_event(new_stage)
 	elif show_feedback and status_label != null:
 		status_label.text = "%s  |  Heat +%.1f (%s)." % [cause, heat - old_heat, _heat_stage_name()]
+	if heat >= 100.0 and not critical_staff_event_active:
+		_handle_critical_heat_staff()
 	_check_reeves_trigger()
 	if phone_open and phone_current_app in ["home", "heat", "business", "bills", "employees", "upgrades", "stats"]:
 		_refresh_phone()
@@ -1435,6 +1467,8 @@ func _reduce_heat(amount: float, reason: String, count_progress: bool = true) ->
 	if count_progress and reduced > 0.0:
 		heat_reduced_total += reduced
 	last_heat_cause = reason
+	if heat < 75.0:
+		critical_staff_event_active = false
 
 func _update_heat_over_time(elapsed_game_minutes: float) -> void:
 	if elapsed_game_minutes <= 0.0 or heat <= 0.0:
@@ -1468,7 +1502,7 @@ func _trigger_heat_threshold_event(stage: int) -> void:
 			message = "Foot traffic is getting noticed around the apartment."
 		2:
 			corrupt_contact_unlocked = true
-			message = "A fictional contact named Reeves says people have been asking questions nearby."
+			message = "Reeves says people have been asking questions nearby."
 		3:
 			message = "Attention around the operation is heavy. Some customers are getting nervous."
 		4:
@@ -1501,6 +1535,7 @@ func _roll_daily_heat_pressure_event() -> void:
 
 func _start_lay_low() -> void:
 	lay_low_active = true
+	reeves_quiet_pause_seconds = 0.0
 	if business_open:
 		_set_business_away()
 	main_ceiling_light_on = false
@@ -1515,6 +1550,7 @@ func _start_lay_low() -> void:
 
 func _stop_lay_low_and_reopen() -> void:
 	lay_low_active = false
+	reeves_quiet_pause_seconds = 0.0
 	if not business_open:
 		_reopen_business()
 	status_label.text = "AFewBuds is active again. Keep an eye on Heat as business picks back up."
@@ -2813,6 +2849,7 @@ func _update_plant_visual(slot_index: int) -> void:
 func _build_ui() -> void:
 	hud = Control.new()
 	hud.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	hud.position = Vector2(0, -12)
 	add_child(hud)
 
 	var top_bar: PanelContainer = PanelContainer.new()
@@ -2863,8 +2900,8 @@ func _build_ui() -> void:
 
 	view_label = Label.new()
 	view_label.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	view_label.offset_top = 92
-	view_label.offset_bottom = 126
+	view_label.offset_top = 103
+	view_label.offset_bottom = 137
 	view_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	view_label.add_theme_font_size_override("font_size", 18)
 	hud.add_child(view_label)
@@ -2912,35 +2949,7 @@ func _build_ui() -> void:
 	forward_button.visible = false
 	hud.add_child(forward_button)
 
-	backpack_quick_button = Button.new()
-	backpack_quick_button.text = "BAG"
-	backpack_quick_button.tooltip_text = "Open backpack"
-	backpack_quick_button.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	backpack_quick_button.offset_left = -118
-	backpack_quick_button.offset_top = -118
-	backpack_quick_button.offset_right = -18
-	backpack_quick_button.offset_bottom = -18
-	backpack_quick_button.custom_minimum_size = Vector2(100, 100)
-	backpack_quick_button.z_index = 250
-	backpack_quick_button.add_theme_font_size_override("font_size", 18)
-	backpack_quick_button.add_theme_stylebox_override("normal", _style_box(Color("183221"), Color("83c978"), 18, 3))
-	backpack_quick_button.add_theme_stylebox_override("hover", _style_box(Color("24472f"), Color("a0e292"), 18, 3))
-	backpack_quick_button.pressed.connect(_open_backpack_direct)
-	hud.add_child(backpack_quick_button)
-	hud.move_child(backpack_quick_button, hud.get_child_count() - 1)
 
-	var cloud_test_marker: Label = Label.new()
-	cloud_test_marker.text = "CLOUD TEST .3"
-	cloud_test_marker.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	cloud_test_marker.offset_left = -220
-	cloud_test_marker.offset_top = 18
-	cloud_test_marker.offset_right = -18
-	cloud_test_marker.offset_bottom = 58
-	cloud_test_marker.z_index = 300
-	cloud_test_marker.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	cloud_test_marker.add_theme_font_size_override("font_size", 20)
-	cloud_test_marker.modulate = Color("9fe892")
-	hud.add_child(cloud_test_marker)
 
 	door_quick_button = Button.new()
 	door_quick_button.text = "TURN TO DOOR"
@@ -3159,10 +3168,9 @@ func _build_phone_panel() -> void:
 	dock.add_theme_constant_override("separation", 12)
 	root.add_child(dock)
 	_add_phone_dock_button(dock, "HOME", "home")
-	_add_phone_dock_button(dock, "SHOP", "shop")
-	_add_phone_dock_button(dock, "STORAGE", "products")
-	_add_phone_dock_button(dock, "REWARDS", "advancements")
-	_add_phone_dock_button(dock, "HELP", "help")
+	_add_phone_dock_button(dock, "BUDSHOP", "budshop")
+	_add_phone_dock_button(dock, "TASK", "task")
+	_add_phone_dock_button(dock, "SETTINGS", "settings")
 
 func _add_phone_dock_button(dock: HBoxContainer, label_text: String, app_name: String) -> void:
 	var dock_button: Button = Button.new()
@@ -3682,7 +3690,7 @@ func _build_storage_panel() -> void:
 	storage_panel = _make_full_panel(34, 132, -34, -72)
 	var root: VBoxContainer = _panel_root(storage_panel, "STORAGE", _close_storage_panel)
 	var help: Label = Label.new()
-	help.text = "This is your sellable inventory. The phone storefront pulls its quantities directly from here. Buy larger shelves or the 400g AFB vault in Phone -> Business -> Upgrades. Swipe the product list to scroll."
+	help.text = "This is your sellable inventory. The phone storefront pulls directly from here. The 1000g Hidden Wall Stash replaces the vault and protects stored product during raids."
 	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	root.add_child(help)
 	storage_scroll = PhoneTouchScroll.new()
@@ -3699,7 +3707,6 @@ func _build_storage_panel() -> void:
 	leave_station.add_theme_font_size_override("font_size", 18)
 	leave_station.pressed.connect(_close_storage_panel)
 	root.add_child(leave_station)
-
 
 func _build_supply_inventory_panel() -> void:
 	supply_inventory_panel = _make_full_panel(34, 132, -34, -72)
@@ -4275,6 +4282,7 @@ func _nav(direction: String) -> void:
 		"grow_system": _go_to_view("grow_room_utility")
 		"grow_supply_shelf": _go_to_view("grow_room_upgrades")
 		"workbench": _go_to_view("main_workbench")
+		"locker": _go_to_view("main_workbench")
 		"storage": _go_to_view("main_storage")
 		"door": _go_to_view("main_door")
 
@@ -4426,7 +4434,7 @@ func _refresh_navigation_ui() -> void:
 			contextual_button.text = "APPROACH BAGGING STATION" if _facing_station_threshold() else "LOOK TOWARD BAGGING"
 			contextual_button.disabled = not _facing_station_threshold()
 		"main_storage":
-			contextual_button.text = ("APPROACH VAULT" if storage_level >= 4 else "APPROACH STORAGE") if _facing_station_threshold() else "LOOK TOWARD STORAGE"
+			contextual_button.text = ("APPROACH HIDDEN STASH" if storage_level >= 5 else ("APPROACH VAULT" if storage_level >= 4 else "APPROACH STORAGE")) if _facing_station_threshold() else "LOOK TOWARD STORAGE"
 			contextual_button.disabled = not _facing_station_threshold()
 		"main_door":
 			if _facing_station_threshold():
@@ -4474,7 +4482,7 @@ func _refresh_navigation_ui() -> void:
 			contextual_button.text = "USE BAGGING STATION"
 			contextual_button.disabled = false
 		"storage":
-			contextual_button.text = "OPEN VAULT  |  400g" if storage_level >= 4 else "OPEN STORAGE"
+			contextual_button.text = "OPEN HIDDEN STASH  |  1000g" if storage_level >= 5 else ("OPEN VAULT  |  400g" if storage_level >= 4 else "OPEN STORAGE")
 			contextual_button.disabled = false
 		"door":
 			if customer_waiting:
@@ -4794,6 +4802,19 @@ func _simulate_offline_plants(elapsed_seconds: float, worker_care: bool = false)
 		production_worker_last_action = production_worker_task
 		_reset_production_worker_navigation()
 
+func _apply_paused_heat_and_quiet_time(elapsed_seconds: float) -> void:
+	if elapsed_seconds <= 0.0:
+		return
+	var paused_heat_rate: float = 100.0 / (72.0 * 60.0)
+	_reduce_heat(paused_heat_rate * elapsed_seconds, "Heat cooled while paused", true)
+	if reeves_arrangement_active and lay_low_active and not business_open:
+		reeves_quiet_pause_seconds += elapsed_seconds
+		var quiet_day_seconds: float = 24.0 * 60.0
+		var earned_days: int = int(floor(reeves_quiet_pause_seconds / quiet_day_seconds))
+		if earned_days > 0:
+			reeves_quiet_days = mini(REEVES_QUIET_EXIT_DAYS, reeves_quiet_days + earned_days)
+			reeves_quiet_pause_seconds -= float(earned_days) * quiet_day_seconds
+
 func _plant_clock_snapshot() -> Dictionary:
 	var away: bool = away_started_unix > 0.0
 	return {
@@ -4813,6 +4834,8 @@ func _restore_plant_clock(data: Dictionary, now_unix: float = -1.0) -> void:
 		var clock: Dictionary = clock_value as Dictionary
 		var policy: int = int(clock.get("policy", 0))
 		var stamp: float = float(clock.get("snapshot_unix", now))
+		if is_finite(stamp) and stamp > 0.0:
+			_apply_paused_heat_and_quiet_time(maxf(0.0, now - stamp))
 		if policy in [1, 2] and bool(clock.get("enabled", false)) and _offline_crops_enabled() and is_finite(stamp) and stamp > 0.0:
 			var service: float = float(clock.get("worker_service_in", OfflinePlantCare.CARE_INTERVAL))
 			away_worker_next_service = OfflinePlantCare._next_service(service)
@@ -5379,6 +5402,79 @@ func _customer_by_name(customer_name: String) -> Dictionary:
 			return customer
 	return {}
 
+func _ensure_friend_dealer_stats(customer_name: String) -> Dictionary:
+	var stats: Dictionary = {}
+	if friend_dealer_stats.has(customer_name) and friend_dealer_stats[customer_name] is Dictionary:
+		stats = (friend_dealer_stats[customer_name] as Dictionary).duplicate(true)
+	for key: String in ["sales", "grams", "gross", "commission_earned", "wages_earned", "today_sales", "today_grams", "today_gross", "today_commission"]:
+		if not stats.has(key):
+			stats[key] = 0
+	friend_dealer_stats[customer_name] = stats
+	return stats
+
+func _active_dealer_roster() -> Array[String]:
+	var roster: Array[String] = []
+	for friend_name: String in _friend_staff_names("dealer"):
+		roster.append(friend_name)
+	for index: int in range(dealer_count):
+		roster.append("Hired Dealer %d" % (index + 1))
+	return roster
+
+func _record_friend_dealer_sale(customer_name: String, grams: int, gross: int, commission: int) -> void:
+	if customer_name.is_empty() or _friend_staff_role(customer_name) != "dealer":
+		return
+	var stats: Dictionary = _ensure_friend_dealer_stats(customer_name)
+	stats["sales"] = int(stats.get("sales", 0)) + 1
+	stats["grams"] = int(stats.get("grams", 0)) + grams
+	stats["gross"] = int(stats.get("gross", 0)) + gross
+	stats["commission_earned"] = int(stats.get("commission_earned", 0)) + commission
+	stats["today_sales"] = int(stats.get("today_sales", 0)) + 1
+	stats["today_grams"] = int(stats.get("today_grams", 0)) + grams
+	stats["today_gross"] = int(stats.get("today_gross", 0)) + gross
+	stats["today_commission"] = int(stats.get("today_commission", 0)) + commission
+	friend_dealer_stats[customer_name] = stats
+
+func _friend_dealer_daily_report(pay_wages: bool) -> Array[Dictionary]:
+	var rows: Array[Dictionary] = []
+	for friend_name: String in _friend_staff_names("dealer"):
+		var stats: Dictionary = _ensure_friend_dealer_stats(friend_name)
+		var wage: int = DEALER_DAILY_WAGE if pay_wages else 0
+		if wage > 0:
+			stats["wages_earned"] = int(stats.get("wages_earned", 0)) + wage
+			friend_dealer_stats[friend_name] = stats
+		rows.append({
+			"name": friend_name,
+			"sales": int(stats.get("today_sales", 0)),
+			"grams": int(stats.get("today_grams", 0)),
+			"gross": int(stats.get("today_gross", 0)),
+			"commission": int(stats.get("today_commission", 0)),
+			"wage": wage,
+			"total_pay": int(stats.get("today_commission", 0)) + wage
+		})
+	return rows
+
+func _reset_friend_dealer_daily_stats() -> void:
+	for name_variant: Variant in friend_dealer_stats.keys():
+		var friend_name: String = str(name_variant)
+		var stats: Dictionary = _ensure_friend_dealer_stats(friend_name)
+		stats["today_sales"] = 0
+		stats["today_grams"] = 0
+		stats["today_gross"] = 0
+		stats["today_commission"] = 0
+		friend_dealer_stats[friend_name] = stats
+
+func _daily_report_friend_dealers_text(report: Dictionary) -> String:
+	var rows_variant: Variant = report.get("friend_dealers", [])
+	if not (rows_variant is Array) or (rows_variant as Array).is_empty():
+		return ""
+	var lines: Array[String] = []
+	for row_variant: Variant in rows_variant as Array:
+		if not (row_variant is Dictionary):
+			continue
+		var row: Dictionary = row_variant as Dictionary
+		lines.append("%s  |  %d sale(s), %dg, $%d gross  |  Commission $%d + wage $%d = $%d pay" % [str(row.get("name", "Friend")), int(row.get("sales", 0)), int(row.get("grams", 0)), int(row.get("gross", 0)), int(row.get("commission", 0)), int(row.get("wage", 0)), int(row.get("total_pay", 0))])
+	return "\n".join(PackedStringArray(lines))
+
 func _friend_staff_role(customer_name: String) -> String:
 	return str(friend_staff_roles.get(customer_name, ""))
 
@@ -5555,11 +5651,16 @@ func _dealer_sell_one(show_feedback: bool) -> bool:
 	products[product_name] = product
 	var gross_revenue: int = qty * _effective_price(product_name)
 	var commission: int = int(ceil(float(gross_revenue) * DEALER_COMMISSION_RATE))
+	var dealer_roster: Array[String] = _active_dealer_roster()
+	var sale_dealer_name: String = ""
+	if not dealer_roster.is_empty():
+		sale_dealer_name = dealer_roster[dealer_sales_today % dealer_roster.size()]
 	dealer_cash_held += gross_revenue
 	dealer_commission_held += commission
 	lifetime_revenue += gross_revenue
 	_record_daily_sale(product_name, qty, gross_revenue, "dealer")
 	dealer_sales_today += 1
+	_record_friend_dealer_sale(sale_dealer_name, qty, gross_revenue, commission)
 	last_dealer_customer_name = str(chosen_customer.get("name", ""))
 	_increment_advancement_stat("dealer_sales")
 	_increment_advancement_stat("sales")
@@ -5755,7 +5856,10 @@ func _store_product(strain_name: String) -> void:
 	_schedule_next_customer(true)
 
 func _open_storage_panel() -> void:
-	if storage_vault != null and storage_level >= 4:
+	if storage_level >= 5:
+		_set_hidden_stash_open(true)
+		await get_tree().create_timer(0.28).timeout
+	elif storage_vault != null and storage_level >= 4:
 		storage_vault.turn_handle()
 	storage_panel.visible = true
 	_set_world_controls_visible(false)
@@ -5764,9 +5868,11 @@ func _open_storage_panel() -> void:
 func _close_storage_panel() -> void:
 	_cancel_phone_gesture()
 	storage_panel.visible = false
+	if storage_level >= 5:
+		_set_hidden_stash_open(false)
 	_go_to_view("main_storage")
 	_set_world_controls_visible(true)
-	status_label.text = "You step back from storage."
+	status_label.text = "You close the hidden stash." if storage_level >= 5 else "You step back from storage."
 
 func _open_supply_inventory_panel() -> void:
 	if supply_inventory_panel == null:
@@ -5855,7 +5961,7 @@ func _refresh_storage_panel() -> void:
 	_clear_station_list(storage_list)
 	_restore_station_list_scroll.call_deferred("storage", restore_y, storage_refresh_revision)
 	var capacity_header: Label = Label.new()
-	capacity_header.text = "%s   |   %dg / %dg stored\n%dg free" % ["AFB VAULT" if storage_level >= 4 else "STORAGE LEVEL %d" % storage_level, _total_stored_stock(), _storage_capacity(), maxi(0, _storage_capacity() - _total_stored_stock())]
+	capacity_header.text = "%s   |   %dg / %dg stored\n%dg free" % ["HIDDEN WALL STASH" if storage_level >= 5 else ("AFB VAULT" if storage_level >= 4 else "STORAGE LEVEL %d" % storage_level), _total_stored_stock(), _storage_capacity(), maxi(0, _storage_capacity() - _total_stored_stock())]
 	capacity_header.add_theme_font_size_override("font_size", 19)
 	capacity_header.modulate = Color("aeb9c0")
 	storage_list.add_child(capacity_header)
@@ -5940,6 +6046,8 @@ func _phone_parent_app(app_name: String) -> String:
 		return "shop"
 	if app_name in ["bills", "employees", "upgrades"]:
 		return "business"
+	if app_name == "account":
+		return "settings"
 	return "home"
 
 func _phone_go_back() -> void:
@@ -5952,6 +6060,8 @@ func _open_phone_app(app_name: String) -> void:
 	if app_name == "supplies":
 		_tutorial_record("supplies")
 	_refresh_phone()
+	if app_name == "leaderboard":
+		call_deferred("_open_web_leaderboard")
 	phone_scroll.scroll_vertical = 0
 	_refresh_tutorial_coach()
 
@@ -5973,8 +6083,26 @@ func _refresh_phone() -> void:
 	if phone_clock_label != null:
 		phone_clock_label.text = _format_game_clock()
 	match phone_current_app:
+		"budshop":
+			phone_title.text = "BudShop"
+			_build_budshop_app()
+		"texts":
+			phone_title.text = "Texts"
+			_build_texts_app()
+		"task":
+			phone_title.text = "Task"
+			_build_task_app()
+		"leaderboard":
+			phone_title.text = "Leaderboard"
+			_build_leaderboard_app()
+		"settings":
+			phone_title.text = "Settings"
+			_build_settings_app()
+		"account":
+			phone_title.text = "Account"
+			_build_account_app()
 		"shop":
-			phone_title.text = "Shop"
+			phone_title.text = "Store"
 			_build_shop_app()
 		"bills":
 			phone_title.text = "Bills"
@@ -5986,7 +6114,7 @@ func _refresh_phone() -> void:
 			phone_title.text = "Upgrades"
 			_build_upgrades_app()
 		"products":
-			phone_title.text = "Storage"
+			phone_title.text = "Your Supply"
 			_build_products_app()
 		"seeds":
 			phone_title.text = "Seeds"
@@ -6026,6 +6154,29 @@ func _refresh_phone() -> void:
 			_build_phone_home()
 	_restore_phone_scroll.call_deferred(restore_y, phone_current_app, phone_refresh_revision)
 
+func _build_leaderboard_app() -> void:
+	var intro: Label = Label.new()
+	intro.text = "GLOBAL LEADERBOARD"
+	intro.add_theme_font_size_override("font_size", 22)
+	phone_list.add_child(intro)
+	var detail: Label = Label.new()
+	detail.text = "Compare AFewBuds players by Lifetime or Weekly stats. Rankings are shown highest to lowest. Tap a player in the leaderboard to view their public career stats."
+	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	detail.modulate = Color("b8c5ca")
+	phone_list.add_child(detail)
+	var open_button: Button = Button.new()
+	open_button.text = "OPEN LEADERBOARD"
+	open_button.custom_minimum_size.y = 62
+	open_button.add_theme_font_size_override("font_size", 19)
+	open_button.pressed.connect(_open_web_leaderboard)
+	phone_list.add_child(open_button)
+
+func _open_web_leaderboard() -> void:
+	if not OS.has_feature("web"):
+		status_label.text = "Global leaderboard is available in the AFewBuds web/cloud build."
+		return
+	JavaScriptBridge.eval("window.AFB_LEADERBOARD && window.AFB_LEADERBOARD.open();", true)
+
 func _restore_phone_scroll(restore_y: int, app_name: String, revision: int) -> void:
 	await get_tree().process_frame
 	if revision != phone_refresh_revision or app_name != phone_current_app or phone_scroll.is_gesture_busy():
@@ -6037,6 +6188,78 @@ func _cancel_phone_gesture() -> void:
 		if scroll != null:
 			scroll.cancel_touch()
 
+func _build_budshop_app() -> void:
+	var business_card: PanelContainer = PanelContainer.new()
+	business_card.add_theme_stylebox_override("panel", _style_box(Color("152029"), Color("33434f"), 16, 1))
+	phone_list.add_child(business_card)
+	var business_box: VBoxContainer = VBoxContainer.new()
+	business_box.add_theme_constant_override("separation", 7)
+	business_card.add_child(business_box)
+	var business_state: Label = Label.new()
+	business_state.text = "STOREFRONT: %s   |   %s" % ["OPEN" if business_open else "AWAY / SALES PAUSED", _format_game_clock()]
+	business_state.add_theme_font_size_override("font_size", 19)
+	business_state.modulate = Color("8ed6a3") if business_open else Color("e1b07a")
+	business_box.add_child(business_state)
+	var away_copy: Label = Label.new()
+	away_copy.text = "Away text: \"%s\"" % away_message
+	away_copy.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	away_copy.modulate = Color("aeb9c0")
+	business_box.add_child(away_copy)
+	var availability_button: Button = Button.new()
+	availability_button.text = "REOPEN  |  RESTORE LISTINGS" if not business_open else "GO AWAY  |  UNLIST ALL  |  TEXT CLIENTS"
+	availability_button.custom_minimum_size.y = 58
+	if not business_open:
+		availability_button.pressed.connect(_reopen_business)
+	else:
+		availability_button.pressed.connect(_set_business_away)
+	business_box.add_child(availability_button)
+	if business_open:
+		var unlist_button: Button = Button.new()
+		unlist_button.text = "UNLIST ALL PRODUCTS"
+		unlist_button.custom_minimum_size.y = 54
+		unlist_button.pressed.connect(_unlist_all_products)
+		business_box.add_child(unlist_button)
+	else:
+		var resend_button: Button = Button.new()
+		resend_button.text = "RESEND AWAY TEXT TO KNOWN CLIENTS"
+		resend_button.custom_minimum_size.y = 54
+		resend_button.pressed.connect(_broadcast_away_message)
+		business_box.add_child(resend_button)
+	if not last_customer_broadcast.is_empty():
+		var last_text: Label = Label.new()
+		last_text.text = "Last client text: %s" % last_customer_broadcast
+		last_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		last_text.modulate = Color("8fa8b8")
+		business_box.add_child(last_text)
+	var intro: Label = Label.new()
+	intro.text = "Manage the shop, supplies, customers and business operations."
+	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	phone_list.add_child(intro)
+	var grid: GridContainer = _phone_category_grid()
+	_add_phone_app_tile(grid, "", "Lights", "Lamp, lights & ventilation", "lights")
+	_add_phone_app_tile(grid, "", "Store", "Supplies & seeds", "shop")
+	_add_phone_app_tile(grid, "", "Business", "Bills, employees & upgrades", "business")
+	_add_phone_app_tile(grid, "", "Your Supply", "Stock, prices & listings", "products")
+	_add_phone_app_tile(grid, "", "Genetics", "Create hybrid seeds", "genetics")
+	_add_phone_app_tile(grid, "", "Clients", "Customers & loyalty", "clients")
+	_add_phone_app_tile(grid, "", "Heat", "%s  |  %d/100" % [_heat_stage_name(), int(round(heat))], "heat")
+	_add_phone_app_tile(grid, "", "Stats", "Progress & revenue", "stats")
+
+func _build_settings_app() -> void:
+	var intro: Label = Label.new()
+	intro.text = "Help, account, saves and system controls."
+	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	phone_list.add_child(intro)
+	var grid: GridContainer = _phone_category_grid()
+	_add_phone_app_tile(grid, "", "Help", "Basics & controls", "help")
+	_add_phone_app_tile(grid, "", "Account", "Username, password, email & updates", "account")
+	_add_phone_app_tile(grid, "", "System", "Save game & safe quit", "system")
+
+func _build_task_app() -> void:
+	_build_story_progress_section()
+	var grid: GridContainer = _phone_category_grid()
+	_add_phone_app_tile(grid, "", "Rewards", "%d ready to claim" % _advancement_ready_count(), "advancements")
+
 func _build_phone_home() -> void:
 	var summary: Label = Label.new()
 	summary.text = "DAY %d  |  %s\n$%d cash   |   Level %d   |   Storefront %s" % [game_day, _format_game_clock(), cash, grower_level, "OPEN" if business_open else "AWAY"]
@@ -6044,17 +6267,39 @@ func _build_phone_home() -> void:
 	summary.add_theme_font_size_override("font_size", 21)
 	phone_list.add_child(summary)
 	var grid: GridContainer = _phone_category_grid()
-	_add_phone_app_tile(grid, "", "Lights", "Lamp, lights & ventilation", "lights")
-	_add_phone_app_tile(grid, "", "Shop", "Supplies & seeds", "shop")
-	_add_phone_app_tile(grid, "", "Storage", "Stock, prices & listings", "products")
-	_add_phone_app_tile(grid, "", "Business", "Bills, employees & upgrades", "business")
-	_add_phone_app_tile(grid, "", "Genetics", "Create hybrid seeds", "genetics")
-	_add_phone_app_tile(grid, "", "Clients", "Customers & loyalty", "clients")
-	_add_phone_app_tile(grid, "", "Rewards", "%d ready to claim" % _advancement_ready_count(), "advancements")
-	_add_phone_app_tile(grid, "", "Heat", "%s  |  %d/100" % [_heat_stage_name(), int(round(heat))], "heat")
-	_add_phone_app_tile(grid, "", "Stats", "Progress & revenue", "stats")
-	_add_phone_app_tile(grid, "", "System", "Save game & safe quit", "system")
-	_add_phone_app_tile(grid, "", "Help", "Basics & controls", "help")
+	_add_phone_app_tile(grid, "", "BudShop", "Store, business & operations", "budshop")
+	_add_phone_app_tile(grid, "", "Texts", ("%d unread" % phone_text_unread) if phone_text_unread > 0 else "Crew & story messages", "texts")
+	_add_phone_app_tile(grid, "", "Task", "Chapter progress & rewards", "task")
+	_add_phone_app_tile(grid, "", "Leaderboard", "Weekly & lifetime rankings", "leaderboard")
+	_add_phone_app_tile(grid, "", "Settings", "Help & system controls", "settings")
+
+func _build_account_app() -> void:
+	var title: Label = Label.new()
+	title.text = "AFewBuds Account"
+	title.add_theme_font_size_override("font_size", 22)
+	phone_list.add_child(title)
+	var detail: Label = Label.new()
+	detail.text = "Change your username to an available name, update your email and update-email preference, or change your password. Your career stays attached to the same account."
+	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	detail.modulate = Color("b8c5ca")
+	phone_list.add_child(detail)
+	var recovery: Label = Label.new()
+	recovery.text = "IMPORTANT: Add an email to your account so you can recover your password if you forget it."
+	recovery.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	recovery.modulate = Color("d8c99e")
+	phone_list.add_child(recovery)
+	var open_button: Button = Button.new()
+	open_button.text = "OPEN ACCOUNT SETTINGS"
+	open_button.custom_minimum_size.y = 62
+	open_button.add_theme_font_size_override("font_size", 19)
+	open_button.pressed.connect(_open_web_account_settings)
+	phone_list.add_child(open_button)
+
+func _open_web_account_settings() -> void:
+	if not OS.has_feature("web"):
+		status_label.text = "Account settings are available in the AFewBuds web/cloud build."
+		return
+	JavaScriptBridge.eval("window.AFB_ACCOUNT_SETTINGS && window.AFB_ACCOUNT_SETTINGS.open();", true)
 
 func _build_system_app() -> void:
 	var intro: Label = Label.new()
@@ -6164,52 +6409,10 @@ func _add_phone_app_tile(parent: GridContainer, icon_text: String, title_text: S
 
 func _build_products_app() -> void:
 	var intro: Label = Label.new()
-	intro.text = "Your phone storefront pulls directly from bagged inventory in storage. Customers can visit throughout the day. Traffic is lighter in the morning, normal in the afternoon, busiest in the evening, and quieter late at night. Use Away when you want uninterrupted production time."
+	intro.text = "Manage bagged inventory, storefront listings, prices and reserved stock here."
 	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	phone_list.add_child(intro)
 
-	var business_card: PanelContainer = PanelContainer.new()
-	business_card.add_theme_stylebox_override("panel", _style_box(Color("152029"), Color("33434f"), 16, 1))
-	phone_list.add_child(business_card)
-	var business_box: VBoxContainer = VBoxContainer.new()
-	business_box.add_theme_constant_override("separation", 7)
-	business_card.add_child(business_box)
-	var business_state: Label = Label.new()
-	business_state.text = "STOREFRONT: %s   |   %s" % ["OPEN" if business_open else "AWAY / SALES PAUSED", _format_game_clock()]
-	business_state.add_theme_font_size_override("font_size", 19)
-	business_state.modulate = Color("8ed6a3") if business_open else Color("e1b07a")
-	business_box.add_child(business_state)
-	var away_copy: Label = Label.new()
-	away_copy.text = "Away text: \"%s\"" % away_message
-	away_copy.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	away_copy.modulate = Color("aeb9c0")
-	business_box.add_child(away_copy)
-	var availability_button: Button = Button.new()
-	availability_button.text = "REOPEN  |  RESTORE LISTINGS" if not business_open else "GO AWAY  |  UNLIST ALL  |  TEXT CLIENTS"
-	availability_button.custom_minimum_size.y = 58
-	if not business_open:
-		availability_button.pressed.connect(_reopen_business)
-	else:
-		availability_button.pressed.connect(_set_business_away)
-	business_box.add_child(availability_button)
-	if business_open:
-		var unlist_button: Button = Button.new()
-		unlist_button.text = "UNLIST ALL PRODUCTS"
-		unlist_button.custom_minimum_size.y = 54
-		unlist_button.pressed.connect(_unlist_all_products)
-		business_box.add_child(unlist_button)
-	else:
-		var resend_button: Button = Button.new()
-		resend_button.text = "RESEND AWAY TEXT TO KNOWN CLIENTS"
-		resend_button.custom_minimum_size.y = 54
-		resend_button.pressed.connect(_broadcast_away_message)
-		business_box.add_child(resend_button)
-	if not last_customer_broadcast.is_empty():
-		var last_text: Label = Label.new()
-		last_text.text = "Last client text: %s" % last_customer_broadcast
-		last_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		last_text.modulate = Color("8fa8b8")
-		business_box.add_child(last_text)
 	for name_variant in products.keys():
 		var product_name: String = str(name_variant)
 		var data: Dictionary = products[product_name]
@@ -6371,6 +6574,9 @@ func _build_upgrades_app() -> void:
 		elif supply_name == VAULT_SUPPLY and storage_level < 3:
 			buy.text = "REQUIRES SHELVING III + LEVEL 7"
 			buy.disabled = true
+		elif supply_name == HIDDEN_STASH_SUPPLY and storage_level < 4:
+			buy.text = "REQUIRES AFB STORAGE VAULT"
+			buy.disabled = true
 		elif not unlocked:
 			buy.text = "LOCKED   |   LEVEL %d" % unlock_level
 			buy.disabled = true
@@ -6501,6 +6707,13 @@ func _build_employees_app() -> void:
 	dealer_detail.text = "Dealers: %d / %d  |  Status: %s\nDaily wage each: $%d  |  Commission: %d%%\nSales today: %d / %d\nCash held for nightly drop-off: $%d\nOutstanding dealer balance: $%d\nFriend dealers: %s\nEligible known clients: %s\nDealers only service known clients you personally sold to first. Dealer revenue is settled at the house at the end of the night." % [_total_dealer_count(), _dealer_capacity(), "WORKING" if dealers_active and _total_dealer_count() > 0 else "OFF DUTY", DEALER_DAILY_WAGE, int(DEALER_COMMISSION_RATE * 100.0), dealer_sales_today, _total_dealer_count() * DEALER_SALES_PER_DAY, dealer_cash_held, dealer_balance_due, dealer_staff_names, ", ".join(PackedStringArray(eligible_names)) if not eligible_names.is_empty() else "None yet"]
 	dealer_detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	dealer_box.add_child(dealer_detail)
+	for friend_dealer_name: String in friend_dealers:
+		var friend_stats: Dictionary = _ensure_friend_dealer_stats(friend_dealer_name)
+		var friend_line: Label = Label.new()
+		friend_line.text = "%s  |  Today: %d sales / %dg / $%d gross  |  Career: %d sales / %dg / $%d gross  |  Commission earned: $%d" % [friend_dealer_name, int(friend_stats.get("today_sales", 0)), int(friend_stats.get("today_grams", 0)), int(friend_stats.get("today_gross", 0)), int(friend_stats.get("sales", 0)), int(friend_stats.get("grams", 0)), int(friend_stats.get("gross", 0)), int(friend_stats.get("commission_earned", 0))]
+		friend_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		friend_line.modulate = Color("a8d389")
+		dealer_box.add_child(friend_line)
 
 	var hire_dealer: Button = Button.new()
 	hire_dealer.text = "HIRE DEALER  |  $%d" % _dealer_hire_cost()
@@ -6536,6 +6749,9 @@ func _build_employees_app() -> void:
 	phone_list.add_child(bills)
 
 func _hire_packing_employee() -> void:
+	if _staff_heat_locked():
+		status_label.text = "Nobody wants to start work while Heat is 75 or higher."
+		return
 	if packing_employee_hired or grower_level < 5 or cash < PACKER_HIRE_COST:
 		return
 	cash -= PACKER_HIRE_COST
@@ -6555,6 +6771,12 @@ func _hire_packing_employee() -> void:
 
 func _toggle_packing_employee() -> void:
 	if not packing_employee_hired:
+		return
+	if not packing_employee_active and production_worker_arrested:
+		status_label.text = "Your worker is still being held. Pay the bail from Texts first."
+		return
+	if not packing_employee_active and _staff_heat_locked():
+		status_label.text = "Your worker refuses to come back while Heat is 75 or higher."
 		return
 	packing_employee_active = not packing_employee_active
 	if not packing_employee_active:
@@ -6579,6 +6801,9 @@ func _toggle_production_worker_auto_plant() -> void:
 	_refresh_phone()
 
 func _fire_packing_employee() -> void:
+	if production_worker_arrested:
+		status_label.text = "Resolve the worker bail first."
+		return
 	if not packing_employee_hired:
 		return
 	if not production_worker_friend_name.is_empty():
@@ -6599,6 +6824,9 @@ func _fire_packing_employee() -> void:
 	_refresh_phone()
 
 func _hire_dealer() -> void:
+	if _staff_heat_locked():
+		status_label.text = "Nobody wants to start work while Heat is 75 or higher."
+		return
 	var capacity: int = _dealer_capacity()
 	var hire_cost: int = _dealer_hire_cost()
 	if capacity <= 0 or _total_dealer_count() >= capacity or cash < hire_cost:
@@ -6617,6 +6845,12 @@ func _hire_dealer() -> void:
 func _toggle_dealers() -> void:
 	if _total_dealer_count() <= 0:
 		return
+	if not dealers_active and dealer_arrested:
+		status_label.text = "One of your dealers is still being held. Pay the bail from Texts first."
+		return
+	if not dealers_active and _staff_heat_locked():
+		status_label.text = "Your dealers refuse to go back out while Heat is 75 or higher."
+		return
 	if dealer_balance_due > 0 and not dealers_active:
 		status_label.text = "Clear the $%d dealer balance before putting the team back on duty." % dealer_balance_due
 		return
@@ -6626,6 +6860,9 @@ func _toggle_dealers() -> void:
 	_refresh_phone()
 
 func _fire_generic_dealer() -> void:
+	if dealer_arrested:
+		status_label.text = "Resolve the dealer bail first."
+		return
 	if dealer_count <= 0:
 		return
 	dealer_count -= 1
@@ -6732,6 +6969,148 @@ func _build_clients_app() -> void:
 			text_button.pressed.connect(_text_known_customer.bind(str(customer.get("name", ""))))
 			box.add_child(text_button)
 
+func _staff_heat_locked() -> bool:
+	return heat >= 75.0
+
+func _push_phone_text(sender: String, body: String) -> void:
+	if sender.is_empty() or body.is_empty():
+		return
+	phone_text_messages.append({
+		"sender": sender,
+		"body": body,
+		"day": game_day,
+		"time": _format_game_clock(),
+		"read": false
+	})
+	while phone_text_messages.size() > 60:
+		phone_text_messages.pop_front()
+	phone_text_unread += 1
+	if phone_open and phone_current_app in ["home", "texts"]:
+		_refresh_phone()
+
+func _critical_dealer_sender() -> String:
+	var friend_dealers: Array[String] = _friend_staff_names("dealer")
+	if not friend_dealers.is_empty():
+		return friend_dealers[0]
+	return "Dealer Team"
+
+func _critical_production_sender() -> String:
+	return production_worker_friend_name if not production_worker_friend_name.is_empty() else "Production Worker"
+
+func _handle_critical_heat_staff() -> void:
+	if critical_staff_event_active or heat < 100.0:
+		return
+	critical_staff_event_active = true
+	var had_dealers: bool = dealers_active and _total_dealer_count() > 0
+	var had_production: bool = packing_employee_hired and packing_employee_active
+	if not had_dealers and not had_production:
+		return
+	var arrest_target: String = ""
+	if had_dealers and had_production:
+		arrest_target = "dealer" if rng.randf() < 0.5 else "production"
+	elif had_dealers:
+		arrest_target = "dealer"
+	else:
+		arrest_target = "production"
+	if had_dealers:
+		dealers_active = false
+		var dealer_sender: String = _critical_dealer_sender()
+		if arrest_target == "dealer":
+			dealer_arrested = true
+			dealer_bail_due = 750
+			_push_phone_text(dealer_sender, "I got picked up. Bail is $%d. I cannot go back to work until you send it, and I am staying home until the heat cools down." % dealer_bail_due)
+		else:
+			_push_phone_text(dealer_sender, "The heat is way too hot. We are heading home. Do not put us back out until things cool down.")
+	if had_production:
+		packing_employee_active = false
+		production_worker_pending_action = ""
+		production_worker_task = "Off duty"
+		production_worker_last_action = "Went home - Heat too high"
+		_reset_production_worker_navigation()
+		var worker_sender: String = _critical_production_sender()
+		if arrest_target == "production":
+			production_worker_arrested = true
+			production_worker_bail_due = 600
+			_push_phone_text(worker_sender, "I got picked up. Bail is $%d. I cannot come back to work until you send it, and I am staying off duty until the heat cools down." % production_worker_bail_due)
+		else:
+			_push_phone_text(worker_sender, "There is too much heat around the place. I am heading home. Call me back in when things cool down.")
+	status_label.text = "Heat hit 100. Your crew shut down. Check Texts."
+	_save_game()
+
+func _pay_dealer_bail() -> void:
+	if not dealer_arrested or dealer_bail_due <= 0:
+		return
+	if cash < dealer_bail_due:
+		status_label.text = "You need $%d for dealer bail." % dealer_bail_due
+		return
+	var amount: int = dealer_bail_due
+	cash -= amount
+	_record_daily_expense("Dealer bail", amount)
+	dealer_bail_due = 0
+	dealer_arrested = false
+	_push_phone_text(_critical_dealer_sender(), "I am out. Appreciate the bail. I am still staying home until the heat drops below 75.")
+	_update_cash_ui()
+	_save_game()
+	_refresh_phone()
+
+func _pay_production_bail() -> void:
+	if not production_worker_arrested or production_worker_bail_due <= 0:
+		return
+	if cash < production_worker_bail_due:
+		status_label.text = "You need $%d for production-worker bail." % production_worker_bail_due
+		return
+	var amount: int = production_worker_bail_due
+	cash -= amount
+	_record_daily_expense("Production worker bail", amount)
+	production_worker_bail_due = 0
+	production_worker_arrested = false
+	_push_phone_text(_critical_production_sender(), "I am out. Thanks for handling bail. I will come back once the heat drops below 75.")
+	_update_cash_ui()
+	_save_game()
+	_refresh_phone()
+
+func _build_texts_app() -> void:
+	if dealer_arrested and dealer_bail_due > 0:
+		var dealer_bail: Button = Button.new()
+		dealer_bail.text = "SEND DEALER BAIL  |  $%d" % dealer_bail_due
+		dealer_bail.disabled = cash < dealer_bail_due
+		dealer_bail.custom_minimum_size.y = 54
+		dealer_bail.pressed.connect(_pay_dealer_bail)
+		phone_list.add_child(dealer_bail)
+	if production_worker_arrested and production_worker_bail_due > 0:
+		var worker_bail: Button = Button.new()
+		worker_bail.text = "SEND WORKER BAIL  |  $%d" % production_worker_bail_due
+		worker_bail.disabled = cash < production_worker_bail_due
+		worker_bail.custom_minimum_size.y = 54
+		worker_bail.pressed.connect(_pay_production_bail)
+		phone_list.add_child(worker_bail)
+	if phone_text_messages.is_empty():
+		var empty: Label = Label.new()
+		empty.text = "No messages yet."
+		empty.modulate = Color("aeb9bf")
+		phone_list.add_child(empty)
+	else:
+		for index: int in range(phone_text_messages.size() - 1, -1, -1):
+			var msg: Dictionary = phone_text_messages[index]
+			var card: PanelContainer = PanelContainer.new()
+			card.add_theme_stylebox_override("panel", _style_box(Color("171d24"), Color("33434f"), 16, 1))
+			phone_list.add_child(card)
+			var box: VBoxContainer = VBoxContainer.new()
+			box.add_theme_constant_override("separation", 5)
+			card.add_child(box)
+			var header: Label = Label.new()
+			header.text = "%s   •   DAY %d  %s" % [str(msg.get("sender", "Unknown")), int(msg.get("day", game_day)), str(msg.get("time", ""))]
+			header.add_theme_font_size_override("font_size", 18)
+			header.modulate = Color("8ed6a3")
+			box.add_child(header)
+			var message: Label = Label.new()
+			message.text = str(msg.get("body", ""))
+			message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			box.add_child(message)
+	for i: int in range(phone_text_messages.size()):
+		phone_text_messages[i]["read"] = true
+	phone_text_unread = 0
+
 func _text_known_customer(customer_name: String) -> void:
 	if customer_name.is_empty() or not _story_first_regular_complete():
 		return
@@ -6744,6 +7123,9 @@ func _text_known_customer(customer_name: String) -> void:
 	_save_game()
 
 func _recruit_friend_staff(customer_name: String, role: String) -> void:
+	if _staff_heat_locked():
+		status_label.text = "Nobody wants to start work while Heat is 75 or higher."
+		return
 	var customer: Dictionary = _customer_by_name(customer_name)
 	if customer.is_empty() or not _friend_is_recruitable(customer):
 		return
@@ -6751,6 +7133,7 @@ func _recruit_friend_staff(customer_name: String, role: String) -> void:
 		if _dealer_capacity() <= 0 or _total_dealer_count() >= _dealer_capacity():
 			return
 		friend_staff_roles[customer_name] = "dealer"
+		_ensure_friend_dealer_stats(customer_name)
 		dealers_active = true
 	elif role == "production":
 		if grower_level < 5 or packing_employee_hired:
@@ -6775,6 +7158,10 @@ func _recruit_friend_staff(customer_name: String, role: String) -> void:
 	_save_game()
 
 func _release_friend_staff(customer_name: String) -> void:
+	var held_role: String = _friend_staff_role(customer_name)
+	if (held_role == "production" and production_worker_arrested) or (held_role == "dealer" and dealer_arrested):
+		status_label.text = "Resolve the bail before ending this staff role."
+		return
 	var role: String = _friend_staff_role(customer_name)
 	if role.is_empty():
 		return
@@ -7195,12 +7582,6 @@ func _build_story_progress_section() -> void:
 	story_box.add_child(objectives)
 
 func _build_advancements_app() -> void:
-	_build_story_progress_section()
-	var intro: Label = Label.new()
-	intro.text = "Build AFewBuds across eight career tracks. Heat now turns Chapter 3 into a live risk-management layer alongside loyalty, staff, sales and genetics."
-	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	phone_list.add_child(intro)
-
 	var summary_card: PanelContainer = PanelContainer.new()
 	summary_card.add_theme_stylebox_override("panel", _style_box(Color("111920"), Color("46545e"), 16, 1))
 	phone_list.add_child(summary_card)
@@ -7409,7 +7790,7 @@ func _debug_trigger_reeves() -> void:
 
 func _build_heat_app() -> void:
 	var intro: Label = Label.new()
-	intro.text = "Heat is an abstract game-pressure meter. Fast sales, dealers, customer traffic and complaints raise it. At higher Heat, Agent Reeves and enforcement-risk events become part of the story. Quiet time still lowers Heat."
+	intro.text = "Heat measures how much attention your operation is drawing. Fast sales, dealers, customer traffic and complaints raise it. Quiet time lowers it."
 	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	phone_list.add_child(intro)
 
@@ -7463,11 +7844,11 @@ Last change: %s" % [int(round(heat_peak)), int(floor(heat_reduced_total)), last_
 		contact_box.add_theme_constant_override("separation", 7)
 		contact_card.add_child(contact_box)
 		var contact_title: Label = Label.new()
-		contact_title.text = "FICTIONAL CONTACT  |  REEVES"
+		contact_title.text = "CONTACT  |  REEVES"
 		contact_title.add_theme_font_size_override("font_size", 20)
 		contact_box.add_child(contact_title)
 		var contact_copy: Label = Label.new()
-		contact_copy.text = "Before or between formal arrangements, Reeves can sometimes reduce story pressure for a one-off favor. The recurring arrangement begins through an in-person visit."
+		contact_copy.text = "Before or between formal arrangements, Reeves can sometimes reduce attention for a one-off favor. The recurring arrangement begins through an in-person visit."
 		contact_copy.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		contact_box.add_child(contact_copy)
 		var call_button: Button = Button.new()
@@ -7762,6 +8143,9 @@ func _buy_supply(supply_name: String) -> void:
 	if supply_name == VAULT_SUPPLY and storage_level < 3:
 		status_label.text = "Install Storage Shelving III before buying the vault."
 		return
+	if supply_name == HIDDEN_STASH_SUPPLY and storage_level < 4:
+		status_label.text = "Install the AFB Storage Vault before buying the Hidden Wall Stash."
+		return
 	if _supply_is_purchased(supply_name) and supply_name != "Fertilizer Pack":
 		return
 	cash -= cost
@@ -7780,6 +8164,8 @@ func _buy_supply(supply_name: String) -> void:
 			storage_level = maxi(storage_level, 3)
 		"AFB Storage Vault":
 			storage_level = 4
+		"Hidden Wall Stash":
+			storage_level = 5
 		"Grow Tent Slot 2":
 			grow_tent_count = maxi(grow_tent_count, 2)
 			_sync_grow_expansion_visuals()
@@ -7811,6 +8197,7 @@ func _supply_is_purchased(supply_name: String) -> bool:
 		"Storage Shelving II": return storage_level >= 2
 		"Storage Shelving III": return storage_level >= 3
 		"AFB Storage Vault": return storage_level >= 4
+		"Hidden Wall Stash": return storage_level >= 5
 		"Grow Tent Slot 2": return grow_tent_count >= 2
 		"Grow Room Ventilation": return ventilation_installed
 		"Grow Tent Slot 3": return grow_tent_count >= 3
@@ -7829,6 +8216,8 @@ func _effective_price(product_name: String) -> int:
 	return base_price + equipment_bonus + brand_bonus
 
 func _storage_capacity() -> int:
+	if storage_level >= 5:
+		return 1000
 	if storage_level >= 4:
 		return StorageVault.CAPACITY_GRAMS
 	if storage_level <= 1:
@@ -7971,6 +8360,7 @@ func _save_game() -> void:
 		"production_worker_last_action": production_worker_last_action,
 		"production_worker_friend_name": production_worker_friend_name,
 		"friend_staff_roles": friend_staff_roles,
+		"friend_dealer_stats": friend_dealer_stats,
 		"dealer_count": dealer_count,
 		"dealers_active": dealers_active,
 		"dealer_sales_today": dealer_sales_today,
@@ -8003,6 +8393,13 @@ func _save_game() -> void:
 		"away_message": away_message,
 		"paused_listing_snapshot": paused_listing_snapshot,
 		"last_customer_broadcast": last_customer_broadcast,
+		"phone_text_messages": phone_text_messages,
+		"phone_text_unread": phone_text_unread,
+		"critical_staff_event_active": critical_staff_event_active,
+		"dealer_arrested": dealer_arrested,
+		"dealer_bail_due": dealer_bail_due,
+		"production_worker_arrested": production_worker_arrested,
+		"production_worker_bail_due": production_worker_bail_due,
 		"product_launch_seen": product_launch_seen,
 		"hype_visits_remaining": hype_visits_remaining,
 		"hype_product_name": hype_product_name,
@@ -8035,6 +8432,7 @@ func _save_game() -> void:
 		"reeves_relationship": reeves_relationship,
 		"reeves_total_paid": reeves_total_paid,
 		"reeves_quiet_days": reeves_quiet_days,
+		"reeves_quiet_pause_seconds": reeves_quiet_pause_seconds,
 		"reeves_visit_pending": reeves_visit_pending,
 		"reeves_visit_reason": reeves_visit_reason,
 		"enforcement_risk": enforcement_risk,
@@ -8112,6 +8510,9 @@ func _load_game() -> void:
 	var loaded_friend_staff: Variant = data.get("friend_staff_roles", friend_staff_roles)
 	if loaded_friend_staff is Dictionary:
 		friend_staff_roles = loaded_friend_staff as Dictionary
+	var loaded_friend_dealer_stats: Variant = data.get("friend_dealer_stats", {})
+	if loaded_friend_dealer_stats is Dictionary:
+		friend_dealer_stats = (loaded_friend_dealer_stats as Dictionary).duplicate(true)
 	dealer_count = maxi(0, int(data.get("dealer_count", 1 if auto_sales_unlocked else 0)))
 	dealers_active = bool(data.get("dealers_active", _total_dealer_count() > 0))
 	dealer_sales_today = maxi(0, int(data.get("dealer_sales_today", 0)))
@@ -8161,6 +8562,18 @@ func _load_game() -> void:
 	if loaded_paused_listings is Dictionary:
 		paused_listing_snapshot = loaded_paused_listings as Dictionary
 	last_customer_broadcast = str(data.get("last_customer_broadcast", last_customer_broadcast))
+	var loaded_text_messages: Variant = data.get("phone_text_messages", [])
+	if loaded_text_messages is Array:
+		phone_text_messages.clear()
+		for msg_variant: Variant in loaded_text_messages:
+			if msg_variant is Dictionary:
+				phone_text_messages.append((msg_variant as Dictionary).duplicate(true))
+	phone_text_unread = maxi(0, int(data.get("phone_text_unread", phone_text_unread)))
+	critical_staff_event_active = bool(data.get("critical_staff_event_active", critical_staff_event_active))
+	dealer_arrested = bool(data.get("dealer_arrested", dealer_arrested))
+	dealer_bail_due = maxi(0, int(data.get("dealer_bail_due", dealer_bail_due)))
+	production_worker_arrested = bool(data.get("production_worker_arrested", production_worker_arrested))
+	production_worker_bail_due = maxi(0, int(data.get("production_worker_bail_due", production_worker_bail_due)))
 	var loaded_launch_seen: Variant = data.get("product_launch_seen", product_launch_seen)
 	if loaded_launch_seen is Dictionary:
 		product_launch_seen = loaded_launch_seen as Dictionary
@@ -8251,6 +8664,7 @@ func _load_game() -> void:
 		reeves_next_payment_day = 0
 		reeves_missed_payments = 0
 	reeves_quiet_days = maxi(0, int(data.get("reeves_quiet_days", reeves_quiet_days)))
+	reeves_quiet_pause_seconds = maxf(0.0, float(data.get("reeves_quiet_pause_seconds", 0.0)))
 	reeves_visit_pending = bool(data.get("reeves_visit_pending", reeves_visit_pending))
 	reeves_visit_reason = str(data.get("reeves_visit_reason", reeves_visit_reason))
 	enforcement_risk = clampf(float(data.get("enforcement_risk", enforcement_risk)), 0.0, 100.0)
@@ -8564,9 +8978,11 @@ func _end_reeves_visit() -> void:
 
 func _process_reeves_day_transition(closing_day: int) -> void:
 	if not business_open and dealer_sales_today <= 0 and heat <= 25.0:
-		reeves_quiet_days += 1
+		reeves_quiet_days = mini(REEVES_QUIET_EXIT_DAYS, reeves_quiet_days + 1)
+		reeves_quiet_pause_seconds = 0.0
 	else:
 		reeves_quiet_days = 0
+		reeves_quiet_pause_seconds = 0.0
 	if reeves_arrangement_active and _reeves_payment_overdue():
 		reeves_visit_pending = true
 		reeves_visit_reason = "payment_due"
@@ -8589,21 +9005,38 @@ func _roll_enforcement_raid() -> void:
 	_trigger_raid_event()
 
 func _trigger_raid_event() -> void:
-	var lost_units: int = 0
-	for product_variant in products.keys():
-		var product_name: String = str(product_variant)
-		var data: Dictionary = products[product_name]
-		var stock: int = int(data.get("stock", 0))
-		var loss: int = int(ceil(float(stock) * 0.25)) if stock > 0 else 0
-		data["stock"] = maxi(0, stock - loss)
-		data["reserved"] = mini(int(data.get("reserved", 0)), int(data.get("stock", 0)))
-		products[product_name] = data
-		lost_units += loss
+	var lost_plants: int = 0
+	for slot_index: int in range(plant_slots.size()):
+		if int(plant_slots[slot_index].get("stage", -1)) >= 0:
+			lost_plants += 1
+			plant_slots[slot_index] = _empty_plant_slot()
+	var lost_bench: int = _inventory_grams(untrimmed_inventory) + _inventory_grams(trimmed_inventory) + _inventory_grams(bagged_inventory)
+	untrimmed_inventory.clear()
+	trimmed_inventory.clear()
+	bagged_inventory.clear()
+	var lost_storage: int = 0
+	var protected_storage: int = 0
+	if storage_level >= 5:
+		protected_storage = _total_stored_stock()
+	else:
+		for product_variant in products.keys():
+			var product_name: String = str(product_variant)
+			var data: Dictionary = products[product_name]
+			var stock: int = int(data.get("stock", 0))
+			lost_storage += stock
+			data["stock"] = 0
+			data["reserved"] = 0
+			data["listed"] = false
+			products[product_name] = data
 	var seized_cash: int = mini(cash, 300 + int(round(heat)) * 8)
 	cash -= seized_cash
 	reputation = maxi(0, reputation - 10)
 	dealers_active = false
 	packing_employee_active = false
+	production_worker_pending_action = ""
+	production_worker_task = "Off duty"
+	production_worker_last_action = "Sent home after raid"
+	_reset_production_worker_navigation()
 	if business_open:
 		_set_business_away()
 	lay_low_active = true
@@ -8618,10 +9051,18 @@ func _trigger_raid_event() -> void:
 	reeves_next_payment_day = game_day + 2
 	reeves_payment_level += 1
 	raid_warning_day = -1
-	last_enforcement_report = "Day %d: Lost %dg inventory and $%d cash. Reputation -10. Dealers and production staff were sent off duty. Operation locked until Day %d." % [game_day, lost_units, seized_cash, raid_lockdown_until_day]
+	_update_all_plant_visuals()
+	_sync_packing_bench_visuals(true)
+	if storage_panel != null and storage_panel.visible:
+		_refresh_storage_panel()
+	var protected_note: String = ""
+	if protected_storage > 0:
+		protected_note = " Hidden Wall Stash protected %dg." % protected_storage
+	last_enforcement_report = "Day %d federal raid: %d growing plant(s), %dg from the packing bench, %dg exposed storage and $%d cash seized. Reputation -10. Operation locked until Day %d.%s" % [game_day, lost_plants, lost_bench, lost_storage, seized_cash, raid_lockdown_until_day, protected_note]
 	enforcement_report_pending = true
-	_log_heat_event("Raid-style enforcement event: %dg inventory and $%d cash lost. Operation closed until Day %d." % [lost_units, seized_cash, raid_lockdown_until_day])
-	status_label.text = "ENFORCEMENT EVENT - Lost %dg inventory and $%d. The operation is shut down until Day %d." % [lost_units, seized_cash, raid_lockdown_until_day]
+	_log_heat_event(last_enforcement_report)
+	_push_phone_text("AFB Alert", last_enforcement_report)
+	status_label.text = "FEDERAL RAID - Plants, bench stock and exposed storage were seized. Check the report."
 	_update_cash_ui()
 	_save_game()
 
@@ -9197,6 +9638,7 @@ func _install_lifecycle_hooks() -> void:
 	get_viewport().size_changed.connect(_cancel_phone_gesture)
 	if not OS.has_feature("web"):
 		return
+	# Keep the callback referenced for the entire lifetime of the browser page.
 	web_pause_callback = JavaScriptBridge.create_callback(_on_browser_pause)
 	web_touch_cancel_callback = JavaScriptBridge.create_callback(_on_browser_touch_cancel)
 	var browser: JavaScriptObject = JavaScriptBridge.get_interface("window")
@@ -9344,12 +9786,15 @@ func _pause_gameplay(reason: String = "Paused. Resume whenever you are ready.", 
 	if knock_player != null:
 		knock_player.stop()
 	if pause_overlay != null:
-		var crop_copy: String = "Existing crops still grow, use their water and applied fertilizer, and can lose health. Crops that finish alive wait for harvest. No on-duty worker is available to tend them."
+		var crop_copy: String = "Existing crops continue growing while you are away."
 		if away_worker_care_allowed:
-			crop_copy = "Your on-duty worker waters and fertilizes existing plants while away. Fertilizer uses your stored supply (%d left); watering continues if it runs out. No new seeds, harvesting or processing. Ready crops wait for you. Your day, sales, wages and story stay paused." % fertilizer_units
+			crop_copy = "Your worker keeps existing plants watered and fertilized."
 		if not away_growth_allowed:
-			crop_copy = "First-day lesson protected: plants and all timers remain frozen while you learn."
-		pause_message.text = "%s\n\n%s\n%s\nDay %d  |  %s" % [reason, crop_copy, _offline_plant_summary(), game_day, _format_game_clock()]
+			crop_copy = "First-day lesson active: plants stay frozen."
+		var heat_copy: String = "Heat cools slowly while paused."
+		if lay_low_active:
+			heat_copy = "Heat cools slowly. Lay Low time continues."
+		pause_message.text = "PAUSED\nDay %d  |  %s\n\nGameplay is frozen: visitors, sales, wages and story.\n\nWHILE AWAY\n%s\n%s" % [game_day, _format_game_clock(), crop_copy, heat_copy]
 		pause_overlay.visible = true
 	_refresh_tutorial_coach()
 	_save_game()
@@ -9359,6 +9804,9 @@ func _resume_gameplay() -> void:
 		return
 	if web_lifecycle != null and bool(web_lifecycle.hidden):
 		return
+	if away_started_unix > 0.0:
+		var paused_now: float = Time.get_unix_time_from_system()
+		_apply_paused_heat_and_quiet_time(maxf(0.0, paused_now - away_started_unix))
 	_settle_away_plants()
 	_update_all_plant_visuals()
 	_update_cash_ui()
@@ -9409,23 +9857,23 @@ func _capture_runtime_state() -> Dictionary:
 		"automation_tick_seconds": _timer_remaining(automation_timer),
 		"auto_sale_accumulator": auto_sale_accumulator,
 		"grow_save_accumulator": grow_save_accumulator,
-		"current_view": "grow_room_tent" if current_room == "grow" else "main_grow_door",
+		"current_view": current_view,
 		"current_room": current_room,
 		"sale_open": sale_panel != null and sale_panel.visible,
 		"phone_open": phone_open,
 		"phone_app": phone_current_app
 	}
 
-
 func _restore_runtime_state() -> void:
 	if restored_runtime.is_empty():
 		return
-	current_room = "grow" if str(restored_runtime.get("current_room", "main")) == "grow" else "main"
+	current_room = str(restored_runtime.get("current_room", "main"))
 	room_ring = grow_room_ring if current_room == "grow" else main_room_ring
-	_go_to_view("grow_room_tent" if current_room == "grow" else "main_grow_door", false)
-	room_target_yaw = 0.0
-	room_target_pitch = 0.0
-	camera.rotation = Vector3.ZERO
+	var saved_view: String = str(restored_runtime.get("current_view", "main_grow_door"))
+	if saved_view == "locker":
+		saved_view = "main_workbench"
+	if views.has(saved_view):
+		_go_to_view(saved_view, false)
 	var visitor: Variant = restored_runtime.get("customer", {})
 	var request: Variant = restored_runtime.get("request", {})
 	if visitor is Dictionary:
@@ -9445,6 +9893,9 @@ func _restore_runtime_state() -> void:
 	_restore_timer_remaining(grow_timer, "grow_tick_seconds")
 	_restore_timer_remaining(automation_timer, "automation_tick_seconds")
 
+	# Recover impossible/stale visitor sessions left by an interrupted sale or an
+	# older save. A customer that was answered but has no open sale and no active
+	# patience/exit timer must not permanently block all future visitors.
 	var restored_sale_open: bool = bool(restored_runtime.get("sale_open", false))
 	var restored_patience: float = float(restored_runtime.get("patience_seconds", -1.0))
 	var restored_exit: float = float(restored_runtime.get("exit_seconds", -1.0))
@@ -9462,6 +9913,7 @@ func _restore_runtime_state() -> void:
 		if customer_exit_timer != null:
 			customer_exit_timer.stop()
 
+	# A periodic timer's first restored interval must not change its normal cadence.
 	if grow_timer != null:
 		grow_timer.wait_time = 1.0
 	if automation_timer != null:
@@ -9473,6 +9925,9 @@ func _restore_runtime_state() -> void:
 		phone_panel.visible = true
 		phone_current_app = str(restored_runtime.get("phone_app", "home"))
 
+	# If the restored save has no active visitor and no restored visit timer,
+	# explicitly arm a new visit. _schedule_next_customer() still respects
+	# storefront closed/Lay Low, raid lockdown/simulation blocks, and listed stock.
 	if not customer_waiting and visit_timer != null and visit_timer.is_stopped() and not _simulation_blocked():
 		_schedule_next_customer(true)
 
@@ -9822,8 +10277,100 @@ func _cancel_station_drag() -> void:
 		bag_bud_token.position = bag_token_home
 
 
+func _get_hidden_stash_art_texture() -> Texture2D:
+	if hidden_stash_art_texture != null:
+		return hidden_stash_art_texture
+	var raw: PackedByteArray = Marshalls.base64_to_raw("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")
+	var source: Image = Image.new()
+	if source.load_webp_from_buffer(raw) != OK:
+		return null
+	var source_w: int = source.get_width()
+	var source_h: int = source.get_height()
+	if source_w <= 0 or source_h <= 0:
+		return null
+
+	# Crop to the colorful AFewBuds poster itself. The narrower width removes the lingering
+	# white mat on the right side while preserving the left/top/bottom composition.
+	var crop_x: int = clampi(int(round(float(source_w) * 0.285)), 0, source_w - 1)
+	var crop_y: int = clampi(int(round(float(source_h) * 0.135)), 0, source_h - 1)
+	var crop_w: int = clampi(int(round(float(source_w) * 0.445)), 1, source_w - crop_x)
+	var crop_h: int = clampi(int(round(float(source_h) * 0.468)), 1, source_h - crop_y)
+	var cropped: Image = source.get_region(Rect2i(crop_x, crop_y, crop_w, crop_h))
+	hidden_stash_art_texture = ImageTexture.create_from_image(cropped)
+	return hidden_stash_art_texture
+
+func _hidden_stash_box(parent: Node3D, part_name: String, pos: Vector3, size: Vector3, color: Color) -> MeshInstance3D:
+	var part: MeshInstance3D = MeshInstance3D.new()
+	part.name = part_name
+	var box: BoxMesh = BoxMesh.new()
+	box.size = size
+	var material: StandardMaterial3D = StandardMaterial3D.new()
+	material.albedo_color = color
+	material.roughness = 0.66
+	box.material = material
+	part.mesh = box
+	part.position = pos
+	parent.add_child(part)
+	return part
+
+func _build_hidden_wall_stash_visual() -> void:
+	if hidden_stash_interior_root != null:
+		return
+	hidden_stash_interior_root = Node3D.new()
+	hidden_stash_interior_root.name = "HiddenWallStash"
+	hidden_stash_interior_root.position = StorageVault.ANCHOR
+	hidden_stash_interior_root.rotation.y = StorageVault.FACING
+	add_child(hidden_stash_interior_root)
+
+	var center_y: float = 1.72
+	_hidden_stash_box(hidden_stash_interior_root, "HiddenStashBack", Vector3(0.0, center_y, -0.115), Vector3(1.46, 1.06, 0.055), Color("17191b"))
+	_hidden_stash_box(hidden_stash_interior_root, "HiddenStashTop", Vector3(0.0, center_y + 0.55, -0.015), Vector3(1.52, 0.065, 0.25), Color("3e342c"))
+	_hidden_stash_box(hidden_stash_interior_root, "HiddenStashBottom", Vector3(0.0, center_y - 0.55, -0.015), Vector3(1.52, 0.065, 0.25), Color("3e342c"))
+	_hidden_stash_box(hidden_stash_interior_root, "HiddenStashSideL", Vector3(-0.73, center_y, -0.015), Vector3(0.065, 1.06, 0.25), Color("3e342c"))
+	_hidden_stash_box(hidden_stash_interior_root, "HiddenStashSideR", Vector3(0.73, center_y, -0.015), Vector3(0.065, 1.06, 0.25), Color("3e342c"))
+	for shelf_y: float in [center_y - 0.18, center_y + 0.18]:
+		_hidden_stash_box(hidden_stash_interior_root, "HiddenStashShelf", Vector3(0.0, shelf_y, 0.0), Vector3(1.34, 0.045, 0.22), Color("765b43"))
+
+	hidden_stash_frame_pivot = Node3D.new()
+	hidden_stash_frame_pivot.name = "HiddenStashFramePivot"
+	hidden_stash_frame_pivot.position = Vector3(-0.86, center_y, 0.145)
+	hidden_stash_interior_root.add_child(hidden_stash_frame_pivot)
+	_hidden_stash_box(hidden_stash_frame_pivot, "HiddenStashFrame", Vector3(0.86, 0.0, 0.0), Vector3(1.72, 1.36, 0.055), Color("111315"))
+	_hidden_stash_box(hidden_stash_frame_pivot, "HiddenStashMat", Vector3(0.86, 0.0, 0.032), Vector3(1.66, 1.30, 0.015), Color("e8e3d7"))
+
+	# Use a textured quad instead of Sprite3D aspect-fit. This makes the approved AFewBuds art
+	# cover the full inner face instead of appearing as a small portrait centered on a large canvas.
+	var art_texture: Texture2D = _get_hidden_stash_art_texture()
+	if art_texture != null:
+		var art_mesh: MeshInstance3D = MeshInstance3D.new()
+		art_mesh.name = "HiddenStashArtwork"
+		var art_quad: QuadMesh = QuadMesh.new()
+		art_quad.size = Vector2(1.62, 1.26)
+		var art_material: StandardMaterial3D = StandardMaterial3D.new()
+		art_material.albedo_texture = art_texture
+		art_material.roughness = 0.58
+		art_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+		art_quad.material = art_material
+		art_mesh.mesh = art_quad
+		art_mesh.position = Vector3(0.86, 0.0, 0.047)
+		hidden_stash_frame_pivot.add_child(art_mesh)
+
+	hidden_stash_frame_pivot.rotation.y = 0.0
+	hidden_stash_frame_open = false
+
+func _set_hidden_stash_open(opened: bool) -> void:
+	if hidden_stash_frame_pivot == null:
+		return
+	if hidden_stash_frame_tween != null and hidden_stash_frame_tween.is_running():
+		hidden_stash_frame_tween.kill()
+	hidden_stash_frame_open = opened
+	var target_angle: float = deg_to_rad(-92.0) if opened else 0.0
+	hidden_stash_frame_tween = create_tween()
+	hidden_stash_frame_tween.tween_property(hidden_stash_frame_pivot, "rotation:y", target_angle, 0.32)
+
 func _sync_storage_furniture() -> void:
-	var show_vault: bool = storage_level >= 4
+	var show_hidden_stash: bool = storage_level >= 5
+	var show_vault: bool = storage_level >= 4 and not show_hidden_stash
 	if show_vault and storage_vault == null:
 		storage_vault = StorageVault.new()
 		storage_vault.name = "StorageVault"
@@ -9832,11 +10379,18 @@ func _sync_storage_furniture() -> void:
 		add_child(storage_vault)
 	if storage_vault != null:
 		storage_vault.visible = show_vault
+	if hidden_stash_interior_root == null:
+		_build_hidden_wall_stash_visual()
+	if hidden_stash_interior_root != null:
+		hidden_stash_interior_root.visible = show_hidden_stash
+		if not show_hidden_stash and hidden_stash_frame_pivot != null:
+			hidden_stash_frame_pivot.rotation.y = 0.0
+			hidden_stash_frame_open = false
 	var shelf_names: Array[String] = ["StorageBack", "ShelfPostL", "ShelfPostR", "Shelf0", "Shelf1", "Shelf2", "Shelf3", "StorageBinA", "StorageBinB", "StorageJarA", "StorageJarB", "StorageBagA", "StorageBagB", "StorageCaseC", "StorageUpgradeBin", "StorageShelfBank2", "StorageExtraShelf0", "StorageExtraShelf1", "StorageExtraShelf2", "StorageExtraShelf3", "StorageWorldLabel"]
 	for part_name: String in shelf_names:
 		var part: Node3D = get_node_or_null(part_name) as Node3D
 		if part != null:
-			part.visible = not show_vault
+			part.visible = not show_vault and not show_hidden_stash
 	if storage_world_label != null:
 		storage_world_label.text = "STORAGE   |   %dg CAP" % _storage_capacity()
 
