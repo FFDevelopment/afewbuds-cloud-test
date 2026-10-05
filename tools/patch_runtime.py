@@ -299,47 +299,5 @@ meta["runtime_hotfix"]="cloudtest38 repairs duplicated Account/leaderboard GDScr
 v.write_text(json.dumps(meta,indent=2)+"\n")
 
 print("Built",RELEASE)
-print("Added Stats > Global Leaderboard browser UI hook")
-print("Preserved account settings, password recovery shell and hidden stash refinements")
-,refresh_check.group(0),re.M)) != 1:
-        raise SystemExit("Account route must appear exactly once")
-
-    row[1]=text.encode()
-
-packed=rebuild(blob,fb,entries)
-TARGET.write_bytes(packed)
-
-idx=Path("index.html")
-html=idx.read_text()
-html=re.sub(r'const AFB_TEST_RELEASE = "[^"]+";',f'const AFB_TEST_RELEASE = "{RELEASE}";',html,count=1)
-html=re.sub(r'"fileSizes":\{[^}]*\}',f'"fileSizes":{{"{PACK_URL}":{len(packed)},"index.wasm":37902138}}',html,count=1)
-html=re.sub(r'"mainPack":"[^"]+"',f'"mainPack":"{PACK_URL}"',html,count=1)
-idx.write_text(html)
-
-v=Path("version.json")
-meta=json.loads(v.read_text())
-meta["release_id"]=RELEASE
-meta["storefront_control_location"]="BudShop top"
-meta["phone_home"]="BudShop, Task, Settings"
-meta["task_page"]="Chapter progress, Rewards"
-meta["visible_dev_wording"]="removed"
-meta["paused_heat_decay"]="100 Heat over 72 real minutes"
-meta["paused_lay_low_progress"]="1 Reeves quiet day per 24 real minutes while Lay Low is active"
-meta["texts_app"]="persistent crew and story inbox"
-meta["critical_heat_staff"]="100 Heat sends active crew home; one active role is arrested; return blocked at 75+ Heat"
-meta["pause_overlay"]="simplified"
-meta["hidden_wall_stash"]="$3250, 1000g sellable storage, replaces vault, raid-proof, animated frame"
-meta["raid_seizure"]="all growing plants, packing-bench product and exposed storage"
-meta["friend_dealer_accounting"]="individual sales/gross/commission plus end-of-day summary"
-meta["hidden_stash_visual"]="same stash geometry; tightened right-side texture crop so colorful AFewBuds art fills the inner face evenly"
-meta["account_settings"]="Settings > Account: username availability/change, email/update preference, password change; account id and cloud career preserved"
-meta["password_recovery_note"]="Account page explains that an email is required for forgotten-password recovery"
-meta["leaderboard"]="Global Lifetime + Weekly leaderboard under Stats; Top 5/Top 25, own rank, public career profiles"
-meta["leaderboard_metrics"]="revenue, sales, dealer sales, harvests, hybrids, raids survived, days played, career score"
-meta["leaderboard_privacy"]="public gameplay stats only; no email, passwords, sessions or raw saves"
-meta["weekly_reset"]="Monday 12:00 AM America/New_York"
-v.write_text(json.dumps(meta,indent=2)+"\n")
-
-print("Built",RELEASE)
-print("Added Stats > Global Leaderboard browser UI hook")
-print("Preserved account settings, password recovery shell and hidden stash refinements")
+print("Repaired duplicate Account/leaderboard handlers from cloudtest37")
+print("Made runtime patch idempotent for future publishes")
