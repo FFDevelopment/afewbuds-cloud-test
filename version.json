@@ -1,5 +1,5 @@
 {
-  "release_id": "0.7.9-beta.19-cloudtest.22",
+  "release_id": "0.7.9-beta.19-cloudtest.23",
   "game_build": "0.7.9-beta.19",
   "channel": "main-based-cloud-test",
   "updater": "network-only-no-service-worker",
@@ -7,5 +7,5 @@
   "inventory_status": "disabled-clean-rollback-from-cloudtest12",
   "hud_adjustment": "up-12px-from-cloudtest19",
   "visible_test_label": "removed",
-  "room_hint_adjustment": "down-6px-from-cloudtest21"
+  "room_hint_adjustment": "down-5px-from-cloudtest22"
 }
