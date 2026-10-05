@@ -1,9 +1,9 @@
 from pathlib import Path
 import struct, hashlib, re, json
 
-SRC=Path("index-cloudtest23.pck")
-OUT=Path("index-cloudtest24.pck")
-RELEASE="0.7.9-beta.19-cloudtest.24"
+SRC=Path("index-cloudtest24.pck")
+OUT=Path("index-cloudtest25.pck")
+RELEASE="0.7.9-beta.19-cloudtest.25"
 
 blob=SRC.read_bytes()
 fb=struct.unpack_from("<Q",blob,24)[0]
@@ -127,6 +127,40 @@ func _build_settings_app() -> void:
         raise SystemExit("old phone dock block missing")
     text=text.replace(old_dock,new_dock,1)
 
+    # Move storefront OPEN/AWAY controls from Your Supply to the top of BudShop.
+    prod_pat=re.compile(r'^func _build_products_app\\(\\) -> void:\\n.*?(?=^func |\\Z)',re.M|re.S)
+    pm=prod_pat.search(text)
+    if not pm:
+        raise SystemExit("Your Supply builder missing")
+    prod=pm.group(0)
+    a=prod.find("\\tvar business_card: PanelContainer = PanelContainer.new()")
+    z=prod.find("\\tfor name_variant in products.keys():")
+    if a < 0 or z < 0 or z <= a:
+        raise SystemExit("Storefront card missing from Your Supply")
+    storefront=prod[a:z]
+    prod=prod[:a]+prod[z:]
+    prod=prod.replace(
+        'intro.text = "Your phone storefront pulls directly from bagged inventory in storage. Customers can visit throughout the day. Traffic is lighter in the morning, normal in the afternoon, busiest in the evening, and quieter late at night. Use Away when you want uninterrupted production time."',
+        'intro.text = "Manage bagged inventory, storefront listings, prices and reserved stock here."',
+        1
+    )
+    text=text[:pm.start()]+prod.rstrip()+"\\n\\n"+text[pm.end():]
+
+    bud_pat=re.compile(r'^func _build_budshop_app\\(\\) -> void:\\n.*?(?=^func |\\Z)',re.M|re.S)
+    bm=bud_pat.search(text)
+    if not bm:
+        raise SystemExit("BudShop builder missing")
+    bud=bm.group(0)
+    bud=bud.replace('func _build_budshop_app() -> void:\\n','func _build_budshop_app() -> void:\\n'+storefront,1)
+    text=text[:bm.start()]+bud.rstrip()+"\\n\\n"+text[bm.end():]
+
+    bm=bud_pat.search(text)
+    pm=prod_pat.search(text)
+    if "STOREFRONT: %s" not in bm.group(0):
+        raise SystemExit("Storefront controls missing from BudShop")
+    if "STOREFRONT: %s" in pm.group(0):
+        raise SystemExit("Storefront controls still in Your Supply")
+
     # Verify requested organization.
     checks=[
         '"BudShop", "Store, business & operations", "budshop"',
@@ -175,6 +209,6 @@ v=json.loads(Path("version.json").read_text())
 v["release_id"]=RELEASE
 v["phone_home"]="BudShop, Rewards, Settings"
 v["budshop_apps"]=["Lights","Store","Business","Your Supply","Genetics","Clients","Heat","Stats"]
-v["settings_apps"]=["Help","System"]
+v["settings_apps"]=["Help","System"]\nv["storefront_control_location"]="BudShop top"
 Path("version.json").write_text(json.dumps(v,indent=2)+"\n")
-print("Built cloudtest24 phone hierarchy")
+print("Built cloudtest25 storefront controls moved to BudShop")
