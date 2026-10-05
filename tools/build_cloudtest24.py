@@ -4,8 +4,8 @@ import struct, hashlib, re, json, collections
 PCK=Path("index-cloudtest10.pck")
 HTML=Path("index.html")
 VERSION=Path("version.json")
-RELEASE="0.7.9-beta.19-cloudtest.48"
-PACK_URL="index-cloudtest10.pck?build=48"
+RELEASE="0.7.9-beta.19-cloudtest.49"
+PACK_URL="index-cloudtest10.pck?build=49"
 
 def align(n,a=32): return (n+a-1)//a*a
 def parse(path):
@@ -234,7 +234,7 @@ func _set_premium_dealer_locker_open(opened: bool) -> void:
 	if premium_dealer_locker_tween != null and premium_dealer_locker_tween.is_running():
 		premium_dealer_locker_tween.kill()
 	premium_dealer_locker_open = opened
-	var target: float = deg_to_rad(-102.0) if opened else 0.0
+	var target: float = deg_to_rad(102.0) if opened else 0.0
 	premium_dealer_locker_tween = create_tween()
 	premium_dealer_locker_tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
 	premium_dealer_locker_tween.tween_property(premium_dealer_locker_door_pivot, "rotation:y", target, 0.32)
@@ -316,7 +316,8 @@ HTML.write_text(html)
 meta=json.loads(VERSION.read_text())
 meta["release_id"]=RELEASE
 meta["dealer_storage_visual_progression"]="Levels I-II use original locker; Level III introduces premium matte-black green-lit cabinet; Level IV keeps same cabinet"
-meta["dealer_storage_premium_interaction"]="Level III-IV premium door opens before Dealer Storage UI and closes when UI closes"
+meta["dealer_storage_premium_interaction"]="Level III-IV premium door swings outward before Dealer Storage UI and closes when UI closes"
+meta["dealer_storage_door_hotfix"]="premium hinge rotation corrected from inward swing to outward swing"
 meta["dealer_storage_level_capacity"]="I 100g, II 200g, III 300g, IV 400g"
 VERSION.write_text(json.dumps(meta,indent=2)+"\n")
 print("Built",RELEASE,len(packed))
