@@ -90,6 +90,100 @@ for row in entries:
 '''.replace("ART_B64_TOKEN", STASH_ART_B64)
     text=replace_func(text,"_get_hidden_stash_art_texture",art_loader)
 
+
+    # cloudtest35 account/settings routing. Settings remains the parent category.
+    old_parent = '''func _phone_parent_app(app_name: String) -> String:
+\tif app_name in ["seeds", "supplies"]:
+\t\treturn "shop"
+\tif app_name in ["bills", "employees", "upgrades"]:
+\t\treturn "business"
+\treturn "home"
+'''
+    new_parent = '''func _phone_parent_app(app_name: String) -> String:
+\tif app_name in ["seeds", "supplies"]:
+\t\treturn "shop"
+\tif app_name in ["bills", "employees", "upgrades"]:
+\t\treturn "business"
+\tif app_name in ["account", "session"]:
+\t\treturn "system"
+\treturn "home"
+'''
+    if old_parent not in text:
+        raise SystemExit("cloudtest35 phone parent routing anchor missing")
+    text=text.replace(old_parent,new_parent,1)
+
+    old_system_route = '''\t\t"system":
+\t\t\tphone_title.text = "System"
+\t\t\t_build_system_app()
+'''
+    new_system_route = '''\t\t"system":
+\t\t\tphone_title.text = "Settings"
+\t\t\t_build_settings_app()
+\t\t"account":
+\t\t\tphone_title.text = "Account"
+\t\t\t_build_account_app()
+\t\t"session":
+\t\t\tphone_title.text = "Save & Session"
+\t\t\t_build_system_app()
+'''
+    if old_system_route not in text:
+        raise SystemExit("cloudtest35 system route anchor missing")
+    text=text.replace(old_system_route,new_system_route,1)
+
+    old_home_tile = '\t_add_phone_app_tile(grid, "", "System", "Save game & safe quit", "system")\n'
+    new_home_tile = '\t_add_phone_app_tile(grid, "", "Settings", "Account, save & session", "system")\n'
+    if old_home_tile not in text:
+        raise SystemExit("cloudtest35 home settings tile anchor missing")
+    text=text.replace(old_home_tile,new_home_tile,1)
+
+    settings_funcs = '''func _build_settings_app() -> void:
+\tvar intro: Label = Label.new()
+\tintro.text = "ACCOUNT & SESSION"
+\tintro.add_theme_font_size_override("font_size", 22)
+\tphone_list.add_child(intro)
+\tvar detail: Label = Label.new()
+\tdetail.text = "Manage your AFewBuds account, email preferences, password, saves and safe-quit controls."
+\tdetail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+\tdetail.modulate = Color("b8c5ca")
+\tphone_list.add_child(detail)
+\tvar grid: GridContainer = _phone_category_grid()
+\t_add_phone_app_tile(grid, "", "Account", "Username, password, email & updates", "account")
+\t_add_phone_app_tile(grid, "", "Save & Session", "Manual save & safe quit", "session")
+
+func _build_account_app() -> void:
+\tvar title: Label = Label.new()
+\ttitle.text = "AFewBuds Account"
+\ttitle.add_theme_font_size_override("font_size", 22)
+\tphone_list.add_child(title)
+\tvar detail: Label = Label.new()
+\tdetail.text = "Change your username to an available name, update your email and update-email preference, or change your password. Your career stays attached to the same account."
+\tdetail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+\tdetail.modulate = Color("b8c5ca")
+\tphone_list.add_child(detail)
+\tvar recovery: Label = Label.new()
+\trecovery.text = "IMPORTANT: Add an email to your account so you can recover your password if you forget it."
+\trecovery.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+\trecovery.modulate = Color("d8c99e")
+\tphone_list.add_child(recovery)
+\tvar open_button: Button = Button.new()
+\topen_button.text = "OPEN ACCOUNT SETTINGS"
+\topen_button.custom_minimum_size.y = 62
+\topen_button.add_theme_font_size_override("font_size", 19)
+\topen_button.pressed.connect(_open_web_account_settings)
+\tphone_list.add_child(open_button)
+
+func _open_web_account_settings() -> void:
+\tif not OS.has_feature("web"):
+\t\tstatus_label.text = "Account settings are available in the AFewBuds web/cloud build."
+\t\treturn
+\tJavaScriptBridge.eval("window.AFB_ACCOUNT_SETTINGS && window.AFB_ACCOUNT_SETTINGS.open();", true)
+
+'''
+    system_anchor = 'func _build_system_app() -> void:\n'
+    if system_anchor not in text:
+        raise SystemExit("cloudtest35 system app function anchor missing")
+    text=text.replace(system_anchor,settings_funcs+system_anchor,1)
+
     checks=[
         'float(source_w) * 0.285',
         'float(source_w) * 0.445',
@@ -145,5 +239,5 @@ meta["password_recovery_note"]="Account page explains that an email is required 
 v.write_text(json.dumps(meta,indent=2)+"\n")
 
 print("Built",RELEASE)
-print("Tightened Hidden Wall Stash right-side artwork crop")
-print("Same stash geometry; AFewBuds art now fills the frame more evenly")
+print("Added Settings > Account and account management browser UI hook")
+print("Preserved cloudtest34 hidden stash artwork refinement")
