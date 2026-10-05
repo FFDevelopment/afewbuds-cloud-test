@@ -44,5 +44,6 @@
   "leaderboard_runtime": "minimal Godot bridge only; ranking/UI/Supabase logic remains in web layer",
   "leaderboard": "Phone Home > Leaderboard; browser-rendered Lifetime/Weekly Top 5/Top 25 with public career profiles",
   "leaderboard_metrics": "revenue, sales, dealer sales, harvests, hybrids, raids survived, days played, career score",
-  "leaderboard_baseline": "built directly from known-good cloudtest39/cloudtest36 PCK"
+  "leaderboard_baseline": "built directly from known-good cloudtest39/cloudtest36 PCK",
+  "leaderboard_deployment": "cloudtest40 isolated phone bridge published from known-good runtime"
 }
