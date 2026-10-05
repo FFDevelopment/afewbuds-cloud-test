@@ -1,0 +1,42 @@
+name: Inspect raid storage and friend dealer accounting
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/inspect-raid-storage-friends.yml"
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect packed raid storage upgrade and friend dealer logic
+        shell: python
+        run: |
+          from pathlib import Path
+          import struct,re
+          b=Path("index-cloudtest10.pck").read_bytes()
+          fb=struct.unpack_from("<Q",b,24)[0]; do=struct.unpack_from("<Q",b,32)[0]
+          n=struct.unpack_from("<I",b,do)[0]; p=do+4; main=""
+          for _ in range(n):
+              q=struct.unpack_from("<I",b,p)[0]; p+=4
+              name=b[p:p+q].rstrip(b"\0").decode(); p+=q
+              off=struct.unpack_from("<Q",b,p)[0]; p+=8
+              size=struct.unpack_from("<Q",b,p)[0]; p+=8
+              p+=20
+              if name=="scripts/main.gd":
+                  main=b[fb+off:fb+off+size].decode("utf-8","replace").rstrip(" \n\0")
+                  break
+          pat=re.compile(r'^func ([A-Za-z0-9_]+)\([^\n]*\)(?: -> [^:]+)?:\n.*?(?=^func |\Z)',re.M|re.S)
+          wanted=["_trigger_raid_event","_build_upgrades_app","_storage_capacity","_total_stored_stock","_build_products_app","_build_storage_panel","_refresh_storage_panel","_dealer_sell_one","_process_daily_payroll","_staff_daily_payroll","_recruit_friend_staff","_friend_staff_names","_friend_staff_role","_save_game","_load_game"]
+          for name in wanted:
+              m=re.search(r'^func '+re.escape(name)+r'\([^\n]*\)(?: -> [^:]+)?:\n.*?(?=^func |\Z)',main,re.M|re.S)
+              print("\n===== "+name+" =====")
+              print(m.group(0).rstrip() if m else "<MISSING>")
+          print("\n===== STORAGE/PACKING VARS =====")
+          for i,line in enumerate(main.splitlines(),1):
+              low=line.lower()
+              if any(k in low for k in ["storage_level","storage vault","vault","untrimmed_inventory","trimmed_inventory","bagging","packing","stock_capacity","storage_capacity","friend_staff_sales","dealer_sales_today"]):
+                  if i < 9000:
+                      print(i,line)
