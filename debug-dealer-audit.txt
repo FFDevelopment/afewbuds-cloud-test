@@ -459,6 +459,7 @@ func _finish_direct_station_approach(action_id: String) -> void:
 
 ===== _build_storage_area =====
 func _build_storage_area() -> void:
+	var storage_shelf_start_index: int = get_child_count()
 	_add_box("StorageBack", Vector3(-4.72, 1.38, -0.30), Vector3(0.08, 2.65, 3.35), Color("4a5054"), 0.56, false, "res://assets/textures/brushed_metal.png", Vector3(1.0, 2.0, 2.0))
 	_add_box("ShelfPostL", Vector3(-4.42, 1.35, -1.75), Vector3(0.10, 2.55, 0.10), Color("555c60"), 0.45, false, "res://assets/textures/brushed_metal.png")
 	_add_box("ShelfPostR", Vector3(-4.42, 1.35, 1.15), Vector3(0.10, 2.55, 0.10), Color("555c60"), 0.45, false, "res://assets/textures/brushed_metal.png")
@@ -482,6 +483,10 @@ func _build_storage_area() -> void:
 	label.rotation_degrees = Vector3(0, 90, 0)
 	label.modulate = Color("e7e3da")
 	add_child(label)
+	for child_index: int in range(storage_shelf_start_index, get_child_count()):
+		var shifted_child: Node = get_child(child_index)
+		if shifted_child is Node3D:
+			(shifted_child as Node3D).position.z += 0.24
 
 ===== _build_living_furniture =====
 func _build_living_furniture() -> void:
@@ -984,140 +989,140 @@ func _has_listed_stock() -> bool:
 1370: 		var shortfall: int = -dealer_net
 1402: func _pay_dealer_balance() -> void:
 1408: 	var paid: int = dealer_balance_due
-2376: 	var locker_logo: Label3D = Label3D.new()
-2385: 	var locker_tag: Label3D = Label3D.new()
-3820: func _build_dealer_storage_panel() -> void:
-3822: 	var root: VBoxContainer = _panel_root(dealer_storage_panel, "DEALER STORAGE", _close_dealer_storage_panel)
-5055: 			var dealer_roster: Array[String] = _active_dealer_roster()
-5060: func _build_production_worker_visual() -> void:
-5211: func _refresh_production_worker_friend_face() -> void:
-5214: 	var assigned_name: String = production_worker_friend_name
-5215: 	var previous_name: String = str(production_worker_face_shell.get_meta("friend_name", "__uninitialized__"))
-5242: func _production_worker_station_position(station_name: String) -> Vector3:
-5251: func _reset_production_worker_navigation() -> void:
-5258: func _production_worker_navigation_target() -> Vector3:
-5261: 	var worker_pos: Vector3 = production_worker_node.position
-5262: 	var target: Vector3 = production_worker_target_position
-5280: 		var waypoint: Vector3 = production_worker_route_points[production_worker_route_index]
-5286: func _update_production_worker_visual(delta: float) -> void:
-5295: 	var move_target: Vector3 = _production_worker_navigation_target()
-5296: 	var before: Vector3 = production_worker_node.position
-5298: 	var movement: Vector3 = production_worker_node.position - before
-5300: 	var remaining_after: float = production_worker_node.position.distance_to(move_target)
-5313: 	var walk_swing: float = sin(production_worker_walk_phase) * 0.42 if moving else 0.0
-5314: 	var arm_l: MeshInstance3D = production_worker_node.get_node_or_null("ArmL") as MeshInstance3D
-5315: 	var arm_r: MeshInstance3D = production_worker_node.get_node_or_null("ArmR") as MeshInstance3D
-5316: 	var leg_l: MeshInstance3D = production_worker_node.get_node_or_null("LegL") as MeshInstance3D
-5317: 	var leg_r: MeshInstance3D = production_worker_node.get_node_or_null("LegR") as MeshInstance3D
-5327: 		var worker_name: String = production_worker_friend_name if not production_worker_friend_name.is_empty() else "PRODUCTION WORKER"
-5342: func _set_production_worker_task(action_id: String, station_name: String, slot_index: int = -1, strain_name: String = "", task_text: String = "Working") -> void:
-5352: func _production_worker_find_seed() -> String:
-5362: func _assign_production_worker_task() -> void:
-5384: 		var normal_has_space: bool = _total_stored_stock() < _storage_capacity()
-5385: 		var dealer_overflow_available: bool = not normal_has_space and _dealer_locker_free_capacity() > 0
-5387: 			var stock_task: String = "Stocking %s" % bagged_name if normal_has_space else "Overflow stocking Dealer Locker"
-5402: 		var auto_seed: String = _production_worker_find_seed()
-5414: func _execute_production_worker_action() -> void:
-5417: 	var action_id: String = production_worker_pending_action
-5418: 	var slot_index: int = production_worker_pending_slot
-5419: 	var strain_name: String = production_worker_pending_strain
-5449: 			var trim_amount: int = mini(PRODUCTION_WORKER_BATCH_SIZE, available_trim)
-5455: 			var bag_amount: int = mini(PRODUCTION_WORKER_BATCH_SIZE, available_bag)
-5461: 			var free_capacity: int = maxi(0, _storage_capacity() - _total_stored_stock())
-5462: 			var store_amount: int = mini(PRODUCTION_WORKER_BATCH_SIZE, mini(available_store, free_capacity))
-5470: 				var overflow_amount: int = mini(PRODUCTION_WORKER_BATCH_SIZE, mini(available_store, _dealer_locker_free_capacity()))
-5509: 		var free_capacity: int = maxi(0, _storage_capacity() - _total_stored_stock())
-5530: 			var free_capacity: int = maxi(0, _storage_capacity() - _total_stored_stock())
-5531: 			var moved: int = mini(PRODUCTION_WORKER_BATCH_SIZE, mini(amount, free_capacity))
-5543: 			var moved: int = mini(PRODUCTION_WORKER_BATCH_SIZE, amount)
-5551: 			var moved: int = mini(PRODUCTION_WORKER_BATCH_SIZE, amount)
-5563: func _ensure_friend_dealer_stats(customer_name: String) -> Dictionary:
-5573: func _active_dealer_roster() -> Array[String]:
-5581: func _record_friend_dealer_sale(customer_name: String, grams: int, gross: int, commission: int) -> void:
-5584: 	var stats: Dictionary = _ensure_friend_dealer_stats(customer_name)
-5595: func _friend_dealer_daily_report(_pay_wages: bool) -> Array[Dictionary]:
-5598: 		var stats: Dictionary = _ensure_friend_dealer_stats(friend_name)
-5610: func _reset_friend_dealer_daily_stats() -> void:
-5613: 		var stats: Dictionary = _ensure_friend_dealer_stats(friend_name)
-5635: func _friend_staff_dealer_count() -> int:
-5642: func _total_dealer_count() -> int:
-5671: func _dealer_capacity() -> int:
-5680: func _dealer_hire_cost() -> int:
-5746: func _dealer_locker_capacity() -> int:
-5747: 	var level: int = clampi(dealer_locker_level, 0, DEALER_LOCKER_CAPACITY_BY_LEVEL.size() - 1)
-5750: func _dealer_locker_total() -> int:
-5756: func _dealer_locker_free_capacity() -> int:
-5759: func _dealer_locker_next_cost() -> int:
-5760: 	var next_level: int = dealer_locker_level + 1
-5765: func _buy_dealer_locker_upgrade() -> void:
-5768: 	var next_level: int = dealer_locker_level + 1
-5769: 	var cost: int = DEALER_LOCKER_COST_BY_LEVEL[next_level]
-5783: func _dealer_locker_add_from_storage(strain_name: String, requested_amount: int) -> int:
-5787: 	var free_capacity: int = _dealer_locker_free_capacity()
-5803: func _dealer_locker_remove_to_storage(strain_name: String, requested_amount: int) -> int:
-5804: 	var have: int = maxi(0, int(locker_weed.get(strain_name, 0)))
-5807: 	var free_capacity: int = maxi(0, _storage_capacity() - _total_stored_stock())
-5828: func _dealer_customer_served_today(customer_name: String) -> bool:
-5831: func _dealer_eligible_customers() -> Array[Dictionary]:
-5849: func _dealer_sell_one(show_feedback: bool, assigned_dealer_name: String = "") -> bool:
-5858: 	var eligible: Array[Dictionary] = _dealer_eligible_customers()
-5885: 	var available: int = maxi(0, int(locker_weed.get(product_name, 0)))
-5897: 	var commission: int = int(ceil(float(gross_revenue) * DEALER_COMMISSION_RATE))
-5898: 	var dealer_roster: Array[String] = _active_dealer_roster()
-5899: 	var sale_dealer_name: String = assigned_dealer_name
-5913: 	var relationship: Dictionary = (customer_relationships[last_dealer_customer_name] as Dictionary).duplicate(true)
-6082: 	var free_capacity: int = maxi(0, _storage_capacity() - _total_stored_stock())
-6122: func _open_dealer_storage_panel() -> void:
-6132: func _close_dealer_storage_panel() -> void:
-6142: func _dealer_storage_transfer(strain: String, amount: int, moving_in: bool) -> void:
-6149: func _dealer_storage_row(parent: VBoxContainer, strain: String, storage_amount: int, dealer_amount: int) -> void:
-6199: func _refresh_dealer_storage_panel() -> void:
-6940: func _add_dealer_locker_family_card(parent: VBoxContainer) -> void:
-6952: 	var tier_text: String = "NOT INSTALLED" if dealer_locker_level <= 0 else "Locker %s" % _roman(dealer_locker_level)
-6965: 	var next_level: int = dealer_locker_level + 1
-6966: 	var next_cost: int = DEALER_LOCKER_COST_BY_LEVEL[next_level]
-6967: 	var next_capacity: int = DEALER_LOCKER_CAPACITY_BY_LEVEL[next_level]
-7149: 	var dealer_card: PanelContainer = PanelContainer.new()
-7151: 	var dealer_box: VBoxContainer = VBoxContainer.new()
-7153: 	var dealer_detail: Label = Label.new()
-7214: 	var dealer_card: PanelContainer = PanelContainer.new()
-7216: 	var dealer_box: VBoxContainer = VBoxContainer.new()
-7218: 	var dealer_title: Label = Label.new()
-7222: 	var eligible_clients: Array[Dictionary] = _dealer_eligible_customers()
-7226: 	var dealer_detail: Label = Label.new()
-7228: 	var dealer_staff_names: String = ", ".join(PackedStringArray(friend_dealers)) if not friend_dealers.is_empty() else "No friend dealers"
-7229: 	var dealer_locker_cap: int = _dealer_locker_capacity()
-7230: 	var dealer_locker_used: int = _dealer_locker_total()
-7243: 		var friend_stats: Dictionary = _ensure_friend_dealer_stats(friend_dealer_name)
-7257: 		var dealer_toggle: Button = Button.new()
-7264: 		var fire_dealer_button: Button = Button.new()
-7271: 		var release_friend_dealer_button: Button = Button.new()
-7327: func _toggle_production_worker_auto_plant() -> void:
-7362: 	var capacity: int = _dealer_capacity()
-7363: 	var hire_cost: int = _dealer_hire_cost()
-7484: 				var dealer_offer: Button = Button.new()
-7523: func _critical_dealer_sender() -> String:
-7536: 	var had_dealers: bool = dealers_active and _total_dealer_count() > 0
-7549: 		var dealer_sender: String = _critical_dealer_sender()
-7572: func _pay_dealer_bail() -> void:
-7578: 	var amount: int = dealer_bail_due
-7594: 	var amount: int = production_worker_bail_due
-7606: 		var dealer_bail: Button = Button.new()
-8756: func _storage_capacity() -> int:
-9051: 	var loaded_friend_dealer_stats: Variant = data.get("friend_dealer_stats", {})
-9061: 	var loaded_dealer_customers_today: Variant = data.get("dealer_customers_served_today", {})
-9149: 	var lw: Variant = data.get("locker_weed", locker_weed)
-9152: 	var legacy_cash: int = maxi(0, int(data.get("locker_cash", 0)))
-9236: 	var advancement_metrics: Array[String] = ["plants_planted", "waters", "fertilizes", "harvests", "grams_trimmed", "bags_sealed", "grams_stored", "products_listed", "sales", "customers_known", "seeds_bought", "supplies_bought", "hybrids_created", "lights_toggled", "lamp_toggled", "grow_room_lights_toggled", "grow_lights_toggled", "ventilation_toggled", "power_bills_paid", "night_sales", "dealer_sales", "staff_hired", "worker_tasks", "friend_recruits", "staff_purchases", "pressure_events", "contact_calls", "reeves_meetings", "reeves_arrangements", "reeves_payments", "reeves_negotiations", "reeves_missed_payments", "raids_survived", "reeves_freedom"]
-10920: func _dealer_premium_box(parent: Node3D, part_name: String, pos: Vector3, size: Vector3, color: Color, roughness: float = 0.45, texture_path: String = "", emissive: bool = false) -> MeshInstance3D:
-10942: func _dealer_premium_jar(parent: Node3D, part_name: String, pos: Vector3, radius: float, height: float, bud_color: Color) -> void:
-10963: func _build_premium_dealer_locker_visual() -> void:
-11049: func _sync_dealer_locker_visual() -> void:
-11050: 	var premium: bool = dealer_locker_level >= 3
-11067: func _set_premium_dealer_locker_open(opened: bool) -> void:
-11090: 	var show_hidden_stash: bool = storage_level >= 5
-11091: 	var show_vault: bool = storage_level >= 4 and not show_hidden_stash
-11250: 	var covering_panel: bool = phone_open or bagging_panel.visible or storage_panel.visible or (dealer_storage_panel != null and dealer_storage_panel.visible) or (supply_inventory_panel != null and supply_inventory_panel.visible) or (system_control_panel != null and system_control_panel.visible) or trim_panel.visible or bag_minigame_panel.visible or grow_panel.visible or (plant_direct_panel != null and plant_direct_panel.visible)
+2418: 	var locker_logo: Label3D = Label3D.new()
+2427: 	var locker_tag: Label3D = Label3D.new()
+3867: func _build_dealer_storage_panel() -> void:
+3869: 	var root: VBoxContainer = _panel_root(dealer_storage_panel, "DEALER STORAGE", _close_dealer_storage_panel)
+5102: 			var dealer_roster: Array[String] = _active_dealer_roster()
+5107: func _build_production_worker_visual() -> void:
+5258: func _refresh_production_worker_friend_face() -> void:
+5261: 	var assigned_name: String = production_worker_friend_name
+5262: 	var previous_name: String = str(production_worker_face_shell.get_meta("friend_name", "__uninitialized__"))
+5289: func _production_worker_station_position(station_name: String) -> Vector3:
+5298: func _reset_production_worker_navigation() -> void:
+5305: func _production_worker_navigation_target() -> Vector3:
+5308: 	var worker_pos: Vector3 = production_worker_node.position
+5309: 	var target: Vector3 = production_worker_target_position
+5327: 		var waypoint: Vector3 = production_worker_route_points[production_worker_route_index]
+5333: func _update_production_worker_visual(delta: float) -> void:
+5342: 	var move_target: Vector3 = _production_worker_navigation_target()
+5343: 	var before: Vector3 = production_worker_node.position
+5345: 	var movement: Vector3 = production_worker_node.position - before
+5347: 	var remaining_after: float = production_worker_node.position.distance_to(move_target)
+5360: 	var walk_swing: float = sin(production_worker_walk_phase) * 0.42 if moving else 0.0
+5361: 	var arm_l: MeshInstance3D = production_worker_node.get_node_or_null("ArmL") as MeshInstance3D
+5362: 	var arm_r: MeshInstance3D = production_worker_node.get_node_or_null("ArmR") as MeshInstance3D
+5363: 	var leg_l: MeshInstance3D = production_worker_node.get_node_or_null("LegL") as MeshInstance3D
+5364: 	var leg_r: MeshInstance3D = production_worker_node.get_node_or_null("LegR") as MeshInstance3D
+5374: 		var worker_name: String = production_worker_friend_name if not production_worker_friend_name.is_empty() else "PRODUCTION WORKER"
+5389: func _set_production_worker_task(action_id: String, station_name: String, slot_index: int = -1, strain_name: String = "", task_text: String = "Working") -> void:
+5399: func _production_worker_find_seed() -> String:
+5409: func _assign_production_worker_task() -> void:
+5431: 		var normal_has_space: bool = _total_stored_stock() < _storage_capacity()
+5432: 		var dealer_overflow_available: bool = not normal_has_space and _dealer_locker_free_capacity() > 0
+5434: 			var stock_task: String = "Stocking %s" % bagged_name if normal_has_space else "Overflow stocking Dealer Locker"
+5449: 		var auto_seed: String = _production_worker_find_seed()
+5461: func _execute_production_worker_action() -> void:
+5464: 	var action_id: String = production_worker_pending_action
+5465: 	var slot_index: int = production_worker_pending_slot
+5466: 	var strain_name: String = production_worker_pending_strain
+5496: 			var trim_amount: int = mini(PRODUCTION_WORKER_BATCH_SIZE, available_trim)
+5502: 			var bag_amount: int = mini(PRODUCTION_WORKER_BATCH_SIZE, available_bag)
+5508: 			var free_capacity: int = maxi(0, _storage_capacity() - _total_stored_stock())
+5509: 			var store_amount: int = mini(PRODUCTION_WORKER_BATCH_SIZE, mini(available_store, free_capacity))
+5517: 				var overflow_amount: int = mini(PRODUCTION_WORKER_BATCH_SIZE, mini(available_store, _dealer_locker_free_capacity()))
+5556: 		var free_capacity: int = maxi(0, _storage_capacity() - _total_stored_stock())
+5577: 			var free_capacity: int = maxi(0, _storage_capacity() - _total_stored_stock())
+5578: 			var moved: int = mini(PRODUCTION_WORKER_BATCH_SIZE, mini(amount, free_capacity))
+5590: 			var moved: int = mini(PRODUCTION_WORKER_BATCH_SIZE, amount)
+5598: 			var moved: int = mini(PRODUCTION_WORKER_BATCH_SIZE, amount)
+5610: func _ensure_friend_dealer_stats(customer_name: String) -> Dictionary:
+5620: func _active_dealer_roster() -> Array[String]:
+5628: func _record_friend_dealer_sale(customer_name: String, grams: int, gross: int, commission: int) -> void:
+5631: 	var stats: Dictionary = _ensure_friend_dealer_stats(customer_name)
+5642: func _friend_dealer_daily_report(_pay_wages: bool) -> Array[Dictionary]:
+5645: 		var stats: Dictionary = _ensure_friend_dealer_stats(friend_name)
+5657: func _reset_friend_dealer_daily_stats() -> void:
+5660: 		var stats: Dictionary = _ensure_friend_dealer_stats(friend_name)
+5682: func _friend_staff_dealer_count() -> int:
+5689: func _total_dealer_count() -> int:
+5718: func _dealer_capacity() -> int:
+5727: func _dealer_hire_cost() -> int:
+5793: func _dealer_locker_capacity() -> int:
+5794: 	var level: int = clampi(dealer_locker_level, 0, DEALER_LOCKER_CAPACITY_BY_LEVEL.size() - 1)
+5797: func _dealer_locker_total() -> int:
+5803: func _dealer_locker_free_capacity() -> int:
+5806: func _dealer_locker_next_cost() -> int:
+5807: 	var next_level: int = dealer_locker_level + 1
+5812: func _buy_dealer_locker_upgrade() -> void:
+5815: 	var next_level: int = dealer_locker_level + 1
+5816: 	var cost: int = DEALER_LOCKER_COST_BY_LEVEL[next_level]
+5830: func _dealer_locker_add_from_storage(strain_name: String, requested_amount: int) -> int:
+5834: 	var free_capacity: int = _dealer_locker_free_capacity()
+5850: func _dealer_locker_remove_to_storage(strain_name: String, requested_amount: int) -> int:
+5851: 	var have: int = maxi(0, int(locker_weed.get(strain_name, 0)))
+5854: 	var free_capacity: int = maxi(0, _storage_capacity() - _total_stored_stock())
+5875: func _dealer_customer_served_today(customer_name: String) -> bool:
+5878: func _dealer_eligible_customers() -> Array[Dictionary]:
+5896: func _dealer_sell_one(show_feedback: bool, assigned_dealer_name: String = "") -> bool:
+5905: 	var eligible: Array[Dictionary] = _dealer_eligible_customers()
+5932: 	var available: int = maxi(0, int(locker_weed.get(product_name, 0)))
+5944: 	var commission: int = int(ceil(float(gross_revenue) * DEALER_COMMISSION_RATE))
+5945: 	var dealer_roster: Array[String] = _active_dealer_roster()
+5946: 	var sale_dealer_name: String = assigned_dealer_name
+5960: 	var relationship: Dictionary = (customer_relationships[last_dealer_customer_name] as Dictionary).duplicate(true)
+6129: 	var free_capacity: int = maxi(0, _storage_capacity() - _total_stored_stock())
+6169: func _open_dealer_storage_panel() -> void:
+6179: func _close_dealer_storage_panel() -> void:
+6189: func _dealer_storage_transfer(strain: String, amount: int, moving_in: bool) -> void:
+6196: func _dealer_storage_row(parent: VBoxContainer, strain: String, storage_amount: int, dealer_amount: int) -> void:
+6246: func _refresh_dealer_storage_panel() -> void:
+6987: func _add_dealer_locker_family_card(parent: VBoxContainer) -> void:
+6999: 	var tier_text: String = "NOT INSTALLED" if dealer_locker_level <= 0 else "Locker %s" % _roman(dealer_locker_level)
+7012: 	var next_level: int = dealer_locker_level + 1
+7013: 	var next_cost: int = DEALER_LOCKER_COST_BY_LEVEL[next_level]
+7014: 	var next_capacity: int = DEALER_LOCKER_CAPACITY_BY_LEVEL[next_level]
+7196: 	var dealer_card: PanelContainer = PanelContainer.new()
+7198: 	var dealer_box: VBoxContainer = VBoxContainer.new()
+7200: 	var dealer_detail: Label = Label.new()
+7261: 	var dealer_card: PanelContainer = PanelContainer.new()
+7263: 	var dealer_box: VBoxContainer = VBoxContainer.new()
+7265: 	var dealer_title: Label = Label.new()
+7269: 	var eligible_clients: Array[Dictionary] = _dealer_eligible_customers()
+7273: 	var dealer_detail: Label = Label.new()
+7275: 	var dealer_staff_names: String = ", ".join(PackedStringArray(friend_dealers)) if not friend_dealers.is_empty() else "No friend dealers"
+7276: 	var dealer_locker_cap: int = _dealer_locker_capacity()
+7277: 	var dealer_locker_used: int = _dealer_locker_total()
+7290: 		var friend_stats: Dictionary = _ensure_friend_dealer_stats(friend_dealer_name)
+7304: 		var dealer_toggle: Button = Button.new()
+7311: 		var fire_dealer_button: Button = Button.new()
+7318: 		var release_friend_dealer_button: Button = Button.new()
+7374: func _toggle_production_worker_auto_plant() -> void:
+7409: 	var capacity: int = _dealer_capacity()
+7410: 	var hire_cost: int = _dealer_hire_cost()
+7531: 				var dealer_offer: Button = Button.new()
+7570: func _critical_dealer_sender() -> String:
+7583: 	var had_dealers: bool = dealers_active and _total_dealer_count() > 0
+7596: 		var dealer_sender: String = _critical_dealer_sender()
+7619: func _pay_dealer_bail() -> void:
+7625: 	var amount: int = dealer_bail_due
+7641: 	var amount: int = production_worker_bail_due
+7653: 		var dealer_bail: Button = Button.new()
+8803: func _storage_capacity() -> int:
+9098: 	var loaded_friend_dealer_stats: Variant = data.get("friend_dealer_stats", {})
+9108: 	var loaded_dealer_customers_today: Variant = data.get("dealer_customers_served_today", {})
+9196: 	var lw: Variant = data.get("locker_weed", locker_weed)
+9199: 	var legacy_cash: int = maxi(0, int(data.get("locker_cash", 0)))
+9283: 	var advancement_metrics: Array[String] = ["plants_planted", "waters", "fertilizes", "harvests", "grams_trimmed", "bags_sealed", "grams_stored", "products_listed", "sales", "customers_known", "seeds_bought", "supplies_bought", "hybrids_created", "lights_toggled", "lamp_toggled", "grow_room_lights_toggled", "grow_lights_toggled", "ventilation_toggled", "power_bills_paid", "night_sales", "dealer_sales", "staff_hired", "worker_tasks", "friend_recruits", "staff_purchases", "pressure_events", "contact_calls", "reeves_meetings", "reeves_arrangements", "reeves_payments", "reeves_negotiations", "reeves_missed_payments", "raids_survived", "reeves_freedom"]
+10967: func _dealer_premium_box(parent: Node3D, part_name: String, pos: Vector3, size: Vector3, color: Color, roughness: float = 0.45, texture_path: String = "", emissive: bool = false) -> MeshInstance3D:
+10989: func _dealer_premium_jar(parent: Node3D, part_name: String, pos: Vector3, radius: float, height: float, bud_color: Color) -> void:
+11010: func _build_premium_dealer_locker_visual() -> void:
+11096: func _sync_dealer_locker_visual() -> void:
+11097: 	var premium: bool = dealer_locker_level >= 3
+11114: func _set_premium_dealer_locker_open(opened: bool) -> void:
+11137: 	var show_hidden_stash: bool = storage_level >= 5
+11138: 	var show_vault: bool = storage_level >= 4 and not show_hidden_stash
+11297: 	var covering_panel: bool = phone_open or bagging_panel.visible or storage_panel.visible or (dealer_storage_panel != null and dealer_storage_panel.visible) or (supply_inventory_panel != null and supply_inventory_panel.visible) or (system_control_panel != null and system_control_panel.visible) or trim_panel.visible or bag_minigame_panel.visible or grow_panel.visible or (plant_direct_panel != null and plant_direct_panel.visible)
 ===== STORAGE VAULT SCRIPT =====
 extends Node3D
 

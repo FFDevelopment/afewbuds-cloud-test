@@ -570,9 +570,9 @@ const ROOM_SWITCH_TARGETS: Array[Dictionary] = [
 const ROOM_DIRECT_STATIONS: Array[Dictionary] = [
 	{"id": "room_enter_grow", "room": "main", "pos": Vector3(0.0, 1.55, -3.88), "view": ""},
 	{"id": "room_enter_main", "room": "grow", "pos": Vector3(0.0, 1.55, -3.88), "view": ""},
-	{"id": "station_workbench", "room": "main", "pos": Vector3(3.95, 1.15, 0.54), "view": "workbench"},
+	{"id": "station_workbench", "room": "main", "pos": Vector3(3.95, 1.15, 0.78), "view": "workbench"},
 	{"id": "station_locker", "room": "main", "pos": Vector3(4.13, 1.30, -2.20), "view": "locker"},
-	{"id": "station_storage", "room": "main", "pos": Vector3(-4.35, 1.35, -0.30), "view": "storage"},
+	{"id": "station_storage", "room": "main", "pos": Vector3(-4.35, 1.35, -0.06), "view": "storage"},
 	{"id": "station_door", "room": "main", "pos": Vector3(0.0, 1.50, 5.78), "view": "door"},
 	{"id": "station_tent1", "room": "grow", "pos": Vector3(0.0, 1.25, -9.10), "view": "grow"},
 	{"id": "station_tent2", "room": "grow", "pos": Vector3(-3.20, 1.18, -9.28), "view": "grow2"},
@@ -1854,9 +1854,9 @@ func _build_world() -> void:
 		"grow3": {"pos": Vector3(3.20, 1.40, -6.16), "rot": Vector3(-0.015, 0, 0), "fov": 84.0, "label": "Grow Tent 3 Overview"},
 		"grow_system": {"pos": Vector3(2.72, 1.92, -6.65), "rot": Vector3(0, -PI / 2.0, 0), "fov": 62.0, "label": "Grow Room System Panel"},
 		"grow_supply_shelf": {"pos": Vector3(-2.28, 1.38, -5.88), "rot": Vector3(0, PI / 2.0, 0), "fov": 68.0, "label": "Grow Supply Shelf"},
-		"workbench": {"pos": Vector3(1.15, 1.60, 1.34), "rot": Vector3(0, -PI / 2.0, 0), "label": "Bagging Station"},
+		"workbench": {"pos": Vector3(1.15, 1.60, 1.58), "rot": Vector3(0, -PI / 2.0, 0), "label": "Bagging Station"},
 		"locker": {"pos": Vector3(1.72, 1.56, -2.30), "rot": Vector3(0, -PI / 2.0, 0), "fov": 68.0, "label": "Dealer Locker"},
-		"storage": {"pos": Vector3(-1.15, 1.60, 0.65), "rot": Vector3(-0.04, atan2(3.18, 0.95), 0), "label": "Storage"},
+		"storage": {"pos": Vector3(-1.15, 1.60, 0.89), "rot": Vector3(-0.04, atan2(3.18, 0.95), 0), "label": "Storage"},
 		"door": {"pos": Vector3(0, 1.61, 3.75), "rot": Vector3(0, PI, 0), "label": "Front Door"}
 	}
 	current_room = "main"
@@ -2197,7 +2197,7 @@ func _build_bagging_station() -> void:
 	for child_index: int in range(packing_station_start_index, get_child_count()):
 		var shifted_child: Node = get_child(child_index)
 		if shifted_child is Node3D:
-			(shifted_child as Node3D).position.z += 0.24
+			(shifted_child as Node3D).position.z += 0.48
 
 func _inventory_grams(inventory: Dictionary) -> int:
 	var total: int = 0
@@ -2292,6 +2292,7 @@ func _sync_packing_bench_visuals(force: bool = false) -> void:
 		scale_text.text = "%.2f g" % float(loose_total) if loose_total > 0 else "0.00 g"
 
 func _build_storage_area() -> void:
+	var storage_shelf_start_index: int = get_child_count()
 	_add_box("StorageBack", Vector3(-4.72, 1.38, -0.30), Vector3(0.08, 2.65, 3.35), Color("4a5054"), 0.56, false, "res://assets/textures/brushed_metal.png", Vector3(1.0, 2.0, 2.0))
 	_add_box("ShelfPostL", Vector3(-4.42, 1.35, -1.75), Vector3(0.10, 2.55, 0.10), Color("555c60"), 0.45, false, "res://assets/textures/brushed_metal.png")
 	_add_box("ShelfPostR", Vector3(-4.42, 1.35, 1.15), Vector3(0.10, 2.55, 0.10), Color("555c60"), 0.45, false, "res://assets/textures/brushed_metal.png")
@@ -2315,6 +2316,10 @@ func _build_storage_area() -> void:
 	label.rotation_degrees = Vector3(0, 90, 0)
 	label.modulate = Color("e7e3da")
 	add_child(label)
+	for child_index: int in range(storage_shelf_start_index, get_child_count()):
+		var shifted_child: Node = get_child(child_index)
+		if shifted_child is Node3D:
+			(shifted_child as Node3D).position.z += 0.24
 
 func _build_front_door() -> void:
 	_add_box("DoorFrameTop", Vector3(0, 2.93, 5.75), Vector3(2.24, 0.14, 0.20), Color("e2dbd0"), 0.70)
@@ -2352,12 +2357,49 @@ func _build_apartment_details() -> void:
 	_add_box("CurtainL", Vector3(-4.68, 2.08, 5.68), Vector3(0.32, 1.88, 0.10), Color("9f917e"), 0.94, false, "res://assets/textures/fabric_bluegray.png")
 	_add_box("CurtainR", Vector3(-2.56, 2.08, 5.68), Vector3(0.32, 1.88, 0.10), Color("9f917e"), 0.94, false, "res://assets/textures/fabric_bluegray.png")
 
-	_add_box("KitchenBase", Vector3(2.16, 0.46, -3.54), Vector3(2.25, 0.84, 0.72), Color("d8d3ca"), 0.78, false, "res://assets/textures/laminate.png", Vector3(2.0, 1.0, 1.0))
-	_add_box("KitchenCounter", Vector3(2.22, 0.93, -3.55), Vector3(2.38, 0.10, 0.82), Color("686f73"), 0.34, false, "res://assets/textures/brushed_metal.png", Vector3(2.0, 1.0, 1.0))
-	_add_box("KitchenBacksplash", Vector3(2.22, 1.38, -3.93), Vector3(2.38, 0.78, 0.06), Color("d7d9d8"), 0.72, false, "res://assets/textures/painted_wall.png", Vector3(2.0, 1.0, 1.0))
-	_add_box("KitchenUpper", Vector3(2.26, 2.08, -3.73), Vector3(2.10, 0.92, 0.48), Color("e0dbd1"), 0.80, false, "res://assets/textures/laminate.png", Vector3(2.0, 1.0, 1.0))
-	_add_box("SinkBasin", Vector3(1.68, 0.99, -3.54), Vector3(0.62, 0.06, 0.48), Color("aeb7bb"), 0.18, false, "res://assets/textures/brushed_metal.png")
-	_add_cylinder("FaucetStem", Vector3(1.68, 1.17, -3.86), 0.035, 0.035, 0.35, Color("c6ccce"), 0.22)
+	# Modern matte-black kitchen/sink run inspired by the approved reference.
+	var kitchen_black: Color = Color("17191c")
+	var kitchen_panel: Color = Color("202226")
+	var kitchen_stone: Color = Color("252b29")
+	var kitchen_steel: Color = Color("b9c0c1")
+	var kitchen_green: Color = Color("77d996")
+
+	# Lower cabinet carcass and dark stone worktop.
+	_add_box("KitchenBase", Vector3(2.18, 0.46, -3.54), Vector3(2.48, 0.84, 0.76), kitchen_black, 0.54, false, "res://assets/textures/matte_plastic.png", Vector3(2.0, 1.0, 1.0))
+	_add_box("KitchenToeKick", Vector3(2.18, 0.11, -3.46), Vector3(2.42, 0.16, 0.56), Color("101214"), 0.62, false, "res://assets/textures/matte_plastic.png")
+	_add_box("KitchenCounter", Vector3(2.18, 0.94, -3.52), Vector3(2.62, 0.12, 0.88), kitchen_stone, 0.38, false, "res://assets/textures/matte_plastic.png", Vector3(2.2, 1.0, 1.0))
+	_add_box("KitchenCounterLip", Vector3(2.18, 0.98, -3.08), Vector3(2.62, 0.07, 0.06), Color("333936"), 0.34)
+
+	# Three lower cabinet faces with recessed brushed-metal pulls.
+	var lower_centers: Array[float] = [1.40, 2.18, 2.96]
+	for lower_index: int in range(lower_centers.size()):
+		var lower_x: float = lower_centers[lower_index]
+		_add_box("KitchenLowerDoor%d" % lower_index, Vector3(lower_x, 0.48, -3.135), Vector3(0.72, 0.68, 0.045), kitchen_panel, 0.48, false, "res://assets/textures/matte_plastic.png")
+		_add_box("KitchenLowerHandle%d" % lower_index, Vector3(lower_x, 0.77, -3.105), Vector3(0.30, 0.055, 0.035), kitchen_steel, 0.22, false, "res://assets/textures/brushed_metal.png")
+
+	# Full-height dark stone backsplash.
+	_add_box("KitchenBacksplash", Vector3(2.18, 1.49, -3.935), Vector3(2.62, 0.98, 0.055), Color("252a29"), 0.42, false, "res://assets/textures/matte_plastic.png", Vector3(2.0, 1.0, 1.0))
+
+	# Matte-black upper cabinet bank with three doors.
+	_add_box("KitchenUpper", Vector3(2.18, 2.36, -3.72), Vector3(2.56, 0.94, 0.44), kitchen_black, 0.50, false, "res://assets/textures/matte_plastic.png", Vector3(2.0, 1.0, 1.0))
+	var upper_centers: Array[float] = [1.40, 2.18, 2.96]
+	for upper_index: int in range(upper_centers.size()):
+		var upper_x: float = upper_centers[upper_index]
+		_add_box("KitchenUpperDoor%d" % upper_index, Vector3(upper_x, 2.36, -3.485), Vector3(0.72, 0.82, 0.045), kitchen_panel, 0.46, false, "res://assets/textures/matte_plastic.png")
+		_add_box("KitchenUpperHandle%d" % upper_index, Vector3(upper_x, 2.02, -3.455), Vector3(0.30, 0.05, 0.035), kitchen_steel, 0.22, false, "res://assets/textures/brushed_metal.png")
+
+	# Subtle green under-cabinet task light.
+	_add_box("KitchenUnderCabinetGlow", Vector3(2.18, 1.85, -3.47), Vector3(2.28, 0.025, 0.025), kitchen_green, 0.10, true)
+
+	# Stainless inset sink and black rim.
+	_add_box("SinkRim", Vector3(2.18, 0.995, -3.46), Vector3(0.98, 0.045, 0.56), Color("111416"), 0.26)
+	_add_box("SinkBasin", Vector3(2.18, 1.005, -3.46), Vector3(0.88, 0.055, 0.46), kitchen_steel, 0.16, false, "res://assets/textures/brushed_metal.png")
+
+	# Tall gooseneck-style faucet built from stainless segments.
+	_add_cylinder("FaucetStem", Vector3(2.18, 1.25, -3.79), 0.035, 0.035, 0.48, kitchen_steel, 0.18)
+	_add_cylinder("FaucetTop", Vector3(2.18, 1.48, -3.70), 0.035, 0.035, 0.20, kitchen_steel, 0.18, Vector3(PI / 2.0, 0, 0))
+	_add_cylinder("FaucetSpout", Vector3(2.18, 1.43, -3.60), 0.032, 0.032, 0.15, kitchen_steel, 0.18)
+	_add_cylinder("FaucetControl", Vector3(2.45, 1.15, -3.77), 0.028, 0.028, 0.18, kitchen_steel, 0.20)
 	_add_box("LockerBody", Vector3(4.52, 1.28, -2.20), Vector3(0.82, 2.56, 0.80), Color("24262c"), 0.38, false, "res://assets/textures/brushed_metal.png", Vector3(1.0, 2.0, 1.0))
 	_add_box("LockerInnerDoor", Vector3(4.13, 1.30, -2.20), Vector3(0.05, 2.28, 0.58), Color("1b1d22"), 0.42, false, "res://assets/textures/matte_plastic.png")
 	_add_box("LockerDoorFrameTop", Vector3(4.13, 2.48, -2.20), Vector3(0.05, 0.08, 0.64), Color("33363d"), 0.34)
@@ -2452,6 +2494,7 @@ func _refresh_light_interaction_visuals() -> void:
 func _build_bagging_bench_level3_visual() -> void:
 	if get_node_or_null("BenchIIIBackBoard") != null:
 		return
+	var bench3_start_index: int = get_child_count()
 	var black: Color = Color("171a1d")
 	var dark: Color = Color("202428")
 	var steel: Color = Color("3a4146")
@@ -2486,6 +2529,10 @@ func _build_bagging_bench_level3_visual() -> void:
 	label.rotation_degrees = Vector3(0, -90, 0)
 	label.modulate = Color("9af4b6")
 	add_child(label)
+	for child_index: int in range(bench3_start_index, get_child_count()):
+		var shifted_child: Node = get_child(child_index)
+		if shifted_child is Node3D:
+			(shifted_child as Node3D).position.z += 0.24
 
 func _sync_bagging_bench_level3_visibility() -> void:
 	var upgraded: bool = bagging_level >= 3
@@ -2549,12 +2596,12 @@ func _apply_visual_upgrades() -> void:
 		_set_mesh_color("Shelf2", Color("6f767c"))
 		_set_mesh_color("Shelf3", Color("6f767c"))
 		if get_node_or_null("StorageUpgradeBin") == null:
-			_add_box("StorageUpgradeBin", Vector3(-4.14, 2.245, 0.28), Vector3(0.54, 0.26, 0.58), Color("667881"), 0.76)
+			_add_box("StorageUpgradeBin", Vector3(-4.14, 2.245, 0.52), Vector3(0.54, 0.26, 0.58), Color("667881"), 0.76)
 	if storage_level == 3 and get_node_or_null("StorageShelfBank2") == null:
-		_add_box("StorageShelfBank2", Vector3(-4.72, 1.28, -2.35), Vector3(0.08, 2.48, 1.00), Color("4d5459"), 0.50, false, "res://assets/textures/brushed_metal.png")
+		_add_box("StorageShelfBank2", Vector3(-4.72, 1.28, -2.11), Vector3(0.08, 2.48, 1.00), Color("4d5459"), 0.50, false, "res://assets/textures/brushed_metal.png")
 		for extra_index in range(4):
 			var extra_y: float = 0.34 + float(extra_index) * 0.62
-			_add_box("StorageExtraShelf%d" % extra_index, Vector3(-4.30, extra_y, -2.35), Vector3(0.72, 0.09, 1.00), Color("717980"), 0.50, false, "res://assets/textures/brushed_metal.png")
+			_add_box("StorageExtraShelf%d" % extra_index, Vector3(-4.30, extra_y, -2.11), Vector3(0.72, 0.09, 1.00), Color("717980"), 0.50, false, "res://assets/textures/brushed_metal.png")
 
 	_sync_storage_furniture()
 
