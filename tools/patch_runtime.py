@@ -197,7 +197,8 @@ meta=json.loads(v.read_text())
 meta["release_id"]=RELEASE
 meta["storefront_control_location"]="BudShop top"
 meta["phone_home"]="BudShop, Task, Settings"
-meta["task_page"]="Chapter progress, Rewards"\nmeta["visible_dev_wording"]="removed"
+meta["task_page"]="Chapter progress, Rewards"
+meta["visible_dev_wording"]="removed"
 v.write_text(json.dumps(meta,indent=2)+"\n")
 
 print("Built",RELEASE)
