@@ -45,3 +45,4 @@ Path("debug-dealer-audit.txt").write_text("\n".join(out)+"\n")
 print("found",sorted(found))
 
 # trigger inspector
+# inspect cloudtest51 layout runtime
