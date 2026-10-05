@@ -192,8 +192,8 @@ for row in entries:
         raise SystemExit("hidden stash wall-fit correction lost")
 
     required=[
-        '"KitchenLowerDoor0"',
-        '"KitchenUpperDoor2"',
+        '"KitchenLowerDoor%d"',
+        '"KitchenUpperDoor%d"',
         '"KitchenUnderCabinetGlow"',
         '"SinkRim"',
         '"FaucetTop"',
@@ -226,7 +226,7 @@ main=sources.get("scripts/main.gd","")
 vault=sources.get("scripts/storage_vault.gd","")
 for needle in [
     '"KitchenUnderCabinetGlow"',
-    '"KitchenLowerDoor0"',
+    '"KitchenLowerDoor%d"',
     '"station_workbench", "room": "main", "pos": Vector3(3.95, 1.15, 0.78)',
     '"station_storage", "room": "main", "pos": Vector3(-4.35, 1.35, -0.06)',
 ]:
