@@ -174,7 +174,9 @@ idx.write_text(html)
 v=Path("version.json")
 meta=json.loads(v.read_text())
 meta["release_id"]=RELEASE
-meta["storefront_control_location"]="BudShop top"\nmeta["phone_home"]="BudShop, Task, Settings"\nmeta["task_page"]="Chapter progress, Rewards"
+meta["storefront_control_location"]="BudShop top"
+meta["phone_home"]="BudShop, Task, Settings"
+meta["task_page"]="Chapter progress, Rewards"
 v.write_text(json.dumps(meta,indent=2)+"\n")
 
 print("Built",RELEASE)
