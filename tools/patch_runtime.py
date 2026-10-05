@@ -3,8 +3,8 @@ import struct, hashlib, re, json
 
 SOURCE = Path("index-cloudtest10.pck")
 TARGET = Path("index-cloudtest10.pck")
-PACK_URL = "index-cloudtest10.pck?build=26"
-RELEASE = "0.7.9-beta.19-cloudtest.26"
+PACK_URL = "index-cloudtest10.pck?build=27"
+RELEASE = "0.7.9-beta.19-cloudtest.27"
 
 def align(n, a=32):
     return (n+a-1)//a*a
@@ -134,6 +134,27 @@ for row in entries:
         raise SystemExit("Rewards dock button missing")
     text=text.replace(old_dock,new_dock,1)
 
+    # Remove leftover developer/meta wording from player-facing text.
+    text=text.replace(
+        '"description": "Use the fictional Reeves contact once to reduce Heat."',
+        '"description": "Use the Reeves contact once to reduce Heat."',
+        1
+    )
+    text=text.replace(
+        'message = "A fictional contact named Reeves says people have been asking questions nearby."',
+        'message = "Reeves says people have been asking questions nearby."',
+        1
+    )
+    rewards_intro = (
+        '\tvar intro: Label = Label.new()\n'
+        '\tintro.text = "Build AFewBuds across eight career tracks. Heat now turns Chapter 3 into a live risk-management layer alongside loyalty, staff, sales and genetics."\n'
+        '\tintro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART\n'
+        '\tphone_list.add_child(intro)\n\n'
+    )
+    if rewards_intro not in text:
+        raise SystemExit("Rewards dev intro block missing")
+    text=text.replace(rewards_intro,"",1)
+
     # Verification.
     checks=[
         '"Task", "Chapter progress & rewards", "task"',
@@ -176,7 +197,7 @@ meta=json.loads(v.read_text())
 meta["release_id"]=RELEASE
 meta["storefront_control_location"]="BudShop top"
 meta["phone_home"]="BudShop, Task, Settings"
-meta["task_page"]="Chapter progress, Rewards"
+meta["task_page"]="Chapter progress, Rewards"\nmeta["visible_dev_wording"]="removed"
 v.write_text(json.dumps(meta,indent=2)+"\n")
 
 print("Built",RELEASE)
