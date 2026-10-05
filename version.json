@@ -1,5 +1,5 @@
 {
-  "release_id": "0.7.9-beta.19-cloudtest.62",
+  "release_id": "0.7.9-beta.19-cloudtest.63",
   "game_build": "0.7.9-beta.19",
   "channel": "main-based-cloud-test",
   "updater": "network-only-no-service-worker",
@@ -77,7 +77,7 @@
   "bagging_bench_iii_perk": "continuous manual bagging; each bag is randomly 1-4g and the minigame continues until the selected strain has no trimmed product left",
   "cloudtest_loader_freshness": "fetches version.json with no-store before launch and reloads through a unique query when a newer release is detected",
   "cloudtest_visible_build": "window title includes cloudtest release number so testers can verify the loaded build",
-  "runtime_payload": "cloudtest62 PCK with water/electric property utility foundation",
+  "runtime_payload": "cloudtest63 PCK with complete Chapter 4 storyline/milestones and property-offer handoff state",
   "dealer_storage_shelf_alignment": "premium jars/pouches moved deeper into cabinet and seated on shelf-relative top surfaces",
   "bagging_bench_iii_replacement": "Level III now hides legacy lower frame/legs/shelf/bins so the industrial workstation replaces rather than overlays the old bench",
   "packing_scale_visual": "compact matte-black digital scale fully on tabletop with centered brushed-steel platform and player-facing green display/buttons",
@@ -102,5 +102,10 @@
   "water_utility": "Property water is now billed at $2 per real watering event rather than being a free/inventory resource",
   "water_sources": "Manual watering, Auto Water Kit, live production-worker watering, and away-time production-worker care all create water usage",
   "water_bills": "Separate Water Bill balance, payment, save persistence, daily closeout cost and lifetime utility stats",
-  "water_advancement": "Added Pay the Water milestone for first paid water bill"
+  "water_advancement": "Added Pay the Water milestone for first paid water bill",
+  "chapter4": "Chapter 4 - Outgrowing the Apartment is active after Chapter 3",
+  "chapter4_milestones": "Apartment at Capacity; Distribution Network; Crew Operations; Demand Outgrows the Space; Expansion Ready",
+  "chapter4_story": "Rod sends one-time progression texts as the apartment operation outgrows its space",
+  "chapter4_finale": "Completing Chapter 4 persistently unlocks the first property opportunity for the upcoming house system",
+  "expansion_lane": "New Advancements lane appears only after Chapter 3 is complete"
 }
