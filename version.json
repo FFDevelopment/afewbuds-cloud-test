@@ -1,5 +1,5 @@
 {
-  "release_id": "0.7.9-beta.19-cloudtest.60",
+  "release_id": "0.7.9-beta.19-cloudtest.61",
   "game_build": "0.7.9-beta.19",
   "channel": "main-based-cloud-test",
   "updater": "network-only-no-service-worker",
@@ -77,7 +77,7 @@
   "bagging_bench_iii_perk": "continuous manual bagging; each bag is randomly 1-4g and the minigame continues until the selected strain has no trimmed product left",
   "cloudtest_loader_freshness": "fetches version.json with no-store before launch and reloads through a unique query when a newer release is detected",
   "cloudtest_visible_build": "window title includes cloudtest release number so testers can verify the loaded build",
-  "runtime_payload": "cloudtest60 PCK with advancement phone width containment",
+  "runtime_payload": "cloudtest61 PCK with Task screen width containment on top of cloudtest60 roadmap",
   "dealer_storage_shelf_alignment": "premium jars/pouches moved deeper into cabinet and seated on shelf-relative top surfaces",
   "bagging_bench_iii_replacement": "Level III now hides legacy lower frame/legs/shelf/bins so the industrial workstation replaces rather than overlays the old bench",
   "packing_scale_visual": "compact matte-black digital scale fully on tabletop with centered brushed-steel platform and player-facing green display/buttons",
@@ -96,5 +96,7 @@
   "advancement_new_milestones": "Bagging Bench III / production volume plus Dealer Storage and dealer-network progression",
   "chapter4_preview": "Chapter 3 completion now previews Chapter 4: Outgrowing the Apartment without enabling unfinished mechanics",
   "advancement_phone_width_fix": "Advancements no longer increases phone/game width; roadmap controls wrap within the existing phone viewport and horizontal scrolling stays disabled",
-  "advancement_header_compaction": "Career roadmap and milestone titles split across lines; claim-all label shortened"
+  "advancement_header_compaction": "Career roadmap and milestone titles split across lines; claim-all label shortened",
+  "task_phone_width_fix": "Task story card now wraps chapter titles/objectives and runs fixed-width containment so it cannot stretch the phone/game viewport",
+  "task_story_header": "Chapter headings split into compact multi-line phone-safe titles"
 }
