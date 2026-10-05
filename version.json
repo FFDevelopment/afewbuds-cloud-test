@@ -1,5 +1,5 @@
 {
-  "release_id": "0.7.9-beta.19-cloudtest.47",
+  "release_id": "0.7.9-beta.19-cloudtest.48",
   "game_build": "0.7.9-beta.19",
   "channel": "main-based-cloud-test",
   "updater": "network-only-no-service-worker",
@@ -65,5 +65,8 @@
   "grow_tent_slot_chain": "Tent Slot 1 -> Slot 2 -> Slot 3",
   "upgrade_page": "permanent expandable-system cards plus Installed/Available equipment sections",
   "dealer_storage_transfer_ui": "one row per strain with +1 +5 MAX and -1 -5 ALL",
-  "dealer_storage_world_label": "physical locker says DEALER STORAGE"
+  "dealer_storage_world_label": "physical locker says DEALER STORAGE",
+  "dealer_storage_visual_progression": "Levels I-II use original locker; Level III introduces premium matte-black green-lit cabinet; Level IV keeps same cabinet",
+  "dealer_storage_premium_interaction": "Level III-IV premium door opens before Dealer Storage UI and closes when UI closes",
+  "dealer_storage_level_capacity": "I 100g, II 200g, III 300g, IV 400g"
 }
