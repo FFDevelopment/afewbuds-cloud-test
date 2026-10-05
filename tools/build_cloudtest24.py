@@ -333,7 +333,7 @@ for row in entries:
         'BenchIIITaskLight',
         'rng.randi_range(1, mini(4, amount))',
         'rng.randi_range(1, mini(4, remaining))',
-        '"keep bagging."',
+        'keep bagging.',
         'Vector3(2.16, 0.46, -3.54)',
         'premium_dealer_locker_root.position = Vector3(4.52, 0.0, -2.20)',
         '(shifted_child as Node3D).position.z += 0.24',
