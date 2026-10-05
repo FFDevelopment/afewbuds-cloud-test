@@ -54,3 +54,5 @@ print("found",sorted(found))
 # capture storage vault script in audit
 
 # inspect cloudtest54 for room layout and kitchen55
+
+# inspect cloudtest55 kitchen for cloudtest56 frame clearance
