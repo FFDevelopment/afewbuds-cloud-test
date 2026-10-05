@@ -320,3 +320,5 @@ meta["dealer_storage_premium_interaction"]="Level III-IV premium door opens befo
 meta["dealer_storage_level_capacity"]="I 100g, II 200g, III 300g, IV 400g"
 VERSION.write_text(json.dumps(meta,indent=2)+"\n")
 print("Built",RELEASE,len(packed))
+
+# finalized cloudtest48 deployment marker
