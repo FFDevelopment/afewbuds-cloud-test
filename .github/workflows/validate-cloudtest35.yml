@@ -36,7 +36,7 @@ jobs:
               if name=="scripts/main.gd":
                   main=b[fb+off:fb+off+size].decode("utf-8","replace").rstrip(" \n\0")
                   break
-          for name in ["_build_phone_home","_refresh_phone","_phone_parent_app"]:
+          for name in ["_build_phone_home","_build_settings_app","_refresh_phone","_phone_parent_app"]:
               m=re.search(r'^func '+re.escape(name)+r'\([^\n]*\)(?: -> [^:]+)?:\n.*?(?=^func |\Z)',main,re.M|re.S)
               print("\n===== "+name+" =====")
               print(m.group(0).rstrip() if m else "<MISSING>")
