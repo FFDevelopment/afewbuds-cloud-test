@@ -1,11 +1,12 @@
 from pathlib import Path
 import struct, hashlib, re, json, collections
 
-PCK=Path("index-cloudtest10.pck")
+SOURCE=Path("index-cloudtest10.pck")
+PCK=Path("index-cloudtest25.pck")
 HTML=Path("index.html")
 VERSION=Path("version.json")
 RELEASE="0.7.9-beta.19-cloudtest.45"
-PACK_URL="index-cloudtest10.pck?build=45"
+PACK_URL="index-cloudtest25.pck?build=45"
 REMOVE={"scripts/personal_inventory.gd","scripts/inventory_slot.gd"}
 
 def al(n,a=32): return (n+a-1)//a*a
@@ -53,7 +54,7 @@ def up(src,name,new,before):
     if at<0: raise SystemExit("anchor "+before)
     return src[:at]+new.rstrip()+"\n\n"+src[at:]
 
-b,fb,entries=parse(PCK); final=[]; found=False
+b,fb,entries=parse(SOURCE); final=[]; found=False
 for row in entries:
     if row[0] in REMOVE: continue
     if row[0]=="scripts/main.gd":
