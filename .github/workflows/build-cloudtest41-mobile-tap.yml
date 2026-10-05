@@ -1,0 +1,33 @@
+name: Build cloudtest41 mobile tap fix
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "tools/patch_cloudtest41_mobile_tap.py"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Patch mobile touch controller
+        run: python tools/patch_cloudtest41_mobile_tap.py
+      - name: Commit cloudtest41 runtime
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index-cloudtest10.pck index.html version.json BUILD_VERSION.txt
+          if git diff --cached --quiet; then
+            echo "No runtime changes"
+            exit 0
+          fi
+          git commit -m "Publish cloudtest41 instant mobile phone taps"
+          git pull --rebase origin main
+          git push
