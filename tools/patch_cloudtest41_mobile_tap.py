@@ -1,2 +1,2 @@
-# cloudtest55 build trigger v2
+# cloudtest56 build trigger
 import build_cloudtest24
