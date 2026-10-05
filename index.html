@@ -3,7 +3,10 @@
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
-		<title>AFewBuds Cloud Test 0.7.9-beta.19</title>
+	<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+	<meta http-equiv="Pragma" content="no-cache">
+	<meta http-equiv="Expires" content="0">
+		<title>AFewBuds Cloud Test 0.7.9-beta.19-cloudtest.52</title>
 		<style>
 html, body, #canvas {
 	margin: 0;
@@ -429,12 +432,12 @@ body {
 		<script src="shared/afb-cloud-accountsync10.js?v=0.7.9-beta.19-leaderboard40"></script>
 		<script src="index-accountsync10.js?v=0.7.9-beta.19-accountsync10"></script>
 		<script>
-const AFB_TEST_RELEASE = "0.7.9-beta.19-cloudtest.51";
-const AFB_TEST_TITLE = "AFewBuds Cloud Test v0.7.9-beta.19";
+const AFB_TEST_RELEASE = "0.7.9-beta.19-cloudtest.52";
+const AFB_TEST_TITLE = "AFewBuds Cloud Test v0.7.9-beta.19-cloudtest.52";
 function afbKeepTestTitle(){ if(document.title !== AFB_TEST_TITLE) document.title = AFB_TEST_TITLE; }
 afbKeepTestTitle();
 setInterval(afbKeepTestTitle, 1000);
-const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":true,"fileSizes":{"index-cloudtest10.pck?build=51":25553764,"index.wasm":37902138},"focusCanvas":true,"mainPack":"index-cloudtest10.pck?build=51","gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":""};
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":true,"fileSizes":{"index-cloudtest10.pck?build=52":25553764,"index.wasm":37902138},"focusCanvas":true,"mainPack":"index-cloudtest10.pck?build=52","gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":""};
 const GODOT_THREADS_ENABLED = false;
 let AFB_GAME_STARTED = false;
 let AFB_GAME_STARTING = false;
@@ -952,6 +955,25 @@ document.getElementById('afb-account-change-password').addEventListener('click',
 	finally { button.disabled=false; }
 });
 
+async function afbEnsureFreshCloudTest(){
+	try {
+		const response = await fetch('version.json?afb_fresh=' + Date.now(), {cache:'no-store'});
+		if (!response.ok) return true;
+		const latest = await response.json();
+		const release = String(latest && latest.release_id || '');
+		if (release && release !== AFB_TEST_RELEASE) {
+			const url = new URL(window.location.href);
+			url.searchParams.set('afb_build', release);
+			url.searchParams.set('afb_refresh', String(Date.now()));
+			window.location.replace(url.toString());
+			return false;
+		}
+	} catch (e) {
+		console.warn('AFewBuds cloud-test freshness check skipped.', e);
+	}
+	return true;
+}
+
 async function afbBootAccountGate(){
 	const gate = document.getElementById('afb-account-gate');
 	const resetToken = new URLSearchParams(window.location.search).get('reset');
@@ -970,6 +992,7 @@ async function afbBootAccountGate(){
 }
 
 (async function afbStandaloneBoot(){
+	if (!(await afbEnsureFreshCloudTest())) return;
 	// Standalone cloud-test never uses the legacy web updater.
 	// Remove old registrations/caches left by earlier test builds, then boot directly.
 	try {
