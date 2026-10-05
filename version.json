@@ -1,5 +1,5 @@
 {
-  "release_id": "0.7.9-beta.19-cloudtest.53",
+  "release_id": "0.7.9-beta.19-cloudtest.54",
   "game_build": "0.7.9-beta.19",
   "channel": "main-based-cloud-test",
   "updater": "network-only-no-service-worker",
@@ -77,7 +77,10 @@
   "bagging_bench_iii_perk": "continuous manual bagging; each bag is randomly 1-4g and the minigame continues until the selected strain has no trimmed product left",
   "cloudtest_loader_freshness": "fetches version.json with no-store before launch and reloads through a unique query when a newer release is detected",
   "cloudtest_visible_build": "window title includes cloudtest release number so testers can verify the loaded build",
-  "runtime_payload": "cloudtest53 PCK with locker shelf alignment and Bagging Bench III visual replacement",
+  "runtime_payload": "cloudtest54 PCK with scale rebuild and Hidden Wall Stash wall-fit correction",
   "dealer_storage_shelf_alignment": "premium jars/pouches moved deeper into cabinet and seated on shelf-relative top surfaces",
-  "bagging_bench_iii_replacement": "Level III now hides legacy lower frame/legs/shelf/bins so the industrial workstation replaces rather than overlays the old bench"
+  "bagging_bench_iii_replacement": "Level III now hides legacy lower frame/legs/shelf/bins so the industrial workstation replaces rather than overlays the old bench",
+  "packing_scale_visual": "compact matte-black digital scale fully on tabletop with centered brushed-steel platform and player-facing green display/buttons",
+  "packing_scale_orientation": "front control face moved from Z axis to -X face to match right-wall bench orientation",
+  "hidden_stash_wall_fit": "Hidden Wall Stash root moved 0.24 units toward left wall to eliminate floating gap"
 }
