@@ -1,5 +1,5 @@
 {
-  "release_id": "0.7.9-beta.19-cloudtest.34",
+  "release_id": "0.7.9-beta.19-cloudtest.35",
   "game_build": "0.7.9-beta.19",
   "channel": "main-based-cloud-test",
   "updater": "network-only-no-service-worker",
@@ -34,5 +34,7 @@
   "hidden_wall_stash": "$3250, 1000g sellable storage, replaces vault, raid-proof, animated frame",
   "raid_seizure": "all growing plants, packing-bench product and exposed storage",
   "friend_dealer_accounting": "individual sales/gross/commission plus end-of-day summary",
-  "hidden_stash_visual": "same stash geometry; tightened right-side texture crop so colorful AFewBuds art fills the inner face evenly"
+  "hidden_stash_visual": "same stash geometry; tightened right-side texture crop so colorful AFewBuds art fills the inner face evenly",
+  "account_settings": "Settings > Account: username availability/change, email/update preference, password change; account id and cloud career preserved",
+  "password_recovery_note": "Account page explains that an email is required for forgotten-password recovery"
 }
