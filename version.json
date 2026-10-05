@@ -1,5 +1,5 @@
 {
-  "release_id": "0.7.9-beta.19-cloudtest.58",
+  "release_id": "0.7.9-beta.19-cloudtest.59",
   "game_build": "0.7.9-beta.19",
   "channel": "main-based-cloud-test",
   "updater": "network-only-no-service-worker",
@@ -77,7 +77,7 @@
   "bagging_bench_iii_perk": "continuous manual bagging; each bag is randomly 1-4g and the minigame continues until the selected strain has no trimmed product left",
   "cloudtest_loader_freshness": "fetches version.json with no-store before launch and reloads through a unique query when a newer release is detected",
   "cloudtest_visible_build": "window title includes cloudtest release number so testers can verify the loaded build",
-  "runtime_payload": "cloudtest58 PCK with window placeholder cleanup and final Hidden Wall Stash wall-fit pass",
+  "runtime_payload": "cloudtest59 PCK with advancement roadmap phase 1",
   "dealer_storage_shelf_alignment": "premium jars/pouches moved deeper into cabinet and seated on shelf-relative top surfaces",
   "bagging_bench_iii_replacement": "Level III now hides legacy lower frame/legs/shelf/bins so the industrial workstation replaces rather than overlays the old bench",
   "packing_scale_visual": "compact matte-black digital scale fully on tabletop with centered brushed-steel platform and player-facing green display/buttons",
@@ -90,5 +90,9 @@
   "planting_seed_picker": "empty pots list every owned seed type instead of stopping after 3",
   "planting_seed_picker_scroll": "direct plant panel uses PhoneTouchScroll so large seed collections remain usable on mobile",
   "planting_seed_picker_future_genetics": "owned seed_inventory entries not present in SEED_ORDER are appended automatically",
-  "window_cleanup": "removed WindowBuildingA/B/C placeholder boxes that appeared as three dark squares on the living-room window"
+  "window_cleanup": "removed WindowBuildingA/B/C placeholder boxes that appeared as three dark squares on the living-room window",
+  "advancement_roadmap": "Advancements reorganized into progression lanes with current-tier focus, ready-ahead surfacing, lane completion, and locked-next preview",
+  "advancement_lanes": "Growing, Production, Sales, Dealers, Business, Genetics, Heat / Street, Property",
+  "advancement_new_milestones": "Bagging Bench III / production volume plus Dealer Storage and dealer-network progression",
+  "chapter4_preview": "Chapter 3 completion now previews Chapter 4: Outgrowing the Apartment without enabling unfinished mechanics"
 }
