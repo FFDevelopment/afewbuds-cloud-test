@@ -4,8 +4,8 @@ import struct, hashlib, re, json, collections
 PCK=Path("index-cloudtest10.pck")
 HTML=Path("index.html")
 VERSION=Path("version.json")
-RELEASE="0.7.9-beta.19-cloudtest.50"
-PACK_URL="index-cloudtest10.pck?build=50"
+RELEASE="0.7.9-beta.19-cloudtest.51"
+PACK_URL="index-cloudtest10.pck?build=51"
 
 def align(n,a=32): return (n+a-1)//a*a
 
@@ -45,13 +45,6 @@ def rebuild(blob,fb,entries):
 def pat(name):
     return re.compile(r"^func "+re.escape(name)+r"\([^\n]*\)(?: -> [^:]+)?:\n.*?(?=^func |\Z)",re.M|re.S)
 
-def replace_func(src,name,new):
-    ms=list(pat(name).finditer(src))
-    if not ms: raise SystemExit("missing "+name)
-    at=ms[0].start()
-    for m in reversed(ms): src=src[:m.start()]+src[m.end():]
-    return src[:at]+new.rstrip()+"\n\n"+src[at:]
-
 blob,fb,entries=parse(PCK)
 found=False
 for row in entries:
@@ -60,289 +53,122 @@ for row in entries:
     found=True
     text=row[1].decode("utf-8","replace").rstrip(" \n\0")
 
-    # Replace the single premium-door runtime state with explicit left/right doors.
-    old_vars='''var premium_dealer_locker_root: Node3D
-var premium_dealer_locker_door_pivot: Node3D
-var premium_dealer_locker_open: bool = false
-var premium_dealer_locker_tween: Tween
-'''
-    new_vars='''var premium_dealer_locker_root: Node3D
-var premium_dealer_locker_left_door_pivot: Node3D
-var premium_dealer_locker_right_door_pivot: Node3D
-var premium_dealer_locker_open: bool = false
-var premium_dealer_locker_left_tween: Tween
-var premium_dealer_locker_right_tween: Tween
-var dealer_storage_reopen_after_pause: bool = false
-'''
-    if old_vars in text:
-        text=text.replace(old_vars,new_vars,1)
-    elif "var premium_dealer_locker_left_door_pivot: Node3D" not in text:
-        raise SystemExit("premium door variable block missing")
+    # 1) Kitchen: slide the complete sink/cabinet run left until it meets the
+    # right grow-room door frame at x ~= 1.02 without overlapping the doorway.
+    m=pat("_build_apartment_details").search(text)
+    if not m: raise SystemExit("_build_apartment_details missing")
+    apt=m.group(0)
+    kitchen_replacements={
+        'Vector3(3.43, 0.46, -3.54)':'Vector3(2.16, 0.46, -3.54)',
+        'Vector3(3.43, 0.93, -3.55)':'Vector3(2.22, 0.93, -3.55)',
+        'Vector3(3.43, 1.38, -3.93)':'Vector3(2.22, 1.38, -3.93)',
+        'Vector3(3.53, 2.08, -3.73)':'Vector3(2.26, 2.08, -3.73)',
+        'Vector3(2.95, 0.99, -3.54)':'Vector3(1.68, 0.99, -3.54)',
+        'Vector3(2.95, 1.17, -3.86)':'Vector3(1.68, 1.17, -3.86)',
+    }
+    for old,new in kitchen_replacements.items():
+        if old not in apt: raise SystemExit("kitchen anchor missing "+old)
+        apt=apt.replace(old,new,1)
 
-    build_func=r'''func _build_premium_dealer_locker_visual() -> void:
-	if premium_dealer_locker_root != null:
-		return
-	premium_dealer_locker_root = Node3D.new()
-	premium_dealer_locker_root.name = "PremiumDealerStorage"
-	premium_dealer_locker_root.position = Vector3(4.52, 0.0, 2.68)
-	add_child(premium_dealer_locker_root)
+    # 2) Basic Dealer Storage I/II: move from the front side of the workbench
+    # (z +2.68) to the opposite/back side (center z -2.20).
+    locker_replacements={
+        'Vector3(4.52, 1.28, 2.68)':'Vector3(4.52, 1.28, -2.20)',
+        'Vector3(4.13, 1.30, 2.68)':'Vector3(4.13, 1.30, -2.20)',
+        'Vector3(4.13, 2.48, 2.68)':'Vector3(4.13, 2.48, -2.20)',
+        'Vector3(4.13, 0.13, 2.68)':'Vector3(4.13, 0.13, -2.20)',
+        'Vector3(4.13, 1.30, 2.37)':'Vector3(4.13, 1.30, -2.51)',
+        'Vector3(4.13, 1.30, 2.99)':'Vector3(4.13, 1.30, -1.89)',
+        'Vector3(4.08, 1.30 + vent_offset, 2.68)':'Vector3(4.08, 1.30 + vent_offset, -2.20)',
+        'Vector3(4.08, 1.28, 2.56)':'Vector3(4.08, 1.28, -2.32)',
+        'Vector3(4.06, 1.26, 2.56)':'Vector3(4.06, 1.26, -2.32)',
+        'Vector3(4.045, 1.26, 2.56)':'Vector3(4.045, 1.26, -2.32)',
+        'Vector3(4.10, 2.00, 3.02)':'Vector3(4.10, 2.00, -1.86)',
+        'Vector3(4.10, 0.64, 3.02)':'Vector3(4.10, 0.64, -1.86)',
+        'Vector3(4.80, 0.08, 2.95)':'Vector3(4.80, 0.08, -1.93)',
+        'Vector3(4.80, 0.08, 2.41)':'Vector3(4.80, 0.08, -2.47)',
+        'Vector3(4.09, 1.62, 2.70)':'Vector3(4.09, 1.62, -2.18)',
+        'Vector3(4.88, 1.46, 2.51)':'Vector3(4.88, 1.46, -2.37)',
+    }
+    for old,new in locker_replacements.items():
+        if old not in apt: raise SystemExit("basic locker anchor missing "+old)
+        apt=apt.replace(old,new,1)
+    text=text[:m.start()]+apt.rstrip()+"\n\n"+text[m.end():]
 
-	var black: Color = Color("171a1d")
-	var edge: Color = Color("252a2e")
-	var green: Color = Color("43f08a")
-	var interior: Color = Color("0e1712")
+    # 3) Premium Level III/IV cabinet follows the same new Dealer Storage spot.
+    old_premium='premium_dealer_locker_root.position = Vector3(4.52, 0.0, 2.68)'
+    new_premium='premium_dealer_locker_root.position = Vector3(4.52, 0.0, -2.20)'
+    if old_premium not in text:
+        if new_premium not in text: raise SystemExit("premium locker position anchor missing")
+    else:
+        text=text.replace(old_premium,new_premium,1)
 
-	_dealer_premium_box(premium_dealer_locker_root, "PremiumBack", Vector3(0.28, 1.42, 0.0), Vector3(0.12, 2.70, 1.38), interior, 0.34, "res://assets/textures/brushed_metal.png")
-	_dealer_premium_box(premium_dealer_locker_root, "PremiumTop", Vector3(-0.02, 2.77, 0.0), Vector3(0.72, 0.12, 1.50), black, 0.32, "res://assets/textures/brushed_metal.png")
-	_dealer_premium_box(premium_dealer_locker_root, "PremiumBottom", Vector3(-0.02, 0.08, 0.0), Vector3(0.72, 0.16, 1.50), black, 0.32, "res://assets/textures/brushed_metal.png")
-	_dealer_premium_box(premium_dealer_locker_root, "PremiumSideL", Vector3(-0.02, 1.42, -0.72), Vector3(0.72, 2.62, 0.10), black, 0.32, "res://assets/textures/brushed_metal.png")
-	_dealer_premium_box(premium_dealer_locker_root, "PremiumSideR", Vector3(-0.02, 1.42, 0.72), Vector3(0.72, 2.62, 0.10), black, 0.32, "res://assets/textures/brushed_metal.png")
-
-	for shelf_y: float in [0.68, 1.13, 1.58, 2.03]:
-		_dealer_premium_box(premium_dealer_locker_root, "PremiumShelf", Vector3(-0.10, shelf_y, 0.0), Vector3(0.55, 0.055, 1.20), edge, 0.30, "res://assets/textures/brushed_metal.png")
-	_dealer_premium_box(premium_dealer_locker_root, "PremiumDrawer1", Vector3(-0.34, 0.42, 0.0), Vector3(0.08, 0.30, 1.10), Color("202428"), 0.28, "res://assets/textures/brushed_metal.png")
-	_dealer_premium_box(premium_dealer_locker_root, "PremiumDrawer2", Vector3(-0.34, 0.15, 0.0), Vector3(0.08, 0.20, 1.10), Color("1b1f22"), 0.28, "res://assets/textures/brushed_metal.png")
-
-	_dealer_premium_box(premium_dealer_locker_root, "PremiumLedTop", Vector3(-0.38, 2.59, 0.0), Vector3(0.025, 0.025, 1.28), green, 0.10, "", true)
-	_dealer_premium_box(premium_dealer_locker_root, "PremiumLedLeft", Vector3(-0.38, 1.42, -0.63), Vector3(0.025, 2.35, 0.025), green, 0.10, "", true)
-	_dealer_premium_box(premium_dealer_locker_root, "PremiumLedRight", Vector3(-0.38, 1.42, 0.63), Vector3(0.025, 2.35, 0.025), green, 0.10, "", true)
-	var glow: OmniLight3D = OmniLight3D.new()
-	glow.name = "PremiumInteriorGlow"
-	glow.position = Vector3(-0.18, 1.65, 0.0)
-	glow.light_color = Color("4cff96")
-	glow.light_energy = 0.45
-	glow.omni_range = 2.1
-	premium_dealer_locker_root.add_child(glow)
-
-	_dealer_premium_jar(premium_dealer_locker_root, "PremiumJarA", Vector3(-0.38, 2.20, -0.38), 0.11, 0.22, Color("718d48"))
-	_dealer_premium_jar(premium_dealer_locker_root, "PremiumJarB", Vector3(-0.38, 2.20, 0.00), 0.10, 0.20, Color("87934e"))
-	_dealer_premium_jar(premium_dealer_locker_root, "PremiumJarC", Vector3(-0.38, 2.20, 0.34), 0.08, 0.17, Color("667e40"))
-	_dealer_premium_jar(premium_dealer_locker_root, "PremiumJarD", Vector3(-0.38, 1.76, -0.30), 0.10, 0.20, Color("8b7d45"))
-	_dealer_premium_jar(premium_dealer_locker_root, "PremiumJarE", Vector3(-0.38, 1.76, 0.18), 0.10, 0.20, Color("6d8a4a"))
-	_dealer_premium_box(premium_dealer_locker_root, "PremiumPouchA", Vector3(-0.39, 1.34, -0.26), Vector3(0.08, 0.30, 0.28), Color("485f52"), 0.62)
-	_dealer_premium_box(premium_dealer_locker_root, "PremiumPouchB", Vector3(-0.39, 1.34, 0.12), Vector3(0.08, 0.25, 0.24), Color("58715d"), 0.62)
-
-	# Two true door leaves. Both are mounted from the front face and hinge from
-	# opposite outer edges. Their open angles are opposite signs so both swing
-	# toward the player, never through the cabinet interior.
-	premium_dealer_locker_left_door_pivot = Node3D.new()
-	premium_dealer_locker_left_door_pivot.name = "PremiumLeftDoorPivot"
-	premium_dealer_locker_left_door_pivot.position = Vector3(-0.42, 1.43, -0.73)
-	premium_dealer_locker_root.add_child(premium_dealer_locker_left_door_pivot)
-	_dealer_premium_box(premium_dealer_locker_left_door_pivot, "PremiumLeftDoor", Vector3(-0.02, 0.0, 0.36), Vector3(0.08, 2.55, 0.70), Color("181b1e"), 0.30, "res://assets/textures/brushed_metal.png")
-	_dealer_premium_box(premium_dealer_locker_left_door_pivot, "PremiumLeftLedOuter", Vector3(-0.07, 0.0, 0.03), Vector3(0.025, 2.30, 0.025), green, 0.10, "", true)
-	_dealer_premium_box(premium_dealer_locker_left_door_pivot, "PremiumLeftHandle", Vector3(-0.09, 0.0, 0.08), Vector3(0.08, 0.42, 0.09), Color("555d61"), 0.22, "res://assets/textures/brushed_metal.png")
-
-	premium_dealer_locker_right_door_pivot = Node3D.new()
-	premium_dealer_locker_right_door_pivot.name = "PremiumRightDoorPivot"
-	premium_dealer_locker_right_door_pivot.position = Vector3(-0.42, 1.43, 0.73)
-	premium_dealer_locker_root.add_child(premium_dealer_locker_right_door_pivot)
-	_dealer_premium_box(premium_dealer_locker_right_door_pivot, "PremiumRightDoor", Vector3(-0.02, 0.0, -0.36), Vector3(0.08, 2.55, 0.70), Color("181b1e"), 0.30, "res://assets/textures/brushed_metal.png")
-	_dealer_premium_box(premium_dealer_locker_right_door_pivot, "PremiumRightLedOuter", Vector3(-0.07, 0.0, -0.03), Vector3(0.025, 2.30, 0.025), green, 0.10, "", true)
-	_dealer_premium_box(premium_dealer_locker_right_door_pivot, "PremiumRightHandle", Vector3(-0.09, 0.0, -0.08), Vector3(0.08, 0.42, 0.09), Color("555d61"), 0.22, "res://assets/textures/brushed_metal.png")
-	_dealer_premium_box(premium_dealer_locker_right_door_pivot, "PremiumKeypad", Vector3(-0.095, -0.08, -0.22), Vector3(0.06, 0.28, 0.16), Color("111416"), 0.22)
-	_dealer_premium_box(premium_dealer_locker_right_door_pivot, "PremiumKeypadRing", Vector3(-0.13, -0.12, -0.22), Vector3(0.018, 0.07, 0.07), green, 0.10, "", true)
-
-	var left_label: Label3D = Label3D.new()
-	left_label.text = "DEALER"
-	left_label.font_size = 22
-	left_label.pixel_size = 0.0026
-	left_label.position = Vector3(-0.10, 0.42, 0.34)
-	left_label.rotation_degrees = Vector3(0, -90, 0)
-	left_label.modulate = Color("7df5a9")
-	premium_dealer_locker_left_door_pivot.add_child(left_label)
-
-	var right_label: Label3D = Label3D.new()
-	right_label.text = "STORAGE"
-	right_label.font_size = 22
-	right_label.pixel_size = 0.0026
-	right_label.position = Vector3(-0.10, 0.42, -0.34)
-	right_label.rotation_degrees = Vector3(0, -90, 0)
-	right_label.modulate = Color("7df5a9")
-	premium_dealer_locker_right_door_pivot.add_child(right_label)
-
-	premium_dealer_locker_root.visible = false
-	premium_dealer_locker_open = false
-'''
-    text=replace_func(text,"_build_premium_dealer_locker_visual",build_func)
-
-    sync_func=r'''func _sync_dealer_locker_visual() -> void:
-	var premium: bool = dealer_locker_level >= 3
-	for child: Node in get_children():
-		if not child is Node3D:
-			continue
-		var node: Node3D = child as Node3D
-		var part_name: String = str(node.name)
-		if part_name.begins_with("Locker") or part_name in ["DealerBasicLogo", "DealerBasicTag"]:
-			node.visible = not premium
-	if premium_dealer_locker_root != null:
-		premium_dealer_locker_root.visible = premium
-	if not premium:
-		if premium_dealer_locker_left_door_pivot != null:
-			premium_dealer_locker_left_door_pivot.rotation.y = 0.0
-		if premium_dealer_locker_right_door_pivot != null:
-			premium_dealer_locker_right_door_pivot.rotation.y = 0.0
-		premium_dealer_locker_open = false
-'''
-    text=replace_func(text,"_sync_dealer_locker_visual",sync_func)
-
-    door_func=r'''func _set_premium_dealer_locker_open(opened: bool) -> void:
-	if premium_dealer_locker_left_door_pivot == null or premium_dealer_locker_right_door_pivot == null or dealer_locker_level < 3:
-		return
-	if premium_dealer_locker_left_tween != null and premium_dealer_locker_left_tween.is_running():
-		premium_dealer_locker_left_tween.kill()
-	if premium_dealer_locker_right_tween != null and premium_dealer_locker_right_tween.is_running():
-		premium_dealer_locker_right_tween.kill()
-	premium_dealer_locker_open = opened
-
-	# Front of the cabinet is negative X. Left leaf uses negative Y rotation,
-	# right leaf positive Y rotation; both move toward negative X/outward.
-	var left_target: float = deg_to_rad(-102.0) if opened else 0.0
-	var right_target: float = deg_to_rad(102.0) if opened else 0.0
-
-	premium_dealer_locker_left_tween = create_tween()
-	premium_dealer_locker_left_tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
-	premium_dealer_locker_left_tween.tween_property(premium_dealer_locker_left_door_pivot, "rotation:y", left_target, 0.32)
-
-	premium_dealer_locker_right_tween = create_tween()
-	premium_dealer_locker_right_tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
-	premium_dealer_locker_right_tween.tween_property(premium_dealer_locker_right_door_pivot, "rotation:y", right_target, 0.32)
-'''
-    text=replace_func(text,"_set_premium_dealer_locker_open",door_func)
-
-    # Pause takes exclusive UI control. Dealer Storage is temporarily hidden,
-    # then restored by Resume Game.
-    pause_func=r'''func _pause_gameplay(reason: String = "Paused. Resume whenever you are ready.", start_unix: float = 0.0) -> void:
-	if not gameplay_ready or session_paused or reset_in_progress:
-		return
-	dealer_storage_reopen_after_pause = dealer_storage_panel != null and dealer_storage_panel.visible
-	if away_started_unix <= 0.0:
-		away_started_unix = start_unix if start_unix > 0.0 else Time.get_unix_time_from_system()
-		away_growth_allowed = _offline_crops_enabled()
-		away_worker_care_allowed = _offline_worker_care_enabled()
-		away_worker_next_service = OfflinePlantCare.CARE_INTERVAL
-		offline_plant_report.clear()
-	session_paused = true
-	_cancel_beta_reset()
-	_cancel_phone_gesture()
-	room_look_drag_active = false
-	_cancel_station_drag()
-
-	if dealer_storage_panel != null:
-		dealer_storage_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		if dealer_storage_reopen_after_pause:
-			dealer_storage_panel.visible = false
-
-	_sync_simulation_pause()
-	if knock_player != null:
-		knock_player.stop()
-	if pause_overlay != null:
-		var crop_copy: String = "Existing crops continue growing while you are away."
-		if away_worker_care_allowed:
-			crop_copy = "Your worker keeps existing plants watered and fertilized."
-		if not away_growth_allowed:
-			crop_copy = "First-day lesson active: plants stay frozen."
-		var heat_copy: String = "Heat cools slowly while paused."
-		if lay_low_active:
-			heat_copy = "Heat cools slowly. Lay Low time continues."
-		pause_message.text = "PAUSED\nDay %d  |  %s\n\nGameplay is frozen: visitors, sales, wages and story.\n\nWHILE AWAY\n%s\n%s" % [game_day, _format_game_clock(), crop_copy, heat_copy]
-		pause_overlay.z_index = 1000
-		pause_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
-		pause_overlay.visible = true
-		pause_overlay.move_to_front()
-	_refresh_tutorial_coach()
-	_save_game()
-'''
-    text=replace_func(text,"_pause_gameplay",pause_func)
-
-    resume_func=r'''func _resume_gameplay() -> void:
-	if not session_paused:
-		return
-	if web_lifecycle != null and bool(web_lifecycle.hidden):
-		return
-	if away_started_unix > 0.0:
-		var paused_now: float = Time.get_unix_time_from_system()
-		_apply_paused_heat_and_quiet_time(maxf(0.0, paused_now - away_started_unix))
-	_settle_away_plants()
-	_update_all_plant_visuals()
-	_update_cash_ui()
-	if phone_open:
-		_refresh_phone()
-	if grow_panel.visible:
-		_refresh_grow_panel()
-	if plant_direct_panel != null and plant_direct_panel.visible:
-		_refresh_direct_plant_panel()
-	if not offline_plant_report.is_empty():
-		status_label.text = _offline_plant_summary()
-
-	session_paused = false
-	if web_lifecycle != null:
-		web_lifecycle.away = false
-	last_active_frame_msec = Time.get_ticks_msec()
-	last_active_frame_unix = Time.get_unix_time_from_system()
-
-	if pause_overlay != null:
-		pause_overlay.visible = false
-
-	if dealer_storage_panel != null:
-		dealer_storage_panel.mouse_filter = Control.MOUSE_FILTER_STOP
-		if dealer_storage_reopen_after_pause and current_view == "locker":
-			dealer_storage_panel.visible = true
-			dealer_storage_panel.move_to_front()
-			_refresh_dealer_storage_panel()
-			if dealer_locker_level >= 3:
-				_set_premium_dealer_locker_open(true)
-	dealer_storage_reopen_after_pause = false
-
-	_sync_simulation_pause()
-	_refresh_utility_controls()
-	_set_world_controls_visible(not _any_modal_open())
-	_refresh_tutorial_coach()
-	if daily_report_pending:
-		_show_daily_report()
-	elif not _simulation_blocked():
-		_schedule_next_customer()
-		_check_reeves_trigger()
-		_maybe_start_reeves_visit()
-	_save_game()
-'''
-    text=replace_func(text,"_resume_gameplay",resume_func)
-
-    close_match=pat("_close_dealer_storage_panel").search(text)
-    if not close_match: raise SystemExit("close dealer storage missing")
-    close_block=close_match.group(0)
-    if "dealer_storage_reopen_after_pause = false" not in close_block:
-        close_block=close_block.replace(
-            "\tif dealer_storage_scroll != null:\n\t\tdealer_storage_scroll.cancel_touch()\n",
-            "\tdealer_storage_reopen_after_pause = false\n\tif dealer_storage_scroll != null:\n\t\tdealer_storage_scroll.cancel_touch()\n",
+    # 4) Shift the complete packing/work bench 0.24 along its wall toward the
+    # front/right side. Shift every Node3D produced by this builder as a unit,
+    # so tools, scale, bins, labels and dynamic bud/bag roots stay aligned.
+    m=pat("_build_bagging_station").search(text)
+    if not m: raise SystemExit("_build_bagging_station missing")
+    bench=m.group(0)
+    if "packing_station_start_index" not in bench:
+        bench=bench.replace(
+            "func _build_bagging_station() -> void:\n",
+            "func _build_bagging_station() -> void:\n\tvar packing_station_start_index: int = get_child_count()\n",
             1
         )
-        text=text[:close_match.start()]+close_block.rstrip()+"\n\n"+text[close_match.end():]
+        anchor="\t_sync_packing_bench_visuals(true)\n"
+        if anchor not in bench: raise SystemExit("packing shift anchor missing")
+        bench=bench.replace(anchor,anchor+
+            "\tfor child_index: int in range(packing_station_start_index, get_child_count()):\n"
+            "\t\tvar shifted_child: Node = get_child(child_index)\n"
+            "\t\tif shifted_child is Node3D:\n"
+            "\t\t\t(shifted_child as Node3D).position.z += 0.24\n",1)
+    text=text[:m.start()]+bench.rstrip()+"\n\n"+text[m.end():]
+
+    # 5) Interaction targets move with the physical furniture.
+    direct_old='''\t{"id": "station_workbench", "room": "main", "pos": Vector3(3.95, 1.15, 0.30), "view": "workbench"},
+\t{"id": "station_locker", "room": "main", "pos": Vector3(4.13, 1.30, 2.68), "view": "locker"},'''
+    direct_new='''\t{"id": "station_workbench", "room": "main", "pos": Vector3(3.95, 1.15, 0.54), "view": "workbench"},
+\t{"id": "station_locker", "room": "main", "pos": Vector3(4.13, 1.30, -2.20), "view": "locker"},'''
+    if direct_old not in text:
+        if direct_new not in text: raise SystemExit("direct station anchors missing")
+    else:
+        text=text.replace(direct_old,direct_new,1)
+
+    # 6) Close-up cameras track the relocated stations.
+    view_old='''\t\t"workbench": {"pos": Vector3(1.15, 1.60, 1.10), "rot": Vector3(0, -PI / 2.0, 0), "label": "Bagging Station"},
+\t\t"locker": {"pos": Vector3(1.72, 1.56, 2.58), "rot": Vector3(0, -PI / 2.0, 0), "fov": 68.0, "label": "Personal Locker"},'''
+    view_new='''\t\t"workbench": {"pos": Vector3(1.15, 1.60, 1.34), "rot": Vector3(0, -PI / 2.0, 0), "label": "Bagging Station"},
+\t\t"locker": {"pos": Vector3(1.72, 1.56, -2.30), "rot": Vector3(0, -PI / 2.0, 0), "fov": 68.0, "label": "Dealer Storage"},'''
+    if view_old not in text:
+        # .47+ may already call it Dealer Storage while retaining old coordinates.
+        alt_old='''\t\t"workbench": {"pos": Vector3(1.15, 1.60, 1.10), "rot": Vector3(0, -PI / 2.0, 0), "label": "Bagging Station"},
+\t\t"locker": {"pos": Vector3(1.72, 1.56, 2.58), "rot": Vector3(0, -PI / 2.0, 0), "fov": 68.0, "label": "Dealer Storage"},'''
+        if alt_old in text:
+            text=text.replace(alt_old,view_new,1)
+        elif view_new not in text:
+            raise SystemExit("camera view anchors missing")
+    else:
+        text=text.replace(view_old,view_new,1)
 
     required=[
-        "var premium_dealer_locker_left_door_pivot: Node3D",
-        "var premium_dealer_locker_right_door_pivot: Node3D",
-        "var dealer_storage_reopen_after_pause: bool = false",
-        "PremiumLeftDoorPivot",
-        "PremiumRightDoorPivot",
-        "var left_target: float = deg_to_rad(-102.0) if opened else 0.0",
-        "var right_target: float = deg_to_rad(102.0) if opened else 0.0",
-        "dealer_storage_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE",
-        "pause_overlay.z_index = 1000",
-        "dealer_storage_panel.mouse_filter = Control.MOUSE_FILTER_STOP",
-        "dealer_storage_reopen_after_pause and current_view == \"locker\"",
-        "const DEALER_COMMISSION_RATE: float = 0.10",
+        'Vector3(2.16, 0.46, -3.54)',
+        'Vector3(1.68, 0.99, -3.54)',
+        'Vector3(4.52, 1.28, -2.20)',
+        'premium_dealer_locker_root.position = Vector3(4.52, 0.0, -2.20)',
+        'packing_station_start_index',
+        '(shifted_child as Node3D).position.z += 0.24',
+        '"station_workbench", "room": "main", "pos": Vector3(3.95, 1.15, 0.54)',
+        '"station_locker", "room": "main", "pos": Vector3(4.13, 1.30, -2.20)',
+        '"workbench": {"pos": Vector3(1.15, 1.60, 1.34)',
+        '"locker": {"pos": Vector3(1.72, 1.56, -2.30)',
+        'PremiumLeftDoorPivot',
+        'PremiumRightDoorPivot',
+        'dealer_storage_reopen_after_pause',
+        'const TAP_SLOP: float = 12.0',
     ]
-    for needle in required:
+    # TAP_SLOP lives in touch_scroll.gd, verified after rebuild instead.
+    for needle in required[:-1]:
         if needle not in text: raise SystemExit("verify "+needle)
-
-    forbidden=[
-        "premium_dealer_locker_door_pivot",
-        "premium_dealer_locker_tween",
-        'var target: float = deg_to_rad(102.0) if opened else 0.0',
-    ]
-    for needle in forbidden:
-        if needle in text: raise SystemExit("old single-door code remains: "+needle)
 
     names=re.findall(r"^func\s+([A-Za-z0-9_]+)\(",text,re.M)
     dup={k:v for k,v in collections.Counter(names).items() if v>1}
@@ -351,6 +177,7 @@ var dealer_storage_reopen_after_pause: bool = false
     row[1]=text.encode("utf-8")
 
 if not found: raise SystemExit("main missing")
+
 packed=rebuild(blob,fb,entries)
 PCK.write_bytes(packed)
 
@@ -358,10 +185,12 @@ _,_,verify=parse(PCK)
 sources={name:data.decode("utf-8","replace") for name,data,_ in verify if name in ["scripts/main.gd","scripts/touch_scroll.gd"]}
 main=sources.get("scripts/main.gd","")
 for needle in [
-    "PremiumLeftDoorPivot",
-    "PremiumRightDoorPivot",
-    "dealer_storage_reopen_after_pause",
-    "pause_overlay.z_index = 1000",
+    'Vector3(2.16, 0.46, -3.54)',
+    'premium_dealer_locker_root.position = Vector3(4.52, 0.0, -2.20)',
+    '(shifted_child as Node3D).position.z += 0.24',
+    '"station_locker", "room": "main", "pos": Vector3(4.13, 1.30, -2.20)',
+    'PremiumLeftDoorPivot',
+    'dealer_storage_reopen_after_pause',
 ]:
     if needle not in main: raise SystemExit("packed verify "+needle)
 if "const TAP_SLOP: float = 12.0" not in sources.get("scripts/touch_scroll.gd",""):
@@ -375,10 +204,9 @@ HTML.write_text(html)
 
 meta=json.loads(VERSION.read_text())
 meta["release_id"]=RELEASE
-meta["dealer_storage_double_doors"]="premium Level III-IV cabinet now uses separate left/right door leaves with opposite outward hinge rotations"
-meta["dealer_storage_pause_fix"]="Dealer Storage hides and releases input during pause; Resume Game restores it if it was open"
+meta["main_room_layout"]="kitchen moved to grow-door frame; Dealer Storage moved to opposite/back side of packing bench; bench shifted +0.24 along wall"
+meta["dealer_storage_layout_position"]="Dealer Storage center moved from z 2.68 to z -2.20 for both basic and premium cabinets"
+meta["packing_bench_layout_shift"]="complete packing station shifted +0.24 along wall with interaction/camera alignment preserved"
 VERSION.write_text(json.dumps(meta,indent=2)+"\n")
 
 print("Built",RELEASE,len(packed))
-
-# finalized cloudtest50 deployment marker
