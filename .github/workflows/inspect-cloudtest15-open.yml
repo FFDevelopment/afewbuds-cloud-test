@@ -1,9 +1,9 @@
-name: Inspect cloudtest16 inventory open paths
+name: Inspect cloudtest17 inventory open paths
 on:
   push:
     branches: [main]
     paths:
-      - ".github/workflows/inspect-cloudtest16-open.yml"
+      - ".github/workflows/inspect-cloudtest17-open.yml"
   workflow_dispatch:
 
 jobs:
@@ -16,7 +16,7 @@ jobs:
         run: |
           from pathlib import Path
           import struct,re
-          b=Path("index-cloudtest16.pck").read_bytes()
+          b=Path("index-cloudtest17.pck").read_bytes()
           fb=struct.unpack_from("<Q",b,24)[0]; do=struct.unpack_from("<Q",b,32)[0]
           n=struct.unpack_from("<I",b,do)[0]; p=do+4; files={}
           for _ in range(n):
@@ -31,7 +31,7 @@ jobs:
           def fn(text,name):
               x=re.search(r'^func '+re.escape(name)+r'\([^\n]*\)(?: -> [^:]+)?:\n.*?(?=^func |\Z)',text,re.M|re.S)
               return x.group(0).rstrip() if x else "<MISSING>"
-          for name in ["_build_ui","_open_backpack_direct","_init_personal_inventory_deferred","_context_action","_approach_station_then_open","_finish_direct_station_approach","_handle_station_pointer","_refresh_navigation_ui","_nav"]:
+          for name in ["_build_ui","_open_backpack_direct","_init_personal_inventory_deferred","_context_action","_direct_station_view","_approach_station_then_open","_finish_direct_station_approach","_handle_world_station_pointer","_refresh_navigation_ui","_nav"]:
               print("\n===== MAIN "+name+" =====")
               print(fn(m,name))
           for name in ["setup","toggle_backpack","open_locker","close_locker","_build_backpack_panel","_build_locker_panel","_refresh_backpack","_refresh_locker"]:
