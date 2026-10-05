@@ -57,94 +57,18 @@ for row in entries:
         continue
     text=row[1].decode("utf-8","replace").rstrip(" \n\0")
 
-    # Main phone: replace direct Rewards tile with Task.
-    old_home='''\t_add_phone_app_tile(grid, "", "BudShop", "Store, business & operations", "budshop")
-\t_add_phone_app_tile(grid, "", "Rewards", "%d ready to claim" % _advancement_ready_count(), "advancements")
-\t_add_phone_app_tile(grid, "", "Settings", "Help & system controls", "settings")
-'''
-    new_home='''\t_add_phone_app_tile(grid, "", "BudShop", "Store, business & operations", "budshop")
-\t_add_phone_app_tile(grid, "", "Task", "Chapter progress & rewards", "task")
-\t_add_phone_app_tile(grid, "", "Settings", "Help & system controls", "settings")
-'''
-    if old_home not in text:
-        raise SystemExit("phone home Rewards tile block missing")
-    text=text.replace(old_home,new_home,1)
+    old_heat='"description": "Use the fictional Reeves contact once to reduce Heat."'
+    new_heat='"description": "Use the Reeves contact once to reduce Heat."'
+    if old_heat not in text:
+        raise SystemExit("Reeves reward dev wording missing")
+    text=text.replace(old_heat,new_heat,1)
 
-    # Task page: chapter/story progress first, then Rewards category.
-    task_builder='''func _build_task_app() -> void:
-\t_build_story_progress_section()
-\tvar grid: GridContainer = _phone_category_grid()
-\t_add_phone_app_tile(grid, "", "Rewards", "%d ready to claim" % _advancement_ready_count(), "advancements")
+    old_alert='message = "A fictional contact named Reeves says people have been asking questions nearby."'
+    new_alert='message = "Reeves says people have been asking questions nearby."'
+    if old_alert not in text:
+        raise SystemExit("Reeves alert dev wording missing")
+    text=text.replace(old_alert,new_alert,1)
 
-'''
-    marker='func _build_phone_home() -> void:\n'
-    if marker not in text:
-        raise SystemExit("phone home builder marker missing")
-    if 'func _build_task_app() -> void:' not in text:
-        text=text.replace(marker,task_builder+marker,1)
-
-    # Rewards page should now contain rewards only; chapter info lives in Task.
-    rewards_start='func _build_advancements_app() -> void:\n\t_build_story_progress_section()\n'
-    if rewards_start not in text:
-        raise SystemExit("Rewards chapter section call missing")
-    text=text.replace(rewards_start,'func _build_advancements_app() -> void:\n',1)
-
-    # Back navigation: Rewards -> Task.
-    parent_pat=re.compile(r'^func _phone_parent_app\(app_name: String\) -> String:\n.*?(?=^func |\Z)',re.M|re.S)
-    pm=parent_pat.search(text)
-    if not pm:
-        raise SystemExit("phone parent router missing")
-    parent_fn=pm.group(0)
-    target='\tif app_name in ["help", "system"]:\n\t\treturn "settings"\n'
-    if target not in parent_fn:
-        raise SystemExit("settings parent route missing")
-    parent_fn=parent_fn.replace(
-        target,
-        '\tif app_name == "advancements":\n\t\treturn "task"\n'+target,
-        1
-    )
-    text=text[:pm.start()]+parent_fn.rstrip()+"\n\n"+text[pm.end():]
-
-    # Route Task in phone refresh.
-    refresh_pat=re.compile(r'^func _refresh_phone\(\) -> void:\n.*?(?=^func |\Z)',re.M|re.S)
-    rm=refresh_pat.search(text)
-    if not rm:
-        raise SystemExit("phone refresh router missing")
-    rf=rm.group(0)
-    route='''\t\t"settings":
-\t\t\tphone_title.text = "Settings"
-\t\t\t_build_settings_app()
-'''
-    if route not in rf:
-        raise SystemExit("settings route missing")
-    rf=rf.replace(
-        route,
-        '''\t\t"task":
-\t\t\tphone_title.text = "Task"
-\t\t\t_build_task_app()
-'''+route,
-        1
-    )
-    text=text[:rm.start()]+rf.rstrip()+"\n\n"+text[rm.end():]
-
-    # Bottom dock follows the new top-level hierarchy.
-    old_dock='\t_add_phone_dock_button(dock, "REWARDS", "advancements")\n'
-    new_dock='\t_add_phone_dock_button(dock, "TASK", "task")\n'
-    if old_dock not in text:
-        raise SystemExit("Rewards dock button missing")
-    text=text.replace(old_dock,new_dock,1)
-
-    # Remove leftover developer/meta wording from player-facing text.
-    text=text.replace(
-        '"description": "Use the fictional Reeves contact once to reduce Heat."',
-        '"description": "Use the Reeves contact once to reduce Heat."',
-        1
-    )
-    text=text.replace(
-        'message = "A fictional contact named Reeves says people have been asking questions nearby."',
-        'message = "Reeves says people have been asking questions nearby."',
-        1
-    )
     rewards_intro = (
         '\tvar intro: Label = Label.new()\n'
         '\tintro.text = "Build AFewBuds across eight career tracks. Heat now turns Chapter 3 into a live risk-management layer alongside loyalty, staff, sales and genetics."\n'
@@ -152,31 +76,15 @@ for row in entries:
         '\tphone_list.add_child(intro)\n\n'
     )
     if rewards_intro not in text:
-        raise SystemExit("Rewards dev intro block missing")
+        raise SystemExit("Rewards dev intro missing")
     text=text.replace(rewards_intro,"",1)
 
-    # Verification.
-    checks=[
-        '"Task", "Chapter progress & rewards", "task"',
-        'func _build_task_app() -> void:',
-        '_build_story_progress_section()',
-        '"Rewards", "%d ready to claim" % _advancement_ready_count(), "advancements"',
-        'if app_name == "advancements":',
-        'return "task"',
-        '"task":',
-        'phone_title.text = "Task"',
-        '"TASK", "task"',
-    ]
-    for needle in checks:
-        if needle not in text:
-            raise SystemExit("Task hierarchy verification failed: "+needle)
-
-    adv_pat=re.compile(r'^func _build_advancements_app\(\) -> void:\n.*?(?=^func |\Z)',re.M|re.S)
-    am=adv_pat.search(text)
-    if not am:
-        raise SystemExit("Rewards builder missing after patch")
-    if "_build_story_progress_section()" in am.group(0):
-        raise SystemExit("chapter info still present in Rewards")
+    if "fictional contact named Reeves" in text or "fictional Reeves contact" in text:
+        raise SystemExit("Reeves fictional wording still present")
+    if "Build AFewBuds across eight career tracks" in text:
+        raise SystemExit("Rewards dev intro still present")
+    if '"Task", "Chapter progress & rewards", "task"' not in text:
+        raise SystemExit("Task hierarchy unexpectedly missing")
     if "CLOUD TEST" in text:
         raise SystemExit("visible CLOUD TEST wording returned")
 
@@ -202,5 +110,5 @@ meta["visible_dev_wording"]="removed"
 v.write_text(json.dumps(meta,indent=2)+"\n")
 
 print("Built",RELEASE)
-print("Storefront controls moved to top of BudShop")
-print("Your Supply now begins with inventory/listing controls")
+print("Removed Reeves fictional wording")
+print("Removed Rewards developer intro")
