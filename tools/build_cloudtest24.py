@@ -76,15 +76,17 @@ for row in entries:
             "var premium_dealer_locker_tween: Tween\n",1)
 
     # Give the Level I/II labels stable names so the visual swap can hide them.
-    text=text.replace(
-        "var locker_logo: Label3D = Label3D.new()\n\tlocker_logo.text =",
-        'var locker_logo: Label3D = Label3D.new()\n\tlocker_logo.name = "DealerBasicLogo"\n\tlocker_logo.text =',
-        1
+    text=re.sub(
+        r'(var locker_logo: Label3D = Label3D\.new\(\)\n)(?!\tlocker_logo\.name)',
+        r'\1\tlocker_logo.name = "DealerBasicLogo"\n',
+        text,
+        count=1
     )
-    text=text.replace(
-        "var locker_tag: Label3D = Label3D.new()\n\tlocker_tag.text =",
-        'var locker_tag: Label3D = Label3D.new()\n\tlocker_tag.name = "DealerBasicTag"\n\tlocker_tag.text =',
-        1
+    text=re.sub(
+        r'(var locker_tag: Label3D = Label3D\.new\(\)\n)(?!\tlocker_tag\.name)',
+        r'\1\tlocker_tag.name = "DealerBasicTag"\n',
+        text,
+        count=1
     )
 
     # Build premium cabinet beside the original model, then show only the appropriate tier visual.
@@ -92,9 +94,7 @@ for row in entries:
     if not living: raise SystemExit("_build_living_furniture missing")
     block=living.group(0)
     if "_build_premium_dealer_locker_visual()" not in block:
-        anchor="\tadd_child(locker_tag)\n"
-        if anchor not in block: raise SystemExit("locker tag add anchor missing")
-        block=block.replace(anchor,anchor+"\n\t_build_premium_dealer_locker_visual()\n\t_sync_dealer_locker_visual()\n",1)
+        block=block.rstrip()+"\n\t_build_premium_dealer_locker_visual()\n\t_sync_dealer_locker_visual()\n"
         text=text[:living.start()]+block.rstrip()+"\n\n"+text[living.end():]
 
     helpers=r'''func _dealer_premium_box(parent: Node3D, part_name: String, pos: Vector3, size: Vector3, color: Color, roughness: float = 0.45, texture_path: String = "", emissive: bool = false) -> MeshInstance3D:
