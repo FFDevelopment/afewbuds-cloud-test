@@ -43,3 +43,5 @@ for i,line in enumerate(main.splitlines(),1):
             out.append(f"{i}: {line}")
 Path("debug-dealer-audit.txt").write_text("\n".join(out)+"\n")
 print("found",sorted(found))
+
+# trigger inspector
