@@ -177,11 +177,23 @@
     return data.save_json;
   }
 
+  function reportLeaderboard(player){
+    const a=api();
+    if(!a || !a.enabled || !player || !player.session_token) return Promise.resolve(false);
+    return a.rpc('afb_leaderboard_report',{p_session_token:player.session_token})
+      .then(()=>true)
+      .catch((error)=>{
+        console.warn('AFB leaderboard report skipped:',error&&error.message||error);
+        return false;
+      });
+  }
+
   async function putCloud(player,save){
     const a=api();
     if(!a || !a.enabled || !player || !player.session_token) throw new Error('cloud_account_unavailable');
     await a.rpc('afb_set_save',{p_session_token:player.session_token,p_save_json:save});
     setMarker(save,player);
+    reportLeaderboard(player);
     return true;
   }
 
@@ -399,6 +411,7 @@
     const player=session();
     if(!player || !player.session_token) return;
     lastUploadedUnix=getMarker(player);
+    reportLeaderboard(player);
     syncTimer=setInterval(syncLatest,AUTO_SYNC_MS);
     document.addEventListener('visibilitychange',()=>{ if(!document.hidden) syncLatest(); });
     window.addEventListener('pagehide',()=>{ syncLatest(); });
