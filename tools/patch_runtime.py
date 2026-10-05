@@ -179,7 +179,7 @@ for row in entries:
         '_apply_paused_heat_and_quiet_time(maxf(0.0, now - stamp))',
         '_apply_paused_heat_and_quiet_time(maxf(0.0, paused_now - away_started_unix))',
         '"reeves_quiet_pause_seconds": reeves_quiet_pause_seconds',
-        '"Heat cools while paused: 100 to 0 in 72 real minutes."',
+        "Heat cools while paused: 100 to 0 in 72 real minutes.",
     ]
     for needle in checks:
         if needle not in text:
