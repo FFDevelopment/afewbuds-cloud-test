@@ -1,5 +1,5 @@
 {
-  "release_id": "0.7.9-beta.19-cloudtest.25",
+  "release_id": "0.7.9-beta.19-cloudtest.26",
   "game_build": "0.7.9-beta.19",
   "channel": "main-based-cloud-test",
   "updater": "network-only-no-service-worker",
@@ -8,7 +8,7 @@
   "hud_adjustment": "up-12px-from-cloudtest19",
   "visible_test_label": "removed",
   "room_hint_adjustment": "down-5px-from-cloudtest22",
-  "phone_home": "BudShop, Rewards, Settings",
+  "phone_home": "BudShop, Task, Settings",
   "budshop_apps": [
     "Lights",
     "Store",
@@ -23,5 +23,6 @@
     "Help",
     "System"
   ],
-  "storefront_control_location": "BudShop top"
+  "storefront_control_location": "BudShop top",
+  "task_page": "Chapter progress, Rewards"
 }
