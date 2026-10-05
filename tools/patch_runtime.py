@@ -257,7 +257,7 @@ for row in entries:
     refresh_check=_func_pattern("_refresh_phone").search(text)
     if not refresh_check:
         raise SystemExit("refresh function missing after hotfix")
-    account_route_count=len(re.findall(r'^\t\t"account":)
+    account_route_count=refresh_check.group(0).count('\t\t"account":\n')
     if account_route_count != 1:
         raise SystemExit("Account route must appear exactly once; count=%d" % account_route_count)
 
