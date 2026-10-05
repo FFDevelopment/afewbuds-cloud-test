@@ -497,3 +497,5 @@ BUILD.write_text(
 )
 
 print("Built",RELEASE,len(packed))
+
+# finalized cloudtest63 Chapter 4 progression deployment marker
