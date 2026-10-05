@@ -60,3 +60,5 @@ print("found",sorted(found))
 # inspect cloudtest58 advancement/story runtime for progression overhaul
 
 # inspect cloudtest59 roadmap sizing for cloudtest60 phone width fix
+
+# inspect cloudtest61 watering and utility billing for water-bill foundation
