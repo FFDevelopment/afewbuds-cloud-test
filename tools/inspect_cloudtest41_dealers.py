@@ -52,3 +52,5 @@ print("found",sorted(found))
 # inspect storage vault anchor for cloudtest54
 
 # capture storage vault script in audit
+
+# inspect cloudtest54 for room layout and kitchen55
