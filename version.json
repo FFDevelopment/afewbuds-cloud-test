@@ -1,7 +1,8 @@
 {
-  "release_id": "0.7.9-beta.19-cloudtest.18",
+  "release_id": "0.7.9-beta.19-cloudtest.19",
   "game_build": "0.7.9-beta.19",
   "channel": "main-based-cloud-test",
   "updater": "network-only-no-service-worker",
-  "base_runtime": "afewbuds-beta:index-accountsync10.pck"
+  "base_runtime": "afewbuds-beta:index-accountsync10.pck",
+  "inventory_status": "disabled-clean-rollback-from-cloudtest12"
 }
