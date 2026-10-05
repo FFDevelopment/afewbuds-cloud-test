@@ -5,8 +5,8 @@ PCK=Path("index-cloudtest10.pck")
 HTML=Path("index.html")
 VERSION=Path("version.json")
 BUILD=Path("BUILD_VERSION.txt")
-RELEASE="0.7.9-beta.19-cloudtest.60"
-PACK_URL="index-cloudtest10.pck?build=60"
+RELEASE="0.7.9-beta.19-cloudtest.61"
+PACK_URL="index-cloudtest10.pck?build=61"
 
 def align(n,a=32): return (n+a-1)//a*a
 
@@ -54,17 +54,6 @@ def replace_func(src,name,new):
         src=src[:m.start()]+src[m.end():]
     return src[:at]+new.rstrip()+"\n\n"+src[at:]
 
-def upsert_before(src,name,new,before):
-    ms=list(pat(name).finditer(src))
-    if ms:
-        at=ms[0].start()
-        for m in reversed(ms):
-            src=src[:m.start()]+src[m.end():]
-        return src[:at]+new.rstrip()+"\n\n"+src[at:]
-    at=src.find("func "+before+"(")
-    if at<0: raise SystemExit("anchor "+before)
-    return src[:at]+new.rstrip()+"\n\n"+src[at:]
-
 blob,fb,entries=parse(PCK)
 found=False
 
@@ -74,270 +63,107 @@ for row in entries:
     found=True
     text=row[1].decode("utf-8","replace").rstrip(" \n\0")
 
-    helper=r'''func _constrain_advancement_phone_width(node: Node) -> void:
-	for child: Node in node.get_children():
-		if child is Control:
-			var control: Control = child as Control
-			control.custom_minimum_size.x = 0.0
-			control.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			if control is Label:
-				var label: Label = control as Label
-				label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			elif control is Button:
-				var button: Button = control as Button
-				button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		_constrain_advancement_phone_width(child)
+    story=r'''func _build_story_progress_section() -> void:
+	var story_card: PanelContainer = PanelContainer.new()
+	story_card.custom_minimum_size.x = 0.0
+	story_card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	story_card.add_theme_stylebox_override("panel", _style_box(Color("171d25"), Color("776b3f"), 18, 2))
+	phone_list.add_child(story_card)
+
+	var story_box: VBoxContainer = VBoxContainer.new()
+	story_box.custom_minimum_size.x = 0.0
+	story_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	story_box.add_theme_constant_override("separation", 7)
+	story_card.add_child(story_box)
+
+	var chapter_one_done: bool = _story_chapter_one_complete()
+	var chapter_two_done: bool = _story_chapter_two_complete()
+	var chapter_three_done: bool = _story_chapter_three_complete()
+
+	var chapter_title: Label = Label.new()
+	if not chapter_one_done:
+		chapter_title.text = "STORY\nCHAPTER 1 - STARTING SMALL"
+	elif not chapter_two_done:
+		chapter_title.text = "STORY\nCHAPTER 2 - BUILDING A NAME"
+	elif not chapter_three_done:
+		chapter_title.text = "STORY\nCHAPTER 3 - GETTING NOTICED"
+	else:
+		chapter_title.text = "STORY\nCHAPTER 3 COMPLETE\nNEXT: OUTGROWING THE APARTMENT"
+	chapter_title.custom_minimum_size.x = 0.0
+	chapter_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	chapter_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	chapter_title.add_theme_font_size_override("font_size", 22)
+	chapter_title.modulate = Color("e4cf83")
+	story_box.add_child(chapter_title)
+
+	var objectives: Label = Label.new()
+	if not chapter_one_done:
+		objectives.text = "\n".join([
+			_story_checkmark(int(advancement_stats.get("plants_planted", 0)) >= 1, "Plant your first seed"),
+			_story_checkmark(int(advancement_stats.get("harvests", 0)) >= 1, "Complete your first harvest"),
+			_story_checkmark(int(advancement_stats.get("grams_trimmed", 0)) >= 5, "Hand-trim 5g"),
+			_story_checkmark(int(advancement_stats.get("bags_sealed", 0)) >= 1, "Seal your first bag"),
+			_story_checkmark(int(advancement_stats.get("grams_stored", 0)) >= 10, "Put 10g into storage"),
+			_story_checkmark(int(advancement_stats.get("products_listed", 0)) >= 1, "List your first product"),
+			_story_checkmark(int(advancement_stats.get("sales", 0)) >= 1, "Complete your first sale")
+		])
+		objectives.text += "\n\nUNLOCK: Chapter 2 + Fresh Drop customer rushes"
+	elif not chapter_two_done:
+		objectives.text = "\n".join([
+			_story_checkmark(_story_first_regular_complete(), "First Regular - complete 3 sales with one customer"),
+			_story_checkmark(int(advancement_stats.get("customers_known", 0)) >= 4, "Know Your People - recognize 4 customers"),
+			_story_checkmark(reputation >= 50, "Word Gets Around - reach 50 reputation"),
+			_story_checkmark(_launched_product_count() >= 2, "Fresh Drop - launch 2 different products"),
+			_story_checkmark(grow_tent_count >= 2, "Room to Grow - install Tent 2"),
+			_story_checkmark(grower_level >= 5 and brand_level >= 3 and lifetime_revenue >= 2000, "Established - Grower 5, Brand 3, $2,000 revenue")
+		])
+		objectives.text += "\n\nUNLOCK: Customer texting after First Regular.\nNEXT: Getting Noticed."
+	else:
+		objectives.text = "\n".join([
+			_story_checkmark(_max_friend_loyalty() >= FRIEND_RECRUIT_LOYALTY, "Real Loyalty - build one friend to 70 loyalty"),
+			_story_checkmark(_friend_staff_count() >= 1, "Put Your People On - recruit a loyal friend"),
+			_story_checkmark(int(advancement_stats.get("dealer_sales", 0)) >= 5, "Delegating - complete 5 dealer sales"),
+			_story_checkmark(int(advancement_stats.get("customers_known", 0)) >= 8, "Growing Network - recognize 8 customers"),
+			_story_checkmark(reputation >= 100, "People Are Talking - reach 100 reputation"),
+			_story_checkmark(grower_level >= 8 and lifetime_revenue >= 5000, "Too Big to Ignore - Grower 8 and $5,000 revenue"),
+			_story_checkmark(heat_peak >= 25.0, "On the Radar - reach 25 Heat"),
+			_story_checkmark(heat_reduced_total >= 10.0, "Cool Things Down - reduce 10 total Heat"),
+			_story_checkmark(reeves_met, "Federal Pressure - meet Agent Reeves at the door")
+		])
+		objectives.text += "\n\nCHAPTER 4 PREVIEW\nOUTGROWING THE APARTMENT\nLarger operation • more staff/dealers • bulk production • new location.\nPreview only for now; Chapter 4 mechanics are not active yet."
+
+	objectives.custom_minimum_size.x = 0.0
+	objectives.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	objectives.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	story_box.add_child(objectives)
 '''
-    text=upsert_before(text,"_constrain_advancement_phone_width",helper,"_build_advancements_app")
+    text=replace_func(text,"_build_story_progress_section",story)
 
-    roadmap=r'''func _build_advancements_app() -> void:
-	var claimed_count: int = _advancement_claimed_count()
-	var ready_count: int = _advancement_ready_count()
+    task=r'''func _build_task_app() -> void:
+	_build_story_progress_section()
+	var grid: GridContainer = _phone_category_grid()
+	_add_phone_app_tile(grid, "", "Advancements", "Roadmap + %d reward%s ready" % [_advancement_ready_count(), "" if _advancement_ready_count() == 1 else "s"], "advancements")
 
-	var summary_card: PanelContainer = PanelContainer.new()
-	summary_card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	summary_card.add_theme_stylebox_override("panel", _style_box(Color("111920"), Color("776b3f"), 16, 2))
-	phone_list.add_child(summary_card)
-	var summary_box: VBoxContainer = VBoxContainer.new()
-	summary_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	summary_box.add_theme_constant_override("separation", 6)
-	summary_card.add_child(summary_box)
-
-	var rank: Label = Label.new()
-	rank.text = "CAREER ROADMAP\n%s" % _advancement_career_rank()
-	rank.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	rank.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	rank.add_theme_font_size_override("font_size", 22)
-	rank.modulate = Color("e4cf83")
-	summary_box.add_child(rank)
-
-	var story: Label = Label.new()
-	story.text = "STORY  |  %s" % _advancement_story_label()
-	story.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	story.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	story.modulate = Color("c6d4da")
-	summary_box.add_child(story)
-
-	var summary: Label = Label.new()
-	summary.text = "%d / %d milestones claimed   |   %d reward%s ready" % [claimed_count, advancement_catalog.size(), ready_count, "" if ready_count == 1 else "s"]
-	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	summary.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	summary.modulate = Color("d7c28a") if ready_count > 0 else Color("9fb0ba")
-	summary_box.add_child(summary)
-
-	var overall: ProgressBar = ProgressBar.new()
-	overall.min_value = 0
-	overall.max_value = maxi(1, advancement_catalog.size())
-	overall.value = claimed_count
-	overall.show_percentage = false
-	overall.custom_minimum_size = Vector2(0, 16)
-	overall.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	summary_box.add_child(overall)
-
-	if ready_count > 0:
-		var claim_all: Button = Button.new()
-		claim_all.text = "CLAIM ALL (%d)" % ready_count
-		claim_all.custom_minimum_size = Vector2(0, 54)
-		claim_all.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		claim_all.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		claim_all.add_theme_font_size_override("font_size", 17)
-		claim_all.add_theme_stylebox_override("normal", _style_box(Color("1b3324"), Color("78c98a"), 12, 2))
-		claim_all.pressed.connect(_claim_all_advancements)
-		summary_box.add_child(claim_all)
-
-	var roadmap_hint: Label = Label.new()
-	roadmap_hint.text = "Each lane shows your current tier and the next tier ahead. Claimed milestones stay saved but are removed from the active list. If you already completed a future goal, it appears as READY AHEAD instead of being hidden."
-	roadmap_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	roadmap_hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	roadmap_hint.modulate = Color("9fb0ba")
-	phone_list.add_child(roadmap_hint)
-
-	for lane_name: String in _advancement_lane_order():
-		var lane_total: int = 0
-		var lane_claimed: int = 0
-		for lane_entry: Dictionary in advancement_catalog:
-			if _advancement_lane_name(lane_entry) != lane_name:
-				continue
-			lane_total += 1
-			if bool(advancement_claimed.get(str(lane_entry.get("id", "")), false)):
-				lane_claimed += 1
-		if lane_total <= 0:
-			continue
-
-		var lane_card: PanelContainer = PanelContainer.new()
-		lane_card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		lane_card.add_theme_stylebox_override("panel", _style_box(Color("131b21"), Color("37454e"), 16, 1))
-		phone_list.add_child(lane_card)
-		var lane_box: VBoxContainer = VBoxContainer.new()
-		lane_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		lane_box.add_theme_constant_override("separation", 7)
-		lane_card.add_child(lane_box)
-
-		var lane_title: Label = Label.new()
-		lane_title.text = "%s   |   %d/%d" % [lane_name.to_upper(), lane_claimed, lane_total]
-		lane_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		lane_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		lane_title.add_theme_font_size_override("font_size", 21)
-		lane_title.modulate = Color("d7c28a")
-		lane_box.add_child(lane_title)
-
-		var lane_progress: ProgressBar = ProgressBar.new()
-		lane_progress.min_value = 0
-		lane_progress.max_value = maxi(1, lane_total)
-		lane_progress.value = lane_claimed
-		lane_progress.show_percentage = false
-		lane_progress.custom_minimum_size = Vector2(0, 12)
-		lane_progress.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		lane_box.add_child(lane_progress)
-
-		var current_tier: int = _advancement_lane_current_tier(lane_name)
-		if current_tier < 0:
-			var mastered: Label = Label.new()
-			mastered.text = "MASTERED  |  All current milestones claimed."
-			mastered.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			mastered.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			mastered.modulate = Color("8ed6a3")
-			lane_box.add_child(mastered)
-			continue
-
-		var focus: Label = Label.new()
-		focus.text = "CURRENT FOCUS  |  TIER %d" % current_tier
-		focus.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		focus.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		focus.modulate = Color("c6d4da")
-		lane_box.add_child(focus)
-
-		for entry: Dictionary in advancement_catalog:
-			if _advancement_lane_name(entry) != lane_name:
-				continue
-			var advancement_id: String = str(entry.get("id", ""))
-			if bool(advancement_claimed.get(advancement_id, false)):
-				continue
-			var entry_tier: int = int(entry.get("tier", 1))
-			if entry_tier == current_tier or _advancement_is_ready(entry):
-				_add_advancement_roadmap_milestone(lane_box, entry, current_tier)
-
-		var next_tier: int = _advancement_lane_next_tier(lane_name, current_tier)
-		if next_tier > 0:
-			var next_titles: Array[String] = []
-			for next_entry: Dictionary in advancement_catalog:
-				if _advancement_lane_name(next_entry) != lane_name:
-					continue
-				if int(next_entry.get("tier", 1)) != next_tier:
-					continue
-				var next_id: String = str(next_entry.get("id", ""))
-				if bool(advancement_claimed.get(next_id, false)):
-					continue
-				if _advancement_is_ready(next_entry):
-					continue
-				next_titles.append(str(next_entry.get("title", "Milestone")))
-			if not next_titles.is_empty():
-				var preview: Label = Label.new()
-				preview.text = "LOCKED NEXT  |  TIER %d\n%s" % [next_tier, "  •  ".join(next_titles)]
-				preview.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-				preview.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-				preview.modulate = Color("687781")
-				lane_box.add_child(preview)
-
+	# Task uses the same fixed-width containment as the Advancements page.
+	# Long chapter/objective copy must wrap inside the phone instead of
+	# increasing the minimum width of the phone/game viewport.
 	_constrain_advancement_phone_width(phone_list)
 	phone_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	phone_list.custom_minimum_size.x = 0.0
 	phone_list.queue_sort()
 	phone_scroll.queue_sort()
 '''
-    text=replace_func(text,"_build_advancements_app",roadmap)
-
-    milestone=r'''func _add_advancement_roadmap_milestone(parent: VBoxContainer, entry: Dictionary, current_tier: int) -> void:
-	var advancement_id: String = str(entry.get("id", ""))
-	var target: int = maxi(1, int(entry.get("target", 1)))
-	var current_value: int = mini(_advancement_value(entry), target)
-	var complete: bool = _advancement_is_ready(entry)
-	var tier: int = int(entry.get("tier", 1))
-
-	var card: PanelContainer = PanelContainer.new()
-	card.set_meta("advancement_id", advancement_id)
-	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var border_color: Color = Color("7bb88a") if complete else (Color("776b3f") if tier == current_tier else Color("42515a"))
-	card.add_theme_stylebox_override("panel", _style_box(Color("151d24"), border_color, 14, 1))
-	parent.add_child(card)
-
-	var box: VBoxContainer = VBoxContainer.new()
-	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	box.add_theme_constant_override("separation", 6)
-	card.add_child(box)
-
-	var title: Label = Label.new()
-	var state_text: String = "READY" if complete else ("CURRENT" if tier == current_tier else "READY AHEAD")
-	title.text = "%s  |  TIER %d\n%s" % [state_text, tier, str(entry.get("title", "Milestone"))]
-	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title.add_theme_font_size_override("font_size", 19)
-	box.add_child(title)
-
-	var detail: Label = Label.new()
-	detail.text = str(entry.get("description", ""))
-	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	detail.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	box.add_child(detail)
-
-	var progress: ProgressBar = ProgressBar.new()
-	progress.min_value = 0
-	progress.max_value = target
-	progress.value = current_value
-	progress.show_percentage = false
-	progress.custom_minimum_size = Vector2(0, 14)
-	progress.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	box.add_child(progress)
-
-	var progress_text: Label = Label.new()
-	progress_text.text = "%d / %d" % [current_value, target]
-	progress_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	progress_text.modulate = Color("9fb0ba")
-	box.add_child(progress_text)
-
-	for requirement_variant: Variant in entry.get("requires", []):
-		if not (requirement_variant is Dictionary):
-			continue
-		var requirement: Dictionary = requirement_variant as Dictionary
-		var needed: int = int(requirement.get("target", 1))
-		var progress_value: int = mini(needed, _advancement_value(requirement))
-		var requirement_label: Label = Label.new()
-		requirement_label.text = "%s %s: %d / %d" % ["[x]" if progress_value >= needed else "[ ]", str(requirement.get("label", "Extra goal")), progress_value, needed]
-		requirement_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		requirement_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		box.add_child(requirement_label)
-
-	var reward: Label = Label.new()
-	reward.text = "REWARD  |  %s" % _advancement_reward_text(entry)
-	reward.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	reward.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	reward.modulate = Color("8ed6a3") if complete else Color("7f8d96")
-	box.add_child(reward)
-
-	var claim: Button = Button.new()
-	claim.custom_minimum_size = Vector2(0, 48)
-	claim.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	claim.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	if complete:
-		claim.text = "CLAIM REWARD"
-		claim.pressed.connect(_claim_advancement.bind(advancement_id))
-	else:
-		claim.text = "IN PROGRESS"
-		claim.disabled = true
-	box.add_child(claim)
-'''
-    text=replace_func(text,"_add_advancement_roadmap_milestone",milestone)
+    text=replace_func(text,"_build_task_app",task)
 
     required=[
+        'chapter_title.text = "STORY\\nCHAPTER 3 COMPLETE\\nNEXT: OUTGROWING THE APARTMENT"',
+        'objectives.custom_minimum_size.x = 0.0',
         'func _constrain_advancement_phone_width(node: Node) -> void:',
-        'rank.text = "CAREER ROADMAP\\n%s"',
-        'claim_all.text = "CLAIM ALL (%d)"',
-        'title.text = "%s  |  TIER %d\\n%s"',
+        '# Task uses the same fixed-width containment as the Advancements page.',
         'phone_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED',
+        '"CAREER ROADMAP\\n%s"',
         '"id": "bench_three"',
         '"id": "dealer_storage_max"',
-        'CHAPTER 4 PREVIEW - OUTGROWING THE APARTMENT',
-        'hidden_stash_interior_root.position = StorageVault.ANCHOR + Vector3(-0.36, 0.0, 0.0)',
     ]
     for needle in required:
         if needle not in text: raise SystemExit("verify "+needle)
@@ -357,13 +183,11 @@ _,_,verify=parse(PCK)
 sources={name:data.decode("utf-8","replace") for name,data,_ in verify if name in ["scripts/main.gd","scripts/touch_scroll.gd","scripts/storage_vault.gd"]}
 main=sources.get("scripts/main.gd","")
 for needle in [
-    'func _constrain_advancement_phone_width(node: Node) -> void:',
-    'rank.text = "CAREER ROADMAP\\n%s"',
-    'claim_all.text = "CLAIM ALL (%d)"',
-    'title.text = "%s  |  TIER %d\\n%s"',
+    'chapter_title.text = "STORY\\nCHAPTER 3 COMPLETE\\nNEXT: OUTGROWING THE APARTMENT"',
+    '# Task uses the same fixed-width containment as the Advancements page.',
     'phone_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED',
 ]:
-    if needle not in main: raise SystemExit("packed width verify "+needle)
+    if needle not in main: raise SystemExit("packed task width verify "+needle)
 if "const TAP_SLOP: float = 12.0" not in sources.get("scripts/touch_scroll.gd",""):
     raise SystemExit("mobile tap fix lost")
 if 'const ANCHOR: Vector3 = Vector3(-4.33, 0.0, -0.30)' not in sources.get("scripts/storage_vault.gd",""):
@@ -379,18 +203,16 @@ HTML.write_text(html)
 
 meta=json.loads(VERSION.read_text())
 meta["release_id"]=RELEASE
-meta["advancement_phone_width_fix"]="Advancements no longer increases phone/game width; roadmap controls wrap within the existing phone viewport and horizontal scrolling stays disabled"
-meta["advancement_header_compaction"]="Career roadmap and milestone titles split across lines; claim-all label shortened"
-meta["runtime_payload"]="cloudtest60 PCK with advancement phone width containment"
+meta["task_phone_width_fix"]="Task story card now wraps chapter titles/objectives and runs fixed-width containment so it cannot stretch the phone/game viewport"
+meta["task_story_header"]="Chapter headings split into compact multi-line phone-safe titles"
+meta["runtime_payload"]="cloudtest61 PCK with Task screen width containment on top of cloudtest60 roadmap"
 VERSION.write_text(json.dumps(meta,indent=2)+"\n")
 
 BUILD.write_text(
     "AFewBuds Cloud Test\n"
     "Game build: 0.7.9-beta.19\n"
     f"Web release: {RELEASE}\n"
-    "Runtime: cloudtest59 roadmap + fixed-width Advancements phone layout\n"
+    "Runtime: cloudtest60 roadmap + Task story-card fixed-width containment\n"
 )
 
 print("Built",RELEASE,len(packed))
-
-# finalized cloudtest60 advancement phone width deployment marker
