@@ -1,10 +1,10 @@
 from pathlib import Path
 import struct, hashlib, re, json
 
-SOURCE = Path("index-cloudtest24.pck")
+SOURCE = Path("index-cloudtest10.pck")
 TARGET = Path("index-cloudtest10.pck")
-PACK_URL = "index-cloudtest10.pck?build=25"
-RELEASE = "0.7.9-beta.19-cloudtest.25"
+PACK_URL = "index-cloudtest10.pck?build=26"
+RELEASE = "0.7.9-beta.19-cloudtest.26"
 
 def align(n, a=32):
     return (n+a-1)//a*a
@@ -57,40 +57,105 @@ for row in entries:
         continue
     text=row[1].decode("utf-8","replace").rstrip(" \n\0")
 
-    prod_pat=re.compile(r'^func _build_products_app\(\) -> void:\n.*?(?=^func |\Z)',re.M|re.S)
-    pm=prod_pat.search(text)
+    # Main phone: replace direct Rewards tile with Task.
+    old_home='''\t_add_phone_app_tile(grid, "", "BudShop", "Store, business & operations", "budshop")
+\t_add_phone_app_tile(grid, "", "Rewards", "%d ready to claim" % _advancement_ready_count(), "advancements")
+\t_add_phone_app_tile(grid, "", "Settings", "Help & system controls", "settings")
+'''
+    new_home='''\t_add_phone_app_tile(grid, "", "BudShop", "Store, business & operations", "budshop")
+\t_add_phone_app_tile(grid, "", "Task", "Chapter progress & rewards", "task")
+\t_add_phone_app_tile(grid, "", "Settings", "Help & system controls", "settings")
+'''
+    if old_home not in text:
+        raise SystemExit("phone home Rewards tile block missing")
+    text=text.replace(old_home,new_home,1)
+
+    # Task page: chapter/story progress first, then Rewards category.
+    task_builder='''func _build_task_app() -> void:
+\t_build_story_progress_section()
+\tvar grid: GridContainer = _phone_category_grid()
+\t_add_phone_app_tile(grid, "", "Rewards", "%d ready to claim" % _advancement_ready_count(), "advancements")
+
+'''
+    marker='func _build_phone_home() -> void:\n'
+    if marker not in text:
+        raise SystemExit("phone home builder marker missing")
+    if 'func _build_task_app() -> void:' not in text:
+        text=text.replace(marker,task_builder+marker,1)
+
+    # Rewards page should now contain rewards only; chapter info lives in Task.
+    rewards_start='func _build_advancements_app() -> void:\n\t_build_story_progress_section()\n'
+    if rewards_start not in text:
+        raise SystemExit("Rewards chapter section call missing")
+    text=text.replace(rewards_start,'func _build_advancements_app() -> void:\n',1)
+
+    # Back navigation: Rewards -> Task.
+    parent_pat=re.compile(r'^func _phone_parent_app\(app_name: String\) -> String:\n.*?(?=^func |\Z)',re.M|re.S)
+    pm=parent_pat.search(text)
     if not pm:
-        raise SystemExit("Your Supply builder missing")
-    prod=pm.group(0)
-    start=prod.find("\tvar business_card: PanelContainer = PanelContainer.new()")
-    end=prod.find("\tfor name_variant in products.keys():")
-    if start < 0 or end < 0 or end <= start:
-        raise SystemExit("storefront card block missing")
-    storefront=prod[start:end]
-    prod=prod[:start]+prod[end:]
-    prod=prod.replace(
-        'intro.text = "Your phone storefront pulls directly from bagged inventory in storage. Customers can visit throughout the day. Traffic is lighter in the morning, normal in the afternoon, busiest in the evening, and quieter late at night. Use Away when you want uninterrupted production time."',
-        'intro.text = "Manage bagged inventory, storefront listings, prices and reserved stock here."',
+        raise SystemExit("phone parent router missing")
+    parent_fn=pm.group(0)
+    target='\tif app_name in ["help", "system"]:\n\t\treturn "settings"\n'
+    if target not in parent_fn:
+        raise SystemExit("settings parent route missing")
+    parent_fn=parent_fn.replace(
+        target,
+        '\tif app_name == "advancements":\n\t\treturn "task"\n'+target,
         1
     )
-    text=text[:pm.start()]+prod.rstrip()+"\n\n"+text[pm.end():]
+    text=text[:pm.start()]+parent_fn.rstrip()+"\n\n"+text[pm.end():]
 
-    bud_pat=re.compile(r'^func _build_budshop_app\(\) -> void:\n.*?(?=^func |\Z)',re.M|re.S)
-    bm=bud_pat.search(text)
-    if not bm:
-        raise SystemExit("BudShop builder missing")
-    bud=bm.group(0)
-    bud=bud.replace("func _build_budshop_app() -> void:\n","func _build_budshop_app() -> void:\n"+storefront,1)
-    text=text[:bm.start()]+bud.rstrip()+"\n\n"+text[bm.end():]
+    # Route Task in phone refresh.
+    refresh_pat=re.compile(r'^func _refresh_phone\(\) -> void:\n.*?(?=^func |\Z)',re.M|re.S)
+    rm=refresh_pat.search(text)
+    if not rm:
+        raise SystemExit("phone refresh router missing")
+    rf=rm.group(0)
+    route='''\t\t"settings":
+\t\t\tphone_title.text = "Settings"
+\t\t\t_build_settings_app()
+'''
+    if route not in rf:
+        raise SystemExit("settings route missing")
+    rf=rf.replace(
+        route,
+        '''\t\t"task":
+\t\t\tphone_title.text = "Task"
+\t\t\t_build_task_app()
+'''+route,
+        1
+    )
+    text=text[:rm.start()]+rf.rstrip()+"\n\n"+text[rm.end():]
 
-    bm=bud_pat.search(text)
-    pm=prod_pat.search(text)
-    if "STOREFRONT: %s" not in bm.group(0):
-        raise SystemExit("storefront controls missing from BudShop")
-    if "_set_business_away" not in bm.group(0) or "_reopen_business" not in bm.group(0):
-        raise SystemExit("storefront actions missing from BudShop")
-    if "STOREFRONT: %s" in pm.group(0):
-        raise SystemExit("storefront controls still present in Your Supply")
+    # Bottom dock follows the new top-level hierarchy.
+    old_dock='\t_add_phone_dock_button(dock, "REWARDS", "advancements")\n'
+    new_dock='\t_add_phone_dock_button(dock, "TASK", "task")\n'
+    if old_dock not in text:
+        raise SystemExit("Rewards dock button missing")
+    text=text.replace(old_dock,new_dock,1)
+
+    # Verification.
+    checks=[
+        '"Task", "Chapter progress & rewards", "task"',
+        'func _build_task_app() -> void:',
+        '_build_story_progress_section()',
+        '"Rewards", "%d ready to claim" % _advancement_ready_count(), "advancements"',
+        'if app_name == "advancements":',
+        'return "task"',
+        '"task":',
+        'phone_title.text = "Task"',
+        '"TASK", "task"',
+    ]
+    for needle in checks:
+        if needle not in text:
+            raise SystemExit("Task hierarchy verification failed: "+needle)
+
+    adv_pat=re.compile(r'^func _build_advancements_app\(\) -> void:\n.*?(?=^func |\Z)',re.M|re.S)
+    am=adv_pat.search(text)
+    if not am:
+        raise SystemExit("Rewards builder missing after patch")
+    if "_build_story_progress_section()" in am.group(0):
+        raise SystemExit("chapter info still present in Rewards")
     if "CLOUD TEST" in text:
         raise SystemExit("visible CLOUD TEST wording returned")
 
@@ -109,7 +174,7 @@ idx.write_text(html)
 v=Path("version.json")
 meta=json.loads(v.read_text())
 meta["release_id"]=RELEASE
-meta["storefront_control_location"]="BudShop top"
+meta["storefront_control_location"]="BudShop top"\nmeta["phone_home"]="BudShop, Task, Settings"\nmeta["task_page"]="Chapter progress, Rewards"
 v.write_text(json.dumps(meta,indent=2)+"\n")
 
 print("Built",RELEASE)
