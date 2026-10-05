@@ -1,5 +1,5 @@
 {
-  "release_id": "0.7.9-beta.19-cloudtest.39",
+  "release_id": "0.7.9-beta.19-cloudtest.40",
   "game_build": "0.7.9-beta.19",
   "channel": "main-based-cloud-test",
   "updater": "network-only-no-service-worker",
@@ -8,7 +8,7 @@
   "hud_adjustment": "up-12px-from-cloudtest19",
   "visible_test_label": "removed",
   "room_hint_adjustment": "down-5px-from-cloudtest22",
-  "phone_home": "BudShop, Task, Settings",
+  "phone_home": "BudShop, Texts, Task, Leaderboard, Settings",
   "budshop_apps": [
     "Lights",
     "Store",
@@ -41,5 +41,8 @@
   "password_recovery": "Forgot Password uses a 30-minute single-use reset token and Brevo Edge Function; old sessions are revoked after reset",
   "password_recovery_sender": "Brevo sender configured server-side; API key stored only in Supabase Vault",
   "runtime_recovery": "Exact cloudtest36 game runtime restored after cloudtest37-38 grey-screen regression",
-  "leaderboard_runtime": "disabled pending isolated reintroduction; Supabase leaderboard data retained"
+  "leaderboard_runtime": "minimal Godot bridge only; ranking/UI/Supabase logic remains in web layer",
+  "leaderboard": "Phone Home > Leaderboard; browser-rendered Lifetime/Weekly Top 5/Top 25 with public career profiles",
+  "leaderboard_metrics": "revenue, sales, dealer sales, harvests, hybrids, raids survived, days played, career score",
+  "leaderboard_baseline": "built directly from known-good cloudtest39/cloudtest36 PCK"
 }
