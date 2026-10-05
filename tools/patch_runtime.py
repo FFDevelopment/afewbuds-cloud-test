@@ -1,256 +1,117 @@
 from pathlib import Path
 import struct, hashlib, re, json
 
-SOURCE_PCK = Path("index-accountsync11.pck")
-VERSIONED_PCK = Path("index-cloudtest10.pck")
-RELEASE_ID = "0.7.9-beta.19-cloudtest.10"
-HUD_MARKER = "CLOUD TEST .10"
+SOURCE = Path("index-cloudtest24.pck")
+TARGET = Path("index-cloudtest10.pck")
+PACK_URL = "index-cloudtest10.pck?build=25"
+RELEASE = "0.7.9-beta.19-cloudtest.25"
 
 def align(n, a=32):
-    return (n + a - 1) // a * a
+    return (n+a-1)//a*a
 
-def parse_pck(path):
-    blob = path.read_bytes()
+def parse(path):
+    blob=path.read_bytes()
     if blob[:4] != b"GDPC":
         raise SystemExit("not pck")
-    file_base = struct.unpack_from("<Q", blob, 24)[0]
-    dir_offset = struct.unpack_from("<Q", blob, 32)[0]
-    count = struct.unpack_from("<I", blob, dir_offset)[0]
-    pos = dir_offset + 4
-    entries = []
+    fb=struct.unpack_from("<Q",blob,24)[0]
+    do=struct.unpack_from("<Q",blob,32)[0]
+    count=struct.unpack_from("<I",blob,do)[0]
+    pos=do+4
+    entries=[]
     for _ in range(count):
-        plen = struct.unpack_from("<I", blob, pos)[0]; pos += 4
-        raw = blob[pos:pos+plen]; pos += plen
-        name = raw.rstrip(b"\0").decode()
-        off = struct.unpack_from("<Q", blob, pos)[0]; pos += 8
-        size = struct.unpack_from("<Q", blob, pos)[0]; pos += 8
-        md5 = blob[pos:pos+16]; pos += 16
-        flags = struct.unpack_from("<I", blob, pos)[0]; pos += 4
-        content = blob[file_base+off:file_base+off+size]
-        if hashlib.md5(content).digest() != md5:
-            raise SystemExit("MD5 mismatch: " + name)
-        entries.append([name, content, flags])
-    return blob, file_base, entries
+        plen=struct.unpack_from("<I",blob,pos)[0]; pos+=4
+        name=blob[pos:pos+plen].rstrip(b"\0").decode(); pos+=plen
+        off=struct.unpack_from("<Q",blob,pos)[0]; pos+=8
+        size=struct.unpack_from("<Q",blob,pos)[0]; pos+=8
+        md5=blob[pos:pos+16]; pos+=16
+        flags=struct.unpack_from("<I",blob,pos)[0]; pos+=4
+        data=blob[fb+off:fb+off+size]
+        if hashlib.md5(data).digest()!=md5:
+            raise SystemExit("md5 mismatch "+name)
+        entries.append([name,data,flags])
+    return blob,fb,entries
 
-def patch_main(text):
-    # Restore the exact room/view persistence used by the working afewbuds-beta
-    # runtime: save the real current_view/current_room and restore saved_view.
-    text = text.replace(
-        '\t\t"current_view": "grow_room_tent" if current_room == "grow" else "main_grow_door",\n\t\t"current_room": current_room,',
-        '\t\t"current_view": current_view,\n\t\t"current_room": current_room,',
-        1
-    )
-
-    main_restore = '''\tcurrent_room = str(restored_runtime.get("current_room", "main"))
-\troom_ring = grow_room_ring if current_room == "grow" else main_room_ring
-\tvar saved_view: String = str(restored_runtime.get("current_view", "main_grow_door"))
-\tif views.has(saved_view):
-\t\t_go_to_view(saved_view, false)
-'''
-
-    restore_variants = [
-'''\tcurrent_room = "grow" if str(restored_runtime.get("current_room", "main")) == "grow" else "main"
-\troom_ring = grow_room_ring if current_room == "grow" else main_room_ring
-\tif current_room == "grow":
-\t\t_go_to_view("grow_room_tent", false)
-\telse:
-\t\tcamera.position = Vector3(0, 1.64, 1.20)
-\t\t_finish_leave_grow_room()
-''',
-'''\tcurrent_room = "grow" if str(restored_runtime.get("current_room", "main")) == "grow" else "main"
-\troom_ring = grow_room_ring if current_room == "grow" else main_room_ring
-\tif current_room == "grow":
-\t\t_go_to_view("grow_room_tent", false)
-\telse:
-\t\t_finish_leave_grow_room()
-''',
-'''\tcurrent_room = "grow" if str(restored_runtime.get("current_room", "main")) == "grow" else "main"
-\troom_ring = grow_room_ring if current_room == "grow" else main_room_ring
-\t_go_to_view("grow_room_tent" if current_room == "grow" else "main_grow_door", false)
-\troom_target_yaw = 0.0
-\troom_target_pitch = 0.0
-\tcamera.rotation = Vector3.ZERO
-'''
-    ]
-    if main_restore not in text:
-        for old in restore_variants:
-            if old in text:
-                text = text.replace(old, main_restore, 1)
-                break
-        else:
-            raise SystemExit("cloud-test restore block not found")
-
-    # Remove all old cloud-test-only post-restore camera overrides. The working
-    # main repo restores saved_view once and leaves that exact approach/view intact.
-    delayed_override = '''\tget_tree().create_timer(0.12).timeout.connect(_go_to_view.bind("grow_room_tent" if current_room == "grow" else "main_grow_door", false), CONNECT_ONE_SHOT)
-\troom_target_yaw = 0.0
-\troom_target_pitch = 0.0
-\tcamera.rotation = Vector3.ZERO
-'''
-    text = text.replace(delayed_override, '', 1)
-
-    for old_marker in [
-        "CLOUD TEST .3", "CLOUD TEST .4", "CLOUD TEST .5",
-        "CLOUD TEST .6", "CLOUD TEST .7", "CLOUD TEST .8", "CLOUD TEST .9"
-    ]:
-        text = text.replace(old_marker, HUD_MARKER)
-
-    # Keep the cloud-test BAG shortcut, but do not alter room/view persistence.
-    if 'var backpack_quick_button: Button' not in text:
-        text = text.replace(
-            'var back_button: Button\n',
-            'var back_button: Button\nvar backpack_quick_button: Button\n',
-            1
-        )
-
-    if 'backpack_quick_button.text = "BAG"' not in text:
-        marker = '''\tforward_button = Button.new()
-\tforward_button.visible = false
-\thud.add_child(forward_button)
-'''
-        addition = marker + '''
-\tvar cloud_test_marker: Label = Label.new()
-\tcloud_test_marker.text = "CLOUD TEST .10"
-\tcloud_test_marker.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-\tcloud_test_marker.offset_left = -210
-\tcloud_test_marker.offset_top = 18
-\tcloud_test_marker.offset_right = -18
-\tcloud_test_marker.offset_bottom = 58
-\tcloud_test_marker.z_index = 300
-\tcloud_test_marker.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-\tcloud_test_marker.add_theme_font_size_override("font_size", 20)
-\tcloud_test_marker.modulate = Color("9fe892")
-\thud.add_child(cloud_test_marker)
-
-\tbackpack_quick_button = Button.new()
-\tbackpack_quick_button.text = "BAG"
-\tbackpack_quick_button.tooltip_text = "Open backpack"
-\tbackpack_quick_button.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-\tbackpack_quick_button.offset_left = -118
-\tbackpack_quick_button.offset_top = -118
-\tbackpack_quick_button.offset_right = -18
-\tbackpack_quick_button.offset_bottom = -18
-\tbackpack_quick_button.custom_minimum_size = Vector2(100, 100)
-\tbackpack_quick_button.z_index = 250
-\tbackpack_quick_button.add_theme_font_size_override("font_size", 18)
-\tbackpack_quick_button.pressed.connect(_open_backpack_direct)
-\thud.add_child(backpack_quick_button)
-'''
-        if marker not in text:
-            raise SystemExit("HUD insertion marker missing")
-        text = text.replace(marker, addition, 1)
-
-    if 'func _open_backpack_direct() -> void:' not in text:
-        marker = 'func _build_phone_panel() -> void:\n'
-        funcs = '''func _open_backpack_direct() -> void:
-\tif personal_inventory != null and personal_inventory.has_method("toggle_backpack"):
-\t\tpersonal_inventory.call("toggle_backpack")
-\t\treturn
-\tstatus_label.text = "Backpack inventory is unavailable."
-
-'''
-        if marker not in text:
-            raise SystemExit("phone marker missing")
-        text = text.replace(marker, funcs + marker, 1)
-
-    vis_pat = r'func _set_world_controls_visible\(visible: bool\) -> void:\n.*?(?=\nfunc )'
-    vm = re.search(vis_pat, text, re.S)
-    if vm:
-        block = vm.group(0)
-        if 'backpack_quick_button.visible = true' not in block:
-            block += '\tif backpack_quick_button != null:\n\t\tbackpack_quick_button.visible = true\n'
-            text = text[:vm.start()] + block + text[vm.end():]
-
-    if '\t\t"current_view": current_view,' not in text:
-        raise SystemExit("main-repo capture parity missing")
-    if main_restore not in text:
-        raise SystemExit("main-repo restore parity missing")
-    if 'get_tree().create_timer(0.12).timeout.connect(_go_to_view.bind(' in text:
-        raise SystemExit("stale delayed room override still present")
-    return text
-
-def rebuild_pck(original_blob, file_base, entries):
-    out = bytearray(original_blob[:file_base])
-    cursor = 0
-    directory = []
-
-    for name, content, flags in entries:
-        target = align(cursor, 32)
-        if target > cursor:
-            out.extend(b"\0" * (target - cursor))
-        off = target
-        out.extend(content)
-        cursor = off + len(content)
-        directory.append((name, off, len(content), hashlib.md5(content).digest(), flags))
-
-    new_dir_offset = align(len(out), 32)
-    if new_dir_offset > len(out):
-        out.extend(b"\0" * (new_dir_offset - len(out)))
-
-    struct.pack_into("<Q", out, 32, new_dir_offset)
-    out.extend(struct.pack("<I", len(directory)))
-
-    for name, off, size, md5, flags in directory:
-        raw = name.encode()
-        plen = (len(raw) + 3) // 4 * 4
-        out.extend(struct.pack("<I", plen))
-        out.extend(raw)
-        out.extend(b"\0" * (plen - len(raw)))
-        out.extend(struct.pack("<Q", off))
-        out.extend(struct.pack("<Q", size))
-        out.extend(md5)
-        out.extend(struct.pack("<I", flags))
-
+def rebuild(blob,fb,entries):
+    out=bytearray(blob[:fb]); cur=0; directory=[]
+    for name,data,flags in entries:
+        at=align(cur)
+        out.extend(b"\0"*(at-cur))
+        off=at
+        out.extend(data)
+        cur=off+len(data)
+        directory.append((name,off,len(data),hashlib.md5(data).digest(),flags))
+    do=align(len(out))
+    out.extend(b"\0"*(do-len(out)))
+    struct.pack_into("<Q",out,32,do)
+    out.extend(struct.pack("<I",len(directory)))
+    for name,off,size,md5,flags in directory:
+        raw=name.encode(); plen=(len(raw)+3)//4*4
+        out.extend(struct.pack("<I",plen)); out.extend(raw); out.extend(b"\0"*(plen-len(raw)))
+        out.extend(struct.pack("<Q",off)); out.extend(struct.pack("<Q",size)); out.extend(md5); out.extend(struct.pack("<I",flags))
     return bytes(out)
 
-original_blob, file_base, entries = parse_pck(SOURCE_PCK)
-found_main = False
+blob,fb,entries=parse(SOURCE)
 
-for entry in entries:
-    name, content, flags = entry
-    if name == "scripts/main.gd":
-        text = content.decode("utf-8").rstrip(" \n\0")
-        entry[1] = patch_main(text).encode()
-        found_main = True
-    elif name == "project.godot":
-        text = content.decode("utf-8").rstrip(" \n\0")
-        # CRITICAL: keep the established application name exactly the same as
-        # afewbuds-beta. Godot user:// persistence depends on this identity.
-        text = re.sub(r'config/name="[^"]+"', 'config/name="AFewBuds Beta v0.7.7.1-beta.1"', text, count=1)
-        text = re.sub(r'config/version="[^"]+"', 'config/version="0.7.9-beta.19"', text, count=1)
-        if 'config/name="AFewBuds Beta v0.7.7.1-beta.1"' not in text:
-            raise SystemExit("project identity parity missing")
-        entry[1] = text.encode()
+for row in entries:
+    if row[0]!="scripts/main.gd":
+        continue
+    text=row[1].decode("utf-8","replace").rstrip(" \n\0")
 
-if not found_main:
-    raise SystemExit("scripts/main.gd missing")
+    prod_pat=re.compile(r'^func _build_products_app\(\) -> void:\n.*?(?=^func |\Z)',re.M|re.S)
+    pm=prod_pat.search(text)
+    if not pm:
+        raise SystemExit("Your Supply builder missing")
+    prod=pm.group(0)
+    start=prod.find("\tvar business_card: PanelContainer = PanelContainer.new()")
+    end=prod.find("\tfor name_variant in products.keys():")
+    if start < 0 or end < 0 or end <= start:
+        raise SystemExit("storefront card block missing")
+    storefront=prod[start:end]
+    prod=prod[:start]+prod[end:]
+    prod=prod.replace(
+        'intro.text = "Your phone storefront pulls directly from bagged inventory in storage. Customers can visit throughout the day. Traffic is lighter in the morning, normal in the afternoon, busiest in the evening, and quieter late at night. Use Away when you want uninterrupted production time."',
+        'intro.text = "Manage bagged inventory, storefront listings, prices and reserved stock here."',
+        1
+    )
+    text=text[:pm.start()]+prod.rstrip()+"\n\n"+text[pm.end():]
 
-rebuilt = rebuild_pck(original_blob, file_base, entries)
-SOURCE_PCK.write_bytes(rebuilt)
-VERSIONED_PCK.write_bytes(rebuilt)
+    bud_pat=re.compile(r'^func _build_budshop_app\(\) -> void:\n.*?(?=^func |\Z)',re.M|re.S)
+    bm=bud_pat.search(text)
+    if not bm:
+        raise SystemExit("BudShop builder missing")
+    bud=bm.group(0)
+    bud=bud.replace("func _build_budshop_app() -> void:\n","func _build_budshop_app() -> void:\n"+storefront,1)
+    text=text[:bm.start()]+bud.rstrip()+"\n\n"+text[bm.end():]
 
-idx = Path("index.html")
-html = idx.read_text()
-html = re.sub(r'const AFB_TEST_RELEASE = "[^"]+";', f'const AFB_TEST_RELEASE = "{RELEASE_ID}";', html, count=1)
-html = re.sub(
-    r'"fileSizes":\{[^}]*\}',
-    f'"fileSizes":{{"{VERSIONED_PCK.name}":{len(rebuilt)},"index.wasm":37902138}}',
-    html,
-    count=1
-)
-html = re.sub(r'"mainPack":"[^"]+"', f'"mainPack":"{VERSIONED_PCK.name}"', html, count=1)
+    bm=bud_pat.search(text)
+    pm=prod_pat.search(text)
+    if "STOREFRONT: %s" not in bm.group(0):
+        raise SystemExit("storefront controls missing from BudShop")
+    if "_set_business_away" not in bm.group(0) or "_reopen_business" not in bm.group(0):
+        raise SystemExit("storefront actions missing from BudShop")
+    if "STOREFRONT: %s" in pm.group(0):
+        raise SystemExit("storefront controls still present in Your Supply")
+    if "CLOUD TEST" in text:
+        raise SystemExit("visible CLOUD TEST wording returned")
+
+    row[1]=text.encode()
+
+packed=rebuild(blob,fb,entries)
+TARGET.write_bytes(packed)
+
+idx=Path("index.html")
+html=idx.read_text()
+html=re.sub(r'const AFB_TEST_RELEASE = "[^"]+";',f'const AFB_TEST_RELEASE = "{RELEASE}";',html,count=1)
+html=re.sub(r'"fileSizes":\{[^}]*\}',f'"fileSizes":{{"{PACK_URL}":{len(packed)},"index.wasm":37902138}}',html,count=1)
+html=re.sub(r'"mainPack":"[^"]+"',f'"mainPack":"{PACK_URL}"',html,count=1)
 idx.write_text(html)
 
-v = Path("version.json")
-meta = json.loads(v.read_text())
-meta["release_id"] = RELEASE_ID
-meta["game_build"] = "0.7.9-beta.19"
-meta["channel"] = "standalone-cloud-test"
-meta["updater"] = "network-only-no-service-worker"
-v.write_text(json.dumps(meta, indent=2) + "\n")
+v=Path("version.json")
+meta=json.loads(v.read_text())
+meta["release_id"]=RELEASE
+meta["storefront_control_location"]="BudShop top"
+v.write_text(json.dumps(meta,indent=2)+"\n")
 
-print("rebuilt PCK bytes", len(rebuilt))
-print("mainPack", VERSIONED_PCK.name)
-print("release", RELEASE_ID)
-print("room/view persistence matches afewbuds-beta")
-print("project identity matches afewbuds-beta: AFewBuds Beta v0.7.7.1-beta.1")
+print("Built",RELEASE)
+print("Storefront controls moved to top of BudShop")
+print("Your Supply now begins with inventory/listing controls")
