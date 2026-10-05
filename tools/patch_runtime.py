@@ -91,14 +91,14 @@ for row in entries:
     text=replace_func(text,"_get_hidden_stash_art_texture",art_loader)
 
 
-    # cloudtest35 account/settings routing. Settings remains the parent category.
+    # cloudtest35 account category. Keep the existing Settings page and add Account.
     parent_func = '''func _phone_parent_app(app_name: String) -> String:
 \tif app_name in ["seeds", "supplies"]:
 \t\treturn "shop"
 \tif app_name in ["bills", "employees", "upgrades"]:
 \t\treturn "business"
-\tif app_name in ["account", "session"]:
-\t\treturn "system"
+\tif app_name == "account":
+\t\treturn "settings"
 \treturn "home"
 '''
     text=replace_func(text,"_phone_parent_app",parent_func)
@@ -108,48 +108,32 @@ for row in entries:
     if not refresh_match:
         raise SystemExit("cloudtest35 refresh phone function missing")
     refresh=refresh_match.group(0)
-    system_route_pat=re.compile(r'\t\t"system":\n\t\t\tphone_title\.text = "(?:System|Settings)"\n\t\t\t_build_system_app\(\)\n')
-    new_system_route='''\t\t"system":
+    settings_route_pat=re.compile(r'\t\t"settings":\n\t\t\tphone_title\.text = "Settings"\n\t\t\t_build_settings_app\(\)\n')
+    account_route='''\t\t"settings":
 \t\t\tphone_title.text = "Settings"
 \t\t\t_build_settings_app()
 \t\t"account":
 \t\t\tphone_title.text = "Account"
 \t\t\t_build_account_app()
-\t\t"session":
-\t\t\tphone_title.text = "Save & Session"
-\t\t\t_build_system_app()
 '''
-    refresh, route_count=system_route_pat.subn(new_system_route,refresh,count=1)
+    refresh, route_count=settings_route_pat.subn(account_route,refresh,count=1)
     if route_count != 1:
-        raise SystemExit("cloudtest35 system route anchor missing")
+        raise SystemExit("cloudtest35 settings route anchor missing")
     text=text[:refresh_match.start()]+refresh.rstrip()+"\n\n"+text[refresh_match.end():]
 
-    home_pat=re.compile(r"^func _build_phone_home\(\) -> void:\n.*?(?=^func |\\Z)",re.M|re.S)
-    home_match=home_pat.search(text)
-    if not home_match:
-        raise SystemExit("cloudtest35 phone home function missing")
-    home=home_match.group(0)
-    home_tile_pat=re.compile(r'\t_add_phone_app_tile\(grid, "", "(?:System|Settings)", "[^"]*", "system"\)\n')
-    home, tile_count=home_tile_pat.subn('\t_add_phone_app_tile(grid, "", "Settings", "Account, save & session", "system")\n',home,count=1)
-    if tile_count != 1:
-        raise SystemExit("cloudtest35 home settings tile anchor missing")
-    text=text[:home_match.start()]+home.rstrip()+"\n\n"+text[home_match.end():]
-
-    settings_funcs = '''func _build_settings_app() -> void:
+    settings_func = '''func _build_settings_app() -> void:
 \tvar intro: Label = Label.new()
-\tintro.text = "ACCOUNT & SESSION"
-\tintro.add_theme_font_size_override("font_size", 22)
+\tintro.text = "Help, account, saves and system controls."
+\tintro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 \tphone_list.add_child(intro)
-\tvar detail: Label = Label.new()
-\tdetail.text = "Manage your AFewBuds account, email preferences, password, saves and safe-quit controls."
-\tdetail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-\tdetail.modulate = Color("b8c5ca")
-\tphone_list.add_child(detail)
 \tvar grid: GridContainer = _phone_category_grid()
+\t_add_phone_app_tile(grid, "", "Help", "Basics & controls", "help")
 \t_add_phone_app_tile(grid, "", "Account", "Username, password, email & updates", "account")
-\t_add_phone_app_tile(grid, "", "Save & Session", "Manual save & safe quit", "session")
+\t_add_phone_app_tile(grid, "", "System", "Save game & safe quit", "system")
+'''
+    text=replace_func(text,"_build_settings_app",settings_func)
 
-func _build_account_app() -> void:
+    account_funcs = '''func _build_account_app() -> void:
 \tvar title: Label = Label.new()
 \ttitle.text = "AFewBuds Account"
 \ttitle.add_theme_font_size_override("font_size", 22)
@@ -181,7 +165,7 @@ func _open_web_account_settings() -> void:
     system_anchor = 'func _build_system_app() -> void:\n'
     if system_anchor not in text:
         raise SystemExit("cloudtest35 system app function anchor missing")
-    text=text.replace(system_anchor,settings_funcs+system_anchor,1)
+    text=text.replace(system_anchor,account_funcs+system_anchor,1)
 
     checks=[
         'float(source_w) * 0.285',
