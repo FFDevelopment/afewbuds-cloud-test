@@ -381,3 +381,5 @@ meta["bagging_bench_iii"]="Level 6 / $850 industrial workstation upgrade inspire
 meta["bagging_bench_iii_perk"]="continuous manual bagging; each bag is randomly 1-4g and the minigame continues until the selected strain has no trimmed product left"
 VERSION.write_text(json.dumps(meta,indent=2)+"\n")
 print("Built",RELEASE,len(packed))
+
+# finalized cloudtest51 room-layout + Bagging Bench III deployment marker
