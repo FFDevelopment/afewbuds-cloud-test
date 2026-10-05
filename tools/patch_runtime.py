@@ -92,14 +92,7 @@ for row in entries:
 
 
     # cloudtest35 account/settings routing. Settings remains the parent category.
-    old_parent = '''func _phone_parent_app(app_name: String) -> String:
-\tif app_name in ["seeds", "supplies"]:
-\t\treturn "shop"
-\tif app_name in ["bills", "employees", "upgrades"]:
-\t\treturn "business"
-\treturn "home"
-'''
-    new_parent = '''func _phone_parent_app(app_name: String) -> String:
+    parent_func = '''func _phone_parent_app(app_name: String) -> String:
 \tif app_name in ["seeds", "supplies"]:
 \t\treturn "shop"
 \tif app_name in ["bills", "employees", "upgrades"]:
@@ -108,15 +101,15 @@ for row in entries:
 \t\treturn "system"
 \treturn "home"
 '''
-    if old_parent not in text:
-        raise SystemExit("cloudtest35 phone parent routing anchor missing")
-    text=text.replace(old_parent,new_parent,1)
+    text=replace_func(text,"_phone_parent_app",parent_func)
 
-    old_system_route = '''\t\t"system":
-\t\t\tphone_title.text = "System"
-\t\t\t_build_system_app()
-'''
-    new_system_route = '''\t\t"system":
+    refresh_pat=re.compile(r"^func _refresh_phone\(\) -> void:\n.*?(?=^func |\\Z)",re.M|re.S)
+    refresh_match=refresh_pat.search(text)
+    if not refresh_match:
+        raise SystemExit("cloudtest35 refresh phone function missing")
+    refresh=refresh_match.group(0)
+    system_route_pat=re.compile(r'\t\t"system":\n\t\t\tphone_title\.text = "(?:System|Settings)"\n\t\t\t_build_system_app\(\)\n')
+    new_system_route='''\t\t"system":
 \t\t\tphone_title.text = "Settings"
 \t\t\t_build_settings_app()
 \t\t"account":
@@ -126,15 +119,21 @@ for row in entries:
 \t\t\tphone_title.text = "Save & Session"
 \t\t\t_build_system_app()
 '''
-    if old_system_route not in text:
+    refresh, route_count=system_route_pat.subn(new_system_route,refresh,count=1)
+    if route_count != 1:
         raise SystemExit("cloudtest35 system route anchor missing")
-    text=text.replace(old_system_route,new_system_route,1)
+    text=text[:refresh_match.start()]+refresh.rstrip()+"\n\n"+text[refresh_match.end():]
 
-    old_home_tile = '\t_add_phone_app_tile(grid, "", "System", "Save game & safe quit", "system")\n'
-    new_home_tile = '\t_add_phone_app_tile(grid, "", "Settings", "Account, save & session", "system")\n'
-    if old_home_tile not in text:
+    home_pat=re.compile(r"^func _build_phone_home\(\) -> void:\n.*?(?=^func |\\Z)",re.M|re.S)
+    home_match=home_pat.search(text)
+    if not home_match:
+        raise SystemExit("cloudtest35 phone home function missing")
+    home=home_match.group(0)
+    home_tile_pat=re.compile(r'\t_add_phone_app_tile\(grid, "", "(?:System|Settings)", "[^"]*", "system"\)\n')
+    home, tile_count=home_tile_pat.subn('\t_add_phone_app_tile(grid, "", "Settings", "Account, save & session", "system")\n',home,count=1)
+    if tile_count != 1:
         raise SystemExit("cloudtest35 home settings tile anchor missing")
-    text=text.replace(old_home_tile,new_home_tile,1)
+    text=text[:home_match.start()]+home.rstrip()+"\n\n"+text[home_match.end():]
 
     settings_funcs = '''func _build_settings_app() -> void:
 \tvar intro: Label = Label.new()
