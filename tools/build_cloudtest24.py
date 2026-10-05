@@ -423,3 +423,5 @@ meta["dealer_storage_transfer_ui"]="one row per strain with +1 +5 MAX and -1 -5 
 meta["dealer_storage_world_label"]="physical locker says DEALER STORAGE"
 VERSION.write_text(json.dumps(meta,indent=2)+"\n")
 print("Built",RELEASE,len(packed))
+
+# finalized cloudtest47 deployment marker
