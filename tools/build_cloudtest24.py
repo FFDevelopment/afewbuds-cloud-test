@@ -219,21 +219,30 @@ func _refresh_dealer_storage_panel() -> void:
         t=t.replace("storage or your backpack","normal storage").replace("business storage or your backpack","normal storage").replace("between storage and your backpack","in normal storage")
         t=t.replace('\t\t"personal_weed": personal_weed,\n',"").replace('\t\t"locker_cash": locker_cash,\n',"")
 
-        old=re.compile(r'\tvar loaded_personal_weed: Variant = data\.get\("personal_weed", personal_weed\)\n\tif loaded_personal_weed is Dictionary:\n\t\tpersonal_weed = loaded_personal_weed as Dictionary\n\tvar loaded_locker_weed: Variant = data\.get\("locker_weed", locker_weed\)\n\tif loaded_locker_weed is Dictionary:\n\t\tlocker_weed = loaded_locker_weed as Dictionary\n\tlocker_cash = maxi\(0, int\(data\.get\("locker_cash", locker_cash\)\)\)\n\tvar loaded_products: Variant = data\.get\("products", products\)\n\tif loaded_products is Dictionary:\n\t\tproducts = loaded_products as Dictionary\n\tfor pocket_strain_variant in personal_weed\.keys\(\):\n\t\t_ensure_product_exists\(str\(pocket_strain_variant\)\)\n')
+        old=re.compile(r'\tvar loaded_personal_weed: Variant = data\.get\("personal_weed", personal_weed\)\n.*?(?=\tvar loaded_relationships: Variant = data\.get\("customer_relationships", customer_relationships\)\n)', re.S)
         new='''\tvar legacy_personal: Dictionary = {}
 \tvar lp: Variant = data.get("personal_weed", {})
-\tif lp is Dictionary: legacy_personal = (lp as Dictionary).duplicate(true)
+\tif lp is Dictionary:
+\t\tlegacy_personal = (lp as Dictionary).duplicate(true)
 \tvar lw: Variant = data.get("locker_weed", locker_weed)
-\tif lw is Dictionary: locker_weed = (lw as Dictionary).duplicate(true)
-\tvar legacy_cash: int = maxi(0, int(data.get("locker_cash",0)))
+\tif lw is Dictionary:
+\t\tlocker_weed = (lw as Dictionary).duplicate(true)
+\tvar legacy_cash: int = maxi(0, int(data.get("locker_cash", 0)))
 \tvar loaded_products: Variant = data.get("products", products)
-\tif loaded_products is Dictionary: products = loaded_products as Dictionary
+\tif loaded_products is Dictionary:
+\t\tproducts = loaded_products as Dictionary
 \tfor k: Variant in legacy_personal.keys():
-\t\tvar s: String = str(k); var amount: int = maxi(0,int(legacy_personal.get(s,0)))
-\t\tif amount>0:
+\t\tvar s: String = str(k)
+\t\tvar amount: int = maxi(0, int(legacy_personal.get(s, 0)))
+\t\tif amount > 0:
 \t\t\t_ensure_product_exists(s)
-\t\t\tvar pd: Dictionary = products[s]; pd["stock"] = int(pd.get("stock",0))+amount; products[s]=pd
-\tif legacy_cash>0: cash += legacy_cash
+\t\t\tvar pd: Dictionary = products[s]
+\t\t\tpd["stock"] = int(pd.get("stock", 0)) + amount
+\t\t\tproducts[s] = pd
+\tfor dealer_key: Variant in locker_weed.keys():
+\t\t_ensure_product_exists(str(dealer_key))
+\tif legacy_cash > 0:
+\t\tcash += legacy_cash
 '''
         t,count=old.subn(new,t,count=1)
         if count!=1: raise SystemExit("legacy load block")
