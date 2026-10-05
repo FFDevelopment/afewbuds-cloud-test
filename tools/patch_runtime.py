@@ -165,9 +165,10 @@ meta["critical_heat_staff"]="100 Heat sends active crew home; one active role is
 meta["pause_overlay"]="simplified"
 meta["hidden_wall_stash"]="$3250, 1000g sellable storage, replaces vault, raid-proof, animated frame"
 meta["raid_seizure"]="all growing plants, packing-bench product and exposed storage"
-meta["friend_dealer_accounting"]="individual sales/gross/commission plus end-of-day summary"\nmeta["hidden_stash_visual"]="smaller wall-mounted frame, raised off floor, shallow recessed cavity, art fitted to opening"
+meta["friend_dealer_accounting"]="individual sales/gross/commission plus end-of-day summary"
+meta["hidden_stash_visual"]="smaller wall-mounted frame, raised off floor, shallow recessed cavity, art fitted to opening"
 v.write_text(json.dumps(meta,indent=2)+"\n")
 
 print("Built",RELEASE)
-print("Added Hidden Wall Stash, raid seizure rework and animated wall frame")
-print("Added named friend dealer accounting and end-of-day breakdown")
+print("Refined Hidden Wall Stash into smaller raised wall art")
+print("Artwork now fits the frame opening; raid and dealer mechanics unchanged")
