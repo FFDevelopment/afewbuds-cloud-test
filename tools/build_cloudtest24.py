@@ -4,8 +4,8 @@ import struct, hashlib, re, json, collections
 PCK=Path("index-cloudtest10.pck")
 HTML=Path("index.html")
 VERSION=Path("version.json")
-RELEASE="0.7.9-beta.19-cloudtest.47"
-PACK_URL="index-cloudtest10.pck?build=47"
+RELEASE="0.7.9-beta.19-cloudtest.48"
+PACK_URL="index-cloudtest10.pck?build=48"
 
 def align(n,a=32): return (n+a-1)//a*a
 def parse(path):
@@ -43,14 +43,12 @@ def rebuild(blob,fb,entries):
 
 def pat(name):
     return re.compile(r"^func "+re.escape(name)+r"\([^\n]*\)(?: -> [^:]+)?:\n.*?(?=^func |\Z)",re.M|re.S)
-
 def replace_func(src,name,new):
     ms=list(pat(name).finditer(src))
     if not ms: raise SystemExit("missing "+name)
     at=ms[0].start()
     for m in reversed(ms): src=src[:m.start()]+src[m.end():]
     return src[:at]+new.rstrip()+"\n\n"+src[at:]
-
 def upsert_before(src,name,new,before):
     ms=list(pat(name).finditer(src))
     if ms:
@@ -67,332 +65,230 @@ for row in entries:
     found=True
     text=row[1].decode("utf-8","replace").rstrip(" \n\0")
 
-    # Physical locker branding.
-    text=text.replace('locker_logo.text = "AFewBuds"','locker_logo.text = "DEALER\\nSTORAGE"',1)
-    text=text.replace("locker_logo.font_size = 34","locker_logo.font_size = 27",1)
+    # Runtime references for the premium Level III/IV cabinet.
+    if "var premium_dealer_locker_root: Node3D" not in text:
+        anchor="var dealer_storage_scroll: PhoneTouchScroll\n"
+        if anchor not in text: raise SystemExit("dealer storage variable anchor missing")
+        text=text.replace(anchor,anchor+
+            "var premium_dealer_locker_root: Node3D\n"
+            "var premium_dealer_locker_door_pivot: Node3D\n"
+            "var premium_dealer_locker_open: bool = false\n"
+            "var premium_dealer_locker_tween: Tween\n",1)
 
-    # Dealer Storage transfer UI: one row per strain, both directions on the same card.
-    transfer_func='''func _dealer_storage_transfer(strain: String, amount: int, moving_in: bool) -> void:
-\tif moving_in:
-\t\t_dealer_locker_add_from_storage(strain, amount)
-\telse:
-\t\t_dealer_locker_remove_to_storage(strain, amount)
-\t_refresh_dealer_storage_panel()
+    # Give the Level I/II labels stable names so the visual swap can hide them.
+    text=text.replace(
+        "var locker_logo: Label3D = Label3D.new()\n\tlocker_logo.text =",
+        'var locker_logo: Label3D = Label3D.new()\n\tlocker_logo.name = "DealerBasicLogo"\n\tlocker_logo.text =',
+        1
+    )
+    text=text.replace(
+        "var locker_tag: Label3D = Label3D.new()\n\tlocker_tag.text =",
+        'var locker_tag: Label3D = Label3D.new()\n\tlocker_tag.name = "DealerBasicTag"\n\tlocker_tag.text =',
+        1
+    )
+
+    # Build premium cabinet beside the original model, then show only the appropriate tier visual.
+    living=pat("_build_living_furniture").search(text)
+    if not living: raise SystemExit("_build_living_furniture missing")
+    block=living.group(0)
+    if "_build_premium_dealer_locker_visual()" not in block:
+        anchor="\tadd_child(locker_tag)\n"
+        if anchor not in block: raise SystemExit("locker tag add anchor missing")
+        block=block.replace(anchor,anchor+"\n\t_build_premium_dealer_locker_visual()\n\t_sync_dealer_locker_visual()\n",1)
+        text=text[:living.start()]+block.rstrip()+"\n\n"+text[living.end():]
+
+    helpers=r'''func _dealer_premium_box(parent: Node3D, part_name: String, pos: Vector3, size: Vector3, color: Color, roughness: float = 0.45, texture_path: String = "", emissive: bool = false) -> MeshInstance3D:
+	var part: MeshInstance3D = MeshInstance3D.new()
+	part.name = part_name
+	var mesh: BoxMesh = BoxMesh.new()
+	mesh.size = size
+	var material: StandardMaterial3D = StandardMaterial3D.new()
+	material.albedo_color = color
+	material.roughness = roughness
+	if not texture_path.is_empty():
+		var tex: Texture2D = load(texture_path) as Texture2D
+		if tex != null:
+			material.albedo_texture = tex
+	if emissive:
+		material.emission_enabled = true
+		material.emission = color
+		material.emission_energy_multiplier = 2.4
+	mesh.material = material
+	part.mesh = mesh
+	part.position = pos
+	parent.add_child(part)
+	return part
+
+func _dealer_premium_jar(parent: Node3D, part_name: String, pos: Vector3, radius: float, height: float, bud_color: Color) -> void:
+	var jar: MeshInstance3D = MeshInstance3D.new()
+	jar.name = part_name
+	var jar_mesh: CylinderMesh = CylinderMesh.new()
+	jar_mesh.top_radius = radius
+	jar_mesh.bottom_radius = radius
+	jar_mesh.height = height
+	jar_mesh.material = _make_flat_material(Color(bud_color.r * 0.72, bud_color.g * 0.72, bud_color.b * 0.72), 0.28)
+	jar.mesh = jar_mesh
+	jar.position = pos
+	parent.add_child(jar)
+	var cap: MeshInstance3D = MeshInstance3D.new()
+	var cap_mesh: CylinderMesh = CylinderMesh.new()
+	cap_mesh.top_radius = radius * 1.05
+	cap_mesh.bottom_radius = radius * 1.05
+	cap_mesh.height = 0.035
+	cap_mesh.material = _make_flat_material(Color("202428"), 0.24)
+	cap.mesh = cap_mesh
+	cap.position = pos + Vector3(0, height * 0.52, 0)
+	parent.add_child(cap)
+
+func _build_premium_dealer_locker_visual() -> void:
+	if premium_dealer_locker_root != null:
+		return
+	premium_dealer_locker_root = Node3D.new()
+	premium_dealer_locker_root.name = "PremiumDealerStorage"
+	premium_dealer_locker_root.position = Vector3(4.52, 0.0, 2.68)
+	add_child(premium_dealer_locker_root)
+
+	var black: Color = Color("171a1d")
+	var edge: Color = Color("252a2e")
+	var green: Color = Color("43f08a")
+	var interior: Color = Color("0e1712")
+
+	# Matte-black cabinet shell with open-front interior.
+	_dealer_premium_box(premium_dealer_locker_root, "PremiumBack", Vector3(0.28, 1.42, 0.0), Vector3(0.12, 2.70, 1.38), interior, 0.34, "res://assets/textures/brushed_metal.png")
+	_dealer_premium_box(premium_dealer_locker_root, "PremiumTop", Vector3(-0.02, 2.77, 0.0), Vector3(0.72, 0.12, 1.50), black, 0.32, "res://assets/textures/brushed_metal.png")
+	_dealer_premium_box(premium_dealer_locker_root, "PremiumBottom", Vector3(-0.02, 0.08, 0.0), Vector3(0.72, 0.16, 1.50), black, 0.32, "res://assets/textures/brushed_metal.png")
+	_dealer_premium_box(premium_dealer_locker_root, "PremiumSideL", Vector3(-0.02, 1.42, -0.72), Vector3(0.72, 2.62, 0.10), black, 0.32, "res://assets/textures/brushed_metal.png")
+	_dealer_premium_box(premium_dealer_locker_root, "PremiumSideR", Vector3(-0.02, 1.42, 0.72), Vector3(0.72, 2.62, 0.10), black, 0.32, "res://assets/textures/brushed_metal.png")
+
+	# Shelving and drawers.
+	for shelf_y: float in [0.68, 1.13, 1.58, 2.03]:
+		_dealer_premium_box(premium_dealer_locker_root, "PremiumShelf", Vector3(-0.10, shelf_y, 0.0), Vector3(0.55, 0.055, 1.20), edge, 0.30, "res://assets/textures/brushed_metal.png")
+	_dealer_premium_box(premium_dealer_locker_root, "PremiumDrawer1", Vector3(-0.34, 0.42, 0.0), Vector3(0.08, 0.30, 1.10), Color("202428"), 0.28, "res://assets/textures/brushed_metal.png")
+	_dealer_premium_box(premium_dealer_locker_root, "PremiumDrawer2", Vector3(-0.34, 0.15, 0.0), Vector3(0.08, 0.20, 1.10), Color("1b1f22"), 0.28, "res://assets/textures/brushed_metal.png")
+
+	# Green LED strips and interior glow.
+	_dealer_premium_box(premium_dealer_locker_root, "PremiumLedTop", Vector3(-0.38, 2.59, 0.0), Vector3(0.025, 0.025, 1.28), green, 0.10, "", true)
+	_dealer_premium_box(premium_dealer_locker_root, "PremiumLedLeft", Vector3(-0.38, 1.42, -0.63), Vector3(0.025, 2.35, 0.025), green, 0.10, "", true)
+	_dealer_premium_box(premium_dealer_locker_root, "PremiumLedRight", Vector3(-0.38, 1.42, 0.63), Vector3(0.025, 2.35, 0.025), green, 0.10, "", true)
+	var glow: OmniLight3D = OmniLight3D.new()
+	glow.name = "PremiumInteriorGlow"
+	glow.position = Vector3(-0.18, 1.65, 0.0)
+	glow.light_color = Color("4cff96")
+	glow.light_energy = 0.45
+	glow.omni_range = 2.1
+	premium_dealer_locker_root.add_child(glow)
+
+	# Visible product containers.
+	_dealer_premium_jar(premium_dealer_locker_root, "PremiumJarA", Vector3(-0.38, 2.20, -0.38), 0.11, 0.22, Color("718d48"))
+	_dealer_premium_jar(premium_dealer_locker_root, "PremiumJarB", Vector3(-0.38, 2.20, 0.00), 0.10, 0.20, Color("87934e"))
+	_dealer_premium_jar(premium_dealer_locker_root, "PremiumJarC", Vector3(-0.38, 2.20, 0.34), 0.08, 0.17, Color("667e40"))
+	_dealer_premium_jar(premium_dealer_locker_root, "PremiumJarD", Vector3(-0.38, 1.76, -0.30), 0.10, 0.20, Color("8b7d45"))
+	_dealer_premium_jar(premium_dealer_locker_root, "PremiumJarE", Vector3(-0.38, 1.76, 0.18), 0.10, 0.20, Color("6d8a4a"))
+	_dealer_premium_box(premium_dealer_locker_root, "PremiumPouchA", Vector3(-0.39, 1.34, -0.26), Vector3(0.08, 0.30, 0.28), Color("485f52"), 0.62)
+	_dealer_premium_box(premium_dealer_locker_root, "PremiumPouchB", Vector3(-0.39, 1.34, 0.12), Vector3(0.08, 0.25, 0.24), Color("58715d"), 0.62)
+
+	# Opening front door on a right-side hinge.
+	premium_dealer_locker_door_pivot = Node3D.new()
+	premium_dealer_locker_door_pivot.name = "PremiumDoorPivot"
+	premium_dealer_locker_door_pivot.position = Vector3(-0.42, 1.43, 0.73)
+	premium_dealer_locker_root.add_child(premium_dealer_locker_door_pivot)
+	_dealer_premium_box(premium_dealer_locker_door_pivot, "PremiumDoor", Vector3(-0.02, 0.0, -0.73), Vector3(0.08, 2.55, 1.40), Color("181b1e"), 0.30, "res://assets/textures/brushed_metal.png")
+	_dealer_premium_box(premium_dealer_locker_door_pivot, "PremiumDoorLedTop", Vector3(-0.07, 1.16, -0.73), Vector3(0.025, 0.025, 1.23), green, 0.10, "", true)
+	_dealer_premium_box(premium_dealer_locker_door_pivot, "PremiumDoorLedBottom", Vector3(-0.07, -1.16, -0.73), Vector3(0.025, 0.025, 1.23), green, 0.10, "", true)
+	_dealer_premium_box(premium_dealer_locker_door_pivot, "PremiumDoorLedSide", Vector3(-0.07, 0.0, -0.10), Vector3(0.025, 2.30, 0.025), green, 0.10, "", true)
+	_dealer_premium_box(premium_dealer_locker_door_pivot, "PremiumHandle", Vector3(-0.09, 0.0, -0.22), Vector3(0.08, 0.42, 0.09), Color("555d61"), 0.22, "res://assets/textures/brushed_metal.png")
+	_dealer_premium_box(premium_dealer_locker_door_pivot, "PremiumKeypad", Vector3(-0.095, -0.08, -0.38), Vector3(0.06, 0.28, 0.16), Color("111416"), 0.22)
+	_dealer_premium_box(premium_dealer_locker_door_pivot, "PremiumKeypadRing", Vector3(-0.13, -0.12, -0.38), Vector3(0.018, 0.07, 0.07), green, 0.10, "", true)
+
+	var premium_label: Label3D = Label3D.new()
+	premium_label.name = "PremiumDealerStorageLabel"
+	premium_label.text = "DEALER\nSTORAGE"
+	premium_label.font_size = 28
+	premium_label.pixel_size = 0.0028
+	premium_label.position = Vector3(-0.10, 0.42, -0.74)
+	premium_label.rotation_degrees = Vector3(0, -90, 0)
+	premium_label.modulate = Color("7df5a9")
+	premium_dealer_locker_door_pivot.add_child(premium_label)
+
+	premium_dealer_locker_root.visible = false
+	premium_dealer_locker_open = false
+
+func _sync_dealer_locker_visual() -> void:
+	var premium: bool = dealer_locker_level >= 3
+	for child: Node in get_children():
+		if not child is Node3D:
+			continue
+		var node: Node3D = child as Node3D
+		var part_name: String = str(node.name)
+		if part_name.begins_with("Locker") or part_name in ["DealerBasicLogo", "DealerBasicTag"]:
+			node.visible = not premium
+	if premium_dealer_locker_root != null:
+		premium_dealer_locker_root.visible = premium
+	if not premium and premium_dealer_locker_door_pivot != null:
+		premium_dealer_locker_door_pivot.rotation.y = 0.0
+		premium_dealer_locker_open = false
+
+func _set_premium_dealer_locker_open(opened: bool) -> void:
+	if premium_dealer_locker_door_pivot == null or dealer_locker_level < 3:
+		return
+	if premium_dealer_locker_tween != null and premium_dealer_locker_tween.is_running():
+		premium_dealer_locker_tween.kill()
+	premium_dealer_locker_open = opened
+	var target: float = deg_to_rad(-102.0) if opened else 0.0
+	premium_dealer_locker_tween = create_tween()
+	premium_dealer_locker_tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+	premium_dealer_locker_tween.tween_property(premium_dealer_locker_door_pivot, "rotation:y", target, 0.32)
 '''
-    text=replace_func(text,"_dealer_storage_transfer",transfer_func)
+    text=upsert_before(text,"_dealer_premium_box",helpers,"_sync_storage_furniture")
 
-    row_func='''func _dealer_storage_row(parent: VBoxContainer, strain: String, storage_amount: int, dealer_amount: int) -> void:
-\tvar parts: Dictionary = _make_inventory_card("bag")
-\tvar card: PanelContainer = parts["card"] as PanelContainer
-\tvar content: VBoxContainer = parts["content"] as VBoxContainer
-\tparent.add_child(card)
-
-\tvar title: Label = Label.new()
-\ttitle.text = strain
-\ttitle.add_theme_font_size_override("font_size", 20)
-\tcontent.add_child(title)
-
-\tvar detail: Label = Label.new()
-\tdetail.text = "Storage %dg   |   Dealer %dg" % [storage_amount, dealer_amount]
-\tdetail.modulate = Color("b8c3c9")
-\tcontent.add_child(detail)
-
-\tvar controls: HBoxContainer = HBoxContainer.new()
-\tcontrols.add_theme_constant_override("separation", 5)
-\tcontent.add_child(controls)
-
-\tfor qty: int in [1, 5]:
-\t\tvar add_button: Button = Button.new()
-\t\tadd_button.text = "+%d" % qty
-\t\tadd_button.custom_minimum_size = Vector2(72, 42)
-\t\tadd_button.disabled = storage_amount <= 0 or _dealer_locker_free_capacity() <= 0
-\t\tadd_button.pressed.connect(_dealer_storage_transfer.bind(strain, qty, true))
-\t\tcontrols.add_child(add_button)
-
-\tvar max_button: Button = Button.new()
-\tmax_button.text = "MAX"
-\tmax_button.custom_minimum_size = Vector2(76, 42)
-\tmax_button.disabled = storage_amount <= 0 or _dealer_locker_free_capacity() <= 0
-\tmax_button.pressed.connect(_dealer_storage_transfer.bind(strain, 999999, true))
-\tcontrols.add_child(max_button)
-
-\tfor qty: int in [1, 5]:
-\t\tvar remove_button: Button = Button.new()
-\t\tremove_button.text = "-%d" % qty
-\t\tremove_button.custom_minimum_size = Vector2(72, 42)
-\t\tremove_button.disabled = dealer_amount <= 0
-\t\tremove_button.pressed.connect(_dealer_storage_transfer.bind(strain, qty, false))
-\t\tcontrols.add_child(remove_button)
-
-\tvar all_button: Button = Button.new()
-\tall_button.text = "ALL"
-\tall_button.custom_minimum_size = Vector2(76, 42)
-\tall_button.disabled = dealer_amount <= 0
-\tall_button.pressed.connect(_dealer_storage_transfer.bind(strain, 999999, false))
-\tcontrols.add_child(all_button)
+    # Level III+ opens the premium door before showing the existing Dealer Storage UI.
+    opener=r'''func _open_dealer_locker_after_approach() -> void:
+	if current_view != "locker":
+		return
+	if dealer_storage_panel == null:
+		status_label.text = "Dealer Storage panel failed to initialize."
+		return
+	if dealer_locker_level >= 3:
+		_set_premium_dealer_locker_open(true)
+		await get_tree().create_timer(0.30).timeout
+	_open_dealer_storage_panel()
 '''
-    text=replace_func(text,"_dealer_storage_row",row_func)
+    text=replace_func(text,"_open_dealer_locker_after_approach",opener)
 
-    refresh='''func _refresh_dealer_storage_panel() -> void:
-\tif dealer_storage_list == null:
-\t\treturn
-\tif dealer_storage_scroll != null and dealer_storage_scroll.is_gesture_busy():
-\t\treturn
-\t_clear_children(dealer_storage_list)
+    close_match=pat("_close_dealer_storage_panel").search(text)
+    if not close_match: raise SystemExit("close dealer storage missing")
+    close_block=close_match.group(0)
+    if "_set_premium_dealer_locker_open(false)" not in close_block:
+        close_block=close_block.replace(
+            "\tif dealer_storage_scroll != null:\n\t\tdealer_storage_scroll.cancel_touch()\n",
+            "\tif dealer_storage_scroll != null:\n\t\tdealer_storage_scroll.cancel_touch()\n\tif dealer_locker_level >= 3:\n\t\t_set_premium_dealer_locker_open(false)\n",
+            1
+        )
+        text=text[:close_match.start()]+close_block.rstrip()+"\n\n"+text[close_match.end():]
 
-\tvar summary: Label = Label.new()
-\tsummary.text = "DEALER STORAGE %s   |   %dg / %dg\n+ moves product into Dealer Storage. - moves it back to normal Storage." % ["LOCKED" if dealer_locker_level <= 0 else _roman(dealer_locker_level), _dealer_locker_total(), _dealer_locker_capacity()]
-\tsummary.add_theme_font_size_override("font_size", 20)
-\tsummary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-\tdealer_storage_list.add_child(summary)
-
-\tif dealer_locker_level <= 0:
-\t\tvar locked: Label = Label.new()
-\t\tlocked.text = "Unlock Dealer Locker I in Phone -> Business -> Upgrades."
-\t\tdealer_storage_list.add_child(locked)
-\t\treturn
-
-\tvar strains: Array[String] = []
-\tfor key_variant: Variant in products.keys():
-\t\tvar strain: String = str(key_variant)
-\t\tif _available_amount(strain) > 0 and not strains.has(strain):
-\t\t\tstrains.append(strain)
-\tfor key_variant: Variant in locker_weed.keys():
-\t\tvar strain: String = str(key_variant)
-\t\tif int(locker_weed.get(strain, 0)) > 0 and not strains.has(strain):
-\t\t\tstrains.append(strain)
-\tstrains.sort()
-
-\tif strains.is_empty():
-\t\tvar empty: Label = Label.new()
-\t\tempty.text = "No packaged product is available in normal Storage or Dealer Storage."
-\t\tempty.modulate = Color(1.0, 1.0, 1.0, 0.58)
-\t\tdealer_storage_list.add_child(empty)
-\t\treturn
-
-\tfor strain: String in strains:
-\t\t_dealer_storage_row(dealer_storage_list, strain, _available_amount(strain), maxi(0, int(locker_weed.get(strain, 0))))
-'''
-    text=replace_func(text,"_refresh_dealer_storage_panel",refresh)
-
-    helpers='''func _add_upgrade_family_card(parent: VBoxContainer, title_text: String, detail_text: String, next_supply: String) -> void:
-\tvar card: PanelContainer = PanelContainer.new()
-\tcard.add_theme_stylebox_override("panel", _style_box(Color("151b20"), Color("37434c"), 14, 1))
-\tparent.add_child(card)
-\tvar box: VBoxContainer = VBoxContainer.new()
-\tbox.add_theme_constant_override("separation", 7)
-\tcard.add_child(box)
-\tvar title: Label = Label.new()
-\ttitle.text = title_text
-\ttitle.add_theme_font_size_override("font_size", 21)
-\tbox.add_child(title)
-\tvar detail: Label = Label.new()
-\tdetail.text = detail_text
-\tdetail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-\tdetail.modulate = Color("b8c3c9")
-\tbox.add_child(detail)
-\tif next_supply.is_empty():
-\t\tvar maxed: Label = Label.new()
-\t\tmaxed.text = "MAX FOR CURRENT BUILD"
-\t\tmaxed.add_theme_font_size_override("font_size", 17)
-\t\tmaxed.modulate = Color("91c59d")
-\t\tbox.add_child(maxed)
-\t\treturn
-\tvar info: Dictionary = supply_catalog[next_supply]
-\tvar unlock_level: int = int(info.get("unlock", 1))
-\tvar cost: int = int(info.get("cost", 0))
-\tvar next_label: Label = Label.new()
-\tnext_label.text = "NEXT: %s\n%s" % [next_supply, str(info.get("description", ""))]
-\tnext_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-\tnext_label.modulate = Color("d8e1e5")
-\tbox.add_child(next_label)
-\tvar buy: Button = Button.new()
-\tbuy.custom_minimum_size.y = 48
-\tif grower_level < unlock_level:
-\t\tbuy.text = "LOCKED   |   LEVEL %d" % unlock_level
-\t\tbuy.disabled = true
-\telse:
-\t\tbuy.text = "BUY NEXT   |   $%d" % cost
-\t\tbuy.disabled = cash < cost
-\tbuy.pressed.connect(_buy_supply.bind(next_supply))
-\tbox.add_child(buy)
-
-func _add_dealer_locker_family_card(parent: VBoxContainer) -> void:
-\tvar card: PanelContainer = PanelContainer.new()
-\tcard.add_theme_stylebox_override("panel", _style_box(Color("151b20"), Color("37434c"), 14, 1))
-\tparent.add_child(card)
-\tvar box: VBoxContainer = VBoxContainer.new()
-\tbox.add_theme_constant_override("separation", 7)
-\tcard.add_child(box)
-\tvar title: Label = Label.new()
-\ttitle.text = "DEALER STORAGE"
-\ttitle.add_theme_font_size_override("font_size", 21)
-\tbox.add_child(title)
-\tvar detail: Label = Label.new()
-\tvar tier_text: String = "NOT INSTALLED" if dealer_locker_level <= 0 else "Locker %s" % _roman(dealer_locker_level)
-\tdetail.text = "Current: %s\nCapacity: %dg   |   Stored: %dg" % [tier_text, _dealer_locker_capacity(), _dealer_locker_total()]
-\tdetail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-\tdetail.modulate = Color("b8c3c9")
-\tbox.add_child(detail)
-\tif dealer_locker_level >= 4:
-\t\tvar maxed: Label = Label.new()
-\t\tmaxed.text = "MAX FOR CURRENT BUILD"
-\t\tmaxed.add_theme_font_size_override("font_size", 17)
-\t\tmaxed.modulate = Color("91c59d")
-\t\tbox.add_child(maxed)
-\t\treturn
-\tvar next_level: int = dealer_locker_level + 1
-\tvar next_cost: int = DEALER_LOCKER_COST_BY_LEVEL[next_level]
-\tvar next_capacity: int = DEALER_LOCKER_CAPACITY_BY_LEVEL[next_level]
-\tvar next_label: Label = Label.new()
-\tnext_label.text = "NEXT: Dealer Locker %s   |   %dg" % [_roman(next_level), next_capacity]
-\tnext_label.modulate = Color("d8e1e5")
-\tbox.add_child(next_label)
-\tvar buy: Button = Button.new()
-\tbuy.text = "BUY NEXT   |   $%d" % next_cost
-\tbuy.disabled = cash < next_cost
-\tbuy.custom_minimum_size.y = 48
-\tbuy.pressed.connect(_buy_dealer_locker_upgrade)
-\tbox.add_child(buy)
-'''
-    text=upsert_before(text,"_add_upgrade_family_card",helpers,"_build_upgrades_app")
-
-    upgrades='''func _build_upgrades_app() -> void:
-\tvar intro: Label = Label.new()
-\tintro.text = "Upgrade your operation one step at a time. Expandable systems stay visible even when maxed so future tiers can be added without the category disappearing."
-\tintro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-\tphone_list.add_child(intro)
-
-\tvar equipment: Label = Label.new()
-\tequipment.text = "CURRENT EQUIPMENT\nGrow tents %d / 3   |   Tent Lv %d   |   Plant slots %d\nBagging Lv %d   |   Storage Lv %d (%dg)\nSupply Shelf Lv %d   |   Seeds %d/%d   |   Fertilizer %d/%d" % [grow_tent_count, tent_level, plant_slots.size(), bagging_level, storage_level, _storage_capacity(), supply_shelf_level, _total_seed_inventory(), _supply_seed_capacity(), fertilizer_units, _supply_fertilizer_capacity()]
-\tequipment.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-\tphone_list.add_child(equipment)
-
-\tvar systems_heading: Label = Label.new()
-\tsystems_heading.text = "EXPANDABLE SYSTEMS"
-\tsystems_heading.add_theme_font_size_override("font_size", 19)
-\tsystems_heading.modulate = Color("aeb9c0")
-\tphone_list.add_child(systems_heading)
-
-\tvar storage_name: String = "Storage I"
-\tvar storage_next: String = ""
-\tmatch storage_level:
-\t\t1: storage_next = "Storage Shelving II"
-\t\t2:
-\t\t\tstorage_name = "Storage Shelving II"
-\t\t\tstorage_next = "Storage Shelving III"
-\t\t3:
-\t\t\tstorage_name = "Storage Shelving III"
-\t\t\tstorage_next = VAULT_SUPPLY
-\t\t4:
-\t\t\tstorage_name = "AFB Storage Vault"
-\t\t\tstorage_next = HIDDEN_STASH_SUPPLY
-\t\t_:
-\t\t\tstorage_name = "Hidden Wall Stash"
-\t_add_upgrade_family_card(phone_list, "STORAGE", "Current: %s\nCapacity: %dg   |   Stored: %dg" % [storage_name, _storage_capacity(), _total_stored_stock()], storage_next)
-
-\tvar shelf_next: String = ""
-\tif supply_shelf_level == 1: shelf_next = "Grow Supply Shelf II"
-\telif supply_shelf_level == 2: shelf_next = "Grow Supply Shelf III"
-\t_add_upgrade_family_card(phone_list, "GROW SUPPLY SHELF", "Current: Shelf %s\nSeeds: %d/%d   |   Fertilizer: %d/%d" % [_roman(supply_shelf_level), _total_seed_inventory(), _supply_seed_capacity(), fertilizer_units, _supply_fertilizer_capacity()], shelf_next)
-
-\tvar tent_next: String = ""
-\tif grow_tent_count == 1: tent_next = "Grow Tent Slot 2"
-\telif grow_tent_count == 2: tent_next = "Grow Tent Slot 3"
-\t_add_upgrade_family_card(phone_list, "GROW TENT SLOTS", "Installed: %d / 3\nPlant slots: %d   |   Tent equipment level: %d" % [grow_tent_count, plant_slots.size(), tent_level], tent_next)
-
-\t_add_dealer_locker_family_card(phone_list)
-
-\tvar chain_names: Array[String] = ["Grow Supply Shelf II", "Grow Supply Shelf III", "Storage Shelving II", "Storage Shelving III", VAULT_SUPPLY, HIDDEN_STASH_SUPPLY, "Grow Tent Slot 2", "Grow Tent Slot 3"]
-\tvar installed: Array[String] = []
-\tvar available: Array[String] = []
-\tfor supply_variant: Variant in supply_catalog.keys():
-\t\tvar supply_name: String = str(supply_variant)
-\t\tif supply_name == "Fertilizer Pack" or chain_names.has(supply_name):
-\t\t\tcontinue
-\t\tif _supply_is_purchased(supply_name):
-\t\t\tinstalled.append(supply_name)
-\t\telse:
-\t\t\tavailable.append(supply_name)
-\tinstalled.sort()
-\tavailable.sort()
-
-\tvar installed_heading: Label = Label.new()
-\tinstalled_heading.text = "INSTALLED EQUIPMENT"
-\tinstalled_heading.add_theme_font_size_override("font_size", 19)
-\tinstalled_heading.modulate = Color("aeb9c0")
-\tphone_list.add_child(installed_heading)
-
-\tvar installed_card: PanelContainer = PanelContainer.new()
-\tinstalled_card.add_theme_stylebox_override("panel", _style_box(Color("151b20"), Color("37434c"), 14, 1))
-\tphone_list.add_child(installed_card)
-\tvar installed_box: VBoxContainer = VBoxContainer.new()
-\tinstalled_box.add_theme_constant_override("separation", 5)
-\tinstalled_card.add_child(installed_box)
-\tif installed.is_empty():
-\t\tvar none: Label = Label.new()
-\t\tnone.text = "No standalone equipment installed yet."
-\t\tinstalled_box.add_child(none)
-\telse:
-\t\tfor item_name: String in installed:
-\t\t\tvar installed_row: Label = Label.new()
-\t\t\tinstalled_row.text = "✓  %s" % item_name
-\t\t\tinstalled_row.modulate = Color("91c59d")
-\t\t\tinstalled_box.add_child(installed_row)
-
-\tif available.is_empty():
-\t\treturn
-
-\tvar available_heading: Label = Label.new()
-\tavailable_heading.text = "AVAILABLE EQUIPMENT"
-\tavailable_heading.add_theme_font_size_override("font_size", 19)
-\tavailable_heading.modulate = Color("aeb9c0")
-\tphone_list.add_child(available_heading)
-
-\tfor supply_name: String in available:
-\t\tvar info: Dictionary = supply_catalog[supply_name]
-\t\tvar unlock_level: int = int(info.get("unlock", 1))
-\t\tvar cost: int = int(info.get("cost", 0))
-\t\tvar card: PanelContainer = PanelContainer.new()
-\t\tcard.add_theme_stylebox_override("panel", _style_box(Color("151b20"), Color("37434c"), 14, 1))
-\t\tphone_list.add_child(card)
-\t\tvar box: VBoxContainer = VBoxContainer.new()
-\t\tbox.add_theme_constant_override("separation", 6)
-\t\tcard.add_child(box)
-\t\tvar title: Label = Label.new()
-\t\ttitle.text = supply_name
-\t\ttitle.add_theme_font_size_override("font_size", 20)
-\t\tbox.add_child(title)
-\t\tvar detail: Label = Label.new()
-\t\tdetail.text = str(info.get("description", "Operation upgrade."))
-\t\tdetail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-\t\tbox.add_child(detail)
-\t\tvar buy: Button = Button.new()
-\t\tbuy.custom_minimum_size.y = 48
-\t\tif grower_level < unlock_level:
-\t\t\tbuy.text = "LOCKED   |   LEVEL %d" % unlock_level
-\t\t\tbuy.disabled = true
-\t\telse:
-\t\t\tbuy.text = "BUY   |   $%d" % cost
-\t\t\tbuy.disabled = cash < cost
-\t\tbuy.pressed.connect(_buy_supply.bind(supply_name))
-\t\tbox.add_child(buy)
-'''
-    text=replace_func(text,"_build_upgrades_app",upgrades)
+    # Buying Level III swaps to the premium model immediately; Level IV retains it.
+    buy_match=pat("_buy_dealer_locker_upgrade").search(text)
+    if not buy_match: raise SystemExit("_buy_dealer_locker_upgrade missing")
+    buy_block=buy_match.group(0)
+    if "_sync_dealer_locker_visual()" not in buy_block:
+        anchor="\tdealer_locker_level = next_level\n"
+        if anchor not in buy_block: raise SystemExit("dealer locker level assignment missing")
+        buy_block=buy_block.replace(anchor,anchor+"\t_sync_dealer_locker_visual()\n",1)
+        text=text[:buy_match.start()]+buy_block.rstrip()+"\n\n"+text[buy_match.end():]
 
     required=[
-        'locker_logo.text = "DEALER\\nSTORAGE"',
-        'func _dealer_storage_row(parent: VBoxContainer, strain: String, storage_amount: int, dealer_amount: int)',
-        'add_button.text = "+%d" % qty',
-        'remove_button.text = "-%d" % qty',
-        '"EXPANDABLE SYSTEMS"',
-        '"STORAGE"',
-        '"GROW SUPPLY SHELF"',
-        '"GROW TENT SLOTS"',
-        '"DEALER STORAGE"',
-        '"MAX FOR CURRENT BUILD"',
-        '"INSTALLED EQUIPMENT"',
-        '"AVAILABLE EQUIPMENT"',
+        "var premium_dealer_locker_root: Node3D",
+        "func _build_premium_dealer_locker_visual() -> void:",
+        "func _sync_dealer_locker_visual() -> void:",
+        "func _set_premium_dealer_locker_open(opened: bool) -> void:",
+        "dealer_locker_level >= 3",
+        'premium_label.text = "DEALER\\nSTORAGE"',
+        '"res://assets/textures/brushed_metal.png"',
+        "PremiumInteriorGlow",
+        "_sync_dealer_locker_visual()",
+        "_set_premium_dealer_locker_open(true)",
+        "_set_premium_dealer_locker_open(false)",
+        "const DEALER_COMMISSION_RATE: float = 0.10",
     ]
     for needle in required:
         if needle not in text: raise SystemExit("verify "+needle)
@@ -407,7 +303,8 @@ packed=rebuild(blob,fb,entries); PCK.write_bytes(packed)
 _,_,verify=parse(PCK)
 sources={name:data.decode("utf-8","replace") for name,data,_ in verify if name in ["scripts/main.gd","scripts/touch_scroll.gd"]}
 main=sources.get("scripts/main.gd","")
-if 'locker_logo.text = "DEALER\\nSTORAGE"' not in main: raise SystemExit("world locker label not patched")
+for needle in ["func _build_premium_dealer_locker_visual() -> void:","PremiumDoorPivot","_set_premium_dealer_locker_open(true)"]:
+    if needle not in main: raise SystemExit("packed verify "+needle)
 if "const TAP_SLOP: float = 12.0" not in sources.get("scripts/touch_scroll.gd",""): raise SystemExit("tap fix lost")
 
 html=HTML.read_text()
@@ -418,10 +315,8 @@ HTML.write_text(html)
 
 meta=json.loads(VERSION.read_text())
 meta["release_id"]=RELEASE
-meta["upgrade_page"]="permanent expandable-system cards plus Installed/Available equipment sections"
-meta["dealer_storage_transfer_ui"]="one row per strain with +1 +5 MAX and -1 -5 ALL"
-meta["dealer_storage_world_label"]="physical locker says DEALER STORAGE"
+meta["dealer_storage_visual_progression"]="Levels I-II use original locker; Level III introduces premium matte-black green-lit cabinet; Level IV keeps same cabinet"
+meta["dealer_storage_premium_interaction"]="Level III-IV premium door opens before Dealer Storage UI and closes when UI closes"
+meta["dealer_storage_level_capacity"]="I 100g, II 200g, III 300g, IV 400g"
 VERSION.write_text(json.dumps(meta,indent=2)+"\n")
 print("Built",RELEASE,len(packed))
-
-# finalized cloudtest47 deployment marker
