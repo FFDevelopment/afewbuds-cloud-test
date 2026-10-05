@@ -1,5 +1,5 @@
 {
-  "release_id": "0.7.9-beta.19-cloudtest.27",
+  "release_id": "0.7.9-beta.19-cloudtest.28",
   "game_build": "0.7.9-beta.19",
   "channel": "main-based-cloud-test",
   "updater": "network-only-no-service-worker",
@@ -25,5 +25,7 @@
   ],
   "storefront_control_location": "BudShop top",
   "task_page": "Chapter progress, Rewards",
-  "visible_dev_wording": "removed"
+  "visible_dev_wording": "removed",
+  "paused_heat_decay": "100 Heat over 72 real minutes",
+  "paused_lay_low_progress": "1 Reeves quiet day per 24 real minutes while Lay Low is active"
 }
