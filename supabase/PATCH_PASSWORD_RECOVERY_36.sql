@@ -91,8 +91,8 @@ $$;
 revoke execute on function public.afb_password_reset_issue(text) from public, anon, authenticated;
 grant execute on function public.afb_password_reset_issue(text) to service_role;
 
--- Service-only helper for the Edge Function. Secrets are read from Supabase Vault.
-create or replace function public.afb_password_reset_email_config()
+-- Service-only helper for the Edge Function. Brevo credentials are read from Supabase Vault.
+create or replace function public.afb_password_reset_brevo_config()
 returns jsonb
 language plpgsql
 security definer
@@ -105,14 +105,14 @@ begin
   select decrypted_secret
     into v_api_key
   from vault.decrypted_secrets
-  where name = 'afb_resend_api_key'
+  where name = 'afb_brevo_api_key'
   order by created_at desc
   limit 1;
 
   select decrypted_secret
     into v_from
   from vault.decrypted_secrets
-  where name = 'afb_resend_from'
+  where name = 'afb_brevo_from'
   order by created_at desc
   limit 1;
 
@@ -124,8 +124,8 @@ begin
 end;
 $$;
 
-revoke execute on function public.afb_password_reset_email_config() from public, anon, authenticated;
-grant execute on function public.afb_password_reset_email_config() to service_role;
+revoke execute on function public.afb_password_reset_brevo_config() from public, anon, authenticated;
+grant execute on function public.afb_password_reset_brevo_config() to service_role;
 
 -- Public completion endpoint. Possession of the high-entropy single-use token
 -- authorizes the reset; successful resets revoke all previous login sessions.
