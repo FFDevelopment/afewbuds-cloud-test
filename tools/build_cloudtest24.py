@@ -221,7 +221,7 @@ for row in entries:
 	_add_box("BenchIIIBackBoard", Vector3(4.62, 1.96, 0.54), Vector3(0.12, 1.48, 3.14), dark, 0.42, false, "res://assets/textures/brushed_metal.png", Vector3(1.0, 1.0, 2.0))
 	_add_box("BenchIIIUpperCabinet", Vector3(4.43, 2.83, 0.54), Vector3(0.48, 0.58, 3.08), black, 0.34, false, "res://assets/textures/brushed_metal.png", Vector3(1.0, 1.0, 2.0))
 	_add_box("BenchIIIUpperLip", Vector3(4.14, 2.50, 0.54), Vector3(0.54, 0.08, 3.02), steel, 0.30, false, "res://assets/textures/brushed_metal.png")
-	_add_box("BenchIIITaskLight", Vector3(4.08, 2.43, 0.54), Vector3(0.035, 0.035, 2.76), green, 0.10, "", Vector3.ONE, true)
+	_add_box("BenchIIITaskLight", Vector3(4.08, 2.43, 0.54), Vector3(0.035, 0.035, 2.76), green, 0.10, true)
 
 	# Enclosed lower cabinets/drawers while retaining the existing walnut work surface.
 	_add_box("BenchIIILowerCabinetL", Vector3(3.48, 0.58, -0.34), Vector3(0.22, 0.86, 1.20), black, 0.36, false, "res://assets/textures/brushed_metal.png")
