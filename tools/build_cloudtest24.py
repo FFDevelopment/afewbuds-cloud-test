@@ -5,8 +5,8 @@ PCK=Path("index-cloudtest10.pck")
 HTML=Path("index.html")
 VERSION=Path("version.json")
 BUILD=Path("BUILD_VERSION.txt")
-RELEASE="0.7.9-beta.19-cloudtest.56"
-PACK_URL="index-cloudtest10.pck?build=56"
+RELEASE="0.7.9-beta.19-cloudtest.57"
+PACK_URL="index-cloudtest10.pck?build=57"
 
 def align(n,a=32): return (n+a-1)//a*a
 
@@ -46,6 +46,13 @@ def rebuild(blob,fb,entries):
 def pat(name):
     return re.compile(r"^func "+re.escape(name)+r"\([^\n]*\)(?: -> [^:]+)?:\n.*?(?=^func |\Z)",re.M|re.S)
 
+def replace_func(src,name,new):
+    ms=list(pat(name).finditer(src))
+    if not ms: raise SystemExit("missing "+name)
+    at=ms[0].start()
+    for m in reversed(ms): src=src[:m.start()]+src[m.end():]
+    return src[:at]+new.rstrip()+"\n\n"+src[at:]
+
 blob,fb,entries=parse(PCK)
 found=False
 for row in entries:
@@ -54,57 +61,145 @@ for row in entries:
     found=True
     text=row[1].decode("utf-8","replace").rstrip(" \n\0")
 
-    m=pat("_build_apartment_details").search(text)
-    if not m: raise SystemExit("_build_apartment_details missing")
-    block=m.group(0)
+    # Scroll controller for direct plant/seed picker.
+    if "var plant_direct_scroll: PhoneTouchScroll" not in text:
+        anchor="var plant_direct_panel: PanelContainer\nvar plant_direct_box: VBoxContainer\n"
+        if anchor not in text:
+            raise SystemExit("plant direct variable anchor missing")
+        text=text.replace(
+            anchor,
+            "var plant_direct_panel: PanelContainer\nvar plant_direct_box: VBoxContainer\nvar plant_direct_scroll: PhoneTouchScroll\n",
+            1,
+        )
 
-    locker_anchor=block.find('\t_add_box("LockerBody"')
-    if locker_anchor<0: raise SystemExit("LockerBody anchor missing")
-    kitchen=block[:locker_anchor]
-    rest=block[locker_anchor:]
+    build_func=r'''func _build_direct_plant_panel() -> void:
+	plant_direct_panel = PanelContainer.new()
+	plant_direct_panel.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	plant_direct_panel.offset_left = 22
+	plant_direct_panel.offset_right = -22
+	plant_direct_panel.offset_top = -450
+	plant_direct_panel.offset_bottom = -82
+	plant_direct_panel.visible = false
+	plant_direct_panel.add_theme_stylebox_override("panel", _style_box(Color("11191f"), Color("40515b"), 18, 2))
+	hud.add_child(plant_direct_panel)
 
-    replacements={
-        'Vector3(2.18, 0.46, -3.54)':'Vector3(2.42, 0.46, -3.54)',
-        'Vector3(2.18, 0.11, -3.46)':'Vector3(2.42, 0.11, -3.46)',
-        'Vector3(2.18, 0.94, -3.52)':'Vector3(2.42, 0.94, -3.52)',
-        'Vector3(2.18, 0.98, -3.08)':'Vector3(2.42, 0.98, -3.08)',
-        'var lower_centers: Array[float] = [1.40, 2.18, 2.96]':'var lower_centers: Array[float] = [1.64, 2.42, 3.20]',
-        'Vector3(2.18, 1.49, -3.935)':'Vector3(2.42, 1.49, -3.935)',
-        'Vector3(2.18, 2.36, -3.72)':'Vector3(2.42, 2.36, -3.72)',
-        'var upper_centers: Array[float] = [1.40, 2.18, 2.96]':'var upper_centers: Array[float] = [1.64, 2.42, 3.20]',
-        'Vector3(2.18, 1.85, -3.47)':'Vector3(2.42, 1.85, -3.47)',
-        'Vector3(2.18, 0.995, -3.46)':'Vector3(2.42, 0.995, -3.46)',
-        'Vector3(2.18, 1.005, -3.46)':'Vector3(2.42, 1.005, -3.46)',
-        'Vector3(2.18, 1.25, -3.79)':'Vector3(2.42, 1.25, -3.79)',
-        'Vector3(2.18, 1.48, -3.70)':'Vector3(2.42, 1.48, -3.70)',
-        'Vector3(2.18, 1.43, -3.60)':'Vector3(2.42, 1.43, -3.60)',
-        'Vector3(2.45, 1.15, -3.77)':'Vector3(2.69, 1.15, -3.77)',
-    }
+	plant_direct_scroll = PhoneTouchScroll.new()
+	plant_direct_scroll.name = "plant_direct_scroll"
+	plant_direct_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	plant_direct_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	plant_direct_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	plant_direct_scroll.scroll_deadzone = 10
+	plant_direct_panel.add_child(plant_direct_scroll)
 
-    for old,new in replacements.items():
-        if old in kitchen:
-            kitchen=kitchen.replace(old,new,1)
-        elif new not in kitchen:
-            raise SystemExit("kitchen frame-clearance anchor missing: "+old)
+	plant_direct_box = VBoxContainer.new()
+	plant_direct_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	plant_direct_box.add_theme_constant_override("separation", 8)
+	plant_direct_scroll.add_child(plant_direct_box)
+'''
+    text=replace_func(text,"_build_direct_plant_panel",build_func)
 
-    block=kitchen+rest
-    text=text[:m.start()]+block.rstrip()+"\n\n"+text[m.end():]
+    # Remove the artificial 3-seed cap and show all owned seeds, including
+    # future/extra genetics that are not yet listed in SEED_ORDER.
+    old_seed_block=re.compile(
+        r'\t\tvar shown: int = 0\n'
+        r'\t\tfor seed_name in SEED_ORDER:\n'
+        r'.*?'
+        r'\t\tif shown == 0:\n'
+        r'\t\t\tvar none: Label = Label\.new\(\)\n'
+        r'\t\t\tnone\.text = "No seeds owned\. Buy unlocked seeds from the phone\."\n'
+        r'\t\t\tplant_direct_box\.add_child\(none\)\n'
+        r'\t\treturn',
+        re.S
+    )
+    m=old_seed_block.search(text)
+    if not m:
+        raise SystemExit("3-seed picker block missing")
 
-    # Sanity: counter left edge should now be 2.42 - 2.62/2 = 1.11,
-    # safely outside GrowDoorFrameR outer edge ~1.08.
+    new_seed_block=r'''		var owned_seed_names: Array[String] = []
+		for seed_name: String in SEED_ORDER:
+			if int(seed_inventory.get(seed_name, 0)) > 0:
+				owned_seed_names.append(seed_name)
+		for seed_variant: Variant in seed_inventory.keys():
+			var extra_seed_name: String = str(seed_variant)
+			if int(seed_inventory.get(extra_seed_name, 0)) > 0 and not owned_seed_names.has(extra_seed_name):
+				owned_seed_names.append(extra_seed_name)
+
+		var shown: int = 0
+		for seed_name: String in owned_seed_names:
+			var seed_count: int = int(seed_inventory.get(seed_name, 0))
+			if seed_count <= 0:
+				continue
+			var seed_button: Button = Button.new()
+			seed_button.text = "%s (%d)" % [seed_name, seed_count]
+			seed_button.custom_minimum_size.y = 48
+			seed_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			seed_button.pressed.connect(_direct_plant_seed.bind(seed_name))
+			seed_row.add_child(seed_button)
+			shown += 1
+		if shown == 0:
+			var none: Label = Label.new()
+			none.text = "No seeds owned. Buy unlocked seeds from the phone."
+			plant_direct_box.add_child(none)
+		return'''
+    text=text[:m.start()]+new_seed_block+text[m.end():]
+
+    # Route mobile drag gestures to the new seed picker scroll without breaking taps.
+    input_match=pat("_input").search(text)
+    if not input_match:
+        raise SystemExit("_input missing")
+    input_block=input_match.group(0)
+    scroll_hook='''	if plant_direct_panel != null and plant_direct_panel.visible and plant_direct_scroll != null and plant_direct_scroll.handle_pointer(event):
+		get_viewport().set_input_as_handled()
+		return
+'''
+    if scroll_hook not in input_block:
+        anchor='''	if phone_open and phone_scroll != null and phone_scroll.handle_pointer(event):
+		get_viewport().set_input_as_handled()
+		return
+'''
+        if anchor not in input_block:
+            raise SystemExit("phone scroll input anchor missing")
+        input_block=input_block.replace(anchor,anchor+scroll_hook,1)
+        text=text[:input_match.start()]+input_block.rstrip()+"\n\n"+text[input_match.end():]
+
+    # Reset gesture state whenever the direct plant panel opens/closes.
+    open_match=pat("_open_direct_plant").search(text)
+    if not open_match: raise SystemExit("_open_direct_plant missing")
+    open_block=open_match.group(0)
+    if "plant_direct_scroll.cancel_touch()" not in open_block:
+        anchor="\tselected_plant_slot = slot_index\n"
+        if anchor not in open_block: raise SystemExit("open plant anchor missing")
+        open_block=open_block.replace(anchor,anchor+"\tif plant_direct_scroll != null:\n\t\tplant_direct_scroll.cancel_touch()\n\t\tplant_direct_scroll.scroll_vertical = 0\n",1)
+        text=text[:open_match.start()]+open_block.rstrip()+"\n\n"+text[open_match.end():]
+
+    close_match=pat("_close_direct_plant").search(text)
+    if not close_match: raise SystemExit("_close_direct_plant missing")
+    close_block=close_match.group(0)
+    if "plant_direct_scroll.cancel_touch()" not in close_block:
+        anchor="\tplant_direct_panel.visible = false\n"
+        if anchor not in close_block: raise SystemExit("close plant anchor missing")
+        close_block=close_block.replace(anchor,anchor+"\tif plant_direct_scroll != null:\n\t\tplant_direct_scroll.cancel_touch()\n",1)
+        text=text[:close_match.start()]+close_block.rstrip()+"\n\n"+text[close_match.end():]
+
     required=[
-        'Vector3(2.42, 0.94, -3.52)',
-        'Vector3(2.42, 1.49, -3.935)',
-        'var lower_centers: Array[float] = [1.64, 2.42, 3.20]',
-        'var upper_centers: Array[float] = [1.64, 2.42, 3.20]',
-        'Vector3(2.42, 1.005, -3.46)',
-        'Vector3(2.69, 1.15, -3.77)',
-        '"LockerBody", Vector3(4.52, 1.28, -2.20)',
-        'hidden_stash_interior_root.position = StorageVault.ANCHOR + Vector3(-0.24, 0.0, 0.0)',
+        "var plant_direct_scroll: PhoneTouchScroll",
+        'plant_direct_scroll.name = "plant_direct_scroll"',
+        "var owned_seed_names: Array[String] = []",
+        "for seed_name: String in owned_seed_names:",
+        "extra_seed_name",
+        "plant_direct_scroll.handle_pointer(event)",
+        "plant_direct_scroll.scroll_vertical = 0",
         '"Bagging Bench III"',
+        "PremiumLeftDoorPivot",
     ]
     for needle in required:
         if needle not in text: raise SystemExit("verify "+needle)
+
+    forbidden=[
+        "if shown >= 3:",
+    ]
+    for needle in forbidden:
+        if needle in text: raise SystemExit("old seed cap remains: "+needle)
 
     names=re.findall(r"^func\s+([A-Za-z0-9_]+)\(",text,re.M)
     dup={k:v for k,v in collections.Counter(names).items() if v>1}
@@ -118,19 +213,17 @@ packed=rebuild(blob,fb,entries)
 PCK.write_bytes(packed)
 
 _,_,verify=parse(PCK)
-sources={name:data.decode("utf-8","replace") for name,data,_ in verify if name in ["scripts/main.gd","scripts/touch_scroll.gd","scripts/storage_vault.gd"]}
+sources={name:data.decode("utf-8","replace") for name,data,_ in verify if name in ["scripts/main.gd","scripts/touch_scroll.gd"]}
 main=sources.get("scripts/main.gd","")
-vault=sources.get("scripts/storage_vault.gd","")
-
 for needle in [
-    'Vector3(2.42, 0.94, -3.52)',
-    'var lower_centers: Array[float] = [1.64, 2.42, 3.20]',
-    'Vector3(2.42, 1.005, -3.46)',
+    "var plant_direct_scroll: PhoneTouchScroll",
+    "var owned_seed_names: Array[String] = []",
+    "for seed_name: String in owned_seed_names:",
+    "plant_direct_scroll.handle_pointer(event)",
 ]:
     if needle not in main: raise SystemExit("packed verify "+needle)
-
-if 'const ANCHOR: Vector3 = Vector3(-4.33, 0.0, -0.30)' not in vault:
-    raise SystemExit("vault anchor changed unexpectedly")
+if "if shown >= 3:" in main:
+    raise SystemExit("packed runtime still caps owned seeds at 3")
 if "const TAP_SLOP: float = 12.0" not in sources.get("scripts/touch_scroll.gd",""):
     raise SystemExit("mobile tap fix lost")
 
@@ -144,18 +237,17 @@ HTML.write_text(html)
 
 meta=json.loads(VERSION.read_text())
 meta["release_id"]=RELEASE
-meta["kitchen_doorframe_clearance"]="entire modern kitchen run shifted +0.24 X so counter/backplash/uppers clear GrowDoorFrameR with a small safety gap"
-meta["vault_position_rule"]="vault remains unchanged at StorageVault.ANCHOR z=-0.30; hidden stash keeps only prior X wall-fit correction"
-meta["runtime_payload"]="cloudtest56 PCK with kitchen door-frame clearance hotfix"
+meta["planting_seed_picker"]="empty pots list every owned seed type instead of stopping after 3"
+meta["planting_seed_picker_scroll"]="direct plant panel uses PhoneTouchScroll so large seed collections remain usable on mobile"
+meta["planting_seed_picker_future_genetics"]="owned seed_inventory entries not present in SEED_ORDER are appended automatically"
+meta["runtime_payload"]="cloudtest57 PCK with unlimited owned-seed planting picker"
 VERSION.write_text(json.dumps(meta,indent=2)+"\n")
 
 BUILD.write_text(
     "AFewBuds Cloud Test\n"
     "Game build: 0.7.9-beta.19\n"
     f"Web release: {RELEASE}\n"
-    "Runtime: modern kitchen shifted right to clear grow-room door frame; vault unchanged\n"
+    "Runtime: all owned seeds available when planting + mobile scrollable seed picker\n"
 )
 
 print("Built",RELEASE,len(packed))
-
-# finalized cloudtest56 deployment marker
