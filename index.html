@@ -180,7 +180,36 @@ body {
 	.afb-auth-card { margin:auto 0; padding:20px 18px; border-radius:20px; }
 	.afb-auth-title { font-size:24px; }
 }
-		</style>
+		
+/* AFewBuds in-game Account settings modal (cloudtest.35). */
+#afb-account-settings-modal {
+	position:fixed; inset:0; z-index:11000; display:flex; align-items:center; justify-content:center;
+	padding:18px; box-sizing:border-box; background:rgba(3,8,5,.82);
+	font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+	color:#eef6ec; overflow:auto; touch-action:auto;
+}
+#afb-account-settings-modal[hidden] { display:none !important; }
+.afb-account-settings-card {
+	width:min(620px,100%); max-height:92vh; overflow:auto; box-sizing:border-box;
+	background:#111d16; border:1px solid #3a5941; border-radius:22px; padding:22px;
+	box-shadow:0 28px 80px rgba(0,0,0,.55);
+}
+.afb-account-settings-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
+.afb-account-settings-head h2 { margin:0; font-size:25px; }
+.afb-account-settings-close { min-width:44px; min-height:44px; border-radius:11px; border:1px solid #3b5141; background:#1a2920; color:#eef6ec; font:inherit; font-weight:800; }
+.afb-account-section { margin-top:16px; padding-top:16px; border-top:1px solid #2a3b2f; }
+.afb-account-section h3 { margin:0 0 8px; font-size:18px; }
+.afb-account-note { font-size:13px; color:#d8c99e; line-height:1.45; margin:8px 0 12px; }
+.afb-account-row { display:grid; gap:10px; }
+.afb-account-inline { display:grid; grid-template-columns:1fr auto; gap:9px; align-items:center; }
+.afb-account-small { font-size:12px; color:#91a094; line-height:1.4; }
+@media (max-width:600px) {
+	#afb-account-settings-modal { align-items:flex-start; padding:12px; }
+	.afb-account-settings-card { margin:auto 0; padding:18px 15px; border-radius:18px; }
+	.afb-account-inline { grid-template-columns:1fr; }
+}
+
+</style>
 		<link id="-gd-engine-icon" rel="icon" type="image/png" href="index.icon.png?v=0.7.9-beta.19" />
 <link rel="apple-touch-icon" href="index.apple-touch-icon.png?v=0.7.9-beta.19"/>
 <link rel="manifest" href="index.manifest.json?v=0.7.9-beta.19">
@@ -222,6 +251,48 @@ body {
 				<div class="afb-auth-footer">Usernames are unique regardless of capitalization. One signed-in AFewBuds account uses one shared career across supported web devices. Guest play stays local to that device.</div>
 			</div>
 		</div>
+		<div id="afb-account-settings-modal" hidden aria-label="AFewBuds account settings">
+			<div class="afb-account-settings-card">
+				<div class="afb-account-settings-head">
+					<div><h2>Account</h2><div class="afb-account-small">Manage the AFewBuds account attached to this career.</div></div>
+					<button class="afb-account-settings-close" id="afb-account-settings-close" type="button" aria-label="Close account settings">✕</button>
+				</div>
+				<div id="afb-account-settings-guest" hidden>
+					<p class="afb-account-note">You are playing as a guest. Sign in or create an account from the login screen to manage account settings.</p>
+				</div>
+				<div id="afb-account-settings-body">
+					<div class="afb-account-section">
+						<h3>Username</h3>
+						<div class="afb-account-small" id="afb-account-current-user"></div>
+						<div class="afb-account-inline" style="margin-top:9px">
+							<input class="afb-field" id="afb-account-username" maxlength="20" placeholder="New username">
+							<button class="afb-btn secondary" id="afb-account-check-user" type="button">Check availability</button>
+						</div>
+						<div class="afb-message" id="afb-account-user-msg"></div>
+					</div>
+					<div class="afb-account-section">
+						<h3>Email & updates</h3>
+						<p class="afb-account-note"><strong>Add an email to your account so you can recover your password if you forget it.</strong> Update emails are optional and can be turned off at any time.</p>
+						<input class="afb-field" id="afb-account-email" type="email" autocomplete="email" placeholder="Email address">
+						<label class="afb-check" style="margin-top:10px"><input id="afb-account-updates" type="checkbox"><span>Email me occasional AFewBuds updates.</span></label>
+						<input class="afb-field" id="afb-account-profile-password" type="password" autocomplete="current-password" placeholder="Current password to save account changes" style="margin-top:10px">
+						<button class="afb-btn primary" id="afb-account-save-profile" type="button" style="margin-top:10px">Save account changes</button>
+						<div class="afb-message" id="afb-account-profile-msg"></div>
+					</div>
+					<div class="afb-account-section">
+						<h3>Password</h3>
+						<div class="afb-account-row">
+							<input class="afb-field" id="afb-account-current-password" type="password" autocomplete="current-password" placeholder="Current password">
+							<input class="afb-field" id="afb-account-new-password" type="password" autocomplete="new-password" minlength="8" placeholder="New password (8+ characters)">
+							<input class="afb-field" id="afb-account-confirm-password" type="password" autocomplete="new-password" minlength="8" placeholder="Confirm new password">
+							<button class="afb-btn primary" id="afb-account-change-password" type="button">Change password</button>
+							<div class="afb-message" id="afb-account-password-msg"></div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
 		<canvas id="canvas">
 			Your browser does not support the canvas tag.
 		</canvas>
@@ -394,6 +465,121 @@ document.getElementById('afb-register-form').addEventListener('submit', async (e
 		afbLaunchGame();
 	} catch (e) { afbMessage('afb-register-msg', afbFriendlyError(e), true); }
 	finally { button.disabled = false; }
+});
+
+
+function afbAccountFriendlyError(error) {
+	const raw = String(error && error.message || error || 'Account request failed.');
+	if (/username_taken|duplicate|unique/i.test(raw)) return 'That username is already taken.';
+	if (/username_invalid/i.test(raw)) return 'Use 3–20 letters, numbers, or underscores.';
+	if (/password_incorrect/i.test(raw)) return 'Your current password is not correct.';
+	if (/password_too_short/i.test(raw)) return 'Use a password with at least 8 characters.';
+	if (/email_invalid/i.test(raw)) return 'Enter a valid email address.';
+	if (/email_required_for_updates/i.test(raw)) return 'Add an email address before turning on update emails.';
+	if (/session_invalid/i.test(raw)) return 'Your saved sign-in expired. Sign in again.';
+	return raw;
+}
+function afbAccountMessage(id, text, bad=false) {
+	const el=document.getElementById(id);
+	if(!el) return;
+	el.textContent=text||'';
+	el.classList.toggle('bad',!!bad);
+}
+function afbAccountRemembered() {
+	return !!localStorage.getItem('afb_player_session');
+}
+async function afbAccountLoadProfile() {
+	const modal=document.getElementById('afb-account-settings-modal');
+	const body=document.getElementById('afb-account-settings-body');
+	const guest=document.getElementById('afb-account-settings-guest');
+	const session=window.AFB_API && AFB_API.getPlayerSession ? AFB_API.getPlayerSession() : null;
+	if(!session || !session.session_token) {
+		body.hidden=true; guest.hidden=false; return;
+	}
+	body.hidden=false; guest.hidden=true;
+	try {
+		let data=afbNormalizeSession(await AFB_API.rpc('afb_account_get_profile',{p_session_token:session.session_token}));
+		if(!data || !data.username) throw new Error('session_invalid');
+		document.getElementById('afb-account-current-user').textContent='Current username: '+data.username;
+		document.getElementById('afb-account-username').value=data.username||'';
+		document.getElementById('afb-account-email').value=data.email||'';
+		document.getElementById('afb-account-updates').checked=!!data.updates_opt_in;
+		const merged=Object.assign({},session,data,{session_token:session.session_token});
+		AFB_API.savePlayerSession(merged,afbAccountRemembered());
+	} catch(e) {
+		afbAccountMessage('afb-account-profile-msg',afbAccountFriendlyError(e),true);
+	}
+}
+window.AFB_ACCOUNT_SETTINGS = {
+	open: async function() {
+		const modal=document.getElementById('afb-account-settings-modal');
+		if(!modal) return;
+		modal.hidden=false;
+		await afbAccountLoadProfile();
+	},
+	close: function() {
+		const modal=document.getElementById('afb-account-settings-modal');
+		if(modal) modal.hidden=true;
+	}
+};
+document.getElementById('afb-account-settings-close').addEventListener('click',()=>AFB_ACCOUNT_SETTINGS.close());
+document.getElementById('afb-account-settings-modal').addEventListener('click',(e)=>{
+	if(e.target && e.target.id==='afb-account-settings-modal') AFB_ACCOUNT_SETTINGS.close();
+});
+document.getElementById('afb-account-check-user').addEventListener('click',async()=>{
+	const session=AFB_API.getPlayerSession();
+	const username=document.getElementById('afb-account-username').value.trim();
+	afbAccountMessage('afb-account-user-msg','Checking…');
+	try {
+		const data=afbNormalizeSession(await AFB_API.rpc('afb_username_available',{p_session_token:session.session_token,p_username:username}));
+		afbAccountMessage('afb-account-user-msg',data && data.available ? 'Username is available.' : 'That username is already taken.',!(data&&data.available));
+	} catch(e){ afbAccountMessage('afb-account-user-msg',afbAccountFriendlyError(e),true); }
+});
+document.getElementById('afb-account-save-profile').addEventListener('click',async()=>{
+	const button=document.getElementById('afb-account-save-profile'); button.disabled=true;
+	afbAccountMessage('afb-account-profile-msg','Saving…');
+	try {
+		const session=AFB_API.getPlayerSession();
+		const data=afbNormalizeSession(await AFB_API.rpc('afb_account_update_profile',{
+			p_session_token:session.session_token,
+			p_current_password:document.getElementById('afb-account-profile-password').value,
+			p_username:document.getElementById('afb-account-username').value.trim(),
+			p_email:document.getElementById('afb-account-email').value.trim()||null,
+			p_updates_opt_in:document.getElementById('afb-account-updates').checked
+		}));
+		const merged=Object.assign({},session,data,{session_token:session.session_token});
+		AFB_API.savePlayerSession(merged,afbAccountRemembered());
+		document.getElementById('afb-account-current-user').textContent='Current username: '+data.username;
+		document.getElementById('afb-account-profile-password').value='';
+		afbAccountMessage('afb-account-profile-msg','Account updated.');
+	} catch(e){ afbAccountMessage('afb-account-profile-msg',afbAccountFriendlyError(e),true); }
+	finally { button.disabled=false; }
+});
+document.getElementById('afb-account-change-password').addEventListener('click',async()=>{
+	const button=document.getElementById('afb-account-change-password'); button.disabled=true;
+	afbAccountMessage('afb-account-password-msg','Changing password…');
+	try {
+		const current=document.getElementById('afb-account-current-password').value;
+		const next=document.getElementById('afb-account-new-password').value;
+		const confirm=document.getElementById('afb-account-confirm-password').value;
+		if(next!==confirm) throw new Error('Passwords do not match.');
+		if(next.length<8) throw new Error('password_too_short');
+		const session=AFB_API.getPlayerSession();
+		const data=afbNormalizeSession(await AFB_API.rpc('afb_account_change_password',{
+			p_session_token:session.session_token,
+			p_current_password:current,
+			p_new_password:next,
+			p_remember:afbAccountRemembered()
+		}));
+		if(!data || !data.session_token) throw new Error('Account service returned an incomplete password change.');
+		AFB_API.savePlayerSession(data,afbAccountRemembered());
+		document.getElementById('afb-account-current-password').value='';
+		document.getElementById('afb-account-new-password').value='';
+		document.getElementById('afb-account-confirm-password').value='';
+		afbAccountMessage('afb-account-password-msg','Password changed. Other signed-in devices were signed out.');
+		await afbAccountLoadProfile();
+	} catch(e){ afbAccountMessage('afb-account-password-msg',afbAccountFriendlyError(e),true); }
+	finally { button.disabled=false; }
 });
 
 async function afbBootAccountGate(){
