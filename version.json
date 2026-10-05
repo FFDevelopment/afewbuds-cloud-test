@@ -1,5 +1,5 @@
 {
-  "release_id": "0.7.9-beta.19-cloudtest.37",
+  "release_id": "0.7.9-beta.19-cloudtest.38",
   "game_build": "0.7.9-beta.19",
   "channel": "main-based-cloud-test",
   "updater": "network-only-no-service-worker",
@@ -43,5 +43,6 @@
   "leaderboard": "Global Lifetime + Weekly leaderboard under Stats; Top 5/Top 25, own rank, public career profiles",
   "leaderboard_metrics": "revenue, sales, dealer sales, harvests, hybrids, raids survived, days played, career score",
   "leaderboard_privacy": "public gameplay stats only; no email, passwords, sessions or raw saves",
-  "weekly_reset": "Monday 12:00 AM America/New_York"
+  "weekly_reset": "Monday 12:00 AM America/New_York",
+  "runtime_hotfix": "cloudtest38 repairs duplicated Account/leaderboard GDScript handlers and makes runtime patch idempotent"
 }
