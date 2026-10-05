@@ -1,0 +1,28 @@
+name: Build cloudtest45 native dealer storage
+on:
+  push:
+    branches: [main]
+    paths:
+      - "tools/patch_cloudtest45_native_dealer_storage.py"
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Remove old inventory and build native Dealer Storage
+        run: python tools/patch_cloudtest45_native_dealer_storage.py
+      - name: Commit cloudtest45
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index-cloudtest10.pck index.html version.json BUILD_VERSION.txt
+          if git diff --cached --quiet; then
+            echo "No runtime changes"
+            exit 0
+          fi
+          git commit -m "Publish cloudtest45 native Dealer Storage"
+          git pull --rebase origin main
+          git push
