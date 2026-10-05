@@ -98,3 +98,5 @@ meta["release_id"]=RELEASE
 meta["dealer_storage_door_hotfix"]="premium Level III-IV door hinge rotation flipped so the door swings outward away from the cabinet"
 VERSION.write_text(json.dumps(meta,indent=2)+"\n")
 print("Built",RELEASE,len(packed))
+
+# finalized cloudtest49 outward-door deployment marker
