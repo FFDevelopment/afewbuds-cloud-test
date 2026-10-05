@@ -1,0 +1,45 @@
+name: Inspect closeout plants and world helpers
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/inspect-closeout-plants-world.yml"
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect focused packed code
+        shell: python
+        run: |
+          from pathlib import Path
+          import struct,re
+          b=Path("index-cloudtest10.pck").read_bytes()
+          fb=struct.unpack_from("<Q",b,24)[0]; do=struct.unpack_from("<Q",b,32)[0]
+          n=struct.unpack_from("<I",b,do)[0]; p=do+4; main=""
+          for _ in range(n):
+              q=struct.unpack_from("<I",b,p)[0]; p+=4
+              name=b[p:p+q].rstrip(b"\0").decode(); p+=q
+              off=struct.unpack_from("<Q",b,p)[0]; p+=8
+              size=struct.unpack_from("<Q",b,p)[0]; p+=8
+              p+=20
+              if name=="scripts/main.gd":
+                  main=b[fb+off:fb+off+size].decode("utf-8","replace").rstrip(" \n\0")
+                  break
+          lines=main.splitlines()
+          print("===== CLOSEOUT 1135-1225 =====")
+          for i in range(1134,1225):
+              print(i+1,lines[i])
+          print("\n===== PLANT VARS / RESET REFERENCES =====")
+          for i,line in enumerate(lines,1):
+              low=line.lower()
+              if "plant_slots" in low or "slot.clear" in low or 'slot["strain"]' in low or "harvest" in low and "slot" in low:
+                  if i < 5200:
+                      print(i,line)
+          print("\n===== WORLD BOX/PICTURE HELPERS =====")
+          for i,line in enumerate(lines,1):
+              low=line.lower()
+              if any(k in low for k in ["quadmesh","boxmesh","picture","frame","wall art","wall_art","make_box","meshinstance3d.new"]):
+                  if 1500 <= i <= 2900:
+                      print(i,line)
