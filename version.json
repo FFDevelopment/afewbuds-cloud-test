@@ -1,5 +1,5 @@
 {
-  "release_id": "0.7.9-beta.19-cloudtest.48",
+  "release_id": "0.7.9-beta.19-cloudtest.49",
   "game_build": "0.7.9-beta.19",
   "channel": "main-based-cloud-test",
   "updater": "network-only-no-service-worker",
@@ -68,5 +68,6 @@
   "dealer_storage_world_label": "physical locker says DEALER STORAGE",
   "dealer_storage_visual_progression": "Levels I-II use original locker; Level III introduces premium matte-black green-lit cabinet; Level IV keeps same cabinet",
   "dealer_storage_premium_interaction": "Level III-IV premium door opens before Dealer Storage UI and closes when UI closes",
-  "dealer_storage_level_capacity": "I 100g, II 200g, III 300g, IV 400g"
+  "dealer_storage_level_capacity": "I 100g, II 200g, III 300g, IV 400g",
+  "dealer_storage_door_hotfix": "premium Level III-IV door hinge rotation flipped so the door swings outward away from the cabinet"
 }
