@@ -561,7 +561,7 @@ func _dealer_customer_served_today(customer_name: String) -> bool:
             '"dealer_locker_level": dealer_locker_level',
             '"dealer_customers_served_today": dealer_customers_served_today',
             '"label": "Dealer Locker"',
-            'locker_tag.text = "DEALER\\nSTOCK\\nLOCKER"',
+            'locker_tag.text = "DEALER\nSTOCK\nLOCKER"',
         ]
         for needle in required_main:
             if needle not in text:
