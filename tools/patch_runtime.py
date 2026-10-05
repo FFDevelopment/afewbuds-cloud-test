@@ -498,13 +498,12 @@ func _daily_report_friend_dealers_text(report: Dictionary) -> String:
     if save_friend_marker not in text:
         raise SystemExit("friend staff save marker missing")
     text=text.replace(save_friend_marker,save_friend_marker+'\t\t"friend_dealer_stats": friend_dealer_stats,\n',1)
-    load_friend_pat=re.compile(r'^(\tfriend_staff_roles\s*=.*\n)',re.M)
-    load_friend_match=load_friend_pat.search(text)
-    if not load_friend_match:
-        raise SystemExit("friend staff load assignment missing")
+    friend_load_block='\tvar loaded_friend_staff: Variant = data.get("friend_staff_roles", friend_staff_roles)\n\tif loaded_friend_staff is Dictionary:\n\t\tfriend_staff_roles = loaded_friend_staff as Dictionary\n'
+    if friend_load_block not in text:
+        raise SystemExit("friend staff load block missing")
     if 'loaded_friend_dealer_stats' not in text:
         load_extra='\tvar loaded_friend_dealer_stats: Variant = data.get("friend_dealer_stats", {})\n\tif loaded_friend_dealer_stats is Dictionary:\n\t\tfriend_dealer_stats = (loaded_friend_dealer_stats as Dictionary).duplicate(true)\n'
-        text=text[:load_friend_match.end()]+load_extra+text[load_friend_match.end():]
+        text=text.replace(friend_load_block,friend_load_block+load_extra,1)
 
     # Raid now wipes all exposed growing/processing/storage product; hidden stash survives.
     raid_func='''func _trigger_raid_event() -> void:
