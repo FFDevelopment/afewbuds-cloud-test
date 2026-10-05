@@ -1,5 +1,5 @@
 {
-  "release_id": "0.7.9-beta.19-cloudtest.45",
+  "release_id": "0.7.9-beta.19-cloudtest.46",
   "game_build": "0.7.9-beta.19",
   "channel": "main-based-cloud-test",
   "updater": "network-only-no-service-worker",
@@ -57,5 +57,10 @@
   "dealer_locker_hotfix": "adds missing tier-name helper; cloudtest42 dealer behavior otherwise unchanged",
   "dealer_locker_open_fix": "guaranteed 0.38s arrival timer opens Dealer Storage; panel is raised to front",
   "dealer_storage_ui": "native station panel independent of old player inventory",
-  "legacy_inventory_migration": "old backpack product moves once to normal storage; old locker cash returns to cash"
+  "legacy_inventory_migration": "old backpack product moves once to normal storage; old locker cash returns to cash",
+  "dealer_storage_open": "native panel guaranteed to build and opens after locker approach",
+  "upgrade_progression": "Storage, Grow Supply Shelf, Grow Tent Slots and Dealer Locker progress one tier at a time",
+  "storage_upgrade_chain": "Storage I -> Shelving II -> Shelving III -> AFB Vault -> Hidden Wall Stash",
+  "grow_shelf_upgrade_chain": "Grow Supply Shelf I -> II -> III",
+  "grow_tent_slot_chain": "Tent Slot 1 -> Slot 2 -> Slot 3"
 }
