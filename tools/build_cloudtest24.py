@@ -209,6 +209,7 @@ v=json.loads(Path("version.json").read_text())
 v["release_id"]=RELEASE
 v["phone_home"]="BudShop, Rewards, Settings"
 v["budshop_apps"]=["Lights","Store","Business","Your Supply","Genetics","Clients","Heat","Stats"]
-v["settings_apps"]=["Help","System"]\nv["storefront_control_location"]="BudShop top"
+v["settings_apps"]=["Help","System"]
+v["storefront_control_location"]="BudShop top"
 Path("version.json").write_text(json.dumps(v,indent=2)+"\n")
 print("Built cloudtest25 storefront controls moved to BudShop")
