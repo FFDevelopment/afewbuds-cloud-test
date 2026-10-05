@@ -1,5 +1,5 @@
 {
-  "release_id": "0.7.9-beta.19-cloudtest.42",
+  "release_id": "0.7.9-beta.19-cloudtest.43",
   "game_build": "0.7.9-beta.19",
   "channel": "main-based-cloud-test",
   "updater": "network-only-no-service-worker",
@@ -53,5 +53,6 @@
   "dealer_locker": "physical locker is dealer-only stock; 100/200/300/400g tiers at $300/$600/$900/$1200",
   "dealer_stock_source": "dealers sell only from Dealer Locker, never normal storage",
   "production_worker_dealer_overflow": "worker may use Dealer Locker only when normal storage is completely full",
-  "player_inventory_note": "existing 40g backpack retained; old disabled personal locker repurposed as Dealer Storage"
+  "player_inventory_note": "existing 40g backpack retained; old disabled personal locker repurposed as Dealer Storage",
+  "dealer_locker_hotfix": "adds missing tier-name helper; cloudtest42 dealer behavior otherwise unchanged"
 }
