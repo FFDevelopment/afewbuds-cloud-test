@@ -1,0 +1,61 @@
+name: Inspect cloudtest40 touch scroll
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/inspect-cloudtest40-touch-scroll.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Extract current touch scroll and phone input
+        shell: python
+        run: |
+          from pathlib import Path
+          import struct, re
+
+          blob = Path("index-cloudtest10.pck").read_bytes()
+          if blob[:4] != b"GDPC":
+              raise SystemExit("not a Godot PCK")
+          file_base = struct.unpack_from("<Q", blob, 24)[0]
+          dir_offset = struct.unpack_from("<Q", blob, 32)[0]
+          count = struct.unpack_from("<I", blob, dir_offset)[0]
+          pos = dir_offset + 4
+          wanted = {"scripts/touch_scroll.gd", "scripts/main.gd"}
+          found = {}
+          for _ in range(count):
+              plen = struct.unpack_from("<I", blob, pos)[0]; pos += 4
+              name = blob[pos:pos+plen].rstrip(b"\\0").decode("utf-8"); pos += plen
+              off = struct.unpack_from("<Q", blob, pos)[0]; pos += 8
+              size = struct.unpack_from("<Q", blob, pos)[0]; pos += 8
+              pos += 20
+              if name in wanted:
+                  found[name] = blob[file_base+off:file_base+off+size].decode("utf-8", "replace").rstrip(" \\n\\0")
+          if "scripts/touch_scroll.gd" not in found:
+              raise SystemExit("touch_scroll.gd missing")
+          Path("debug-touch-scroll.gd.txt").write_text(found["scripts/touch_scroll.gd"] + "\\n")
+          main = found.get("scripts/main.gd", "")
+          def fn(name):
+              m = re.search(r"^func " + re.escape(name) + r"\\([^\\n]*\\)(?: -> [^:]+)?:\\n.*?(?=^func |\\Z)", main, re.M|re.S)
+              return m.group(0).rstrip() if m else "<MISSING>"
+          out = []
+          for name in ["_input","_build_phone_panel","_add_phone_app_tile","_open_phone_app","_cancel_phone_gesture"]:
+              out += ["===== " + name + " =====", fn(name), ""]
+          Path("debug-cloudtest40-phone-input.txt").write_text("\\n".join(out))
+      - name: Commit inspection
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add debug-touch-scroll.gd.txt debug-cloudtest40-phone-input.txt
+          git commit -m "Inspect cloudtest40 mobile touch controller"
+          git pull --rebase origin main
+          git push
