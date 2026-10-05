@@ -394,7 +394,7 @@ body {
 
 		<script src="shared/config.js"></script>
 		<script src="shared/afb-api.js"></script>
-		<script src="shared/afb-cloud-accountsync10.js?v=0.7.9-beta.19-accountsync10"></script>
+		<script src="shared/afb-cloud-accountsync10.js?v=0.7.9-beta.19-leaderboard37"></script>
 		<script src="index-accountsync10.js?v=0.7.9-beta.19-accountsync10"></script>
 		<script>
 const AFB_TEST_RELEASE = "0.7.9-beta.19-cloudtest.36";
@@ -1038,6 +1038,7 @@ async function afbLeaderboardLoad() {
 	profile.hidden=true;
 	list.textContent='';
 	msg.textContent='Loading rankings…';
+	msg.classList.remove('bad');
 	me.textContent='';
 	reset.textContent='';
 	try {
