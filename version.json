@@ -1,5 +1,5 @@
 {
-  "release_id": "0.7.9-beta.19-cloudtest.46",
+  "release_id": "0.7.9-beta.19-cloudtest.47",
   "game_build": "0.7.9-beta.19",
   "channel": "main-based-cloud-test",
   "updater": "network-only-no-service-worker",
@@ -62,5 +62,8 @@
   "upgrade_progression": "Storage, Grow Supply Shelf, Grow Tent Slots and Dealer Locker progress one tier at a time",
   "storage_upgrade_chain": "Storage I -> Shelving II -> Shelving III -> AFB Vault -> Hidden Wall Stash",
   "grow_shelf_upgrade_chain": "Grow Supply Shelf I -> II -> III",
-  "grow_tent_slot_chain": "Tent Slot 1 -> Slot 2 -> Slot 3"
+  "grow_tent_slot_chain": "Tent Slot 1 -> Slot 2 -> Slot 3",
+  "upgrade_page": "permanent expandable-system cards plus Installed/Available equipment sections",
+  "dealer_storage_transfer_ui": "one row per strain with +1 +5 MAX and -1 -5 ALL",
+  "dealer_storage_world_label": "physical locker says DEALER STORAGE"
 }
