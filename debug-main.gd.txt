@@ -322,10 +322,13 @@ var advancement_catalog: Array[Dictionary] = [
 	{"id": "stocked", "category": "Processing", "tier": 1, "title": "Stock the Shelf", "description": "Move 10g of finished product into storage.", "metric": "grams_stored", "target": 10, "reward_cash": 75, "reward_xp": 20, "reward_rep": 2},
 	{"id": "full_shelf", "category": "Processing", "tier": 2, "title": "Built Up Inventory", "description": "Move 100g total into storage.", "metric": "grams_stored", "target": 100, "reward_cash": 300, "reward_xp": 80, "reward_rep": 5},
 	{"id": "bench_two", "category": "Processing", "tier": 2, "title": "Better Workbench", "description": "Upgrade the bagging station to Level 2.", "state": "bagging_level", "target": 2, "reward_cash": 150, "reward_xp": 60, "reward_rep": 3, "requires": [{"metric": "bags_sealed", "target": 15, "label": "Bags sealed"}]},
+	{"id": "bench_three", "category": "Processing", "tier": 3, "title": "Production Station", "description": "Install Bagging Bench III and move into continuous production.", "state": "bagging_level", "target": 3, "reward_cash": 250, "reward_xp": 125, "reward_rep": 7, "requires": [{"metric": "bags_sealed", "target": 30, "label": "Bags sealed"}]},
+	{"id": "production_volume", "category": "Processing", "tier": 3, "title": "Production Run", "description": "Build a real production rhythm and move 250g of finished product into storage.", "metric": "grams_stored", "target": 250, "reward_cash": 350, "reward_xp": 150, "reward_rep": 8, "requires": [{"metric": "grams_trimmed", "target": 150, "label": "Grams trimmed"}, {"metric": "bags_sealed", "target": 60, "label": "Bags sealed"}]},
 
 	{"id": "open_storefront", "category": "Sales", "tier": 1, "title": "Open for Business", "description": "List a product for customers.", "metric": "products_listed", "target": 1, "reward_cash": 0, "reward_xp": 15, "reward_rep": 3},
 	{"id": "first_sale", "category": "Sales", "tier": 1, "title": "First Sale", "description": "Complete your first customer sale.", "metric": "sales", "target": 1, "reward_cash": 100, "reward_xp": 25, "reward_rep": 5},
 	{"id": "ten_sales", "category": "Sales", "tier": 2, "title": "Regular Business", "description": "Complete 20 personal customer sales.", "metric": "sales", "target": 20, "reward_cash": 300, "reward_xp": 80, "reward_rep": 8},
+	{"id": "dealer_storage_one", "category": "Dealers", "tier": 1, "title": "Stock the Team", "description": "Unlock Dealer Storage and give your dealer network dedicated inventory.", "state": "dealer_locker_level", "target": 1, "reward_cash": 50, "reward_xp": 40, "reward_rep": 2},
 	{"id": "first_dealer_sale", "category": "Sales", "tier": 2, "title": "First Delegated Sale", "description": "Have a hired dealer complete a sale with an eligible known client.", "metric": "dealer_sales", "target": 1, "reward_cash": 50, "reward_xp": 60, "reward_rep": 4},
 	{"id": "fifty_sales", "category": "Sales", "tier": 3, "title": "Neighborhood Name", "description": "Complete 75 personal customer sales.", "metric": "sales", "target": 75, "reward_cash": 500, "reward_xp": 200, "reward_rep": 20},
 	{"id": "first_rack", "category": "Sales", "tier": 1, "title": "First Rack", "description": "Earn $1,000 lifetime revenue.", "state": "lifetime_revenue", "target": 1000, "reward_cash": 250, "reward_xp": 50, "reward_rep": 5, "requires": [{"metric": "sales", "target": 15, "label": "Personal sales"}]},
@@ -356,6 +359,9 @@ var advancement_catalog: Array[Dictionary] = [
 	{"id": "friend_on_payroll", "category": "Business", "tier": 2, "title": "Put Your People On", "description": "Recruit a loyal friend as staff.", "metric": "friend_recruits", "target": 1, "reward_cash": 50, "reward_xp": 100, "reward_rep": 6},
 	{"id": "trusted_crew", "category": "Business", "tier": 3, "title": "Trusted Crew", "description": "Have 2 friends working for AFewBuds at the same time.", "state": "friend_staff_count", "target": 2, "reward_cash": 75, "reward_xp": 175, "reward_rep": 12},
 	{"id": "dealer_five", "category": "Business", "tier": 2, "title": "Delegating", "description": "Have dealers complete 5 sales to known clients.", "metric": "dealer_sales", "target": 5, "reward_cash": 75, "reward_xp": 100, "reward_rep": 7},
+	{"id": "dealer_fifteen", "category": "Dealers", "tier": 3, "title": "Street Coverage", "description": "Have dealers complete 15 total sales.", "metric": "dealer_sales", "target": 15, "reward_cash": 150, "reward_xp": 160, "reward_rep": 10},
+	{"id": "dealer_storage_premium", "category": "Dealers", "tier": 3, "title": "Secure Distribution", "description": "Upgrade Dealer Storage to Level III and install the premium cabinet.", "state": "dealer_locker_level", "target": 3, "reward_cash": 200, "reward_xp": 140, "reward_rep": 8, "requires": [{"metric": "dealer_sales", "target": 10, "label": "Dealer sales"}]},
+	{"id": "dealer_storage_max", "category": "Dealers", "tier": 4, "title": "Fully Stocked Network", "description": "Max Dealer Storage at Level IV.", "state": "dealer_locker_level", "target": 4, "reward_cash": 250, "reward_xp": 220, "reward_rep": 12, "requires": [{"metric": "dealer_sales", "target": 30, "label": "Dealer sales"}]},
 	{"id": "dealer_twentyfive", "category": "Business", "tier": 4, "title": "Dealer Network", "description": "Have dealers complete 40 sales to known clients.", "metric": "dealer_sales", "target": 40, "reward_cash": 125, "reward_xp": 260, "reward_rep": 18},
 	{"id": "worker_hundred", "category": "Business", "tier": 4, "title": "Production Line", "description": "Have the production worker complete 100 tasks.", "metric": "worker_tasks", "target": 100, "reward_cash": 100, "reward_xp": 260, "reward_rep": 14},
 	{"id": "staff_smoke", "category": "Business", "tier": 2, "title": "Still One of Us", "description": "Have an employed friend make a personal staff purchase.", "metric": "staff_purchases", "target": 1, "reward_cash": 0, "reward_xp": 80, "reward_rep": 5},
@@ -6691,7 +6697,7 @@ func _build_settings_app() -> void:
 func _build_task_app() -> void:
 	_build_story_progress_section()
 	var grid: GridContainer = _phone_category_grid()
-	_add_phone_app_tile(grid, "", "Rewards", "%d ready to claim" % _advancement_ready_count(), "advancements")
+	_add_phone_app_tile(grid, "", "Advancements", "Roadmap + %d reward%s ready" % [_advancement_ready_count(), "" if _advancement_ready_count() == 1 else "s"], "advancements")
 
 func _build_phone_home() -> void:
 	var summary: Label = Label.new()
@@ -7938,6 +7944,8 @@ func _advancement_value(entry: Dictionary) -> int:
 		return storage_level
 	if state_name == "bagging_level":
 		return bagging_level
+	if state_name == "dealer_locker_level":
+		return dealer_locker_level
 	if state_name == "tent_level":
 		return tent_level
 	if state_name == "reputation":
@@ -8140,7 +8148,7 @@ func _build_story_progress_section() -> void:
 	elif not chapter_three_done:
 		chapter_title.text = "STORY  |  CHAPTER 3 - GETTING NOTICED"
 	else:
-		chapter_title.text = "STORY  |  CHAPTER 3 COMPLETE"
+		chapter_title.text = "STORY  |  CHAPTER 3 COMPLETE  |  NEXT: OUTGROWING THE APARTMENT"
 	chapter_title.add_theme_font_size_override("font_size", 22)
 	chapter_title.modulate = Color("e4cf83")
 	story_box.add_child(chapter_title)
@@ -8179,128 +8187,259 @@ func _build_story_progress_section() -> void:
 			_story_checkmark(heat_reduced_total >= 10.0, "Cool Things Down - reduce 10 total Heat"),
 			_story_checkmark(reeves_met, "Federal Pressure - meet Agent Reeves at the door")
 		])
-		objectives.text += "\n\nNEXT: Chapter 4 - Competition. Rival pressure will build on the Heat system."
+		objectives.text += "\n\nCHAPTER 4 PREVIEW - OUTGROWING THE APARTMENT\nLarger operation • more staff/dealers • bulk production • new location.\nPreview only for now; Chapter 4 mechanics are not active yet."
 	objectives.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	story_box.add_child(objectives)
 
+func _advancement_lane_name(entry: Dictionary) -> String:
+	var advancement_id: String = str(entry.get("id", ""))
+	if advancement_id in ["first_dealer_sale", "dealer_five", "dealer_twentyfive"]:
+		return "Dealers"
+	var category_name: String = str(entry.get("category", ""))
+	match category_name:
+		"Processing":
+			return "Production"
+		"Customers":
+			return "Sales"
+		"Heat":
+			return "Heat / Street"
+		_:
+			return category_name
+
+func _advancement_lane_order() -> Array[String]:
+	return ["Growing", "Production", "Sales", "Dealers", "Business", "Genetics", "Heat / Street", "Property"]
+
+func _advancement_lane_current_tier(lane_name: String) -> int:
+	var current_tier: int = 999
+	for entry: Dictionary in advancement_catalog:
+		if _advancement_lane_name(entry) != lane_name:
+			continue
+		var advancement_id: String = str(entry.get("id", ""))
+		if bool(advancement_claimed.get(advancement_id, false)):
+			continue
+		current_tier = mini(current_tier, int(entry.get("tier", 1)))
+	return -1 if current_tier == 999 else current_tier
+
+func _advancement_lane_next_tier(lane_name: String, current_tier: int) -> int:
+	var next_tier: int = 999
+	for entry: Dictionary in advancement_catalog:
+		if _advancement_lane_name(entry) != lane_name:
+			continue
+		var advancement_id: String = str(entry.get("id", ""))
+		if bool(advancement_claimed.get(advancement_id, false)):
+			continue
+		var entry_tier: int = int(entry.get("tier", 1))
+		if entry_tier > current_tier:
+			next_tier = mini(next_tier, entry_tier)
+	return -1 if next_tier == 999 else next_tier
+
+func _advancement_story_label() -> String:
+	if not _story_chapter_one_complete():
+		return "CHAPTER 1 - STARTING SMALL"
+	if not _story_chapter_two_complete():
+		return "CHAPTER 2 - BUILDING A NAME"
+	if not _story_chapter_three_complete():
+		return "CHAPTER 3 - GETTING NOTICED"
+	return "CHAPTER 3 COMPLETE  |  NEXT: CHAPTER 4 - OUTGROWING THE APARTMENT"
+
+func _add_advancement_roadmap_milestone(parent: VBoxContainer, entry: Dictionary, current_tier: int) -> void:
+	var advancement_id: String = str(entry.get("id", ""))
+	var target: int = maxi(1, int(entry.get("target", 1)))
+	var current_value: int = mini(_advancement_value(entry), target)
+	var complete: bool = _advancement_is_ready(entry)
+	var tier: int = int(entry.get("tier", 1))
+
+	var card: PanelContainer = PanelContainer.new()
+	card.set_meta("advancement_id", advancement_id)
+	var border_color: Color = Color("7bb88a") if complete else (Color("776b3f") if tier == current_tier else Color("42515a"))
+	card.add_theme_stylebox_override("panel", _style_box(Color("151d24"), border_color, 14, 1))
+	parent.add_child(card)
+
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 6)
+	card.add_child(box)
+
+	var title: Label = Label.new()
+	var state_text: String = "READY" if complete else ("CURRENT" if tier == current_tier else "READY AHEAD")
+	title.text = "%s  |  TIER %d  |  %s" % [state_text, tier, str(entry.get("title", "Milestone"))]
+	title.add_theme_font_size_override("font_size", 19)
+	box.add_child(title)
+
+	var detail: Label = Label.new()
+	detail.text = str(entry.get("description", ""))
+	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(detail)
+
+	var progress: ProgressBar = ProgressBar.new()
+	progress.min_value = 0
+	progress.max_value = target
+	progress.value = current_value
+	progress.show_percentage = false
+	progress.custom_minimum_size.y = 14
+	box.add_child(progress)
+
+	var progress_text: Label = Label.new()
+	progress_text.text = "%d / %d" % [current_value, target]
+	progress_text.modulate = Color("9fb0ba")
+	box.add_child(progress_text)
+
+	for requirement_variant: Variant in entry.get("requires", []):
+		if not (requirement_variant is Dictionary):
+			continue
+		var requirement: Dictionary = requirement_variant as Dictionary
+		var needed: int = int(requirement.get("target", 1))
+		var progress_value: int = mini(needed, _advancement_value(requirement))
+		var requirement_label: Label = Label.new()
+		requirement_label.text = "%s %s: %d / %d" % ["[x]" if progress_value >= needed else "[ ]", str(requirement.get("label", "Extra goal")), progress_value, needed]
+		requirement_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		box.add_child(requirement_label)
+
+	var reward: Label = Label.new()
+	reward.text = "REWARD  |  %s" % _advancement_reward_text(entry)
+	reward.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	reward.modulate = Color("8ed6a3") if complete else Color("7f8d96")
+	box.add_child(reward)
+
+	var claim: Button = Button.new()
+	claim.custom_minimum_size.y = 48
+	if complete:
+		claim.text = "CLAIM REWARD"
+		claim.pressed.connect(_claim_advancement.bind(advancement_id))
+	else:
+		claim.text = "IN PROGRESS"
+		claim.disabled = true
+	box.add_child(claim)
+
 func _build_advancements_app() -> void:
+	var claimed_count: int = _advancement_claimed_count()
+	var ready_count: int = _advancement_ready_count()
+
 	var summary_card: PanelContainer = PanelContainer.new()
-	summary_card.add_theme_stylebox_override("panel", _style_box(Color("111920"), Color("46545e"), 16, 1))
+	summary_card.add_theme_stylebox_override("panel", _style_box(Color("111920"), Color("776b3f"), 16, 2))
 	phone_list.add_child(summary_card)
 	var summary_box: VBoxContainer = VBoxContainer.new()
-	summary_box.add_theme_constant_override("separation", 5)
+	summary_box.add_theme_constant_override("separation", 6)
 	summary_card.add_child(summary_box)
+
 	var rank: Label = Label.new()
-	rank.text = "CAREER RANK   |   %s" % _advancement_career_rank()
+	rank.text = "CAREER ROADMAP  |  %s" % _advancement_career_rank()
 	rank.add_theme_font_size_override("font_size", 22)
+	rank.modulate = Color("e4cf83")
 	summary_box.add_child(rank)
-	var ready_count: int = _advancement_ready_count()
-	var claimed_count: int = _advancement_claimed_count()
+
+	var story: Label = Label.new()
+	story.text = "STORY  |  %s" % _advancement_story_label()
+	story.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	story.modulate = Color("c6d4da")
+	summary_box.add_child(story)
+
 	var summary: Label = Label.new()
-	summary.name = "MilestoneSummary"
-	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	summary.text = "%d / %d milestones claimed   |   %d reward%s ready" % [claimed_count, advancement_catalog.size(), ready_count, "" if ready_count == 1 else "s"]
+	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	summary.modulate = Color("d7c28a") if ready_count > 0 else Color("9fb0ba")
 	summary_box.add_child(summary)
+
+	var overall: ProgressBar = ProgressBar.new()
+	overall.min_value = 0
+	overall.max_value = maxi(1, advancement_catalog.size())
+	overall.value = claimed_count
+	overall.show_percentage = false
+	overall.custom_minimum_size.y = 16
+	summary_box.add_child(overall)
+
 	if ready_count > 0:
 		var claim_all: Button = Button.new()
-		claim_all.text = "CLAIM ALL (%d)" % ready_count
+		claim_all.text = "CLAIM ALL READY REWARDS (%d)" % ready_count
 		claim_all.custom_minimum_size.y = 54
-		claim_all.add_theme_font_size_override("font_size", 18)
+		claim_all.add_theme_font_size_override("font_size", 17)
 		claim_all.add_theme_stylebox_override("normal", _style_box(Color("1b3324"), Color("78c98a"), 12, 2))
-		claim_all.add_theme_stylebox_override("hover", _style_box(Color("274b34"), Color("9be0aa"), 12, 2))
-		claim_all.add_theme_stylebox_override("pressed", _style_box(Color("13271b"), Color("5dac70"), 12, 2))
 		claim_all.pressed.connect(_claim_all_advancements)
 		summary_box.add_child(claim_all)
 
-	var hint: Label = Label.new()
-	hint.text = "Claimed rewards are hidden. Your milestone count, career rank and earned progress are kept."
-	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	phone_list.add_child(hint)
-	if claimed_count >= advancement_catalog.size():
-		var cleared: Label = Label.new()
-		cleared.name = "AllRewardsClaimed"
-		cleared.text = "ALL CURRENT REWARDS CLAIMED\nYour milestones remain saved. New rewards will appear here when added."
-		cleared.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		phone_list.add_child(cleared)
-		return
+	var roadmap_hint: Label = Label.new()
+	roadmap_hint.text = "Each lane shows your current tier and the next tier ahead. Claimed milestones stay saved but are removed from the active list. If you already completed a future goal, it appears as READY AHEAD instead of being hidden."
+	roadmap_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	roadmap_hint.modulate = Color("9fb0ba")
+	phone_list.add_child(roadmap_hint)
 
-	var categories: Array[String] = ["Growing", "Processing", "Sales", "Customers", "Business", "Genetics", "Heat", "Property"]
-	for category_name: String in categories:
-		var category_total: int = 0
-		var category_claimed: int = 0
-		for category_entry: Dictionary in advancement_catalog:
-			if str(category_entry.get("category", "")) != category_name:
+	for lane_name: String in _advancement_lane_order():
+		var lane_total: int = 0
+		var lane_claimed: int = 0
+		for lane_entry: Dictionary in advancement_catalog:
+			if _advancement_lane_name(lane_entry) != lane_name:
 				continue
-			category_total += 1
-			if bool(advancement_claimed.get(str(category_entry.get("id", "")), false)):
-				category_claimed += 1
-		if category_total == category_claimed:
+			lane_total += 1
+			if bool(advancement_claimed.get(str(lane_entry.get("id", "")), false)):
+				lane_claimed += 1
+		if lane_total <= 0:
 			continue
-		var header: Label = Label.new()
-		header.text = "%s   |   %d/%d" % [category_name.to_upper(), category_claimed, category_total]
-		header.add_theme_font_size_override("font_size", 20)
-		header.modulate = Color("d7c28a")
-		phone_list.add_child(header)
 
+		var lane_card: PanelContainer = PanelContainer.new()
+		lane_card.add_theme_stylebox_override("panel", _style_box(Color("131b21"), Color("37454e"), 16, 1))
+		phone_list.add_child(lane_card)
+		var lane_box: VBoxContainer = VBoxContainer.new()
+		lane_box.add_theme_constant_override("separation", 7)
+		lane_card.add_child(lane_box)
+
+		var lane_title: Label = Label.new()
+		lane_title.text = "%s   |   %d/%d" % [lane_name.to_upper(), lane_claimed, lane_total]
+		lane_title.add_theme_font_size_override("font_size", 21)
+		lane_title.modulate = Color("d7c28a")
+		lane_box.add_child(lane_title)
+
+		var lane_progress: ProgressBar = ProgressBar.new()
+		lane_progress.min_value = 0
+		lane_progress.max_value = maxi(1, lane_total)
+		lane_progress.value = lane_claimed
+		lane_progress.show_percentage = false
+		lane_progress.custom_minimum_size.y = 12
+		lane_box.add_child(lane_progress)
+
+		var current_tier: int = _advancement_lane_current_tier(lane_name)
+		if current_tier < 0:
+			var mastered: Label = Label.new()
+			mastered.text = "MASTERED  |  All current milestones claimed."
+			mastered.modulate = Color("8ed6a3")
+			lane_box.add_child(mastered)
+			continue
+
+		var focus: Label = Label.new()
+		focus.text = "CURRENT FOCUS  |  TIER %d" % current_tier
+		focus.modulate = Color("c6d4da")
+		lane_box.add_child(focus)
+
+		var visible_count: int = 0
 		for entry: Dictionary in advancement_catalog:
-			if str(entry.get("category", "")) != category_name:
+			if _advancement_lane_name(entry) != lane_name:
 				continue
 			var advancement_id: String = str(entry.get("id", ""))
 			if bool(advancement_claimed.get(advancement_id, false)):
 				continue
-			var target: int = maxi(1, int(entry.get("target", 1)))
-			var current_value: int = mini(_advancement_value(entry), target)
-			var complete: bool = _advancement_is_ready(entry)
-			var tier: int = int(entry.get("tier", 1))
-			var card: PanelContainer = PanelContainer.new()
-			card.set_meta("advancement_id", advancement_id)
-			card.add_theme_stylebox_override("panel", _style_box(Color("151d24"), Color("4f604f") if complete else Color("2b3841"), 14, 1))
-			phone_list.add_child(card)
-			var box: VBoxContainer = VBoxContainer.new()
-			box.add_theme_constant_override("separation", 6)
-			card.add_child(box)
-			var title: Label = Label.new()
-			title.text = "%s%s   -   Tier %d" % ["READY  " if complete else "[ ]  ", str(entry.get("title", "Milestone")), tier]
-			title.add_theme_font_size_override("font_size", 20)
-			box.add_child(title)
-			var detail: Label = Label.new()
-			detail.text = str(entry.get("description", ""))
-			detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			box.add_child(detail)
-			var progress: ProgressBar = ProgressBar.new()
-			progress.min_value = 0
-			progress.max_value = target
-			progress.value = current_value
-			progress.show_percentage = false
-			progress.custom_minimum_size.y = 16
-			box.add_child(progress)
-			var progress_text: Label = Label.new()
-			progress_text.text = "%d / %d" % [current_value, target]
-			progress_text.modulate = Color("9fb0ba")
-			box.add_child(progress_text)
-			for requirement_variant: Variant in entry.get("requires", []):
-				var requirement: Dictionary = requirement_variant as Dictionary
-				var needed: int = int(requirement.get("target", 1))
-				var progress_value: int = mini(needed, _advancement_value(requirement))
-				var requirement_label: Label = Label.new()
-				requirement_label.text = "%s %s: %d / %d" % ["[x]" if progress_value >= needed else "[ ]", str(requirement.get("label", "Extra goal")), progress_value, needed]
-				requirement_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-				box.add_child(requirement_label)
-			var reward: Label = Label.new()
-			reward.text = "Reward: %s" % _advancement_reward_text(entry)
-			reward.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			reward.modulate = Color("8ed6a3") if complete else Color("7f8d96")
-			box.add_child(reward)
-			var claim: Button = Button.new()
-			claim.custom_minimum_size.y = 50
-			if complete:
-				claim.text = "CLAIM REWARD"
-				claim.pressed.connect(_claim_advancement.bind(advancement_id))
-			else:
-				claim.text = "IN PROGRESS"
-				claim.disabled = true
-			box.add_child(claim)
+			var entry_tier: int = int(entry.get("tier", 1))
+			if entry_tier == current_tier or _advancement_is_ready(entry):
+				_add_advancement_roadmap_milestone(lane_box, entry, current_tier)
+				visible_count += 1
+
+		var next_tier: int = _advancement_lane_next_tier(lane_name, current_tier)
+		if next_tier > 0:
+			var next_titles: Array[String] = []
+			for next_entry: Dictionary in advancement_catalog:
+				if _advancement_lane_name(next_entry) != lane_name:
+					continue
+				if int(next_entry.get("tier", 1)) != next_tier:
+					continue
+				var next_id: String = str(next_entry.get("id", ""))
+				if bool(advancement_claimed.get(next_id, false)):
+					continue
+				if _advancement_is_ready(next_entry):
+					continue
+				next_titles.append(str(next_entry.get("title", "Milestone")))
+			if not next_titles.is_empty():
+				var preview: Label = Label.new()
+				preview.text = "LOCKED NEXT  |  TIER %d\n%s" % [next_tier, "  •  ".join(next_titles)]
+				preview.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+				preview.modulate = Color("687781")
+				lane_box.add_child(preview)
 
 func _find_advancement(advancement_id: String) -> Dictionary:
 	for entry: Dictionary in advancement_catalog:
