@@ -1,0 +1,30 @@
+name: Validate cloudtest35 branch
+on:
+  push:
+    branches: [cloudtest35-account-settings]
+    paths:
+      - "tools/patch_runtime.py"
+      - "index.html"
+      - "supabase/PATCH_ACCOUNT_SETTINGS_35.sql"
+      - ".github/workflows/validate-cloudtest35.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Python syntax
+        run: python -m py_compile tools/patch_runtime.py
+      - name: Dry-run runtime patch
+        run: python tools/patch_runtime.py
+      - name: Verify cloudtest35 output
+        run: |
+          grep -q '0.7.9-beta.19-cloudtest.35' version.json
+          grep -q 'afb-account-settings-modal' index.html
+          grep -q 'index-cloudtest10.pck?build=35' index.html
+          git diff --check
+          echo "cloudtest35 branch validation passed"
