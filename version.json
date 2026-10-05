@@ -1,5 +1,5 @@
 {
-  "release_id": "0.7.9-beta.19-cloudtest.50",
+  "release_id": "0.7.9-beta.19-cloudtest.51",
   "game_build": "0.7.9-beta.19",
   "channel": "main-based-cloud-test",
   "updater": "network-only-no-service-worker",
@@ -71,5 +71,8 @@
   "dealer_storage_level_capacity": "I 100g, II 200g, III 300g, IV 400g",
   "dealer_storage_door_hotfix": "premium Level III-IV door hinge rotation flipped so the door swings outward away from the cabinet",
   "dealer_storage_double_doors": "premium Level III-IV cabinet now uses separate left/right door leaves with opposite outward hinge rotations",
-  "dealer_storage_pause_fix": "Dealer Storage hides and releases input during pause; Resume Game restores it if it was open"
+  "dealer_storage_pause_fix": "Dealer Storage hides and releases input during pause; Resume Game restores it if it was open",
+  "main_room_layout": "kitchen shifted to grow-door frame; Dealer Storage moved to opposite side of packing bench; complete packing station shifted +0.24 along wall",
+  "bagging_bench_iii": "Level 6 / $850 industrial workstation upgrade inspired by supplied reference images",
+  "bagging_bench_iii_perk": "continuous manual bagging; each bag is randomly 1-4g and the minigame continues until the selected strain has no trimmed product left"
 }
