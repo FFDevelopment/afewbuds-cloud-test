@@ -1,5 +1,5 @@
 {
-  "release_id": "0.7.9-beta.19-cloudtest.38",
+  "release_id": "0.7.9-beta.19-cloudtest.39",
   "game_build": "0.7.9-beta.19",
   "channel": "main-based-cloud-test",
   "updater": "network-only-no-service-worker",
@@ -40,9 +40,6 @@
   "password_recovery_note": "Account page explains that an email is required for forgotten-password recovery",
   "password_recovery": "Forgot Password uses a 30-minute single-use reset token and Brevo Edge Function; old sessions are revoked after reset",
   "password_recovery_sender": "Brevo sender configured server-side; API key stored only in Supabase Vault",
-  "leaderboard": "Global Lifetime + Weekly leaderboard under Stats; Top 5/Top 25, own rank, public career profiles",
-  "leaderboard_metrics": "revenue, sales, dealer sales, harvests, hybrids, raids survived, days played, career score",
-  "leaderboard_privacy": "public gameplay stats only; no email, passwords, sessions or raw saves",
-  "weekly_reset": "Monday 12:00 AM America/New_York",
-  "runtime_hotfix": "cloudtest38 repairs duplicated Account/leaderboard GDScript handlers and makes runtime patch idempotent"
+  "runtime_recovery": "Exact cloudtest36 game runtime restored after cloudtest37-38 grey-screen regression",
+  "leaderboard_runtime": "disabled pending isolated reintroduction; Supabase leaderboard data retained"
 }
