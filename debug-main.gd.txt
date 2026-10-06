@@ -6021,21 +6021,24 @@ func _dealer_eligible_customers() -> Array[Dictionary]:
 	return eligible
 
 func _dealer_sell_one(show_feedback: bool, assigned_dealer_name: String = "", door_customer: Dictionary = {}, door_order: Dictionary = {}) -> bool:
+	if dealer_arrested:return false
+	if door_customer.is_empty() and neighborhood!=null and assigned_dealer_name==neighborhood.location_ops.crew.manager() and not assigned_dealer_name.is_empty():return false
 	if _simulation_blocked():
 		return false
 	if dealer_balance_due > 0:
 		return false
 	if not business_open or not dealers_active or _total_dealer_count() <= 0:
 		return false
-	if dealer_locker_level <= 0 or _dealer_locker_total() <= 0:
+	if door_customer.is_empty() and (dealer_locker_level <= 0 or _dealer_locker_total() <= 0):
 		return false
 	var eligible: Array[Dictionary] = _dealer_eligible_customers()
+	if not door_customer.is_empty():eligible=[door_customer]
 	if eligible.is_empty():
 		return false
 	var available_customers: Array[Dictionary] = []
 	for customer: Dictionary in eligible:
 		var customer_name: String = str(customer.get("name", ""))
-		if customer_name.is_empty() or _dealer_customer_served_today(customer_name):
+		if customer_name.is_empty() or (door_customer.is_empty() and _dealer_customer_served_today(customer_name)):
 			continue
 		available_customers.append(customer)
 	if available_customers.is_empty():
@@ -6048,8 +6051,9 @@ func _dealer_sell_one(show_feedback: bool, assigned_dealer_name: String = "", do
 		if not matches:return false
 		chosen_customer=door_customer
 	var favorite: String = str(door_order.get("product",chosen_customer.get("favorite", "")))
+	if not door_customer.is_empty() and int(bagged_inventory.get(favorite,0))>0:_ensure_product_exists(favorite)
 	var product_name: String = ""
-	if products.has(favorite) and int(locker_weed.get(favorite, 0)) > 0:
+	if products.has(favorite) and (int(locker_weed.get(favorite, 0))+(_available_amount(favorite)+int(bagged_inventory.get(favorite,0)) if not door_customer.is_empty() else 0)) > 0:
 		product_name = favorite
 	if product_name.is_empty():
 		if not door_customer.is_empty():return false
@@ -6064,6 +6068,7 @@ func _dealer_sell_one(show_feedback: bool, assigned_dealer_name: String = "", do
 			return false
 		product_name = alternatives[rng.randi_range(0, alternatives.size() - 1)]
 	var available: int = maxi(0, int(locker_weed.get(product_name, 0)))
+	if not door_customer.is_empty():available+=_available_amount(product_name)+maxi(0,int(bagged_inventory.get(product_name,0)))
 	if available <= 0:
 		return false
 	var max_qty: int = mini(available, int(chosen_customer.get("max_qty", 2)))
@@ -6074,9 +6079,16 @@ func _dealer_sell_one(show_feedback: bool, assigned_dealer_name: String = "", do
 	if not door_customer.is_empty():
 		qty=int(door_order.get("qty",0))
 		if qty<=0 or available<qty:return false
-	locker_weed[product_name] = available - qty
-	if int(locker_weed.get(product_name, 0)) <= 0:
-		locker_weed.erase(product_name)
+	if door_customer.is_empty():
+		locker_weed[product_name]=available-qty
+	else:
+		var from_locker: int=mini(qty,maxi(0,int(locker_weed.get(product_name,0))))
+		locker_weed[product_name]=maxi(0,int(locker_weed.get(product_name,0)))-from_locker
+		var from_storage: int=mini(qty-from_locker,_available_amount(product_name))
+		products[product_name]["stock"]=int(products[product_name].get("stock",0))-from_storage
+		var from_bench: int=qty-from_locker-from_storage
+		bagged_inventory[product_name]=maxi(0,int(bagged_inventory.get(product_name,0)))-from_bench
+	if int(locker_weed.get(product_name,0))<=0:locker_weed.erase(product_name)
 	var gross_revenue: int = qty * _effective_price(product_name)
 	var commission: int = int(ceil(float(gross_revenue) * DEALER_COMMISSION_RATE))
 	var dealer_roster: Array[String] = _active_dealer_roster()
@@ -6094,7 +6106,7 @@ func _dealer_sell_one(show_feedback: bool, assigned_dealer_name: String = "", do
 	_increment_advancement_stat("dealer_sales")
 	_increment_advancement_stat("sales")
 	_add_heat(1.8 + float(qty) * 0.45, "Dealer activity", false)
-	var relationship: Dictionary = (customer_relationships[last_dealer_customer_name] as Dictionary).duplicate(true)
+	var relationship: Dictionary = (customer_relationships.get(last_dealer_customer_name,{}) as Dictionary).duplicate(true)
 	relationship["sales"] = int(relationship.get("sales", 0)) + 1
 	relationship["dealer_sales"] = int(relationship.get("dealer_sales", 0)) + 1
 	customer_relationships[last_dealer_customer_name] = relationship
@@ -10332,6 +10344,7 @@ func _schedule_next_customer(restart: bool = false) -> void:
 	visit_timer.start()
 
 func _has_listed_stock() -> bool:
+	if neighborhood!=null and neighborhood.location_ops.crew.can_handle() and neighborhood.location_ops.crew.packaged_stock()>0:return true
 	for k: Variant in products.keys():
 		if _player_product_sellable(str(k)): return true
 	return false
@@ -10410,8 +10423,12 @@ func _viable_customers() -> Array[Dictionary]:
 	for name_variant in products.keys():
 		var product_name: String = str(name_variant)
 		var data: Dictionary = products[product_name]
-		if _player_product_sellable(product_name):
+		if _player_product_sellable(product_name) or (neighborhood!=null and neighborhood.location_ops.crew.can_handle() and neighborhood.location_ops.crew.product_stock(product_name)>0):
 			listed_names.append(product_name)
+	if neighborhood!=null and neighborhood.location_ops.crew.can_handle():
+		for source in [locker_weed,bagged_inventory]:
+			for name in source:
+				if int(source[name])>0 and not listed_names.has(str(name)):listed_names.append(str(name))
 	for customer: Dictionary in customers:
 		var customer_name: String = str(customer.get("name", ""))
 		if not _friend_staff_role(customer_name).is_empty():
