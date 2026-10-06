@@ -1,0 +1,10 @@
+{
+  "source_repo_commit": "ec2779191170e26e737aee4bc6c867f936a1fa2e",
+  "baseline_pck_sha256": "4c36eab60c3b6ccf9299b8574a1d56a36afafb73c6f7f3a8f94d3b606ed342c4",
+  "furniture_package": "AFB_FurnitureFit_v1",
+  "verified_source_files": 90,
+  "rights": "Existing user-owned AFewBuds assets and user-authorized revisions; no external provider assets",
+  "integration": "Adapt approved dimensions in existing named-node builders to preserve gameplay, materials, upgrades and interactions",
+  "character_assets": "Already integrated .95 assets retained byte-for-byte",
+  "canonical_cli": "Unavailable; direct hash verification and engine integration checks used"
+}

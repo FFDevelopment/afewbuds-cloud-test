@@ -1,0 +1,369 @@
+{
+  "name": "AFB_FurnitureFit",
+  "version": 1,
+  "manual_package": true,
+  "reference_commit": "99b562c5348f3c799b582ff7ac0440867f0313bb",
+  "checks_passed": 84,
+  "files": {
+    "Furniture_Review.html": {
+      "sha256": "6093b55b3054b1c65bc983fcdac9aeba51ad4f0b94b762502e7094e848741e97",
+      "bytes": 6329
+    },
+    "godot/assets/branding/afb_logo.png": {
+      "sha256": "cfa67ae16b9f0c2e654ffad44ab52461c4dcaae87c0c9b3f8c7296a9072fdf33",
+      "bytes": 478127
+    },
+    "godot/assets/branding/afb_logo.png.import": {
+      "sha256": "96ef0486de3b0477af190bad2197d1a5ef92b52fc67d7c32e84d1f823ea71edf",
+      "bytes": 944
+    },
+    "godot/assets/Malik.glb": {
+      "sha256": "4086d6a9022bc5eb2ed08c24f2ae311cc28c066cdea95262f832693cdcb18e2a",
+      "bytes": 2589608
+    },
+    "godot/assets/Malik.glb.import": {
+      "sha256": "a31448fa90f9ac624f3e2896b0e279565990a401f985c1bac34f7d4a744097ab",
+      "bytes": 1137
+    },
+    "godot/assets/Malik_0.png": {
+      "sha256": "4848653ad1a5cf6d5790171cf47aee05ac8e9431ad25b6d6354ffbe55bcfeac2",
+      "bytes": 762386
+    },
+    "godot/assets/Malik_0.png.import": {
+      "sha256": "cdd3fc5c09712e3e49a3b99435be31bec18070135865a1a30410efb44311a183",
+      "bytes": 997
+    },
+    "godot/assets/Player.glb": {
+      "sha256": "403b2b9e304dc532012e454abde4b7ba749355784e52996b6f02848ae0205e11",
+      "bytes": 4538920
+    },
+    "godot/assets/Player.glb.import": {
+      "sha256": "72b78b981502d98c0f35106ed4362d4f5ab56edd7825df0602b4199a7eeb55f6",
+      "bytes": 1140
+    },
+    "godot/assets/Rod.glb": {
+      "sha256": "e64c6ec4400c1b1c3993eef31daa9f7304a9c6ae2f7663539ecc3d87f9c4b12c",
+      "bytes": 2863368
+    },
+    "godot/assets/Rod.glb.import": {
+      "sha256": "4ba402e01335819656936ce144e247fd2d8e1cc226659b6c081a8582a1b8190a",
+      "bytes": 1130
+    },
+    "godot/assets/Rod_0.png": {
+      "sha256": "52a2b0f0debc1834ad68fd2cd6ee001ed879825057e01a5e152cc1d98b309b1b",
+      "bytes": 899319
+    },
+    "godot/assets/Rod_0.png.import": {
+      "sha256": "42b1cea1219fe3a5cc4219d73e8c33d839fc33553159aa9fac6432d61089cd36",
+      "bytes": 992
+    },
+    "godot/assets/textures/brushed_metal.png": {
+      "sha256": "6d5a970037043f315997637ea5e2a3578872d7989177d366ccab4a6449062383",
+      "bytes": 67207
+    },
+    "godot/assets/textures/brushed_metal.png.import": {
+      "sha256": "91b8a6ad88255e95bcc17f31d2e267f7f65c04187955fc850ac1cde9fc408e6a",
+      "bytes": 959
+    },
+    "godot/assets/textures/cardboard.png": {
+      "sha256": "a791f8aa5abc749384e4894eeb48ef46b841328a63e40e31a93530acaa0d1e72",
+      "bytes": 82007
+    },
+    "godot/assets/textures/cardboard.png.import": {
+      "sha256": "db8a223e0c3198165fd8fda3e64234fda08e839dda3adf2e377ee04cdf2aeece",
+      "bytes": 947
+    },
+    "godot/assets/textures/laminate.png": {
+      "sha256": "af65a7a8511e9c9c82504a243e5e50ed8acd2e499828a6a714a48d10b5893afa",
+      "bytes": 53510
+    },
+    "godot/assets/textures/laminate.png.import": {
+      "sha256": "3e11d722dbb377b9be3be45c66969db3900f3172836cd29073b0c7706048b264",
+      "bytes": 943
+    },
+    "godot/assets/textures/matte_plastic.png": {
+      "sha256": "bb5fe05eb68714c31ece05fd3406c04217fcbe07b72c4e94924affdce8c51d8e",
+      "bytes": 55925
+    },
+    "godot/assets/textures/matte_plastic.png.import": {
+      "sha256": "a9aff00461e5225badd8615551e51a691a34179deb31d40d44456dc4da6516fb",
+      "bytes": 959
+    },
+    "godot/assets/textures/walnut.png": {
+      "sha256": "4323360a8e7855c7384b536f094b2b687451978d006b04e040c33b34c72bf8a3",
+      "bytes": 67731
+    },
+    "godot/assets/textures/walnut.png.import": {
+      "sha256": "72013c5bc93abf91f4892674e64224a4921f96209df7f04f3ae84c4e3a8e0474",
+      "bytes": 938
+    },
+    "godot/export_presets.cfg": {
+      "sha256": "b6728b0fb2210c54161b6c67aa9832ed431948d989b621d89ecf142e06103c52",
+      "bytes": 622
+    },
+    "godot/furniture/BasicLocker.scn": {
+      "sha256": "7fc04fd25705d0b5286942464f0a763a26e5f6e67db4b282481fb05d07be59dd",
+      "bytes": 76264
+    },
+    "godot/furniture/FloorLamp.scn": {
+      "sha256": "5dba63a71b081b379e9910102fb55586783522344b224c8093df6aef7ca3a0cb",
+      "bytes": 89542
+    },
+    "godot/furniture/FrontDoor.scn": {
+      "sha256": "18746a2bf842e4304fe0f862f3a54103c26aa02a2eac0636a3de9da62155e8b6",
+      "bytes": 190646
+    },
+    "godot/furniture/Kitchen.scn": {
+      "sha256": "7c7258abd36ab8c7f379c5ea724905438a3f00bdea158a7b92fe944d7307f3fe",
+      "bytes": 137960
+    },
+    "godot/furniture/LivingArea.scn": {
+      "sha256": "36640315bf46b94543e390fe888d9b0eaab7967f656012f775f3007ec9ca8f7f",
+      "bytes": 870835
+    },
+    "godot/furniture/PackingBench.scn": {
+      "sha256": "5e2e78877ce546e02d955372d3f6840398bfc0b16aa61d6eeea2f54a3402d838",
+      "bytes": 1123249
+    },
+    "godot/furniture/PackingBenchIII.scn": {
+      "sha256": "c8335cd3faa4150297a6caff8cb807f04e0786a2ee204d47fd71b7053564707f",
+      "bytes": 1021964
+    },
+    "godot/furniture/PremiumLocker.scn": {
+      "sha256": "da515a25d479eb1393d1ca95cffa84b4f064300cafdb96db759dc71785ab3516",
+      "bytes": 311214
+    },
+    "godot/furniture/StorageShelf.scn": {
+      "sha256": "fd581a9c2766f57ba7fcc18d73affad0c790f668aa0d274585e5c99092bfa44f",
+      "bytes": 72474
+    },
+    "godot/furniture/SupplyShelf.scn": {
+      "sha256": "e2ca04a76b8a59a2eb3d946e7131a23c86b81e61c798c1551fc78399dae5bf8a",
+      "bytes": 444533
+    },
+    "godot/furniture/TVConsole.scn": {
+      "sha256": "44258ec07cbd8b8b531c2b472ecb8bdc8e7d3723d0d1d22a1e2c528209c0c3f2",
+      "bytes": 10912
+    },
+    "godot/furniture/Vault.scn": {
+      "sha256": "e837e7138f93cedee395db304caa266d24fa01557ec28bb0365f867c0c66900f",
+      "bytes": 216506
+    },
+    "godot/project.godot": {
+      "sha256": "acf862126445de1c7164e6f449408b3e86c0f4ba59580a67b5f5f63c7017d667",
+      "bytes": 537
+    },
+    "godot/review.tscn": {
+      "sha256": "bc16b8de95748ca5443f893241bfc75745ae8c902646ef3354271f6a63a9d224",
+      "bytes": 169
+    },
+    "godot/scripts/appearance.gd": {
+      "sha256": "bb46ab4bb64abc19f585ff46573dc6eaa360d49700f0c243ae5126507380f4ed",
+      "bytes": 6064
+    },
+    "godot/scripts/appearance.gd.uid": {
+      "sha256": "e64537de5f68eed7aefa68bde9bf99c48c180b4703f71846716db7fb53c2ae51",
+      "bytes": 20
+    },
+    "godot/scripts/furniture.gd": {
+      "sha256": "13b7a3203c5220766976dacec1fb669e25ea0e20a56a085e96cc3f9ff84eafbc",
+      "bytes": 34972
+    },
+    "godot/scripts/furniture.gd.uid": {
+      "sha256": "ef7b95d9a8ec02c4a624d2362ac5615983ba37423449eef76e312931fe5cf77b",
+      "bytes": 20
+    },
+    "godot/scripts/grow_supply_shelf.gd": {
+      "sha256": "de53929212cb3c9b6778c6041465f5c089ae358edda40dad218e446ed3cefe82",
+      "bytes": 10906
+    },
+    "godot/scripts/grow_supply_shelf.gd.uid": {
+      "sha256": "2f761634613640f3cd85dd9c2f56400ac7830dd6184b5a85c859fd8767ddf69b",
+      "bytes": 19
+    },
+    "godot/scripts/living_couch.gd": {
+      "sha256": "a852c366f68b82340b0c1baa34959d3f18e53cf6809f535d7241d45ab56b7070",
+      "bytes": 17217
+    },
+    "godot/scripts/living_couch.gd.uid": {
+      "sha256": "9affa63ea4c80a76bda115779d53bb45673cb04e550e50874daf492dc0aef65d",
+      "bytes": 20
+    },
+    "godot/scripts/reference_couch.gd": {
+      "sha256": "bf42314ffd8639fbbaecd21b3d4e2ceb74ee9da56c2127e85e6f1a1869a4ade3",
+      "bytes": 15847
+    },
+    "godot/scripts/reference_couch.gd.uid": {
+      "sha256": "66614aac57e89d0cff17f22b6d3665fc3368947de9158ae62e10b179677ae8f2",
+      "bytes": 20
+    },
+    "godot/scripts/review.gd": {
+      "sha256": "936ec86b662ddc7a191c257c185fc4fdb0ff0e0cd4ee9cd4251fe5bc2db74871",
+      "bytes": 15010
+    },
+    "godot/scripts/review.gd.uid": {
+      "sha256": "b60c4ef9d4ad91c4e768127dc9d6215571f1722f101e130544d3c4aac70e14a5",
+      "bytes": 19
+    },
+    "godot/scripts/storage_vault.gd": {
+      "sha256": "1a12d1f5a5dece7452e65a8ac42cd8667d51b2f48c4e4ce97f5ee976a36d154a",
+      "bytes": 8941
+    },
+    "godot/scripts/storage_vault.gd.uid": {
+      "sha256": "1ad41d59e671435ec84594f5a2c4eed0075ee5c10fa7b78ecc1839c730d13c3a",
+      "bytes": 20
+    },
+    "preview/BasicLocker_fitted.png": {
+      "sha256": "8bf2b1a158d8580d02e3f0366e066717b93f2b7e75d5d1d7b275d61c5aa45f5b",
+      "bytes": 145235
+    },
+    "preview/BasicLocker_original.png": {
+      "sha256": "d425debffca4e210c8b7ef8f3347ef657c4ad79293236aeca248723bc3c0f66c",
+      "bytes": 147933
+    },
+    "preview/FloorLamp_fitted.png": {
+      "sha256": "f187912eb518451725408f894c84708e5b997d363267b3ae6025f299fba67bc5",
+      "bytes": 117017
+    },
+    "preview/FloorLamp_original.png": {
+      "sha256": "7a1abcc803ba6d35dabdc42a1408323c4676fbaa95f1dd0495d27db1a90d7752",
+      "bytes": 118961
+    },
+    "preview/FrontDoor_fitted.png": {
+      "sha256": "85bde753d21e3e1e550016e669deeaa27f0dec0ead6568ac3c914ffeb01419d6",
+      "bytes": 228771
+    },
+    "preview/FrontDoor_original.png": {
+      "sha256": "baf94ddb53eb7b0855e583fa77569e7b247072f51d04ba80e37103f1f3e0581c",
+      "bytes": 227825
+    },
+    "preview/Kitchen_fitted.png": {
+      "sha256": "82e5a2678c148a1e8209969729a33bfe34ec7ede6f875cdefff3b31314fc64b8",
+      "bytes": 170850
+    },
+    "preview/Kitchen_original.png": {
+      "sha256": "e766608ce5d3080e322e845a2f3f5006c2e9196474d4c544686fb87300519e1c",
+      "bytes": 174605
+    },
+    "preview/LivingArea_fitted.png": {
+      "sha256": "4c3e169dc7ddcef0c8a49d992b0358977c8a595e3be155f0790fe4360fab262b",
+      "bytes": 268537
+    },
+    "preview/LivingArea_original.png": {
+      "sha256": "c47d0452662509e45b3b3437be96bb6421ca9ba057d5431cd9044415b15e453f",
+      "bytes": 264960
+    },
+    "preview/LivingArea_side.png": {
+      "sha256": "722c2e70d6a29d81510caa5ba4c38f0a43b9fdc109ca50fc1b552c8e93c62614",
+      "bytes": 247744
+    },
+    "preview/PackingBench_fitted.png": {
+      "sha256": "c4448406c078fd10ce1514b698fc665e7b50008e163c1683ca5b64b398305a42",
+      "bytes": 202642
+    },
+    "preview/PackingBench_original.png": {
+      "sha256": "d11f122e3ba809811c651656a3ce2b21705393ea4f99f8b236d7348bba18f974",
+      "bytes": 203161
+    },
+    "preview/PackingBenchIII_fitted.png": {
+      "sha256": "2caa3414f4a53b06a494e3f679f2419c46d585a4b123eeef3690fa32f2b1de65",
+      "bytes": 250867
+    },
+    "preview/PackingBenchIII_original.png": {
+      "sha256": "3ebd295fa2e0ab9a47d6eb1ba0f56041524c449df0feb8b6903e8ab83ce4ff47",
+      "bytes": 255930
+    },
+    "preview/PremiumLocker_fitted.png": {
+      "sha256": "148ed561dfb0cfeffb88dc99d70be399e86b37b13139578d3b2834b2b8e1ea8d",
+      "bytes": 180292
+    },
+    "preview/PremiumLocker_original.png": {
+      "sha256": "53187d1333acb8e00ba38b19f91adafe41cb9cc5ca15abdb105d2c395cad7d50",
+      "bytes": 181543
+    },
+    "preview/StorageShelf_fitted.png": {
+      "sha256": "a1ec722b051e6e011977099783379237a9ca032dbaccc6f3c0e934559bff708e",
+      "bytes": 278328
+    },
+    "preview/StorageShelf_original.png": {
+      "sha256": "ff95b83b9354c299e5fe731d0733be9684133fcb468cbabe03aca3727d701039",
+      "bytes": 285842
+    },
+    "preview/SupplyShelf_fitted.png": {
+      "sha256": "7f0148e8c02c6d51b3ed69eb422908911a7c61068b6d36fbd6f62d0cf8a9cd35",
+      "bytes": 193453
+    },
+    "preview/SupplyShelf_original.png": {
+      "sha256": "b18d9813d9f30ef3c951bbe133e3dbaca6d8881c220db1a4d6c9d265f314ee83",
+      "bytes": 194898
+    },
+    "preview/TVConsole_fitted.png": {
+      "sha256": "1f742fed84465cb47d4eed85d35846ce2e915b4e52353ad8ead4b498930c8778",
+      "bytes": 127706
+    },
+    "preview/TVConsole_original.png": {
+      "sha256": "4f74e0b81ea1cab91c26a1f5d4f81ccbf66b248d9c818cb9d9e5427d18360499",
+      "bytes": 129871
+    },
+    "preview/Vault_fitted.png": {
+      "sha256": "c6e28841e3af8c3a15856858e2fc8929d7e5f83e1ef7d6e20f3c8cb8ff061224",
+      "bytes": 296676
+    },
+    "preview/Vault_original.png": {
+      "sha256": "40b12c217d2f940ebce52ac5504a4ffd9d9abc7f19f0f5af7a5f835952673013",
+      "bytes": 299384
+    },
+    "README.txt": {
+      "sha256": "efe37ecbe8ea350d9c7121249d8301e0e4ce24ea46ba71be5f9cb23774c4ed7e",
+      "bytes": 4847
+    },
+    "SIZE_AUDIT.json": {
+      "sha256": "979f72b0a93ae3b5065f84bb4ff336460dfddaf057e410fc6f56960d8bf613cb",
+      "bytes": 4734
+    },
+    "source/provenance.json": {
+      "sha256": "d7fbc58d636c89f6e86eb96b699a7dd35deaf96d0e190b4db50a2935761c8795",
+      "bytes": 676
+    },
+    "source/reference_apartment.gd.txt": {
+      "sha256": "50c3dc42ab0dc789e401728896e2a3fc7b934d5e9a08a9e94b7ab3833f53eeb7",
+      "bytes": 22365
+    },
+    "source/reference_main.gd.txt": {
+      "sha256": "8224750e925c32dcbd9e7bb730c4bc6022901a85a85daf6d91141f122abcc5f3",
+      "bytes": 565001
+    },
+    "validation/afb_furniture_capture.log": {
+      "sha256": "7b5c0aafab19aa8fe8322b73c84d79f85940f517791de0b0c750a4ce97650ea0",
+      "bytes": 195
+    },
+    "validation/afb_furniture_test.log": {
+      "sha256": "11b0fecb2950f34c2bb2e06336f43811f95d138f80aec1c0eea5874ed8ebe4a5",
+      "bytes": 120
+    },
+    "validation/afb_furniture_windows.log": {
+      "sha256": "10eb4a463ffa81249b6a83bddf710de12417bda1191142bc188c99d462fe6265",
+      "bytes": 202
+    },
+    "validation/furniture_fit.json": {
+      "sha256": "2c3aaefd518a433db34edd68c48bc32bf7d765d49de04366968324d0e0aa4aa2",
+      "bytes": 12654
+    },
+    "validation/package_checks.json": {
+      "sha256": "db2c269f3a235bcdc8bdf013c610cba1c3595cffa50aaf0d928521726d764c9e",
+      "bytes": 371
+    },
+    "Windows/AFewBuds-Furniture-Fit.exe": {
+      "sha256": "ab1824f85bfd8e0e4128182c000c4003a3e042245b2967848d089b2a04b22424",
+      "bytes": 180858888
+    },
+    "Windows/AFewBuds-Furniture-Fit.pck": {
+      "sha256": "38eb1d919c09a4e99cebcc917b60c65d2fdf2527fce56a08a8fcb892563f0770",
+      "bytes": 4690948
+    },
+    "Windows/GODOT_LICENSES.txt": {
+      "sha256": "b845086ce5714017a58120a66e4206a8fb67c88138742cbd0d1e807017024555",
+      "bytes": 109289
+    }
+  }
+}

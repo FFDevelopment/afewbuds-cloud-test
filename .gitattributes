@@ -1,2 +1,8 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Keep the character-fit source bytes stable for reproducible pack hashes.
+tools/character_fit_v1/** text=auto eol=lf
+tools/character_fit_v1/**/*.png binary
+runtime/character-fit-v1.patch.json text eol=lf
+shared/afb-runtime-character-fit-v1.js text eol=lf
