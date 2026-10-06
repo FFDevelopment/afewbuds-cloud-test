@@ -1389,7 +1389,7 @@ func _show_daily_report() -> void:
 	var friend_text: String = _daily_report_friend_dealers_text(report)
 	if not friend_text.is_empty():
 		friend_section = "\n\nFRIEND DEALERS\n%s" % friend_text
-	daily_report_body.text = "PRODUCT SOLD\n%s\n\nREVENUE / COSTS\nGross product revenue: $%d\n%s\nElectricity: $%d\nWater: $%d\n\nTotal operating cost: $%d\nDAY PROFIT: $%d\n\n%s%s\n\nElectric and water charges are posted to Phone -> Business -> Bills or apartment computer -> Bills and can be paid separately." % [_daily_report_sales_text(report), gross, _daily_report_expense_text(report), power_cost, water_cost, total_cost, profit, settlement_line, friend_section]
+	daily_report_body.text = "PRODUCT SOLD\n%s\n\nREVENUE / COSTS\nGross product revenue: $%d\n%s\nElectricity: $%d\nWater: $%d\n\nTotal operating cost: $%d\nDAY PROFIT: $%d\n\n%s%s\n\nElectric and water charges are posted to Phone -> Illegal Businesses -> Bills or apartment computer -> Bills and can be paid separately." % [_daily_report_sales_text(report), gross, _daily_report_expense_text(report), power_cost, water_cost, total_cost, profit, settlement_line, friend_section]
 	daily_report_action.text = ("SETTLE DEALERS  |  START DAY %d" % next_day) if dealer_count_report > 0 else ("START DAY %d" % next_day)
 	daily_report_panel.visible = true
 	_set_world_controls_visible(false)
@@ -3369,8 +3369,8 @@ func _build_phone_panel() -> void:
 	dock.add_theme_constant_override("separation", 12)
 	root.add_child(dock)
 	_add_phone_dock_button(dock, "HOME", "home")
-	_add_phone_dock_button(dock, "BUDSHOP", "budshop")
-	_add_phone_dock_button(dock, "TASK", "task")
+	_add_phone_dock_button(dock, "BUSINESSES", "budshop")
+	_add_phone_dock_button(dock, "TASKS", "task")
 	_add_phone_dock_button(dock, "SETTINGS", "settings")
 
 func _add_phone_dock_button(dock: HBoxContainer, label_text: String, app_name: String) -> void:
@@ -5379,7 +5379,7 @@ func _production_worker_station_position(station_name: String) -> Vector3:
 		"workbench": return Vector3(2.85, 0.0, 0.30)
 		"storage": return Vector3(-3.25, 0.0, -0.15) # Clear the vault handle and worker radius.
 		"entry": return Vector3(0.65, 0.0, 3.85)
-		_: return Vector3(0.75, 0.0, 2.55)
+		_: return Vector3(-2.775, 0.0, 2.1)
 
 
 func _reset_production_worker_navigation() -> void:
@@ -5423,7 +5423,7 @@ func _update_production_worker_visual(delta: float) -> void:
 	if production_worker_node == null:
 		return
 	var on_duty: bool = packing_employee_hired and packing_employee_active
-	production_worker_node.visible = on_duty or (packing_employee_hired and lay_low_active and not production_worker_arrested)
+	production_worker_node.visible = packing_employee_hired and not production_worker_arrested
 	if not on_duty:
 		if production_worker_node.visible:production_worker_node.position=production_worker_node.position.move_toward(_production_worker_station_position("idle"),PRODUCTION_WORKER_MOVE_SPEED*delta)
 		return
@@ -6589,6 +6589,7 @@ func _phone_go_home() -> void:
 	_open_phone_app("home")
 
 func _phone_parent_app(app_name: String) -> String:
+	if app_name in ["bills","stats","heat","business"]:return "budshop"
 	if app_name in ["seeds", "supplies"]:
 		return "shop"
 	if app_name in ["bills", "employees", "upgrades"]:
@@ -6606,6 +6607,7 @@ func _phone_go_back() -> void:
 func _open_phone_app(app_name: String) -> void:
 	if neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.crew!=null and app_name=="texts":neighborhood.location_ops.crew.thread=""
 	if neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.redirect(app_name):return
+	if app_name in ["lights","business"]:app_name="budshop"
 	_cancel_phone_gesture()
 	phone_scroll.scroll_vertical = 0
 	phone_current_app = app_name
@@ -6621,6 +6623,7 @@ func _refresh_phone() -> void:
 	if neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.refresh_management():return
 	if phone_list == null:
 		return
+	if phone_current_app in ["lights","business"]:phone_current_app="budshop"
 	var chapter_four_changed: bool = _sync_chapter_four_story()
 	if chapter_four_changed:
 		_save_game()
@@ -6640,13 +6643,13 @@ func _refresh_phone() -> void:
 		phone_clock_label.text = _format_game_clock()
 	match phone_current_app:
 		"budshop":
-			phone_title.text = "BudShop"
+			phone_title.text = "Illegal Businesses"
 			_build_budshop_app()
 		"texts":
 			phone_title.text = "Texts"
 			_build_texts_app()
 		"task":
-			phone_title.text = "Task"
+			phone_title.text = "Tasks & Rewards"
 			_build_task_app()
 		"leaderboard":
 			phone_title.text = "Leaderboard"
@@ -6745,34 +6748,27 @@ func _cancel_phone_gesture() -> void:
 			scroll.cancel_touch()
 
 func _build_budshop_app() -> void:
-	var business_card: PanelContainer = PanelContainer.new()
-	business_card.add_theme_stylebox_override("panel", _style_box(Color("152029"), Color("33434f"), 16, 1))
-	phone_list.add_child(business_card)
-	var business_box: VBoxContainer = VBoxContainer.new()
-	business_box.add_theme_constant_override("separation", 7)
-	business_card.add_child(business_box)
-	var business_state: Label = Label.new()
-	business_state.text = "STOREFRONT: %s   |   %s" % ["OPEN" if business_open else "AWAY / SALES PAUSED", _format_game_clock()]
-	business_state.add_theme_font_size_override("font_size", 19)
-	business_state.modulate = Color("8ed6a3") if business_open else Color("e1b07a")
-	business_box.add_child(business_state)
+	var card := PanelContainer.new()
+	card.add_theme_stylebox_override("panel",_style_box(Color("152029"),Color("33434f"),16,1))
+	phone_list.add_child(card)
+	var box := VBoxContainer.new()
+	card.add_child(box)
+	var status := Label.new()
+	status.text="APARTMENT\nStorefront: %s" % ("LAYING LOW" if lay_low_active else ("OPEN" if business_open else "AWAY"))
+	status.add_theme_font_size_override("font_size",20)
+	status.modulate=Color("8ed6a3") if business_open and not lay_low_active else Color("e1b07a")
+	box.add_child(status)
 	var note := Label.new()
-	note.text="Open, close or lay low from the apartment computer. Contact your assigned crew for remote shutdown."
+	note.text="Manage this operation at its apartment computer. Text assigned crew through Contacts for remote commands."
 	note.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
-	business_box.add_child(note)
-	var intro: Label = Label.new()
-	intro.text = "Manage the shop, supplies, customers and business operations."
-	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	phone_list.add_child(intro)
-	var grid: GridContainer = _phone_category_grid()
-	_add_phone_app_tile(grid, "", "Lights", "Lamp, lights & ventilation", "lights")
-	_add_phone_app_tile(grid, "", "Store", "Seed orders & market info", "shop")
-	_add_phone_app_tile(grid, "", "Business", "Property overview & bills", "business")
-	if (neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.management_allowed()) or tutorial_active:_add_phone_app_tile(grid, "", "Your Supply", "Stock, prices & listings", "products")
-	if (neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.management_allowed()) or tutorial_active:_add_phone_app_tile(grid, "", "Genetics", "Create hybrid seeds", "genetics")
-	_add_phone_app_tile(grid, "", "Contacts", "Clients, crew & messages", "clients")
-	_add_phone_app_tile(grid, "", "Heat", "%s  |  %d/100" % [_heat_stage_name(), int(round(heat))], "heat")
-	_add_phone_app_tile(grid, "", "Stats", "Progress & revenue", "stats")
+	box.add_child(note)
+	var house := Label.new()
+	house.text="House: not acquired."
+	phone_list.add_child(house)
+	var grid: GridContainer=_phone_category_grid()
+	_add_phone_app_tile(grid,"","Bills","Rent, utilities & balances","bills")
+	_add_phone_app_tile(grid,"","Heat","%s | %d/100" % [_heat_stage_name(),int(round(heat))],"heat")
+	_add_phone_app_tile(grid,"","Stats","Progress & revenue","stats")
 
 func _build_settings_app() -> void:
 	var intro: Label = Label.new()
@@ -6800,14 +6796,16 @@ func _build_task_app() -> void:
 
 func _build_phone_home() -> void:
 	var summary: Label = Label.new()
-	summary.text = "DAY %d  |  %s\n$%d cash   |   Level %d   |   Storefront %s" % [game_day, _format_game_clock(), cash, grower_level, "OPEN" if business_open else "AWAY"]
+	summary.text = "DAY %d  |  %s\n$%d cash   |   Level %d   |   Storefront %s" % [game_day, _format_game_clock(), cash, grower_level, "LAYING LOW" if lay_low_active else ("OPEN" if business_open else "AWAY")]
 	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	summary.add_theme_font_size_override("font_size", 21)
 	phone_list.add_child(summary)
 	var grid: GridContainer = _phone_category_grid()
-	_add_phone_app_tile(grid, "", "BudShop", "Store, business & operations", "budshop")
+	_add_phone_app_tile(grid, "", "Illegal Businesses", "Storefront status, bills & stats", "budshop")
+	_add_phone_app_tile(grid, "", "Store", "Seed orders & market info", "shop")
+	_add_phone_app_tile(grid, "", "Contacts", "Clients, crew & messages", "clients")
 	_add_phone_app_tile(grid, "", "Messages", ("%d unread" % phone_text_unread) if phone_text_unread > 0 else "Crew & story messages", "texts")
-	_add_phone_app_tile(grid, "", "Task", "Chapter progress & rewards", "task")
+	_add_phone_app_tile(grid, "", "Tasks & Rewards", "Chapters, goals & rewards", "task")
 	_add_phone_app_tile(grid, "", "Leaderboard", "Weekly & lifetime rankings", "leaderboard")
 	_add_phone_app_tile(grid, "", "Settings", "Help & system controls", "settings")
 
@@ -6925,8 +6923,8 @@ func _build_shop_app() -> void:
 	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	phone_list.add_child(intro)
 	var grid: GridContainer = _phone_category_grid()
-	_add_phone_app_tile(grid, "", "Supplies", "Fertilizer packs", "supplies")
-	_add_phone_app_tile(grid, "", "Seeds", "All seeds & owned quantities", "seeds")
+	if tutorial_active:_add_phone_app_tile(grid, "", "Supplies", "Starter fertilizer purchase", "supplies")
+	_add_phone_app_tile(grid, "", "Seed Orders", "Order for Central Market pickup", "seeds")
 
 func _add_phone_app_tile(parent: GridContainer, icon_text: String, title_text: String, detail_text: String, app_name: String) -> void:
 	var tile: Button = Button.new()
@@ -8893,14 +8891,10 @@ Last change: %s" % [int(round(heat_peak)), int(floor(heat_reduced_total)), last_
 	guide.modulate = Color("aeb9bf")
 	phone_list.add_child(guide)
 
-	var lay_low: Button = Button.new()
-	lay_low.text = "REOPEN AFewBuds" if lay_low_active else "LAY LOW - CLOSE + LIGHTS DOWN"
-	lay_low.custom_minimum_size.y = 54
-	if lay_low_active:
-		lay_low.pressed.connect(_stop_lay_low_and_reopen)
-	else:
-		lay_low.pressed.connect(_start_lay_low)
-	phone_list.add_child(lay_low)
+	var shutdown_note := Label.new()
+	shutdown_note.text="Lay low at the property computer or text assigned crew through Contacts."
+	shutdown_note.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	phone_list.add_child(shutdown_note)
 
 	if reeves_met and (corrupt_contact_unlocked or heat_peak >= 50.0) and not reeves_arrangement_active:
 		corrupt_contact_unlocked = true
@@ -11282,7 +11276,7 @@ func _build_help_app() -> void:
 		label.add_theme_font_size_override("font_size", 19)
 		phone_list.add_child(label)
 	var controls: Label = Label.new()
-	controls.text = "PHONE LAYOUT\nOrder seeds on the phone, collect them at Central Market checkout, then deposit carried supplies at your apartment computer. Fertilizer and equipment are bought at Central Market. Paid equipment waits for computer installation. Property computers manage inventory, listings, genetics, staff and production. Phone -> Business -> Bills or apartment computer -> Bills includes apartment rent: $600 every 14 game days, with a three-day grace period. The back arrow returns to the parent category.\n\nCONTROLS\nSwipe phone, packing-bench and storage lists anywhere on a card or button; lift without swiping to tap. Tap the actual room switches or lamp to toggle them. Phone -> Lights is the optional menu alternative. Small finger movements stay taps; swipe farther to look around. Swipe the room to look; tap a station to use it. While bagging, keep the same finger on the bud until you drop it. During trimming, keep hold of the scissors.\n\nPAUSING\nSwitching apps/tabs, closing the game, or pressing PAUSE stops the day, visitors, story, wages and sales. Only existing plants keep growing and consume water and applied fertilizer; dry plants lose health. A plant that finishes before dying stays harvestable. A hired, ON-DUTY production worker can water and fertilize those plants using your stored fertilizer. No supplies are bought; watering continues when fertilizer runs out and adds to your Water Bill. An off-duty/fired worker or raid lockdown gives no care. No new seeds, harvesting, trimming, bagging or selling occur while away; equipment auto-refill remains live-only. The first-day guide fully protects plants. Press RESUME when you return. Daily closeout keeps its day/time frozen until START DAY. Storefront AWAY is different: it closes sales while you are still playing.\n\nREWARDS\nRewards over $100 have harder goals or extra requirements. Complete every displayed requirement before claiming. Already-claimed rewards remain yours."
+	controls.text = "PHONE LAYOUT\nOrder seeds on the phone, collect them at Central Market checkout, then deposit carried supplies at your apartment computer. Fertilizer and equipment are bought at Central Market. Paid equipment waits for computer installation. Property computers manage inventory, listings, genetics, staff and production. Phone -> Illegal Businesses -> Bills or apartment computer -> Bills includes apartment rent: $600 every 14 game days, with a three-day grace period. The back arrow returns to the parent category.\n\nCONTROLS\nSwipe phone, packing-bench and storage lists anywhere on a card or button; lift without swiping to tap. Tap the actual room switches or lamp to toggle them. Use room switches or the property computer for lights and power. Small finger movements stay taps; swipe farther to look around. Swipe the room to look; tap a station to use it. While bagging, keep the same finger on the bud until you drop it. During trimming, keep hold of the scissors.\n\nPAUSING\nSwitching apps/tabs, closing the game, or pressing PAUSE stops the day, visitors, story, wages and sales. Only existing plants keep growing and consume water and applied fertilizer; dry plants lose health. A plant that finishes before dying stays harvestable. A hired, ON-DUTY production worker can water and fertilize those plants using your stored fertilizer. No supplies are bought; watering continues when fertilizer runs out and adds to your Water Bill. An off-duty/fired worker or raid lockdown gives no care. No new seeds, harvesting, trimming, bagging or selling occur while away; equipment auto-refill remains live-only. The first-day guide fully protects plants. Press RESUME when you return. Daily closeout keeps its day/time frozen until START DAY. Storefront AWAY is different: it closes sales while you are still playing.\n\nREWARDS\nRewards over $100 have harder goals or extra requirements. Complete every displayed requirement before claiming. Already-claimed rewards remain yours."
 	controls.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	phone_list.add_child(controls)
 	var pause_button: Button = Button.new()

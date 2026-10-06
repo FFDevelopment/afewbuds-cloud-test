@@ -6,7 +6,7 @@
 	<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 	<meta http-equiv="Pragma" content="no-cache">
 	<meta http-equiv="Expires" content="0">
-		<title>AFewBuds Cloud Test 0.7.9-beta.19-cloudtest.88</title>
+		<title>AFewBuds Cloud Test 0.7.9-beta.19-cloudtest.89</title>
 		<style>
 html, body, #canvas {
 	margin: 0;
@@ -445,14 +445,14 @@ body {
 		<script src="shared/afb-api.js"></script>
 		<script src="shared/afb-cloud-accountsync10.js?v=0.7.9-beta.19-leaderboard40"></script>
 		<script src="index-accountsync10.js?v=0.7.9-beta.19-accountsync10"></script>
-		<script src="shared/afb-runtime88.js?v=88"></script>
+		<script src="shared/afb-runtime89.js?v=89"></script>
 		<script>
-const AFB_TEST_RELEASE = "0.7.9-beta.19-cloudtest.88";
-const AFB_TEST_TITLE = "AFewBuds Cloud Test 0.7.9-beta.19-cloudtest.88";
+const AFB_TEST_RELEASE = "0.7.9-beta.19-cloudtest.89";
+const AFB_TEST_TITLE = "AFewBuds Cloud Test 0.7.9-beta.19-cloudtest.89";
 function afbKeepTestTitle(){ if(document.title !== AFB_TEST_TITLE) document.title = AFB_TEST_TITLE; }
 afbKeepTestTitle();
 setInterval(afbKeepTestTitle, 1000);
-const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":true,"fileSizes":{"index-cloudtest88.pck":28909512,"index.wasm":37902138},"focusCanvas":true,"mainPack":"index-cloudtest88.pck","gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":""};
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":true,"fileSizes":{"index-cloudtest89.pck":31704364,"index.wasm":37902138},"focusCanvas":true,"mainPack":"index-cloudtest89.pck","gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":""};
 const GODOT_THREADS_ENABLED = false;
 let AFB_GAME_STARTED = false;
 let AFB_GAME_STARTING = false;
@@ -568,7 +568,7 @@ async function afbLaunchGame() {
 }
 function launchGodotEngine() {
 	const engine = new Engine(GODOT_CONFIG);
-	AFB_RUNTIME88.install(engine);
+	AFB_RUNTIME89.install(engine);
 	const statusOverlay = document.getElementById('status');
 	const statusProgress = document.getElementById('status-progress');
 	const statusNotice = document.getElementById('status-notice');
