@@ -1,0 +1,13 @@
+AFewBuds couch - fitted seat revision
+
+Seat top: 0.46821849 game units. Width and depth preserved.
+Legs: 0.13; lower base: 0.14. Whole-object scale remains (1,1,1).
+
+Godot assets:
+- godot/Couch.tscn: editable procedural generator.
+- godot/assets/Couch_baked.scn: ready-made scene with materials, collision and seat markers.
+- Both use res://assets/textures/walnut.png, supplied here. Preserve these resource paths when importing.
+
+SeatLeft/SeatRight markers sit on the cushion surface. They are not character-root positions. With the supplied Malik/Rod sit clips, place character roots at local x +/-0.495, y 0, z about -0.035. Use the player workshop solver for height presets.
+
+This package does not change either game repository. It derives from the user-owned AFewBuds living_couch.gd; original branding and material approach retained.

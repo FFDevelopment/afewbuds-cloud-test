@@ -1,13 +1,8 @@
-Malik physical size revision
-Uniform model and armature scale: 1.029458684 (+2.946% height, width and depth).
-About 24px taller in the fixed 1100x1000 room review; pixel size varies with camera.
-Shared bone rest contract, animation keys, mesh topology and textures preserved.
-Preview images from the previous release are removed; newly rendered images reflect this revision.
-Rebuild using source/build_malik.py.
-Not installed in the live game project.
-
-Contents: godot/assets/Malik.glb, editable external atlas and Godot wrapper; source/Malik.blend and rebuild scripts; preview/Malik_full.png and Malik_AFewBuds_room.png.
-Open godot/project.godot for the interactive preview: 1 idle, 2 walk, 3 bend, 4 rest.
-Static GLB checks and Godot import/rig/animation/physical-scale checks passed.
-Garment and Blender knee reports are inherited from the baseline: uniform scaling preserves their topology and angles; lengths in those reports are in unscaled local coordinates.
-Original procedural character study based on user-supplied references; no third-party branded apparel. Prototype locomotion and likeness remain first-pass.
+Malik: corrected character proportions retained (about 2.35 units tall).
+The couch seat is now 0.468218491 units high; legs/base rebuilt and upper furniture lowered.
+The sit clip now supports the pelvis with feet at floor level. Character geometry, scale and Blender source unchanged.
+Use godot/assets/Malik.glb or its material wrapper.
+Clips: idle, walk, bend_test, sit. Review keys: 1/2/3/4/5.
+For the supplied couch, sit roots are floor-level at local x +/-0.495, y 0, z approximately -0.035; local -Z faces forward.
+The couch SeatLeft/SeatRight markers identify the cushion surface, not the character root.
+Repos and earlier packages remain unchanged.

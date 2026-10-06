@@ -1,69 +1,23 @@
 {
-  "source": "User supplied AFB_Malik_v1_3.zip",
-  "sha256": "07911a874101dcff9ca497e777572bf451f7788fa601f9cdcac909e3caa46ccf",
-  "size": 2513996,
-  "validation": "All supplied manifest file hashes verified; Godot runtime import tested separately",
-  "original_manifest": {
-    "name": "AFB_Malik_v1_3",
-    "size_revision": {
-      "uniform_scale": 1.029458684101701,
-      "reference_baseline": "AFB_Malik_v1_2",
-      "height_width_depth_increase_percent": 2.945868410170105,
-      "bone_local_contract_unchanged": true,
-      "binary_geometry_skin_texture_animation_unchanged": true,
-      "measurement": {
-        "before": {
-          "left": 427.27477702511726,
-          "right": 673.0945500197778,
-          "top": 162.0519802382463,
-          "bottom": 903.8085122530119,
-          "height_px": 741.7565320147656,
-          "width_px": 245.81977299466053
-        },
-        "after_uniform_scale": {
-          "left": 423.35037103844957,
-          "right": 676.8227942896342,
-          "top": 139.13578906696324,
-          "bottom": 904.8689607277848,
-          "height_px": 765.7331716608217,
-          "width_px": 253.47242325118464
-        },
-        "world_height_before_m": 1.7663939045692438
-      }
-    },
-    "status": "first rigged prototype, sleeve trim integrated and collar removed; corrected knees retained",
-    "source_rig": "AFB_MasterRig_v1",
-    "static_validation": {
+  "name": "AFB_Malik_v1_6",
+  "status": "Lower couch fitted to corrected-size characters; feet grounded and pelvis supported",
+  "character_size_unchanged": true,
+  "seat_top": 0.4682184907339378,
+  "couch_width_depth_preserved": true,
+  "results": {
+    "source/sit_validation.json": {
+      "failures": [],
+      "feet_grounded": true,
+      "foot_clearance": -5.58793544769287e-09,
       "passed": true,
-      "sha256": "07911a874101dcff9ca497e777572bf451f7788fa601f9cdcac909e3caa46ccf",
-      "bones": 56,
-      "triangles": 23821,
-      "vertices_with_uv_seams": 24386,
-      "materials": 1,
-      "atlas_pixels": [
-        2048,
-        2048
-      ],
-      "clips": [
-        "idle",
-        "walk",
-        "bend_test"
-      ],
-      "checks": [
-        "GLB byte integrity",
-        "exact ordered skeleton contract",
-        "inverse binds",
-        "finite unit normals",
-        "normalized max-four weights",
-        "valid indices",
-        "embedded editable atlas",
-        "under 25000 triangles"
-      ]
+      "pelvis_cushion_y": 0.468227803707123,
+      "sit_to_idle_reset": true
     },
-    "godot_validation": {
+    "source/godot_validation.json": {
       "animation_clips": [
         "bend_test",
         "idle",
+        "sit",
         "walk"
       ],
       "bone_count": 56,
@@ -73,166 +27,147 @@
       "passed": true,
       "vertices": 24386
     },
-    "garment_validation": {
-      "collar_removed": true,
-      "separate_cuff_objects": 0,
-      "trim_is_surface_color": true,
-      "shirt_connected_components": 1,
-      "shirt_vertices": 1265,
-      "trim_vertices": {
-        "L": 135,
-        "R": 138
-      },
-      "cuff_clearance_checks": {
-        "L": {
-          "edge_vertices": 59,
-          "minimum_radius_m": 0.07745960201191102,
-          "all_edge_weights_on_upper_arm": true
-        },
-        "R": {
-          "edge_vertices": 58,
-          "minimum_radius_m": 0.07764075204008246,
-          "all_edge_weights_on_upper_arm": true
-        }
-      }
+    "source/unchanged_geometry.json": {
+      "passed": true,
+      "character_scale_unchanged": true,
+      "mesh_skin_bone_nodes_unchanged": true,
+      "original_binary_geometry_preserved": true,
+      "blender_source_unchanged": true,
+      "only_runtime_change": "Sitting root position lowered to match the rebuilt couch"
+    }
+  },
+  "files": {
+    "godot/assets/Malik.glb": {
+      "bytes": 2589608,
+      "sha256": "4086d6a9022bc5eb2ed08c24f2ae311cc28c066cdea95262f832693cdcb18e2a"
     },
-    "files": {
-      "godot/assets/Malik.glb": {
-        "bytes": 2513996,
-        "sha256": "07911a874101dcff9ca497e777572bf451f7788fa601f9cdcac909e3caa46ccf"
-      },
-      "godot/assets/Malik.tscn": {
-        "bytes": 311,
-        "sha256": "c608516bf8b3fa018bccd9462b5fef15a6ea08f2dc7a94151158afd2363d5146"
-      },
-      "godot/assets/Malik_0.png": {
-        "bytes": 732433,
-        "sha256": "9b0794ce68a3620a0328b5737530c7f8daeea23584cc8bb91e91ba8ea130a120"
-      },
-      "godot/assets/Malik_BaseColor.png": {
-        "bytes": 762386,
-        "sha256": "4848653ad1a5cf6d5790171cf47aee05ac8e9431ad25b6d6354ffbe55bcfeac2"
-      },
-      "godot/assets/malik_material.gd": {
-        "bytes": 661,
-        "sha256": "2dfab4e3c1b6c92278c51e157dc0e76f658b83350969948568e64976583b5758"
-      },
-      "godot/check_rig.gd": {
-        "bytes": 3907,
-        "sha256": "c0568344e24b414fe303dd8f8fe17e92a475869e8f75a9ee1c43791817449884"
-      },
-      "godot/project.godot": {
-        "bytes": 405,
-        "sha256": "aa7c96325f62f909a3261c4c52a01f954eb4cb56e49f0bd61fcc4422133479ac"
-      },
-      "godot/review.gd": {
-        "bytes": 4129,
-        "sha256": "aac921fc3ce4867abd2b2c39ee7ff553e62cb4e9ef6bd13b43997525c82f960c"
-      },
-      "godot/review.tscn": {
-        "bytes": 166,
-        "sha256": "3dc67d943d24c456dc46ec2b13feca3a48c5c182ba223de56474f0d3110103be"
-      },
-      "preview/Malik_AFewBuds_room.png": {
-        "bytes": 802472,
-        "sha256": "8e4cba5a283bae7ab6fb22338d03a4b4b6026e775ed780b4bed0a7c7ba809eba"
-      },
-      "preview/Malik_full.png": {
-        "bytes": 1243720,
-        "sha256": "543308bc6df23d608c58b847c7ee8275469d3db625b835d4256b4bdb170fcbb6"
-      },
-      "README.txt": {
-        "bytes": 1135,
-        "sha256": "e92690a57ce6301846097a8c1251c4d55e74944cbcb62b2ac820a631c734cf0b"
-      },
-      "source/blender_knee_validation.json": {
-        "bytes": 317,
-        "sha256": "7ad0055a1a4fc6e9d7b7352530c2d301e9cbaadbb77dc39eb02860b06941bfc9"
-      },
-      "source/build_malik.py": {
-        "bytes": 36784,
-        "sha256": "e44d1e92391aacfe6afd01254a9a9744c815fb7da6340377166d23dc9c984d5b"
-      },
-      "source/capture_game.gd": {
-        "bytes": 1201,
-        "sha256": "9fb4135c33a18765642d55c360195eb8ae5c38c03b781b67e1d3355b6cf31215"
-      },
-      "source/garment_validation.json": {
-        "bytes": 532,
-        "sha256": "3895b4c401a997c545433709106cdab4f15b35f2b3804e4f8d91c7300718bac8"
-      },
-      "source/godot_validation.json": {
-        "bytes": 195,
-        "sha256": "9be3b765994afa3795678454b1bbd0ad6d2490e4522d18abe8934263ce21e991"
-      },
-      "source/Malik.blend": {
-        "bytes": 4971360,
-        "sha256": "132e2b6425673b97b9b476d7f312c6aa0ea685d342efd6d4cf9d9ea7bc4424f7"
-      },
-      "source/master_rig/AFB_MasterRig.tscn": {
-        "bytes": 15735,
-        "sha256": "c1781e190be9d98599b52d27765c92a491aa57844408fa2117a94e686e2eb379"
-      },
-      "source/master_rig/bone_contract.json": {
-        "bytes": 8061,
-        "sha256": "a2f822eb3bbc8025d90cd5275f3c40f70fea1076e671cfc77bd4d187490a7281"
-      },
-      "source/master_rig/build_rig.py": {
-        "bytes": 3049,
-        "sha256": "e1bbb2b4541d4ebb9c2a7f148d96a7b99e2ae44473a909d2474102f84edceab4"
-      },
-      "source/master_rig/README.md": {
-        "bytes": 2962,
-        "sha256": "0e90daa51f47f775d92c39e21419681087f709638f711a40db3280d79f721f4c"
-      },
-      "source/measure_size.py": {
-        "bytes": 4291,
-        "sha256": "4e8fc657a258ab931633445ea58aee3ca293d01f7cef84da71c1ba2439f6bcf5"
-      },
-      "source/mesh_stats.json": {
-        "bytes": 215,
-        "sha256": "567acdf6ffee2c5ece355d1adab4432468ac3622bc9d0089c307cb47bc44fd8f"
-      },
-      "source/package_malik.py": {
-        "bytes": 1688,
-        "sha256": "b535634888122c2bcf43fb2925edac918370946cbcba166c1a83bcb00042f66c"
-      },
-      "source/render_corrected_knees.py": {
-        "bytes": 3017,
-        "sha256": "cb28d619a22c1db8b5abbf7caa3df92039d2a64faac57ade7a7c205c369c5ccc"
-      },
-      "source/resize_blends.py": {
-        "bytes": 1072,
-        "sha256": "b417d29d6c36cbe17151fe864a4d6f68413ec81c64573b5a4aa093c8eb4b3eb9"
-      },
-      "source/resize_characters.py": {
-        "bytes": 2904,
-        "sha256": "0b8088626dc13c8bb9fc6e9546e7d3fa3e128854017cb85faf02676a38a97e60"
-      },
-      "source/setup_game_review.py": {
-        "bytes": 785,
-        "sha256": "aac2b5297645d7e3b52fe4379ac75f12cea9f3c86f91d62d4d8bba281ced8900"
-      },
-      "source/size_measurements.json": {
-        "bytes": 1632,
-        "sha256": "dc550a69026ee760cd6d30d13aaf988240da8ecf242c467d79cbcfa3fea9dd4b"
-      },
-      "source/size_revision.json": {
-        "bytes": 820,
-        "sha256": "64fe4ab9574729f81dc7b8ff36156ae22846be3134a3205368566c96ba7db35b"
-      },
-      "source/static_validation.json": {
-        "bytes": 565,
-        "sha256": "1ae79b45363f29aa7a258d0b60f46bebb3d7d69d86e55fbd3aa5258f03f667e7"
-      },
-      "source/update_delivery_stats.py": {
-        "bytes": 462,
-        "sha256": "c06f52eeb192d423f45f18745a34ddf2708a83d61d1fc3cc52c9c3d42c34b75f"
-      },
-      "source/validate_glb.py": {
-        "bytes": 3211,
-        "sha256": "6e65effd123b90f39fafdcbcf68a888980e341a14abdff7ad74bef4fbcfd5a49"
-      }
+    "godot/assets/Malik.tscn": {
+      "bytes": 311,
+      "sha256": "c608516bf8b3fa018bccd9462b5fef15a6ea08f2dc7a94151158afd2363d5146"
+    },
+    "godot/assets/Malik_0.png": {
+      "bytes": 732433,
+      "sha256": "9b0794ce68a3620a0328b5737530c7f8daeea23584cc8bb91e91ba8ea130a120"
+    },
+    "godot/assets/Malik_BaseColor.png": {
+      "bytes": 762386,
+      "sha256": "4848653ad1a5cf6d5790171cf47aee05ac8e9431ad25b6d6354ffbe55bcfeac2"
+    },
+    "godot/assets/malik_material.gd": {
+      "bytes": 661,
+      "sha256": "2dfab4e3c1b6c92278c51e157dc0e76f658b83350969948568e64976583b5758"
+    },
+    "godot/check_rig.gd": {
+      "bytes": 3908,
+      "sha256": "f47654bf95a8b9673566047edb270d816f8fccc7c9cf3a9687145e560546071a"
+    },
+    "godot/check_sit.gd": {
+      "bytes": 2153,
+      "sha256": "35b4cbd201ac4a82826689bd28e878505d5db2bf4b3c300cb270169eae2fb56d"
+    },
+    "godot/project.godot": {
+      "bytes": 405,
+      "sha256": "aa7c96325f62f909a3261c4c52a01f954eb4cb56e49f0bd61fcc4422133479ac"
+    },
+    "godot/review.gd": {
+      "bytes": 4166,
+      "sha256": "c8dadf1c96143f5d3253addf292fd857a1383c03d2b04533343c7d9d43272a1d"
+    },
+    "godot/review.tscn": {
+      "bytes": 166,
+      "sha256": "3dc67d943d24c456dc46ec2b13feca3a48c5c182ba223de56474f0d3110103be"
+    },
+    "preview/Malik_full.png": {
+      "bytes": 1243831,
+      "sha256": "d4b2628eaa4db6311257a95edecac8613b4cf30867b22acc617160e2af0fe5e6"
+    },
+    "preview/Malik_Rod_couch.png": {
+      "bytes": 164874,
+      "sha256": "b822229aa1594c22614791ed93bbebef1d6043bcefd93d30a981a91583ccfe5d"
+    },
+    "preview/Malik_Rod_couch_side.png": {
+      "bytes": 192928,
+      "sha256": "eb3c27de99ffb4e46d20c6224f81b555c4a2a0e069e538fb78b766f3a23d2155"
+    },
+    "README.txt": {
+      "bytes": 664,
+      "sha256": "48d3c40e3d080b0a7eec623a080087db091bb91eafcb3d5fdc26e00574510b29"
+    },
+    "SIZE_CORRECTION.txt": {
+      "bytes": 664,
+      "sha256": "48d3c40e3d080b0a7eec623a080087db091bb91eafcb3d5fdc26e00574510b29"
+    },
+    "source/blender_knee_validation.json": {
+      "bytes": 317,
+      "sha256": "7ad0055a1a4fc6e9d7b7352530c2d301e9cbaadbb77dc39eb02860b06941bfc9"
+    },
+    "source/build_malik.py": {
+      "bytes": 37100,
+      "sha256": "9382fc081c5d54642976f9c028b21e36c10ee9eb370793f69d77280170fa4647"
+    },
+    "source/finalize_couch_glb.py": {
+      "bytes": 2713,
+      "sha256": "a103384c2b5c68e9511b00c006023aa1d460639c71cb0f7479eb8a01143b6e3b"
+    },
+    "source/garment_validation.json": {
+      "bytes": 532,
+      "sha256": "3895b4c401a997c545433709106cdab4f15b35f2b3804e4f8d91c7300718bac8"
+    },
+    "source/godot_validation.json": {
+      "bytes": 204,
+      "sha256": "9a5bb29133da98984522b9b0b03c655fd4ad34993e378fb37304996b0e8ac552"
+    },
+    "source/Malik.blend": {
+      "bytes": 4971360,
+      "sha256": "2ddadb172f83f12ca4f04bcb7b0c8a5ba3bf5df0d8d94f6505227ea1a4bde8be"
+    },
+    "source/master_rig/AFB_MasterRig.tscn": {
+      "bytes": 15735,
+      "sha256": "c1781e190be9d98599b52d27765c92a491aa57844408fa2117a94e686e2eb379"
+    },
+    "source/master_rig/bone_contract.json": {
+      "bytes": 8061,
+      "sha256": "a2f822eb3bbc8025d90cd5275f3c40f70fea1076e671cfc77bd4d187490a7281"
+    },
+    "source/master_rig/build_rig.py": {
+      "bytes": 3049,
+      "sha256": "e1bbb2b4541d4ebb9c2a7f148d96a7b99e2ae44473a909d2474102f84edceab4"
+    },
+    "source/master_rig/README.md": {
+      "bytes": 2962,
+      "sha256": "0e90daa51f47f775d92c39e21419681087f709638f711a40db3280d79f721f4c"
+    },
+    "source/mesh_stats.json": {
+      "bytes": 215,
+      "sha256": "567acdf6ffee2c5ece355d1adab4432468ac3622bc9d0089c307cb47bc44fd8f"
+    },
+    "source/package_malik.py": {
+      "bytes": 1739,
+      "sha256": "c17b5c6eb50c14f4f0cc03bc214efe8aa6b5e4d2a2b601466abc381df48e7c74"
+    },
+    "source/sit_validation.json": {
+      "bytes": 175,
+      "sha256": "5728768d974a6c3b3f2f468afbd58d0f2f9797d5563791c944551296e7adf9e8"
+    },
+    "source/size_revision.json": {
+      "bytes": 471,
+      "sha256": "a7e44baef8f8351303ca4bd470f9f71632700b0431b488755f4c53dbcda36869"
+    },
+    "source/static_validation.json": {
+      "bytes": 577,
+      "sha256": "b7ec359ce634bdc69adeb7d0209b412472eb94479bf4ac3b8b76879f6d269404"
+    },
+    "source/unchanged_geometry.json": {
+      "bytes": 273,
+      "sha256": "38ed3fd7373df167ce7fcbaa5e26d20b795a6fdb7f5bbdec0631ebee38926043"
+    },
+    "source/update_delivery_stats.py": {
+      "bytes": 462,
+      "sha256": "c06f52eeb192d423f45f18745a34ddf2708a83d61d1fc3cc52c9c3d42c34b75f"
+    },
+    "source/validate_glb.py": {
+      "bytes": 3217,
+      "sha256": "196729d3fb65ad427816adfc4db67c9bac47449a1bae3808381e243704804935"
     }
   }
 }

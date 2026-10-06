@@ -1,0 +1,63 @@
+{
+  "name": "AFB_Couch_v1",
+  "status": "Lower couch fitted to corrected-size characters; feet grounded and pelvis supported",
+  "character_size_unchanged": true,
+  "seat_top": 0.4682184907339378,
+  "couch_width_depth_preserved": true,
+  "results": {
+    "validation/couch_geometry.json": {
+      "base_height": 0.14,
+      "depth_after": 0.970000028610229,
+      "depth_before": 0.970000028610229,
+      "failures": [],
+      "floor_y": 0.0,
+      "legs_height": 0.13,
+      "new_seat_top": 0.468218490733938,
+      "old_seat_top": 0.7445,
+      "passed": true,
+      "seat_collision_y": 0.468218505382538,
+      "seat_drop": 0.276281509266062,
+      "whole_object_scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "width_after": 2.68939733505249,
+      "width_before": 2.68939733505249
+    }
+  },
+  "files": {
+    "godot/assets/Couch_baked.scn": {
+      "bytes": 728128,
+      "sha256": "e3236f2758107d1292bc47da9953d871d02ab9865f3101419b0d832b11f24399"
+    },
+    "godot/assets/textures/walnut.png": {
+      "bytes": 67731,
+      "sha256": "4323360a8e7855c7384b536f094b2b687451978d006b04e040c33b34c72bf8a3"
+    },
+    "godot/Couch.tscn": {
+      "bytes": 173,
+      "sha256": "3a39335942ae383008f8e18f7f3079caa761706b795492cc818bcaf30ac80437"
+    },
+    "godot/scripts/living_couch.gd": {
+      "bytes": 17217,
+      "sha256": "a852c366f68b82340b0c1baa34959d3f18e53cf6809f535d7241d45ab56b7070"
+    },
+    "preview/Malik_Rod_couch.png": {
+      "bytes": 164874,
+      "sha256": "b822229aa1594c22614791ed93bbebef1d6043bcefd93d30a981a91583ccfe5d"
+    },
+    "preview/Malik_Rod_couch_side.png": {
+      "bytes": 192928,
+      "sha256": "eb3c27de99ffb4e46d20c6224f81b555c4a2a0e069e538fb78b766f3a23d2155"
+    },
+    "README.txt": {
+      "bytes": 853,
+      "sha256": "ce6b0b1b7814fe3e6cb8fa29eb79b32bbbed956372cd9f050aec589fc58d77a0"
+    },
+    "validation/couch_geometry.json": {
+      "bytes": 420,
+      "sha256": "a6e0f6ba9ea32a044d890235a12ec5d94181b89f77ce23e94c73dd2ce287c7e5"
+    }
+  }
+}
