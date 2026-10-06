@@ -1,0 +1,115 @@
+{
+  "units": "existing game world units, not a real-world ergonomic standard",
+  "character_base_scale": 1.3276836158192091,
+  "standing_height_standard": 2.34964203834534,
+  "height_range": [
+    2.27915263175964,
+    2.42013120651245
+  ],
+  "furniture": [
+    {
+      "item": "Couch",
+      "original": "0.7445 seat",
+      "fitted": "0.46821849 seat",
+      "reason": "Use the already-approved AFB_Couch_v1; no further couch or character scaling."
+    },
+    {
+      "item": "Coffee table",
+      "original": "0.5325 top; 2 legs; center 1.42 in front of couch",
+      "fitted": "0.4400 top; 4 legs; center 1.80 in front",
+      "reason": "Below cushion level; extra room for shoes; cup sits on the top. Original width and depth retained."
+    },
+    {
+      "item": "Kitchen",
+      "original": "1.000 worktop",
+      "fitted": "1.160 worktop",
+      "reason": "Raise the counter, sink and faucet together. Extend cabinet base; keep upper cabinet dimensions."
+    },
+    {
+      "item": "Packing bench",
+      "original": "1.160 top; legs from 0.02 to 0.94",
+      "fitted": "1.160 top; legs from 0 to 1.04",
+      "reason": "Keep work height. Close support gaps and rest jars/cup/bag stack on the top."
+    },
+    {
+      "item": "Packing bench III",
+      "original": "3.120 upper cabinet top; lower cabinets start at 0.15",
+      "fitted": "2.920 upper cabinet top; lower cabinets from 0 to 1.04",
+      "reason": "Lower upper cabinet/light/lip by 0.20; preserve tool rail and worktop."
+    },
+    {
+      "item": "Storage rack",
+      "original": "Shelf tops 0.3825 / 1.0225 / 1.6625 / 2.3025",
+      "fitted": "0.3825 / 0.9400 / 1.5000 / 2.0500",
+      "reason": "Lower upper shelves and reposition each stored object to its support. Back reduced from 2.705 top to 2.480; posts grounded."
+    },
+    {
+      "item": "Basic locker",
+      "original": "2.560 body; handle 1.280",
+      "fitted": "Retain",
+      "reason": "Handle and cabinet dimensions fit the character reference."
+    },
+    {
+      "item": "Premium locker",
+      "original": "2.830 top; highest shelf 2.0575",
+      "fitted": "Retain",
+      "reason": "Top storage shelf is already near the revised rack target. Retain door pivots."
+    },
+    {
+      "item": "Supply shelf",
+      "original": "1.906 top shelf in local coordinates",
+      "fitted": "Retain",
+      "reason": "Wall-mounted unit. Original scene anchor adds 0.06 in the apartment; keep that mounting offset if reused."
+    },
+    {
+      "item": "Vault",
+      "original": "2.420 body top; wheel 1.210",
+      "fitted": "Retain",
+      "reason": "Wheel around waist height; preserve distinctive tall cabinet."
+    },
+    {
+      "item": "Front door",
+      "original": "Peephole 1.910; slab bottom 0.120",
+      "fitted": "Peephole 2.120; slab/frame bottoms 0",
+      "reason": "Retain frame opening 1.960 wide / 2.860 high; remove under-door gap. Door is a closed static review prop."
+    },
+    {
+      "item": "TV console",
+      "original": "0.810 cabinet top; base 0.090",
+      "fitted": "Retain cabinet; add 0.090 feet",
+      "reason": "Support TV stand directly on cabinet. Retain screen height."
+    },
+    {
+      "item": "Floor lamp",
+      "original": "1.960 shade top; stem starts 0.025",
+      "fitted": "Retain height; add 0.050 base",
+      "reason": "Add missing floor support."
+    }
+  ],
+  "additional_source_review": [
+    {
+      "item": "Grow-room opening",
+      "decision": "Keep existing clear width 1.92 and underside 2.85; tall/broad character reference fits geometrically."
+    },
+    {
+      "item": "Ceilings, windows, wall fixtures, grow tent and suspended equipment",
+      "decision": "Keep existing room dimensions. These are architecture/equipment, not seating references. No apartment-wide scaling applied."
+    },
+    {
+      "item": "Climate screen and light switches",
+      "decision": "Keep screen center 2.00 and switch approximately 1.47; no size change needed for this reference."
+    },
+    {
+      "item": "Hidden wall stash",
+      "decision": "Keep center 1.72 and existing cabinet/frame dimensions; no requested animation or inventory changes."
+    },
+    {
+      "item": "Storage II/III add-on bin and extra shelf bank",
+      "decision": "When integrating, use the same fitted rack shelf-top heights, place the extra bin on the top shelf, and regenerate its collider. Dynamic upgrade add-ons are not separate baked scenes in this package."
+    },
+    {
+      "item": "Beds / dining chairs / fridge",
+      "decision": "No such furniture assets in the inspected apartment builders; none invented for this revision."
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 {
-  "release_id": "0.7.9-beta.19-cloudtest.96",
+  "release_id": "0.7.9-beta.19-cloudtest.96-fit.1",
   "game_build": "0.7.9-beta.19",
   "channel": "main-based-cloud-test",
   "updater": "network-only-no-service-worker",
@@ -105,7 +105,7 @@
   "expansion_lane": "New Advancements lane appears only after Chapter 3 is complete",
   "neighborhood": "Prototype 0.9.3 street, sidewalk and building footprint layout adapted with cloud-test texture atlas, opening door, analog controls and ground reserves.",
   "notification_audio": "Requested text ding at -14 dB; requested door knock at -10 dB.",
-  "runtime_delivery": "SHA-256 verified .96 property inspection pack delta over unchanged .63 assets.",
+  "runtime_delivery": "SHA-256-verified character-fit-v1 pack delta over unchanged .63 assets; derived from .96.",
   "interior_controls": "Free analog movement in apartment and grow room; nearby station double tap; Back restores walking position; walls and furniture collision.",
   "responsive_layout": "Automatic portrait/landscape game viewport, corner controls, centered phone menu and fitting browser splash/account overlays.",
   "walking_fov": 78,
@@ -135,5 +135,17 @@
   "walking_speed": 3.4,
   "apartment_couch": "Supplied Couch v1 lower fitted seat at 0.46821849, original footprint; uploaded character sit clips, floor-level roots and unchanged user-provided scale.",
   "apartment_header": "Door header uses the same painted-wall texture, tint and roughness as adjoining front-wall segments.",
-  "walking_eye_height": 2.16
+  "walking_eye_height": 2.16,
+  "character_furniture_fit": "Fixed character scale; fitted apartment/house furniture, 2.85-unit door leaves, larger cars/trees/background stories, unchanged streets and usable room footprints.",
+  "scale_reference": {
+    "character_height": 2.35,
+    "max_height": 2.42,
+    "eye_height": 2.16,
+    "collision_radius": 0.26,
+    "door_leaf": 2.85,
+    "door_opening": 2.9,
+    "car_scale": 1.25,
+    "tree_scale": 1.2,
+    "background_story_scale_y": 1.2
+  }
 }
