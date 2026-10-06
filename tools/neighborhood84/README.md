@@ -1,0 +1,13 @@
+# Cloud test .84 — market shopping, operation computers, apartment rent
+
+Central Market checkout is approached from the sales floor and used with the action button or a double-tap. Phone seed purchases are orders held for pickup, limited to 50 uncollected seeds. Pickup moves seeds into carried inventory; fertilizer is bought at checkout into carried stock. Carried limits are 50 seeds and 50 fertilizer uses. The apartment computer deposits supplies up to shelf capacity; any excess stays carried.
+
+Equipment and Dealer Storage upgrades are paid for at the market, addressed to the active apartment, then installed at its computer without a second charge. Original unlock levels and upgrade prerequisites remain. House acquisition and move-in are deliberately undecided; the house computer currently shows inspection status and does not activate free equipment or production.
+
+The apartment computer provides inventory/listing, genetics, staff, equipment, production/utilities and bill management. Detailed management entries move off the normal phone home; phone retains orders, clients, quick information, bills and saves. Existing guided tutorial fertilizer purchase is preserved so starter careers do not become blocked; normal restocking is at the market.
+
+Rent is $600 every 14 game days. Migration and new careers receive 14 days before their first charge. The saved next-due day advances once per cycle, including unpaid cycles. Bills display the balance, next cycle and three-day grace period. Payment is manual, cannot overdraft or double-charge, and records an expense. After the grace period, overdue rent holds new equipment orders. Seed orders, fertilizer, production and sales remain available to earn the payment. No retroactive charge, automatic deduction, late fee, eviction, inventory removal or offline day progression is introduced.
+
+State lives in `location_state` and `apartment_rent_state` in the existing career JSON, supporting normal cloud saves. Existing apartment stock and equipment remain intact. Original .63 assets and unrelated gameplay entries are verified unchanged by the builder.
+
+Validation: `check_commerce.gd` covers migration grace, rent cycles, repeat payment, insufficient funds, remote pickup refusal, seed/fertilizer transport, equipment/dealer installation, duplicate order/deposit prevention, full shelves, save/reload, computer approaches and the non-operational house preview. Existing map and property inspection checks also pass. Build with `tools/build_neighborhood84.py` and `tools/make_delta84.py`; publish the verified recipe and loader, not the full generated pack.

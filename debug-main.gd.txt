@@ -427,6 +427,9 @@ var phone_text_messages: Array[Dictionary] = []
 var phone_text_unread: int = 0
 var chapter_four_story_stage: int = 0
 var property_offer_unlocked: bool = false
+var property_opportunity_state: Dictionary = {}
+var location_state: Dictionary = {}
+var apartment_rent_state: Dictionary = {}
 var critical_staff_event_active: bool = false
 var dealer_arrested: bool = false
 var dealer_bail_due: int = 0
@@ -4803,6 +4806,8 @@ func _context_action() -> void:
 				_open_peephole()
 
 func _any_modal_open() -> bool:
+	if neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.is_open():return true
+	if neighborhood!=null and neighborhood.property_opportunity!=null and neighborhood.property_opportunity.is_open(): return true
 	return reset_confirmation_open or reset_in_progress or session_paused or phone_open or sale_panel.visible or grow_panel.visible or (plant_direct_panel != null and plant_direct_panel.visible) or bagging_panel.visible or storage_panel.visible or (dealer_storage_panel != null and dealer_storage_panel.visible) or (supply_inventory_panel != null and supply_inventory_panel.visible) or (system_control_panel != null and system_control_panel.visible) or trim_panel.visible or bag_minigame_panel.visible or (peephole_panel != null and peephole_panel.visible) or (tutorial_panel != null and tutorial_panel.visible) or (daily_report_panel != null and daily_report_panel.visible)
 
 func _open_grow_panel() -> void:
@@ -5925,10 +5930,13 @@ func _dealer_locker_next_cost() -> int:
 	return DEALER_LOCKER_COST_BY_LEVEL[next_level]
 
 func _buy_dealer_locker_upgrade() -> void:
+	if neighborhood!=null and neighborhood.location_ops!=null and not neighborhood.location_ops.installing:
+		status_label.text="Order dealer storage at Central Market, then install it at your computer."
+		return
 	if dealer_locker_level >= 4:
 		return
 	var next_level: int = dealer_locker_level + 1
-	var cost: int = DEALER_LOCKER_COST_BY_LEVEL[next_level]
+	var cost: int = 0 if neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.installing else DEALER_LOCKER_COST_BY_LEVEL[next_level]
 	if cash < cost:
 		status_label.text = "You need $%d for Dealer Locker %s." % [cost, _roman(next_level)]
 		return
@@ -6579,6 +6587,7 @@ func _phone_go_back() -> void:
 	_open_phone_app(_phone_parent_app(phone_current_app))
 
 func _open_phone_app(app_name: String) -> void:
+	if neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.redirect(app_name):return
 	_cancel_phone_gesture()
 	phone_scroll.scroll_vertical = 0
 	phone_current_app = app_name
@@ -6591,6 +6600,7 @@ func _open_phone_app(app_name: String) -> void:
 	_refresh_tutorial_coach()
 
 func _refresh_phone() -> void:
+	if neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.refresh_management():return
 	if phone_list == null:
 		return
 	var chapter_four_changed: bool = _sync_chapter_four_story()
@@ -6636,13 +6646,13 @@ func _refresh_phone() -> void:
 			phone_title.text = "Bills"
 			_build_bills_app()
 		"employees":
-			phone_title.text = "Employees"
+			phone_title.text = "Apartment · Employees"
 			_build_employees_app()
 		"upgrades":
-			phone_title.text = "Upgrades"
+			phone_title.text = "Apartment · Equipment"
 			_build_upgrades_app()
 		"products":
-			phone_title.text = "Your Supply"
+			phone_title.text = "Apartment · Inventory"
 			_build_products_app()
 		"seeds":
 			phone_title.text = "Seeds"
@@ -6660,7 +6670,7 @@ func _refresh_phone() -> void:
 			phone_title.text = "Stats"
 			_build_stats_app()
 		"genetics":
-			phone_title.text = "Genetics Lab"
+			phone_title.text = "Apartment · Genetics"
 			_build_genetics_app()
 		"advancements":
 			phone_title.text = "Rewards"
@@ -6765,10 +6775,10 @@ func _build_budshop_app() -> void:
 	phone_list.add_child(intro)
 	var grid: GridContainer = _phone_category_grid()
 	_add_phone_app_tile(grid, "", "Lights", "Lamp, lights & ventilation", "lights")
-	_add_phone_app_tile(grid, "", "Store", "Supplies & seeds", "shop")
-	_add_phone_app_tile(grid, "", "Business", "Bills, employees & upgrades", "business")
-	_add_phone_app_tile(grid, "", "Your Supply", "Stock, prices & listings", "products")
-	_add_phone_app_tile(grid, "", "Genetics", "Create hybrid seeds", "genetics")
+	_add_phone_app_tile(grid, "", "Store", "Seed orders & market info", "shop")
+	_add_phone_app_tile(grid, "", "Business", "Rent, utilities & balances", "business")
+	if (neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.management_allowed()) or tutorial_active:_add_phone_app_tile(grid, "", "Your Supply", "Stock, prices & listings", "products")
+	if (neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.management_allowed()) or tutorial_active:_add_phone_app_tile(grid, "", "Genetics", "Create hybrid seeds", "genetics")
 	_add_phone_app_tile(grid, "", "Clients", "Customers & loyalty", "clients")
 	_add_phone_app_tile(grid, "", "Heat", "%s  |  %d/100" % [_heat_stage_name(), int(round(heat))], "heat")
 	_add_phone_app_tile(grid, "", "Stats", "Progress & revenue", "stats")
@@ -6918,8 +6928,9 @@ func _phone_category_grid() -> GridContainer:
 	return grid
 
 func _build_shop_app() -> void:
+	if neighborhood!=null and neighborhood.location_ops!=null:neighborhood.location_ops.order_summary(phone_list)
 	var intro: Label = Label.new()
-	intro.text = "Choose Supplies to restock fertilizer, or Seeds to browse all shop genetics. Equipment is in Business -> Upgrades."
+	intro.text = "Order seeds here and collect them at Central Market. Fertilizer and equipment are sold at its checkout. Detailed operation management is at your property computer."
 	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	phone_list.add_child(intro)
 	var grid: GridContainer = _phone_category_grid()
@@ -7002,7 +7013,7 @@ func _build_products_app() -> void:
 
 func _build_seed_shop_app() -> void:
 	var intro: Label = Label.new()
-	intro.text = "New genetics unlock with Grower Level. Purchased seeds are delivered to Grow Supply Shelf Lv %d. Seed storage: %d / %d." % [supply_shelf_level, _total_seed_inventory(), _supply_seed_capacity()]
+	intro.text = "Order seeds for pickup at Central Market. Shelf Lv %d: %d / %d seeds. Collect orders at checkout, then deposit carried seeds at your computer." % [supply_shelf_level, _total_seed_inventory(), _supply_seed_capacity()]
 	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	phone_list.add_child(intro)
 
@@ -7041,11 +7052,11 @@ func _build_seed_shop_app() -> void:
 		detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		row.add_child(detail)
 		var buy: Button = Button.new()
-		if unlocked and not _supply_can_add_seeds(1):
-			buy.text = "SUPPLY SHELF FULL"
+		if unlocked and not neighborhood.location_ops.total(location_state.pickup_seeds)<50:
+			buy.text = "ORDER LIMIT REACHED"
 		else:
-			buy.text = "BUY 1 SEED   |   $%d" % cost if unlocked else "LOCKED UNTIL LEVEL %d" % unlock_level
-		buy.disabled = not unlocked or cash < cost or not _supply_can_add_seeds(1)
+			buy.text = "ORDER 1 SEED   |   $%d" % cost if unlocked else "LOCKED UNTIL LEVEL %d" % unlock_level
+		buy.disabled = not unlocked or cash < cost or not neighborhood.location_ops.total(location_state.pickup_seeds)<50
 		buy.custom_minimum_size.y = 48
 		buy.pressed.connect(_buy_seed.bind(seed_name))
 		row.add_child(buy)
@@ -7062,6 +7073,12 @@ func _next_locked_seed_name() -> String:
 	return ""
 
 func _build_supplies_app() -> void:
+	if not tutorial_active:
+		var notice := Label.new()
+		notice.text="Buy fertilizer at Central Market. Collected supplies stay with you until deposited at your apartment computer."
+		notice.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+		phone_list.add_child(notice)
+		return
 	_add_fertilizer_stock_card()
 	var intro: Label = Label.new()
 	intro.text = "Fertilizer purchases are delivered to your grow-room supply shelf. Shelf upgrades are in Business -> Upgrades."
@@ -7151,6 +7168,9 @@ Capacity: %dg   |   Stored: %dg" % [tier_text, _dealer_locker_capacity(), _deale
 	box.add_child(buy)
 
 func _build_upgrades_app() -> void:
+	if not tutorial_active:
+		neighborhood.location_ops.equipment_ui(phone_list)
+		return
 	var intro: Label = Label.new()
 	intro.text = "Upgrade your operation one step at a time. Expandable systems stay visible even when maxed so future tiers can be added without the category disappearing."
 	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -7290,13 +7310,14 @@ func _build_business_app() -> void:
 	summary.add_theme_font_size_override("font_size", 19)
 	phone_list.add_child(summary)
 	var grid: GridContainer = _phone_category_grid()
-	_add_phone_app_tile(grid, "", "Bills", "$%d outstanding" % (power_bill_due + water_bill_due + dealer_balance_due), "bills")
-	_add_phone_app_tile(grid, "", "Employees", "Worker & dealer team", "employees")
-	_add_phone_app_tile(grid, "", "Upgrades", "Equipment, tents & storage", "upgrades")
+	_add_phone_app_tile(grid, "", "Bills", "$%d outstanding" % (power_bill_due + water_bill_due + dealer_balance_due + (neighborhood.location_ops.balance() if neighborhood!=null and neighborhood.location_ops!=null else 0)), "bills")
+	if neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.management_allowed():_add_phone_app_tile(grid, "", "Employees", "Worker & dealer team", "employees")
+	if neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.management_allowed():_add_phone_app_tile(grid, "", "Upgrades", "Equipment, tents & storage", "upgrades")
 
 func _build_bills_app() -> void:
+	if neighborhood!=null and neighborhood.location_ops!=null:neighborhood.location_ops.rent_ui(phone_list)
 	var intro: Label = Label.new()
-	intro.text = "Outstanding bills: $%d\nElectricity and water are property utilities. Today's wages and dealer cash are settled at daily closeout." % (power_bill_due + water_bill_due + dealer_balance_due)
+	intro.text = "Outstanding bills: $%d\nElectricity and water are property utilities. Today's wages and dealer cash are settled at daily closeout." % (power_bill_due + water_bill_due + dealer_balance_due + (neighborhood.location_ops.balance() if neighborhood!=null and neighborhood.location_ops!=null else 0))
 	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	phone_list.add_child(intro)
 
@@ -9143,6 +9164,9 @@ func _set_reserved(product_name: String, amount: int) -> void:
 	_save_game()
 
 func _buy_seed(seed_name: String) -> void:
+	if neighborhood!=null and neighborhood.location_ops!=null and not tutorial_active:
+		neighborhood.location_ops.order_seed(seed_name)
+		return
 	if seed_catalog.has(seed_name):
 		var purchase_info: Dictionary = seed_catalog[seed_name]
 		if bool(purchase_info.get("recipe_only", false)):
@@ -9171,6 +9195,7 @@ func _buy_seed(seed_name: String) -> void:
 	_refresh_phone()
 
 func _buy_supply(supply_name: String) -> void:
+	if neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.supply_intercept(supply_name):return
 	if tutorial_active and (supply_name != "Fertilizer Pack" or not _tutorial_can_do("buy_fertilizer")):
 		return
 	if not supply_catalog.has(supply_name):
@@ -9505,7 +9530,10 @@ func _save_game() -> void:
 		"advancement_stats": advancement_stats,
 		"advancement_claimed": advancement_claimed,
 		"chapter_four_story_stage": chapter_four_story_stage,
-		"property_offer_unlocked": property_offer_unlocked
+		"property_offer_unlocked": property_offer_unlocked,
+		"property_opportunity_state": property_opportunity_state,
+		"location_state": location_state,
+		"apartment_rent_state": apartment_rent_state
 	}
 	var file: FileAccess = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if file == null:
@@ -9771,6 +9799,12 @@ func _load_game() -> void:
 		advancement_claimed = loaded_advancement_claimed as Dictionary
 	chapter_four_story_stage = clampi(int(data.get("chapter_four_story_stage", chapter_four_story_stage)), 0, 6)
 	property_offer_unlocked = bool(data.get("property_offer_unlocked", property_offer_unlocked))
+	var saved_property: Variant=data.get("property_opportunity_state", {})
+	if saved_property is Dictionary: property_opportunity_state=saved_property.duplicate(true)
+	var saved_locations: Variant=data.get("location_state",{})
+	if saved_locations is Dictionary:location_state=saved_locations.duplicate(true)
+	var saved_rent: Variant=data.get("apartment_rent_state",{})
+	if saved_rent is Dictionary:apartment_rent_state=saved_rent.duplicate(true)
 	if not had_advancement_stats:
 		_bootstrap_advancement_stats_from_state()
 
@@ -11248,7 +11282,7 @@ func _build_help_app() -> void:
 		label.add_theme_font_size_override("font_size", 19)
 		phone_list.add_child(label)
 	var controls: Label = Label.new()
-	controls.text = "PHONE LAYOUT\nShop -> Supplies for fertilizer; Shop -> Seeds for all shop seeds. Business -> Bills, Employees or Upgrades. Storage keeps your stock, prices, reserves and listings together. The back arrow returns to the parent category.\n\nCONTROLS\nSwipe phone, packing-bench and storage lists anywhere on a card or button; lift without swiping to tap. Tap the actual room switches or lamp to toggle them. Phone -> Lights is the optional menu alternative. Small finger movements stay taps; swipe farther to look around. Swipe the room to look; tap a station to use it. While bagging, keep the same finger on the bud until you drop it. During trimming, keep hold of the scissors.\n\nPAUSING\nSwitching apps/tabs, closing the game, or pressing PAUSE stops the day, visitors, story, wages and sales. Only existing plants keep growing and consume water and applied fertilizer; dry plants lose health. A plant that finishes before dying stays harvestable. A hired, ON-DUTY production worker can water and fertilize those plants using your stored fertilizer. No supplies are bought; watering continues when fertilizer runs out and adds to your Water Bill. An off-duty/fired worker or raid lockdown gives no care. No new seeds, harvesting, trimming, bagging or selling occur while away; equipment auto-refill remains live-only. The first-day guide fully protects plants. Press RESUME when you return. Daily closeout keeps its day/time frozen until START DAY. Storefront AWAY is different: it closes sales while you are still playing.\n\nREWARDS\nRewards over $100 have harder goals or extra requirements. Complete every displayed requirement before claiming. Already-claimed rewards remain yours."
+	controls.text = "PHONE LAYOUT\nOrder seeds on the phone, collect them at Central Market checkout, then deposit carried supplies at your apartment computer. Fertilizer and equipment are bought at Central Market. Paid equipment waits for computer installation. Property computers manage inventory, listings, genetics, staff and production. Business -> Bills includes apartment rent: $600 every 14 game days, with a three-day grace period. The back arrow returns to the parent category.\n\nCONTROLS\nSwipe phone, packing-bench and storage lists anywhere on a card or button; lift without swiping to tap. Tap the actual room switches or lamp to toggle them. Phone -> Lights is the optional menu alternative. Small finger movements stay taps; swipe farther to look around. Swipe the room to look; tap a station to use it. While bagging, keep the same finger on the bud until you drop it. During trimming, keep hold of the scissors.\n\nPAUSING\nSwitching apps/tabs, closing the game, or pressing PAUSE stops the day, visitors, story, wages and sales. Only existing plants keep growing and consume water and applied fertilizer; dry plants lose health. A plant that finishes before dying stays harvestable. A hired, ON-DUTY production worker can water and fertilize those plants using your stored fertilizer. No supplies are bought; watering continues when fertilizer runs out and adds to your Water Bill. An off-duty/fired worker or raid lockdown gives no care. No new seeds, harvesting, trimming, bagging or selling occur while away; equipment auto-refill remains live-only. The first-day guide fully protects plants. Press RESUME when you return. Daily closeout keeps its day/time frozen until START DAY. Storefront AWAY is different: it closes sales while you are still playing.\n\nREWARDS\nRewards over $100 have harder goals or extra requirements. Complete every displayed requirement before claiming. Already-claimed rewards remain yours."
 	controls.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	phone_list.add_child(controls)
 	var pause_button: Button = Button.new()

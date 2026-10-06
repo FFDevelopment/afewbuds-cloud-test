@@ -1,5 +1,5 @@
 {
-  "release_id": "0.7.9-beta.19-cloudtest.83",
+  "release_id": "0.7.9-beta.19-cloudtest.84",
   "game_build": "0.7.9-beta.19",
   "channel": "main-based-cloud-test",
   "updater": "network-only-no-service-worker",
@@ -124,5 +124,7 @@
   "outdoor_sky": "Animated procedural cloud sky, visible sun rising +X east and setting -X west, opposing moon and stars, continuous game-clock light/color transitions and fading streetlights.",
   "market_lighting": "Independent sales-floor and stockroom lighting circuits, both controlled from stockroom switches; saved with existing room controls.",
   "house_shades": "All ten exterior house windows have operable inside-only saved coverings; apartment blinds retained.",
-  "property_opportunity": "Rod-gated property details and physical six-room walking inspection; saved inspection progress. Acquisition, payment terms and relocation follow in a separate update."
+  "property_opportunity": "Rod-gated property details and physical six-room walking inspection; saved inspection progress. Acquisition, payment terms and relocation follow in a separate update.",
+  "location_management": "Central Market checkout, carried supplies, seed-order pickup, paid equipment delivery and computer installation. Apartment computer manages inventory, genetics, staff and equipment; house computer previews property until acquisition.",
+  "apartment_rent": "$600 every 14 active game days; existing/new careers get 14 days before first charge, three-day grace, manual payment through Bills; no retroactive rent."
 }
