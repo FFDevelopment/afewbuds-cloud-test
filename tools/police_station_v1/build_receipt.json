@@ -1,0 +1,17 @@
+{
+  "baseline_sha256": "746ee56a3dee5bf02db4eb993752dc37a18fb7f72e720f0c8f4f24d6e56702a4",
+  "target_sha256": "3f4ac420751b4ef7a600625694d5c61fabfa3c568c3d30b47a23cca8ed1cfee3",
+  "target_bytes": 33644924,
+  "changed_existing_entries": [
+    "scripts/neighborhood.gd",
+    "scripts/east_expansion.gd"
+  ],
+  "added_entries": [
+    "scripts/police_station.gd",
+    "scripts/police_district.gd",
+    "scripts/police_door.gd",
+    "scripts/police_surface.gdshader"
+  ],
+  "unchanged_entries": 211,
+  "reconstruction_verified": true
+}

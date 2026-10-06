@@ -12,3 +12,7 @@ runtime/east-expansion-v1.patch.json text eol=lf
 shared/afb-runtime-east-expansion-v1.js text eol=lf
 tools/park_seating_v1/** text=auto eol=lf
 tools/park_seating_v1/**/*.png binary
+tools/police_station_v1/** text=auto eol=lf
+tools/police_station_v1/**/*.png binary
+runtime/police-station-v1.patch.json text eol=lf
+shared/afb-runtime-police-station-v1.js text eol=lf

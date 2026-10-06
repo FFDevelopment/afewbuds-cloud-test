@@ -1,0 +1,1337 @@
+{
+	"checks": [
+		{
+			"check": "Isolated validation save",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Ground and upper doors registered",
+			"data": 14,
+			"passed": true
+		},
+		{
+			"check": "Original five doors preserved",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Park seating preserved",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "STAFF_ACCESS closed blocks passage",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "PUBLIC_RESTROOM closed blocks passage",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "BOOKING closed blocks passage",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "INTERVIEW closed blocks passage",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "EVIDENCE closed blocks passage",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "HOLDING_CELL_1 closed blocks passage",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "HOLDING_CELL_2 closed blocks passage",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "BRIEFING closed blocks passage",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "BREAK_ROOM closed blocks passage",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "LOCKER_ROOM closed blocks passage",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "STAFF_TOILET closed blocks passage",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "CHIEF_OFFICE closed blocks passage",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "PUBLIC_ENTRANCE closed blocks passage",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "REAR_BOOKING_ENTRANCE closed blocks passage",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "STAFF_ACCESS opens to clear aperture",
+			"data": "(165.9, 2.16, 0.6)",
+			"passed": true
+		},
+		{
+			"check": "PUBLIC_RESTROOM opens to clear aperture",
+			"data": "(168.0, 2.16, 5.880001)",
+			"passed": true
+		},
+		{
+			"check": "BOOKING opens to clear aperture",
+			"data": "(164.0, 2.16, -1.719999)",
+			"passed": true
+		},
+		{
+			"check": "INTERVIEW opens to clear aperture",
+			"data": "(158.0, 2.16, -11.56)",
+			"passed": true
+		},
+		{
+			"check": "EVIDENCE opens to clear aperture",
+			"data": "(158.0, 2.16, -5.96)",
+			"passed": true
+		},
+		{
+			"check": "HOLDING_CELL_1 opens to clear aperture",
+			"data": "(168.0, 2.16, -13.0)",
+			"passed": true
+		},
+		{
+			"check": "HOLDING_CELL_2 opens to clear aperture",
+			"data": "(168.0, 2.16, -8.2)",
+			"passed": true
+		},
+		{
+			"check": "BRIEFING opens to clear aperture",
+			"data": "(158.0, 5.76, -8.2)",
+			"passed": true
+		},
+		{
+			"check": "BREAK_ROOM opens to clear aperture",
+			"data": "(161.1, 5.76, -6.599999)",
+			"passed": true
+		},
+		{
+			"check": "LOCKER_ROOM opens to clear aperture",
+			"data": "(168.0, 5.76, -13.0)",
+			"passed": true
+		},
+		{
+			"check": "STAFF_TOILET opens to clear aperture",
+			"data": "(168.0, 5.76, -8.76)",
+			"passed": true
+		},
+		{
+			"check": "CHIEF_OFFICE opens to clear aperture",
+			"data": "(158.0, 5.76, -0.12)",
+			"passed": true
+		},
+		{
+			"check": "PUBLIC_ENTRANCE opens to clear aperture",
+			"data": "(160.2, 2.16, 7.0)",
+			"passed": true
+		},
+		{
+			"check": "REAR_BOOKING_ENTRANCE opens to clear aperture",
+			"data": "(163.3, 2.16, -15.4)",
+			"passed": true
+		},
+		{
+			"check": "Lobby route to ground room (11.2, 0.0, 26.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Lobby route to ground room (20.3, 0.0, 26.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Lobby route to ground room (12.0, 0.0, 18.8)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Lobby route to ground room (7.0, 0.0, 5.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Lobby route to ground room (7.0, 0.0, 12.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Lobby route to ground room (20.0, 0.0, 4.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Lobby route to ground room (20.0, 0.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Lobby route to ground room (14.3, 0.0, -2.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Lobby route to ground room (21.5, 0.0, 21.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Upper landing route to room (7.0, 0.0, 9.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Upper landing route to room (15.0, 0.0, 9.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Upper landing route to room (23.0, 0.0, 5.3)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Upper landing route to room (20.0, 0.0, 9.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Upper landing route to room (6.5, 0.0, 25.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Upper landing route to room (11.0, 0.0, 18.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Upper landing route to room (15.0, 0.0, 14.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 0",
+			"data": "(170.5, 2.16, 1.32)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 1",
+			"data": "(170.5, 2.16, 1.24)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 2",
+			"data": "(170.5, 2.16, 1.159999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 3",
+			"data": "(170.5, 2.16, 1.079999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 4",
+			"data": "(170.5, 2.16, 0.999999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 5",
+			"data": "(170.5, 2.16, 0.919999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 6",
+			"data": "(170.5, 2.211429, 0.839999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 7",
+			"data": "(170.5, 2.262857, 0.76)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 8",
+			"data": "(170.5, 2.314285, 0.68)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 9",
+			"data": "(170.5, 2.365714, 0.6)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 10",
+			"data": "(170.5, 2.417144, 0.52)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 11",
+			"data": "(170.5, 2.468572, 0.44)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 12",
+			"data": "(170.5, 2.52, 0.36)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 13",
+			"data": "(170.5, 2.571429, 0.28)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 14",
+			"data": "(170.5, 2.622858, 0.2)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 15",
+			"data": "(170.5, 2.674286, 0.12)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 16",
+			"data": "(170.5, 2.725714, 0.04)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 17",
+			"data": "(170.5, 2.777143, -0.04)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 18",
+			"data": "(170.5, 2.828572, -0.12)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 19",
+			"data": "(170.5, 2.880001, -0.2)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 20",
+			"data": "(170.5, 2.93143, -0.28)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 21",
+			"data": "(170.5, 2.982858, -0.36)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 22",
+			"data": "(170.5, 3.034286, -0.44)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 23",
+			"data": "(170.5, 3.085715, -0.52)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 24",
+			"data": "(170.5, 3.137144, -0.6)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 25",
+			"data": "(170.5, 3.188571, -0.68)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 26",
+			"data": "(170.5, 3.24, -0.76)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 27",
+			"data": "(170.5, 3.291429, -0.84)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 28",
+			"data": "(170.5, 3.342858, -0.92)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 29",
+			"data": "(170.5, 3.394286, -1.0)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 30",
+			"data": "(170.5, 3.445714, -1.08)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 31",
+			"data": "(170.5, 3.497143, -1.16)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 32",
+			"data": "(170.5, 3.548572, -1.24)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 33",
+			"data": "(170.5, 3.600001, -1.32)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 34",
+			"data": "(170.5, 3.651429, -1.4)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 35",
+			"data": "(170.5, 3.702858, -1.48)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 36",
+			"data": "(170.5, 3.754286, -1.560001)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 37",
+			"data": "(170.5, 3.805715, -1.640001)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 38",
+			"data": "(170.5, 3.857143, -1.720001)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 39",
+			"data": "(170.5, 3.908572, -1.800001)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 40",
+			"data": "(170.5, 3.960001, -1.880001)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 41",
+			"data": "(170.5, 4.01143, -1.960001)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 42",
+			"data": "(170.5, 4.062858, -2.040001)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 43",
+			"data": "(170.5, 4.114286, -2.120001)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 44",
+			"data": "(170.5, 4.165715, -2.200001)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 45",
+			"data": "(170.5, 4.217144, -2.28)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 46",
+			"data": "(170.5, 4.268573, -2.36)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 47",
+			"data": "(170.5, 4.32, -2.44)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 48",
+			"data": "(170.5, 4.371429, -2.52)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 49",
+			"data": "(170.5, 4.422858, -2.6)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 50",
+			"data": "(170.5, 4.474286, -2.68)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 51",
+			"data": "(170.5, 4.525714, -2.76)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 52",
+			"data": "(170.5, 4.577143, -2.84)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 53",
+			"data": "(170.5, 4.628572, -2.92)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 54",
+			"data": "(170.5, 4.68, -3.0)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 55",
+			"data": "(170.5, 4.731429, -3.08)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 56",
+			"data": "(170.5, 4.782857, -3.16)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 57",
+			"data": "(170.5, 4.834286, -3.24)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 58",
+			"data": "(170.5, 4.885715, -3.319999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 59",
+			"data": "(170.5, 4.937143, -3.399999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 60",
+			"data": "(170.5, 4.988572, -3.479999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 61",
+			"data": "(170.5, 5.04, -3.559999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 62",
+			"data": "(170.5, 5.091428, -3.639999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 63",
+			"data": "(170.5, 5.142857, -3.719999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 64",
+			"data": "(170.5, 5.194285, -3.799999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 65",
+			"data": "(170.5, 5.245714, -3.879999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 66",
+			"data": "(170.5, 5.297143, -3.959999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 67",
+			"data": "(170.5, 5.348571, -4.039999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 68",
+			"data": "(170.5, 5.4, -4.119999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 69",
+			"data": "(170.5, 5.451428, -4.199999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 70",
+			"data": "(170.5, 5.502857, -4.279999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 71",
+			"data": "(170.5, 5.554285, -4.359999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 72",
+			"data": "(170.5, 5.605714, -4.439999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 73",
+			"data": "(170.5, 5.657143, -4.519999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 74",
+			"data": "(170.5, 5.708571, -4.599998)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 75",
+			"data": "(170.5, 5.759999, -4.679998)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 76",
+			"data": "(170.5, 5.76, -4.759998)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 77",
+			"data": "(170.5, 5.76, -4.839998)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 78",
+			"data": "(170.5, 5.76, -4.919998)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 79",
+			"data": "(170.5, 5.76, -4.999998)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 80",
+			"data": "(170.5, 5.76, -5.079998)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 81",
+			"data": "(170.5, 5.76, -5.159998)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance -1.0 82",
+			"data": "(170.5, 5.76, -5.239998)",
+			"passed": true
+		},
+		{
+			"check": "Stairs finish at correct floor -1.0",
+			"data": "(170.5, 5.76, -5.239998)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 0",
+			"data": "(170.5, 5.76, -5.159998)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 1",
+			"data": "(170.5, 5.76, -5.079998)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 2",
+			"data": "(170.5, 5.76, -4.999998)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 3",
+			"data": "(170.5, 5.76, -4.919998)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 4",
+			"data": "(170.5, 5.76, -4.839998)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 5",
+			"data": "(170.5, 5.76, -4.759998)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 6",
+			"data": "(170.5, 5.76, -4.679998)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 7",
+			"data": "(170.5, 5.76, -4.599998)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 8",
+			"data": "(170.5, 5.759999, -4.519999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 9",
+			"data": "(170.5, 5.708571, -4.439999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 10",
+			"data": "(170.5, 5.657143, -4.359999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 11",
+			"data": "(170.5, 5.605714, -4.279999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 12",
+			"data": "(170.5, 5.554285, -4.199999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 13",
+			"data": "(170.5, 5.502857, -4.119999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 14",
+			"data": "(170.5, 5.451428, -4.039999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 15",
+			"data": "(170.5, 5.4, -3.959999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 16",
+			"data": "(170.5, 5.348571, -3.879999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 17",
+			"data": "(170.5, 5.297143, -3.799999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 18",
+			"data": "(170.5, 5.245714, -3.719999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 19",
+			"data": "(170.5, 5.194285, -3.639999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 20",
+			"data": "(170.5, 5.142857, -3.559999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 21",
+			"data": "(170.5, 5.091428, -3.48)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 22",
+			"data": "(170.5, 5.04, -3.4)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 23",
+			"data": "(170.5, 4.988572, -3.32)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 24",
+			"data": "(170.5, 4.937143, -3.24)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 25",
+			"data": "(170.5, 4.885715, -3.16)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 26",
+			"data": "(170.5, 4.834286, -3.08)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 27",
+			"data": "(170.5, 4.782857, -3.0)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 28",
+			"data": "(170.5, 4.731429, -2.92)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 29",
+			"data": "(170.5, 4.68, -2.84)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 30",
+			"data": "(170.5, 4.628572, -2.76)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 31",
+			"data": "(170.5, 4.577143, -2.68)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 32",
+			"data": "(170.5, 4.525714, -2.6)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 33",
+			"data": "(170.5, 4.474286, -2.52)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 34",
+			"data": "(170.5, 4.422858, -2.440001)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 35",
+			"data": "(170.5, 4.371429, -2.360001)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 36",
+			"data": "(170.5, 4.32, -2.280001)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 37",
+			"data": "(170.5, 4.268573, -2.200001)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 38",
+			"data": "(170.5, 4.217144, -2.120001)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 39",
+			"data": "(170.5, 4.165715, -2.040001)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 40",
+			"data": "(170.5, 4.114286, -1.960001)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 41",
+			"data": "(170.5, 4.062858, -1.880001)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 42",
+			"data": "(170.5, 4.01143, -1.800001)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 43",
+			"data": "(170.5, 3.960001, -1.720001)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 44",
+			"data": "(170.5, 3.908572, -1.640001)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 45",
+			"data": "(170.5, 3.857143, -1.560001)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 46",
+			"data": "(170.5, 3.805715, -1.480001)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 47",
+			"data": "(170.5, 3.754286, -1.400001)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 48",
+			"data": "(170.5, 3.702858, -1.320001)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 49",
+			"data": "(170.5, 3.651429, -1.24)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 50",
+			"data": "(170.5, 3.600001, -1.16)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 51",
+			"data": "(170.5, 3.548572, -1.08)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 52",
+			"data": "(170.5, 3.497143, -1.0)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 53",
+			"data": "(170.5, 3.445714, -0.92)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 54",
+			"data": "(170.5, 3.394286, -0.84)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 55",
+			"data": "(170.5, 3.342858, -0.76)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 56",
+			"data": "(170.5, 3.291429, -0.68)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 57",
+			"data": "(170.5, 3.24, -0.6)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 58",
+			"data": "(170.5, 3.188571, -0.52)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 59",
+			"data": "(170.5, 3.137144, -0.44)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 60",
+			"data": "(170.5, 3.085715, -0.36)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 61",
+			"data": "(170.5, 3.034286, -0.280001)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 62",
+			"data": "(170.5, 2.982858, -0.200001)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 63",
+			"data": "(170.5, 2.93143, -0.120001)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 64",
+			"data": "(170.5, 2.880001, -0.040001)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 65",
+			"data": "(170.5, 2.828572, 0.039999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 66",
+			"data": "(170.5, 2.777143, 0.119999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 67",
+			"data": "(170.5, 2.725714, 0.199999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 68",
+			"data": "(170.5, 2.674286, 0.279999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 69",
+			"data": "(170.5, 2.622858, 0.359999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 70",
+			"data": "(170.5, 2.571429, 0.439999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 71",
+			"data": "(170.5, 2.52, 0.519999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 72",
+			"data": "(170.5, 2.468572, 0.599999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 73",
+			"data": "(170.5, 2.417144, 0.679999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 74",
+			"data": "(170.5, 2.365714, 0.759999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 75",
+			"data": "(170.5, 2.314285, 0.839999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 76",
+			"data": "(170.5, 2.262857, 0.919999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 77",
+			"data": "(170.5, 2.211429, 0.999999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 78",
+			"data": "(170.5, 2.16, 1.079999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 79",
+			"data": "(170.5, 2.16, 1.159999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 80",
+			"data": "(170.5, 2.16, 1.239999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 81",
+			"data": "(170.5, 2.16, 1.319999)",
+			"passed": true
+		},
+		{
+			"check": "Stair path clearance 1.0 82",
+			"data": "(170.5, 2.16, 1.399999)",
+			"passed": true
+		},
+		{
+			"check": "Stairs finish at correct floor 1.0",
+			"data": "(170.5, 2.16, 1.399999)",
+			"passed": true
+		},
+		{
+			"check": "Window contained in its floor",
+			"data": {
+				"at": "(152.5, 1.95, 7.0)",
+				"bottom": 1.15000004768372,
+				"floor": 0.0,
+				"top": 2.75000004768372
+			},
+			"passed": true
+		},
+		{
+			"check": "Window contained in its floor",
+			"data": {
+				"at": "(169.5, 1.95, 7.0)",
+				"bottom": 1.15000004768372,
+				"floor": 0.0,
+				"top": 2.75000004768372
+			},
+			"passed": true
+		},
+		{
+			"check": "Window contained in its floor",
+			"data": {
+				"at": "(153.5, 1.95, -15.4)",
+				"bottom": 1.15000004768372,
+				"floor": 0.0,
+				"top": 2.75000004768372
+			},
+			"passed": true
+		},
+		{
+			"check": "Window contained in its floor",
+			"data": {
+				"at": "(149.0, 1.95, -12.2)",
+				"bottom": 1.15000004768372,
+				"floor": 0.0,
+				"top": 2.75000004768372
+			},
+			"passed": true
+		},
+		{
+			"check": "Window contained in its floor",
+			"data": {
+				"at": "(149.0, 1.95, 4.6)",
+				"bottom": 1.15000004768372,
+				"floor": 0.0,
+				"top": 2.75000004768372
+			},
+			"passed": true
+		},
+		{
+			"check": "Window contained in its floor",
+			"data": {
+				"at": "(173.0, 1.95, -12.2)",
+				"bottom": 1.15000004768372,
+				"floor": 0.0,
+				"top": 2.75000004768372
+			},
+			"passed": true
+		},
+		{
+			"check": "Window contained in its floor",
+			"data": {
+				"at": "(173.0, 1.95, 4.6)",
+				"bottom": 1.15000004768372,
+				"floor": 0.0,
+				"top": 2.75000004768372
+			},
+			"passed": true
+		},
+		{
+			"check": "Window contained in its floor",
+			"data": {
+				"at": "(152.5, 5.55, 7.0)",
+				"bottom": 4.75000019073486,
+				"floor": 3.6,
+				"top": 6.35000019073486
+			},
+			"passed": true
+		},
+		{
+			"check": "Window contained in its floor",
+			"data": {
+				"at": "(169.5, 5.55, 7.0)",
+				"bottom": 4.75000019073486,
+				"floor": 3.6,
+				"top": 6.35000019073486
+			},
+			"passed": true
+		},
+		{
+			"check": "Window contained in its floor",
+			"data": {
+				"at": "(161.0, 5.55, 7.0)",
+				"bottom": 4.75000019073486,
+				"floor": 3.6,
+				"top": 6.35000019073486
+			},
+			"passed": true
+		},
+		{
+			"check": "Window contained in its floor",
+			"data": {
+				"at": "(153.5, 5.55, -15.4)",
+				"bottom": 4.75000019073486,
+				"floor": 3.6,
+				"top": 6.35000019073486
+			},
+			"passed": true
+		},
+		{
+			"check": "Window contained in its floor",
+			"data": {
+				"at": "(162.5, 5.55, -15.4)",
+				"bottom": 4.75000019073486,
+				"floor": 3.6,
+				"top": 6.35000019073486
+			},
+			"passed": true
+		},
+		{
+			"check": "Window contained in its floor",
+			"data": {
+				"at": "(149.0, 5.55, -12.2)",
+				"bottom": 4.75000019073486,
+				"floor": 3.6,
+				"top": 6.35000019073486
+			},
+			"passed": true
+		},
+		{
+			"check": "Window contained in its floor",
+			"data": {
+				"at": "(149.0, 5.55, 4.6)",
+				"bottom": 4.75000019073486,
+				"floor": 3.6,
+				"top": 6.35000019073486
+			},
+			"passed": true
+		},
+		{
+			"check": "Window contained in its floor",
+			"data": {
+				"at": "(173.0, 5.55, -12.2)",
+				"bottom": 4.75000019073486,
+				"floor": 3.6,
+				"top": 6.35000019073486
+			},
+			"passed": true
+		},
+		{
+			"check": "Window contained in its floor",
+			"data": {
+				"at": "(173.0, 5.55, 4.6)",
+				"bottom": 4.75000019073486,
+				"floor": 3.6,
+				"top": 6.35000019073486
+			},
+			"passed": true
+		},
+		{
+			"check": "Real touch movement climbs stairs without resetting eyes",
+			"data": "(170.5, 5.76, -4.964798)",
+			"passed": true
+		},
+		{
+			"check": "Real touch movement descends stairs",
+			"data": "(170.5, 2.16, 1.399999)",
+			"passed": true
+		},
+		{
+			"check": "Open district route (137.0, 2.16, 17.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Open district route (142.0, 2.16, 17.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Open district route (160.2, 2.16, 10.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Open district route (190.0, 2.16, 17.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Open district route (176.0, 2.16, 0.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "East perimeter contains player",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Front entrance exposes contextual action",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Open front door offers Close",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Contextual action closes police door",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Closed front door offers Open",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Double tap opens police door",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Modal blocks police door interaction",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Upper shell blocks falling outside (149.0, 5.76, 4.6)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Upper shell blocks falling outside (173.0, 5.76, 4.6)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Upper shell blocks falling outside (161.0, 5.76, 7.0)",
+			"data": null,
+			"passed": true
+		}
+	],
+	"doors": 14,
+	"failures": 0,
+	"ground_reachable_cells": 4307,
+	"passed": true,
+	"room_count": 15,
+	"station_batches": 85,
+	"station_instances": 854,
+	"upper_reachable_cells": 3167
+}
