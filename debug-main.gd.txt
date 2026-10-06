@@ -1389,7 +1389,7 @@ func _show_daily_report() -> void:
 	var friend_text: String = _daily_report_friend_dealers_text(report)
 	if not friend_text.is_empty():
 		friend_section = "\n\nFRIEND DEALERS\n%s" % friend_text
-	daily_report_body.text = "PRODUCT SOLD\n%s\n\nREVENUE / COSTS\nGross product revenue: $%d\n%s\nElectricity: $%d\nWater: $%d\n\nTotal operating cost: $%d\nDAY PROFIT: $%d\n\n%s%s\n\nElectric and water charges are posted to Phone -> Bills or apartment computer -> Bills and can be paid separately." % [_daily_report_sales_text(report), gross, _daily_report_expense_text(report), power_cost, water_cost, total_cost, profit, settlement_line, friend_section]
+	daily_report_body.text = "PRODUCT SOLD\n%s\n\nREVENUE / COSTS\nGross product revenue: $%d\n%s\nElectricity: $%d\nWater: $%d\n\nTotal operating cost: $%d\nDAY PROFIT: $%d\n\n%s%s\n\nElectric and water charges are posted to Phone -> Business -> Bills or apartment computer -> Bills and can be paid separately." % [_daily_report_sales_text(report), gross, _daily_report_expense_text(report), power_cost, water_cost, total_cost, profit, settlement_line, friend_section]
 	daily_report_action.text = ("SETTLE DEALERS  |  START DAY %d" % next_day) if dealer_count_report > 0 else ("START DAY %d" % next_day)
 	daily_report_panel.visible = true
 	_set_world_controls_visible(false)
@@ -6577,7 +6577,7 @@ func _phone_go_home() -> void:
 func _phone_parent_app(app_name: String) -> String:
 	if app_name in ["seeds", "supplies"]:
 		return "shop"
-	if app_name in ["employees", "upgrades"]:
+	if app_name in ["bills", "employees", "upgrades"]:
 		return "business"
 	if app_name == "account":
 		return "settings"
@@ -6601,7 +6601,6 @@ func _open_phone_app(app_name: String) -> void:
 
 func _refresh_phone() -> void:
 	if neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.refresh_management():return
-	if phone_current_app in ["business"]:phone_current_app="home"
 	if phone_list == null:
 		return
 	var chapter_four_changed: bool = _sync_chapter_four_story()
@@ -6777,7 +6776,7 @@ func _build_budshop_app() -> void:
 	var grid: GridContainer = _phone_category_grid()
 	_add_phone_app_tile(grid, "", "Lights", "Lamp, lights & ventilation", "lights")
 	_add_phone_app_tile(grid, "", "Store", "Seed orders & market info", "shop")
-	_add_phone_app_tile(grid, "", "Bills", "Property rent, utilities & balances", "bills")
+	_add_phone_app_tile(grid, "", "Business", "Property overview & bills", "business")
 	if (neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.management_allowed()) or tutorial_active:_add_phone_app_tile(grid, "", "Your Supply", "Stock, prices & listings", "products")
 	if (neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.management_allowed()) or tutorial_active:_add_phone_app_tile(grid, "", "Genetics", "Create hybrid seeds", "genetics")
 	_add_phone_app_tile(grid, "", "Clients", "Customers & loyalty", "clients")
@@ -7305,6 +7304,10 @@ Plant slots: %d   |   Tent equipment level: %d" % [grow_tent_count, plant_slots.
 		box.add_child(buy)
 
 func _build_business_app() -> void:
+	var property_note := Label.new()
+	property_note.text="APARTMENT · Active operation\nManage rent and utilities here. Use the apartment computer for inventory, staff, genetics, equipment and production.\nHOUSE · Property opportunity; not yet acquired."
+	property_note.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	phone_list.add_child(property_note)
 	var summary: Label = Label.new()
 	summary.text = "GROWER LEVEL %d   |   XP %d / %d\nBrand Level %d   |   Reputation %d\nStorefront: %s" % [grower_level, grower_xp, _xp_needed_for_next_level(), brand_level, reputation, "OPEN" if business_open else "AWAY"]
 	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -7312,8 +7315,6 @@ func _build_business_app() -> void:
 	phone_list.add_child(summary)
 	var grid: GridContainer = _phone_category_grid()
 	_add_phone_app_tile(grid, "", "Bills", "$%d outstanding" % (power_bill_due + water_bill_due + dealer_balance_due + (neighborhood.location_ops.balance() if neighborhood!=null and neighborhood.location_ops!=null else 0)), "bills")
-	if neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.management_allowed():_add_phone_app_tile(grid, "", "Employees", "Worker & dealer team", "employees")
-	if neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.management_allowed():_add_phone_app_tile(grid, "", "Upgrades", "Equipment, tents & storage", "upgrades")
 
 func _build_bills_app() -> void:
 	if neighborhood!=null and neighborhood.location_ops!=null:neighborhood.location_ops.rent_ui(phone_list)
@@ -11283,7 +11284,7 @@ func _build_help_app() -> void:
 		label.add_theme_font_size_override("font_size", 19)
 		phone_list.add_child(label)
 	var controls: Label = Label.new()
-	controls.text = "PHONE LAYOUT\nOrder seeds on the phone, collect them at Central Market checkout, then deposit carried supplies at your apartment computer. Fertilizer and equipment are bought at Central Market. Paid equipment waits for computer installation. Property computers manage inventory, listings, genetics, staff and production. Phone -> Bills or apartment computer -> Bills includes apartment rent: $600 every 14 game days, with a three-day grace period. The back arrow returns to the parent category.\n\nCONTROLS\nSwipe phone, packing-bench and storage lists anywhere on a card or button; lift without swiping to tap. Tap the actual room switches or lamp to toggle them. Phone -> Lights is the optional menu alternative. Small finger movements stay taps; swipe farther to look around. Swipe the room to look; tap a station to use it. While bagging, keep the same finger on the bud until you drop it. During trimming, keep hold of the scissors.\n\nPAUSING\nSwitching apps/tabs, closing the game, or pressing PAUSE stops the day, visitors, story, wages and sales. Only existing plants keep growing and consume water and applied fertilizer; dry plants lose health. A plant that finishes before dying stays harvestable. A hired, ON-DUTY production worker can water and fertilize those plants using your stored fertilizer. No supplies are bought; watering continues when fertilizer runs out and adds to your Water Bill. An off-duty/fired worker or raid lockdown gives no care. No new seeds, harvesting, trimming, bagging or selling occur while away; equipment auto-refill remains live-only. The first-day guide fully protects plants. Press RESUME when you return. Daily closeout keeps its day/time frozen until START DAY. Storefront AWAY is different: it closes sales while you are still playing.\n\nREWARDS\nRewards over $100 have harder goals or extra requirements. Complete every displayed requirement before claiming. Already-claimed rewards remain yours."
+	controls.text = "PHONE LAYOUT\nOrder seeds on the phone, collect them at Central Market checkout, then deposit carried supplies at your apartment computer. Fertilizer and equipment are bought at Central Market. Paid equipment waits for computer installation. Property computers manage inventory, listings, genetics, staff and production. Phone -> Business -> Bills or apartment computer -> Bills includes apartment rent: $600 every 14 game days, with a three-day grace period. The back arrow returns to the parent category.\n\nCONTROLS\nSwipe phone, packing-bench and storage lists anywhere on a card or button; lift without swiping to tap. Tap the actual room switches or lamp to toggle them. Phone -> Lights is the optional menu alternative. Small finger movements stay taps; swipe farther to look around. Swipe the room to look; tap a station to use it. While bagging, keep the same finger on the bud until you drop it. During trimming, keep hold of the scissors.\n\nPAUSING\nSwitching apps/tabs, closing the game, or pressing PAUSE stops the day, visitors, story, wages and sales. Only existing plants keep growing and consume water and applied fertilizer; dry plants lose health. A plant that finishes before dying stays harvestable. A hired, ON-DUTY production worker can water and fertilize those plants using your stored fertilizer. No supplies are bought; watering continues when fertilizer runs out and adds to your Water Bill. An off-duty/fired worker or raid lockdown gives no care. No new seeds, harvesting, trimming, bagging or selling occur while away; equipment auto-refill remains live-only. The first-day guide fully protects plants. Press RESUME when you return. Daily closeout keeps its day/time frozen until START DAY. Storefront AWAY is different: it closes sales while you are still playing.\n\nREWARDS\nRewards over $100 have harder goals or extra requirements. Complete every displayed requirement before claiming. Already-claimed rewards remain yours."
 	controls.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	phone_list.add_child(controls)
 	var pause_button: Button = Button.new()
