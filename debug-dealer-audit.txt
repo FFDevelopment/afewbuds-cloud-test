@@ -26,7 +26,8 @@ func _prepare_daily_report(closing_day: int) -> void:
 	var gross_revenue: int = _sum_daily_sales_gross()
 	var recorded_expenses: int = _sum_daily_expenses()
 	var power_cost: int = last_power_bill
-	var total_cost: int = recorded_expenses + power_cost + dealer_commission + dealer_wages
+	var water_cost: int = last_water_bill
+	var total_cost: int = recorded_expenses + power_cost + water_cost + dealer_commission + dealer_wages
 	var operating_profit: int = gross_revenue - total_cost
 	var dealer_net: int = dealer_gross - dealer_commission - dealer_wages
 	var friend_dealer_report: Array[Dictionary] = _friend_dealer_daily_report(dealer_wages > 0)
@@ -41,6 +42,7 @@ func _prepare_daily_report(closing_day: int) -> void:
 		"dealer_net": dealer_net,
 		"expenses": daily_expenses_by_category.duplicate(true),
 		"power_cost": power_cost,
+		"water_cost": water_cost,
 		"total_cost": total_cost,
 		"profit": operating_profit,
 		"dealer_count": _total_dealer_count(),
@@ -83,6 +85,8 @@ func _show_daily_report() -> void:
 	var dealer_wages: int = int(report.get("dealer_wages", 0))
 	var dealer_net: int = int(report.get("dealer_net", 0))
 	var gross: int = int(report.get("gross", 0))
+	var power_cost: int = int(report.get("power_cost", 0))
+	var water_cost: int = int(report.get("water_cost", 0))
 	var total_cost: int = int(report.get("total_cost", 0))
 	var profit: int = int(report.get("profit", 0))
 	daily_report_title.text = ("DEALER DROP-OFF  |  DAY %d" % closing_day) if dealer_count_report > 0 else ("DAY %d CLOSEOUT" % closing_day)
@@ -96,7 +100,7 @@ func _show_daily_report() -> void:
 	var friend_text: String = _daily_report_friend_dealers_text(report)
 	if not friend_text.is_empty():
 		friend_section = "\n\nFRIEND DEALERS\n%s" % friend_text
-	daily_report_body.text = "PRODUCT SOLD\n%s\n\nREVENUE / COSTS\nGross product revenue: $%d\n%s\n\nTotal operating cost: $%d\nDAY PROFIT: $%d\n\n%s%s\n\nPower charges are posted to Utilities and can be paid from the Business app." % [_daily_report_sales_text(report), gross, _daily_report_expense_text(report), total_cost, profit, settlement_line, friend_section]
+	daily_report_body.text = "PRODUCT SOLD\n%s\n\nREVENUE / COSTS\nGross product revenue: $%d\n%s\nElectricity: $%d\nWater: $%d\n\nTotal operating cost: $%d\nDAY PROFIT: $%d\n\n%s%s\n\nElectric and water charges are posted to Business -> Bills and can be paid separately." % [_daily_report_sales_text(report), gross, _daily_report_expense_text(report), power_cost, water_cost, total_cost, profit, settlement_line, friend_section]
 	daily_report_action.text = ("SETTLE DEALERS  |  START DAY %d" % next_day) if dealer_count_report > 0 else ("START DAY %d" % next_day)
 	daily_report_panel.visible = true
 	_set_world_controls_visible(false)
@@ -167,7 +171,7 @@ func _build_employees_app() -> void:
 	packer_title.add_theme_font_size_override("font_size", 20)
 	packer_box.add_child(packer_title)
 	var packer_detail: Label = Label.new()
-	packer_detail.text = "While playing: tends, harvests, trims, bags and stocks storage.\nWhile paused/away: an ON-DUTY worker only waters and fertilizes existing plants. Uses your stored fertilizer; no buying, new planting, harvesting or packing. Watering continues without fertilizer.\nHire: $%d  |  Daily wage: $%d\nStatus: %s  |  Today: %d tasks\nCurrent task: %s" % [PACKER_HIRE_COST, PACKER_DAILY_WAGE, "WORKING" if packing_employee_active else ("OFF DUTY" if packing_employee_hired else "NOT HIRED"), production_worker_tasks_today, production_worker_last_action]
+	packer_detail.text = "While playing: tends, harvests, trims, bags and stocks storage.\nWhile paused/away: an ON-DUTY worker only waters and fertilizes existing plants. Uses your stored fertilizer; no buying, new planting, harvesting or packing. Watering uses property water and adds to your Water Bill; it continues without fertilizer.\nHire: $%d  |  Daily wage: $%d\nStatus: %s  |  Today: %d tasks\nCurrent task: %s" % [PACKER_HIRE_COST, PACKER_DAILY_WAGE, "WORKING" if packing_employee_active else ("OFF DUTY" if packing_employee_hired else "NOT HIRED"), production_worker_tasks_today, production_worker_last_action]
 	packer_detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	packer_box.add_child(packer_detail)
 	var packer_button: Button = Button.new()
@@ -570,6 +574,11 @@ func _save_game() -> void:
 		"power_bill_due": power_bill_due,
 		"last_power_bill": last_power_bill,
 		"lifetime_power_cost": lifetime_power_cost,
+		"current_day_water_cost": current_day_water_cost,
+		"current_day_water_uses": current_day_water_uses,
+		"water_bill_due": water_bill_due,
+		"last_water_bill": last_water_bill,
+		"lifetime_water_cost": lifetime_water_cost,
 		"game_time_minutes": game_time_minutes,
 		"game_day": game_day,
 		"business_open": business_open,
@@ -626,7 +635,9 @@ func _save_game() -> void:
 		"enforcement_report_pending": enforcement_report_pending,
 		"last_enforcement_report": last_enforcement_report,
 		"advancement_stats": advancement_stats,
-		"advancement_claimed": advancement_claimed
+		"advancement_claimed": advancement_claimed,
+		"chapter_four_story_stage": chapter_four_story_stage,
+		"property_offer_unlocked": property_offer_unlocked
 	}
 	var file: FileAccess = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if file == null:
@@ -721,6 +732,11 @@ func _load_game() -> void:
 	power_bill_due = maxi(0, int(data.get("power_bill_due", power_bill_due)))
 	last_power_bill = maxi(0, int(data.get("last_power_bill", last_power_bill)))
 	lifetime_power_cost = maxi(0, int(data.get("lifetime_power_cost", lifetime_power_cost)))
+	current_day_water_cost = maxf(0.0, float(data.get("current_day_water_cost", current_day_water_cost)))
+	current_day_water_uses = maxi(0, int(data.get("current_day_water_uses", current_day_water_uses)))
+	water_bill_due = maxi(0, int(data.get("water_bill_due", water_bill_due)))
+	last_water_bill = maxi(0, int(data.get("last_water_bill", last_water_bill)))
+	lifetime_water_cost = maxi(0, int(data.get("lifetime_water_cost", lifetime_water_cost)))
 	game_time_minutes = float(data.get("game_time_minutes", game_time_minutes))
 	game_day = maxi(1, int(data.get("game_day", game_day)))
 	business_open = bool(data.get("business_open", business_open))
@@ -858,13 +874,15 @@ func _load_game() -> void:
 	var loaded_advancement_stats: Variant = data.get("advancement_stats", advancement_stats)
 	if loaded_advancement_stats is Dictionary:
 		advancement_stats = loaded_advancement_stats as Dictionary
-	var advancement_metrics: Array[String] = ["plants_planted", "waters", "fertilizes", "harvests", "grams_trimmed", "bags_sealed", "grams_stored", "products_listed", "sales", "customers_known", "seeds_bought", "supplies_bought", "hybrids_created", "lights_toggled", "lamp_toggled", "grow_room_lights_toggled", "grow_lights_toggled", "ventilation_toggled", "power_bills_paid", "night_sales", "dealer_sales", "staff_hired", "worker_tasks", "friend_recruits", "staff_purchases", "pressure_events", "contact_calls", "reeves_meetings", "reeves_arrangements", "reeves_payments", "reeves_negotiations", "reeves_missed_payments", "raids_survived", "reeves_freedom"]
+	var advancement_metrics: Array[String] = ["plants_planted", "waters", "fertilizes", "harvests", "grams_trimmed", "bags_sealed", "grams_stored", "products_listed", "sales", "customers_known", "seeds_bought", "supplies_bought", "hybrids_created", "lights_toggled", "lamp_toggled", "grow_room_lights_toggled", "grow_lights_toggled", "ventilation_toggled", "power_bills_paid", "water_bills_paid", "night_sales", "dealer_sales", "staff_hired", "worker_tasks", "friend_recruits", "staff_purchases", "pressure_events", "contact_calls", "reeves_meetings", "reeves_arrangements", "reeves_payments", "reeves_negotiations", "reeves_missed_payments", "raids_survived", "reeves_freedom"]
 	for advancement_metric: String in advancement_metrics:
 		if not advancement_stats.has(advancement_metric):
 			advancement_stats[advancement_metric] = 0
 	var loaded_advancement_claimed: Variant = data.get("advancement_claimed", advancement_claimed)
 	if loaded_advancement_claimed is Dictionary:
 		advancement_claimed = loaded_advancement_claimed as Dictionary
+	chapter_four_story_stage = clampi(int(data.get("chapter_four_story_stage", chapter_four_story_stage)), 0, 6)
+	property_offer_unlocked = bool(data.get("property_offer_unlocked", property_offer_unlocked))
 	if not had_advancement_stats:
 		_bootstrap_advancement_stats_from_state()
 
@@ -899,234 +917,233 @@ func _has_listed_stock() -> bool:
 43: const PRODUCTION_WORKER_DWELL_SECONDS: float = 0.95
 44: const PRODUCTION_WORKER_MOVE_SPEED: float = 2.55
 45: const PRODUCTION_WORKER_BATCH_SIZE: int = 3
-100: var storage_level: int = 1
-108: var locker_weed: Dictionary = {}
-119: var production_worker_auto_plant: bool = false
-120: var production_worker_task: String = "Off duty"
-121: var production_worker_pending_action: String = ""
-122: var production_worker_pending_slot: int = -1
-123: var production_worker_pending_strain: String = ""
-124: var production_worker_target_position: Vector3 = Vector3(0.75, 0.0, 2.55)
-125: var production_worker_action_dwell: float = 0.0
-126: var production_worker_stall_seconds: float = 0.0
-127: var production_worker_tasks_today: int = 0
-128: var production_worker_last_action: String = "Off duty"
-129: var production_worker_node: Node3D
-130: var production_worker_task_label: Label3D
-131: var production_worker_head: MeshInstance3D
-132: var production_worker_face_shell: MeshInstance3D
-133: var production_worker_walk_phase: float = 0.0
-134: var production_worker_route_points: Array[Vector3] = []
-135: var production_worker_route_index: int = 0
-136: var production_worker_route_destination: Vector3 = Vector3.ZERO
-137: var production_worker_route_valid: bool = false
-138: var production_worker_friend_name: String = ""
-140: var friend_dealer_stats: Dictionary = {}
-141: var dealer_count: int = 0
-143: var dealer_sales_today: int = 0
-144: var dealer_cash_held: int = 0
-145: var dealer_commission_held: int = 0
-146: var dealer_balance_due: int = 0
-147: var dealer_locker_level: int = 0
-148: var dealer_customers_served_today: Dictionary = {}
-157: var last_dealer_customer_name: String = ""
-293: 	"dealer_sales": 0,
-331: 	{"id": "dealer_storage_one", "category": "Dealers", "tier": 1, "title": "Stock the Team", "description": "Unlock Dealer Storage and give your dealer network dedicated inventory.", "state": "dealer_locker_level", "target": 1, "reward_cash": 50, "reward_xp": 40, "reward_rep": 2},
-332: 	{"id": "first_dealer_sale", "category": "Sales", "tier": 2, "title": "First Delegated Sale", "description": "Have a hired dealer complete a sale with an eligible known client.", "metric": "dealer_sales", "target": 1, "reward_cash": 50, "reward_xp": 60, "reward_rep": 4},
-352: 	{"id": "storage_two", "category": "Business", "tier": 1, "title": "More Shelf Space", "description": "Upgrade storage to Level 2.", "state": "storage_level", "target": 2, "reward_cash": 125, "reward_xp": 40, "reward_rep": 2, "requires": [{"metric": "grams_stored", "target": 75, "label": "Grams stored"}]},
-353: 	{"id": "storage_three", "category": "Business", "tier": 3, "title": "Stockroom", "description": "Upgrade storage to Level 3.", "state": "storage_level", "target": 3, "reward_cash": 400, "reward_xp": 100, "reward_rep": 6, "requires": [{"metric": "grams_stored", "target": 200, "label": "Grams stored"}]},
-356: 	{"id": "automation_three", "category": "Business", "tier": 3, "title": "Build a Crew", "description": "Hire a production worker and at least 2 dealers.", "state": "staff_count", "target": 3, "reward_cash": 250, "reward_xp": 175, "reward_rep": 10, "requires": [{"metric": "worker_tasks", "target": 40, "label": "Worker tasks"}, {"metric": "dealer_sales", "target": 15, "label": "Dealer sales"}, {"state": "production_worker_hired", "target": 1, "label": "Production worker hired"}]},
-361: 	{"id": "dealer_five", "category": "Business", "tier": 2, "title": "Delegating", "description": "Have dealers complete 5 sales to known clients.", "metric": "dealer_sales", "target": 5, "reward_cash": 75, "reward_xp": 100, "reward_rep": 7},
-362: 	{"id": "dealer_fifteen", "category": "Dealers", "tier": 3, "title": "Street Coverage", "description": "Have dealers complete 15 total sales.", "metric": "dealer_sales", "target": 15, "reward_cash": 150, "reward_xp": 160, "reward_rep": 10},
-363: 	{"id": "dealer_storage_premium", "category": "Dealers", "tier": 3, "title": "Secure Distribution", "description": "Upgrade Dealer Storage to Level III and install the premium cabinet.", "state": "dealer_locker_level", "target": 3, "reward_cash": 200, "reward_xp": 140, "reward_rep": 8, "requires": [{"metric": "dealer_sales", "target": 10, "label": "Dealer sales"}]},
-364: 	{"id": "dealer_storage_max", "category": "Dealers", "tier": 4, "title": "Fully Stocked Network", "description": "Max Dealer Storage at Level IV.", "state": "dealer_locker_level", "target": 4, "reward_cash": 250, "reward_xp": 220, "reward_rep": 12, "requires": [{"metric": "dealer_sales", "target": 30, "label": "Dealer sales"}]},
-365: 	{"id": "dealer_twentyfive", "category": "Business", "tier": 4, "title": "Dealer Network", "description": "Have dealers complete 40 sales to known clients.", "metric": "dealer_sales", "target": 40, "reward_cash": 125, "reward_xp": 260, "reward_rep": 18},
-417: var dealer_arrested: bool = false
-418: var dealer_bail_due: int = 0
-419: var production_worker_arrested: bool = false
-420: var production_worker_bail_due: int = 0
-580: 	{"id": "station_locker", "room": "main", "pos": Vector3(4.13, 1.30, -2.20), "view": "locker"},
-624: var dealer_storage_panel: PanelContainer
-625: var dealer_storage_list: VBoxContainer
-626: var dealer_storage_scroll: PhoneTouchScroll
-627: var premium_dealer_locker_root: Node3D
-628: var premium_dealer_locker_left_door_pivot: Node3D
-629: var premium_dealer_locker_right_door_pivot: Node3D
-630: var premium_dealer_locker_open: bool = false
-631: var premium_dealer_locker_left_tween: Tween
-632: var premium_dealer_locker_right_tween: Tween
-633: var dealer_storage_reopen_after_pause: bool = false
-765: 		_update_production_worker_visual(delta)
-984: 	if action_id == "station_locker":
-985: 		var locker_timer: SceneTreeTimer = get_tree().create_timer(0.40)
-986: 		locker_timer.timeout.connect(_open_dealer_locker_after_approach, CONNECT_ONE_SHOT)
-994: func _open_dealer_locker_after_approach() -> void:
-995: 	if current_view != "locker":
-997: 	if dealer_storage_panel == null:
-998: 		status_label.text = "Dealer Storage panel failed to initialize."
-1000: 	if dealer_locker_level >= 3:
-1001: 		_set_premium_dealer_locker_open(true)
-1003: 	_open_dealer_storage_panel()
-1009: 		"station_locker":
-1010: 			_open_dealer_locker_after_approach()
-1058: 	if nearest_action.is_empty() and current_room == "main" and storage_level >= 4:
-1074: 			if storage_level < 4:
-1083: 		"station_workbench", "station_locker", "station_storage", "station_door", "station_tent1", "station_tent2", "station_tent3", "station_system", "station_supply":
-1193: 	var dealer_wages: int = 0
-1194: 	if _total_dealer_count() > 0 and (dealers_active or dealer_sales_today > 0):
-1195: 		dealer_wages = _total_dealer_count() * DEALER_DAILY_WAGE
-1196: 	var dealer_gross: int = dealer_cash_held
-1197: 	var dealer_commission: int = dealer_commission_held
-1201: 	var total_cost: int = recorded_expenses + power_cost + dealer_commission + dealer_wages
-1203: 	var dealer_net: int = dealer_gross - dealer_commission - dealer_wages
-1204: 	var friend_dealer_report: Array[Dictionary] = _friend_dealer_daily_report(dealer_wages > 0)
-1262: 		var dealer_units: int = int(entry.get("dealer_units", 0))
-1290: 	var dealer_commission: int = int(report.get("dealer_commission", 0))
-1291: 	var dealer_wages: int = int(report.get("dealer_wages", 0))
-1340: 	var dealer_count_report: int = int(report.get("dealer_count", 0))
-1341: 	var dealer_gross: int = int(report.get("dealer_gross", 0))
-1342: 	var dealer_commission: int = int(report.get("dealer_commission", 0))
-1343: 	var dealer_wages: int = int(report.get("dealer_wages", 0))
-1344: 	var dealer_net: int = int(report.get("dealer_net", 0))
-1349: 	var settlement_line: String = "No dealer settlement tonight."
-1376: 	var dealer_net: int = int(daily_report_data.get("dealer_net", 0))
-1380: 		var shortfall: int = -dealer_net
-1412: func _pay_dealer_balance() -> void:
-1418: 	var paid: int = dealer_balance_due
-2425: 	var locker_logo: Label3D = Label3D.new()
-2434: 	var locker_tag: Label3D = Label3D.new()
-3896: func _build_dealer_storage_panel() -> void:
-3898: 	var root: VBoxContainer = _panel_root(dealer_storage_panel, "DEALER STORAGE", _close_dealer_storage_panel)
-5131: 			var dealer_roster: Array[String] = _active_dealer_roster()
-5136: func _build_production_worker_visual() -> void:
-5287: func _refresh_production_worker_friend_face() -> void:
-5290: 	var assigned_name: String = production_worker_friend_name
-5291: 	var previous_name: String = str(production_worker_face_shell.get_meta("friend_name", "__uninitialized__"))
-5318: func _production_worker_station_position(station_name: String) -> Vector3:
-5327: func _reset_production_worker_navigation() -> void:
-5334: func _production_worker_navigation_target() -> Vector3:
-5337: 	var worker_pos: Vector3 = production_worker_node.position
-5338: 	var target: Vector3 = production_worker_target_position
-5356: 		var waypoint: Vector3 = production_worker_route_points[production_worker_route_index]
-5362: func _update_production_worker_visual(delta: float) -> void:
-5371: 	var move_target: Vector3 = _production_worker_navigation_target()
-5372: 	var before: Vector3 = production_worker_node.position
-5374: 	var movement: Vector3 = production_worker_node.position - before
-5376: 	var remaining_after: float = production_worker_node.position.distance_to(move_target)
-5389: 	var walk_swing: float = sin(production_worker_walk_phase) * 0.42 if moving else 0.0
-5390: 	var arm_l: MeshInstance3D = production_worker_node.get_node_or_null("ArmL") as MeshInstance3D
-5391: 	var arm_r: MeshInstance3D = production_worker_node.get_node_or_null("ArmR") as MeshInstance3D
-5392: 	var leg_l: MeshInstance3D = production_worker_node.get_node_or_null("LegL") as MeshInstance3D
-5393: 	var leg_r: MeshInstance3D = production_worker_node.get_node_or_null("LegR") as MeshInstance3D
-5403: 		var worker_name: String = production_worker_friend_name if not production_worker_friend_name.is_empty() else "PRODUCTION WORKER"
-5418: func _set_production_worker_task(action_id: String, station_name: String, slot_index: int = -1, strain_name: String = "", task_text: String = "Working") -> void:
-5428: func _production_worker_find_seed() -> String:
-5438: func _assign_production_worker_task() -> void:
-5460: 		var normal_has_space: bool = _total_stored_stock() < _storage_capacity()
-5461: 		var dealer_overflow_available: bool = not normal_has_space and _dealer_locker_free_capacity() > 0
-5463: 			var stock_task: String = "Stocking %s" % bagged_name if normal_has_space else "Overflow stocking Dealer Locker"
-5478: 		var auto_seed: String = _production_worker_find_seed()
-5490: func _execute_production_worker_action() -> void:
-5493: 	var action_id: String = production_worker_pending_action
-5494: 	var slot_index: int = production_worker_pending_slot
-5495: 	var strain_name: String = production_worker_pending_strain
-5525: 			var trim_amount: int = mini(PRODUCTION_WORKER_BATCH_SIZE, available_trim)
-5531: 			var bag_amount: int = mini(PRODUCTION_WORKER_BATCH_SIZE, available_bag)
-5537: 			var free_capacity: int = maxi(0, _storage_capacity() - _total_stored_stock())
-5538: 			var store_amount: int = mini(PRODUCTION_WORKER_BATCH_SIZE, mini(available_store, free_capacity))
-5546: 				var overflow_amount: int = mini(PRODUCTION_WORKER_BATCH_SIZE, mini(available_store, _dealer_locker_free_capacity()))
-5585: 		var free_capacity: int = maxi(0, _storage_capacity() - _total_stored_stock())
-5606: 			var free_capacity: int = maxi(0, _storage_capacity() - _total_stored_stock())
-5607: 			var moved: int = mini(PRODUCTION_WORKER_BATCH_SIZE, mini(amount, free_capacity))
-5619: 			var moved: int = mini(PRODUCTION_WORKER_BATCH_SIZE, amount)
-5627: 			var moved: int = mini(PRODUCTION_WORKER_BATCH_SIZE, amount)
-5639: func _ensure_friend_dealer_stats(customer_name: String) -> Dictionary:
-5649: func _active_dealer_roster() -> Array[String]:
-5657: func _record_friend_dealer_sale(customer_name: String, grams: int, gross: int, commission: int) -> void:
-5660: 	var stats: Dictionary = _ensure_friend_dealer_stats(customer_name)
-5671: func _friend_dealer_daily_report(_pay_wages: bool) -> Array[Dictionary]:
-5674: 		var stats: Dictionary = _ensure_friend_dealer_stats(friend_name)
-5686: func _reset_friend_dealer_daily_stats() -> void:
-5689: 		var stats: Dictionary = _ensure_friend_dealer_stats(friend_name)
-5711: func _friend_staff_dealer_count() -> int:
-5718: func _total_dealer_count() -> int:
-5747: func _dealer_capacity() -> int:
-5756: func _dealer_hire_cost() -> int:
-5822: func _dealer_locker_capacity() -> int:
-5823: 	var level: int = clampi(dealer_locker_level, 0, DEALER_LOCKER_CAPACITY_BY_LEVEL.size() - 1)
-5826: func _dealer_locker_total() -> int:
-5832: func _dealer_locker_free_capacity() -> int:
-5835: func _dealer_locker_next_cost() -> int:
-5836: 	var next_level: int = dealer_locker_level + 1
-5841: func _buy_dealer_locker_upgrade() -> void:
-5844: 	var next_level: int = dealer_locker_level + 1
-5845: 	var cost: int = DEALER_LOCKER_COST_BY_LEVEL[next_level]
-5859: func _dealer_locker_add_from_storage(strain_name: String, requested_amount: int) -> int:
-5863: 	var free_capacity: int = _dealer_locker_free_capacity()
-5879: func _dealer_locker_remove_to_storage(strain_name: String, requested_amount: int) -> int:
-5880: 	var have: int = maxi(0, int(locker_weed.get(strain_name, 0)))
-5883: 	var free_capacity: int = maxi(0, _storage_capacity() - _total_stored_stock())
-5904: func _dealer_customer_served_today(customer_name: String) -> bool:
-5907: func _dealer_eligible_customers() -> Array[Dictionary]:
-5925: func _dealer_sell_one(show_feedback: bool, assigned_dealer_name: String = "") -> bool:
-5934: 	var eligible: Array[Dictionary] = _dealer_eligible_customers()
-5961: 	var available: int = maxi(0, int(locker_weed.get(product_name, 0)))
-5973: 	var commission: int = int(ceil(float(gross_revenue) * DEALER_COMMISSION_RATE))
-5974: 	var dealer_roster: Array[String] = _active_dealer_roster()
-5975: 	var sale_dealer_name: String = assigned_dealer_name
-5989: 	var relationship: Dictionary = (customer_relationships[last_dealer_customer_name] as Dictionary).duplicate(true)
-6158: 	var free_capacity: int = maxi(0, _storage_capacity() - _total_stored_stock())
-6198: func _open_dealer_storage_panel() -> void:
-6208: func _close_dealer_storage_panel() -> void:
-6218: func _dealer_storage_transfer(strain: String, amount: int, moving_in: bool) -> void:
-6225: func _dealer_storage_row(parent: VBoxContainer, strain: String, storage_amount: int, dealer_amount: int) -> void:
-6275: func _refresh_dealer_storage_panel() -> void:
-7025: func _add_dealer_locker_family_card(parent: VBoxContainer) -> void:
-7037: 	var tier_text: String = "NOT INSTALLED" if dealer_locker_level <= 0 else "Locker %s" % _roman(dealer_locker_level)
-7050: 	var next_level: int = dealer_locker_level + 1
-7051: 	var next_cost: int = DEALER_LOCKER_COST_BY_LEVEL[next_level]
-7052: 	var next_capacity: int = DEALER_LOCKER_CAPACITY_BY_LEVEL[next_level]
-7234: 	var dealer_card: PanelContainer = PanelContainer.new()
-7236: 	var dealer_box: VBoxContainer = VBoxContainer.new()
-7238: 	var dealer_detail: Label = Label.new()
-7299: 	var dealer_card: PanelContainer = PanelContainer.new()
-7301: 	var dealer_box: VBoxContainer = VBoxContainer.new()
-7303: 	var dealer_title: Label = Label.new()
-7307: 	var eligible_clients: Array[Dictionary] = _dealer_eligible_customers()
-7311: 	var dealer_detail: Label = Label.new()
-7313: 	var dealer_staff_names: String = ", ".join(PackedStringArray(friend_dealers)) if not friend_dealers.is_empty() else "No friend dealers"
-7314: 	var dealer_locker_cap: int = _dealer_locker_capacity()
-7315: 	var dealer_locker_used: int = _dealer_locker_total()
-7328: 		var friend_stats: Dictionary = _ensure_friend_dealer_stats(friend_dealer_name)
-7342: 		var dealer_toggle: Button = Button.new()
-7349: 		var fire_dealer_button: Button = Button.new()
-7356: 		var release_friend_dealer_button: Button = Button.new()
-7412: func _toggle_production_worker_auto_plant() -> void:
-7447: 	var capacity: int = _dealer_capacity()
-7448: 	var hire_cost: int = _dealer_hire_cost()
-7569: 				var dealer_offer: Button = Button.new()
-7608: func _critical_dealer_sender() -> String:
-7621: 	var had_dealers: bool = dealers_active and _total_dealer_count() > 0
-7634: 		var dealer_sender: String = _critical_dealer_sender()
-7657: func _pay_dealer_bail() -> void:
-7663: 	var amount: int = dealer_bail_due
-7679: 	var amount: int = production_worker_bail_due
-7691: 		var dealer_bail: Button = Button.new()
-9035: func _storage_capacity() -> int:
-9330: 	var loaded_friend_dealer_stats: Variant = data.get("friend_dealer_stats", {})
-9340: 	var loaded_dealer_customers_today: Variant = data.get("dealer_customers_served_today", {})
-9428: 	var lw: Variant = data.get("locker_weed", locker_weed)
-9431: 	var legacy_cash: int = maxi(0, int(data.get("locker_cash", 0)))
-9515: 	var advancement_metrics: Array[String] = ["plants_planted", "waters", "fertilizes", "harvests", "grams_trimmed", "bags_sealed", "grams_stored", "products_listed", "sales", "customers_known", "seeds_bought", "supplies_bought", "hybrids_created", "lights_toggled", "lamp_toggled", "grow_room_lights_toggled", "grow_lights_toggled", "ventilation_toggled", "power_bills_paid", "night_sales", "dealer_sales", "staff_hired", "worker_tasks", "friend_recruits", "staff_purchases", "pressure_events", "contact_calls", "reeves_meetings", "reeves_arrangements", "reeves_payments", "reeves_negotiations", "reeves_missed_payments", "raids_survived", "reeves_freedom"]
-11199: func _dealer_premium_box(parent: Node3D, part_name: String, pos: Vector3, size: Vector3, color: Color, roughness: float = 0.45, texture_path: String = "", emissive: bool = false) -> MeshInstance3D:
-11221: func _dealer_premium_jar(parent: Node3D, part_name: String, pos: Vector3, radius: float, height: float, bud_color: Color) -> void:
-11242: func _build_premium_dealer_locker_visual() -> void:
-11328: func _sync_dealer_locker_visual() -> void:
-11329: 	var premium: bool = dealer_locker_level >= 3
-11346: func _set_premium_dealer_locker_open(opened: bool) -> void:
-11369: 	var show_hidden_stash: bool = storage_level >= 5
-11370: 	var show_vault: bool = storage_level >= 4 and not show_hidden_stash
-11529: 	var covering_panel: bool = phone_open or bagging_panel.visible or storage_panel.visible or (dealer_storage_panel != null and dealer_storage_panel.visible) or (supply_inventory_panel != null and supply_inventory_panel.visible) or (system_control_panel != null and system_control_panel.visible) or trim_panel.visible or bag_minigame_panel.visible or grow_panel.visible or (plant_direct_panel != null and plant_direct_panel.visible)
+102: var storage_level: int = 1
+110: var locker_weed: Dictionary = {}
+121: var production_worker_auto_plant: bool = false
+122: var production_worker_task: String = "Off duty"
+123: var production_worker_pending_action: String = ""
+124: var production_worker_pending_slot: int = -1
+125: var production_worker_pending_strain: String = ""
+126: var production_worker_target_position: Vector3 = Vector3(0.75, 0.0, 2.55)
+127: var production_worker_action_dwell: float = 0.0
+128: var production_worker_stall_seconds: float = 0.0
+129: var production_worker_tasks_today: int = 0
+130: var production_worker_last_action: String = "Off duty"
+131: var production_worker_node: Node3D
+132: var production_worker_task_label: Label3D
+133: var production_worker_head: MeshInstance3D
+134: var production_worker_face_shell: MeshInstance3D
+135: var production_worker_walk_phase: float = 0.0
+136: var production_worker_route_points: Array[Vector3] = []
+137: var production_worker_route_index: int = 0
+138: var production_worker_route_destination: Vector3 = Vector3.ZERO
+139: var production_worker_route_valid: bool = false
+140: var production_worker_friend_name: String = ""
+142: var friend_dealer_stats: Dictionary = {}
+143: var dealer_count: int = 0
+145: var dealer_sales_today: int = 0
+146: var dealer_cash_held: int = 0
+147: var dealer_commission_held: int = 0
+148: var dealer_balance_due: int = 0
+149: var dealer_locker_level: int = 0
+150: var dealer_customers_served_today: Dictionary = {}
+159: var last_dealer_customer_name: String = ""
+295: 	"dealer_sales": 0,
+333: 	{"id": "dealer_storage_one", "category": "Dealers", "tier": 1, "title": "Stock the Team", "description": "Unlock Dealer Storage and give your dealer network dedicated inventory.", "state": "dealer_locker_level", "target": 1, "reward_cash": 50, "reward_xp": 40, "reward_rep": 2},
+334: 	{"id": "first_dealer_sale", "category": "Sales", "tier": 2, "title": "First Delegated Sale", "description": "Have a hired dealer complete a sale with an eligible known client.", "metric": "dealer_sales", "target": 1, "reward_cash": 50, "reward_xp": 60, "reward_rep": 4},
+354: 	{"id": "storage_two", "category": "Business", "tier": 1, "title": "More Shelf Space", "description": "Upgrade storage to Level 2.", "state": "storage_level", "target": 2, "reward_cash": 125, "reward_xp": 40, "reward_rep": 2, "requires": [{"metric": "grams_stored", "target": 75, "label": "Grams stored"}]},
+355: 	{"id": "storage_three", "category": "Business", "tier": 3, "title": "Stockroom", "description": "Upgrade storage to Level 3.", "state": "storage_level", "target": 3, "reward_cash": 400, "reward_xp": 100, "reward_rep": 6, "requires": [{"metric": "grams_stored", "target": 200, "label": "Grams stored"}]},
+358: 	{"id": "automation_three", "category": "Business", "tier": 3, "title": "Build a Crew", "description": "Hire a production worker and at least 2 dealers.", "state": "staff_count", "target": 3, "reward_cash": 250, "reward_xp": 175, "reward_rep": 10, "requires": [{"metric": "worker_tasks", "target": 40, "label": "Worker tasks"}, {"metric": "dealer_sales", "target": 15, "label": "Dealer sales"}, {"state": "production_worker_hired", "target": 1, "label": "Production worker hired"}]},
+363: 	{"id": "dealer_five", "category": "Business", "tier": 2, "title": "Delegating", "description": "Have dealers complete 5 sales to known clients.", "metric": "dealer_sales", "target": 5, "reward_cash": 75, "reward_xp": 100, "reward_rep": 7},
+364: 	{"id": "dealer_fifteen", "category": "Dealers", "tier": 3, "title": "Street Coverage", "description": "Have dealers complete 15 total sales.", "metric": "dealer_sales", "target": 15, "reward_cash": 150, "reward_xp": 160, "reward_rep": 10},
+365: 	{"id": "dealer_storage_premium", "category": "Dealers", "tier": 3, "title": "Secure Distribution", "description": "Upgrade Dealer Storage to Level III and install the premium cabinet.", "state": "dealer_locker_level", "target": 3, "reward_cash": 200, "reward_xp": 140, "reward_rep": 8, "requires": [{"metric": "dealer_sales", "target": 10, "label": "Dealer sales"}]},
+366: 	{"id": "dealer_storage_max", "category": "Dealers", "tier": 4, "title": "Fully Stocked Network", "description": "Max Dealer Storage at Level IV.", "state": "dealer_locker_level", "target": 4, "reward_cash": 250, "reward_xp": 220, "reward_rep": 12, "requires": [{"metric": "dealer_sales", "target": 30, "label": "Dealer sales"}]},
+367: 	{"id": "dealer_twentyfive", "category": "Business", "tier": 4, "title": "Dealer Network", "description": "Have dealers complete 40 sales to known clients.", "metric": "dealer_sales", "target": 40, "reward_cash": 125, "reward_xp": 260, "reward_rep": 18},
+398: 	{"id": "c4_distribution_network", "category": "Expansion", "tier": 2, "title": "Distribution Network", "description": "Max Dealer Storage and prove the dealer side can move volume.", "state": "chapter_four_distribution_ready", "target": 1, "reward_cash": 0, "reward_xp": 200, "reward_rep": 12},
+428: var dealer_arrested: bool = false
+429: var dealer_bail_due: int = 0
+430: var production_worker_arrested: bool = false
+431: var production_worker_bail_due: int = 0
+596: 	{"id": "station_locker", "room": "main", "pos": Vector3(4.13, 1.30, -2.20), "view": "locker"},
+640: var dealer_storage_panel: PanelContainer
+641: var dealer_storage_list: VBoxContainer
+642: var dealer_storage_scroll: PhoneTouchScroll
+643: var premium_dealer_locker_root: Node3D
+644: var premium_dealer_locker_left_door_pivot: Node3D
+645: var premium_dealer_locker_right_door_pivot: Node3D
+646: var premium_dealer_locker_open: bool = false
+647: var premium_dealer_locker_left_tween: Tween
+648: var premium_dealer_locker_right_tween: Tween
+649: var dealer_storage_reopen_after_pause: bool = false
+781: 		_update_production_worker_visual(delta)
+1000: 	if action_id == "station_locker":
+1001: 		var locker_timer: SceneTreeTimer = get_tree().create_timer(0.40)
+1002: 		locker_timer.timeout.connect(_open_dealer_locker_after_approach, CONNECT_ONE_SHOT)
+1010: func _open_dealer_locker_after_approach() -> void:
+1011: 	if current_view != "locker":
+1013: 	if dealer_storage_panel == null:
+1014: 		status_label.text = "Dealer Storage panel failed to initialize."
+1016: 	if dealer_locker_level >= 3:
+1017: 		_set_premium_dealer_locker_open(true)
+1019: 	_open_dealer_storage_panel()
+1025: 		"station_locker":
+1026: 			_open_dealer_locker_after_approach()
+1074: 	if nearest_action.is_empty() and current_room == "main" and storage_level >= 4:
+1090: 			if storage_level < 4:
+1099: 		"station_workbench", "station_locker", "station_storage", "station_door", "station_tent1", "station_tent2", "station_tent3", "station_system", "station_supply":
+1210: 	var dealer_wages: int = 0
+1213: 	var dealer_gross: int = dealer_cash_held
+1214: 	var dealer_commission: int = dealer_commission_held
+1219: 	var total_cost: int = recorded_expenses + power_cost + water_cost + dealer_commission + dealer_wages
+1221: 	var dealer_net: int = dealer_gross - dealer_commission - dealer_wages
+1222: 	var friend_dealer_report: Array[Dictionary] = _friend_dealer_daily_report(dealer_wages > 0)
+1281: 		var dealer_units: int = int(entry.get("dealer_units", 0))
+1309: 	var dealer_commission: int = int(report.get("dealer_commission", 0))
+1310: 	var dealer_wages: int = int(report.get("dealer_wages", 0))
+1359: 	var dealer_count_report: int = int(report.get("dealer_count", 0))
+1360: 	var dealer_gross: int = int(report.get("dealer_gross", 0))
+1361: 	var dealer_commission: int = int(report.get("dealer_commission", 0))
+1362: 	var dealer_wages: int = int(report.get("dealer_wages", 0))
+1363: 	var dealer_net: int = int(report.get("dealer_net", 0))
+1370: 	var settlement_line: String = "No dealer settlement tonight."
+1397: 	var dealer_net: int = int(daily_report_data.get("dealer_net", 0))
+1401: 		var shortfall: int = -dealer_net
+1433: func _pay_dealer_balance() -> void:
+1439: 	var paid: int = dealer_balance_due
+2446: 	var locker_logo: Label3D = Label3D.new()
+2455: 	var locker_tag: Label3D = Label3D.new()
+3917: func _build_dealer_storage_panel() -> void:
+3919: 	var root: VBoxContainer = _panel_root(dealer_storage_panel, "DEALER STORAGE", _close_dealer_storage_panel)
+5162: 			var dealer_roster: Array[String] = _active_dealer_roster()
+5167: func _build_production_worker_visual() -> void:
+5318: func _refresh_production_worker_friend_face() -> void:
+5321: 	var assigned_name: String = production_worker_friend_name
+5322: 	var previous_name: String = str(production_worker_face_shell.get_meta("friend_name", "__uninitialized__"))
+5349: func _production_worker_station_position(station_name: String) -> Vector3:
+5358: func _reset_production_worker_navigation() -> void:
+5365: func _production_worker_navigation_target() -> Vector3:
+5368: 	var worker_pos: Vector3 = production_worker_node.position
+5369: 	var target: Vector3 = production_worker_target_position
+5387: 		var waypoint: Vector3 = production_worker_route_points[production_worker_route_index]
+5393: func _update_production_worker_visual(delta: float) -> void:
+5402: 	var move_target: Vector3 = _production_worker_navigation_target()
+5403: 	var before: Vector3 = production_worker_node.position
+5405: 	var movement: Vector3 = production_worker_node.position - before
+5407: 	var remaining_after: float = production_worker_node.position.distance_to(move_target)
+5420: 	var walk_swing: float = sin(production_worker_walk_phase) * 0.42 if moving else 0.0
+5421: 	var arm_l: MeshInstance3D = production_worker_node.get_node_or_null("ArmL") as MeshInstance3D
+5422: 	var arm_r: MeshInstance3D = production_worker_node.get_node_or_null("ArmR") as MeshInstance3D
+5423: 	var leg_l: MeshInstance3D = production_worker_node.get_node_or_null("LegL") as MeshInstance3D
+5424: 	var leg_r: MeshInstance3D = production_worker_node.get_node_or_null("LegR") as MeshInstance3D
+5434: 		var worker_name: String = production_worker_friend_name if not production_worker_friend_name.is_empty() else "PRODUCTION WORKER"
+5449: func _set_production_worker_task(action_id: String, station_name: String, slot_index: int = -1, strain_name: String = "", task_text: String = "Working") -> void:
+5459: func _production_worker_find_seed() -> String:
+5469: func _assign_production_worker_task() -> void:
+5491: 		var normal_has_space: bool = _total_stored_stock() < _storage_capacity()
+5492: 		var dealer_overflow_available: bool = not normal_has_space and _dealer_locker_free_capacity() > 0
+5494: 			var stock_task: String = "Stocking %s" % bagged_name if normal_has_space else "Overflow stocking Dealer Locker"
+5509: 		var auto_seed: String = _production_worker_find_seed()
+5521: func _execute_production_worker_action() -> void:
+5524: 	var action_id: String = production_worker_pending_action
+5525: 	var slot_index: int = production_worker_pending_slot
+5526: 	var strain_name: String = production_worker_pending_strain
+5557: 			var trim_amount: int = mini(PRODUCTION_WORKER_BATCH_SIZE, available_trim)
+5563: 			var bag_amount: int = mini(PRODUCTION_WORKER_BATCH_SIZE, available_bag)
+5569: 			var free_capacity: int = maxi(0, _storage_capacity() - _total_stored_stock())
+5570: 			var store_amount: int = mini(PRODUCTION_WORKER_BATCH_SIZE, mini(available_store, free_capacity))
+5578: 				var overflow_amount: int = mini(PRODUCTION_WORKER_BATCH_SIZE, mini(available_store, _dealer_locker_free_capacity()))
+5617: 		var free_capacity: int = maxi(0, _storage_capacity() - _total_stored_stock())
+5638: 			var free_capacity: int = maxi(0, _storage_capacity() - _total_stored_stock())
+5639: 			var moved: int = mini(PRODUCTION_WORKER_BATCH_SIZE, mini(amount, free_capacity))
+5651: 			var moved: int = mini(PRODUCTION_WORKER_BATCH_SIZE, amount)
+5659: 			var moved: int = mini(PRODUCTION_WORKER_BATCH_SIZE, amount)
+5671: func _ensure_friend_dealer_stats(customer_name: String) -> Dictionary:
+5681: func _active_dealer_roster() -> Array[String]:
+5689: func _record_friend_dealer_sale(customer_name: String, grams: int, gross: int, commission: int) -> void:
+5692: 	var stats: Dictionary = _ensure_friend_dealer_stats(customer_name)
+5703: func _friend_dealer_daily_report(_pay_wages: bool) -> Array[Dictionary]:
+5706: 		var stats: Dictionary = _ensure_friend_dealer_stats(friend_name)
+5718: func _reset_friend_dealer_daily_stats() -> void:
+5721: 		var stats: Dictionary = _ensure_friend_dealer_stats(friend_name)
+5743: func _friend_staff_dealer_count() -> int:
+5750: func _total_dealer_count() -> int:
+5779: func _dealer_capacity() -> int:
+5788: func _dealer_hire_cost() -> int:
+5889: func _dealer_locker_capacity() -> int:
+5890: 	var level: int = clampi(dealer_locker_level, 0, DEALER_LOCKER_CAPACITY_BY_LEVEL.size() - 1)
+5893: func _dealer_locker_total() -> int:
+5899: func _dealer_locker_free_capacity() -> int:
+5902: func _dealer_locker_next_cost() -> int:
+5903: 	var next_level: int = dealer_locker_level + 1
+5908: func _buy_dealer_locker_upgrade() -> void:
+5911: 	var next_level: int = dealer_locker_level + 1
+5912: 	var cost: int = DEALER_LOCKER_COST_BY_LEVEL[next_level]
+5926: func _dealer_locker_add_from_storage(strain_name: String, requested_amount: int) -> int:
+5930: 	var free_capacity: int = _dealer_locker_free_capacity()
+5946: func _dealer_locker_remove_to_storage(strain_name: String, requested_amount: int) -> int:
+5947: 	var have: int = maxi(0, int(locker_weed.get(strain_name, 0)))
+5950: 	var free_capacity: int = maxi(0, _storage_capacity() - _total_stored_stock())
+5971: func _dealer_customer_served_today(customer_name: String) -> bool:
+5974: func _dealer_eligible_customers() -> Array[Dictionary]:
+5992: func _dealer_sell_one(show_feedback: bool, assigned_dealer_name: String = "") -> bool:
+6001: 	var eligible: Array[Dictionary] = _dealer_eligible_customers()
+6028: 	var available: int = maxi(0, int(locker_weed.get(product_name, 0)))
+6040: 	var commission: int = int(ceil(float(gross_revenue) * DEALER_COMMISSION_RATE))
+6041: 	var dealer_roster: Array[String] = _active_dealer_roster()
+6042: 	var sale_dealer_name: String = assigned_dealer_name
+6056: 	var relationship: Dictionary = (customer_relationships[last_dealer_customer_name] as Dictionary).duplicate(true)
+6225: 	var free_capacity: int = maxi(0, _storage_capacity() - _total_stored_stock())
+6265: func _open_dealer_storage_panel() -> void:
+6275: func _close_dealer_storage_panel() -> void:
+6285: func _dealer_storage_transfer(strain: String, amount: int, moving_in: bool) -> void:
+6292: func _dealer_storage_row(parent: VBoxContainer, strain: String, storage_amount: int, dealer_amount: int) -> void:
+6342: func _refresh_dealer_storage_panel() -> void:
+7095: func _add_dealer_locker_family_card(parent: VBoxContainer) -> void:
+7107: 	var tier_text: String = "NOT INSTALLED" if dealer_locker_level <= 0 else "Locker %s" % _roman(dealer_locker_level)
+7120: 	var next_level: int = dealer_locker_level + 1
+7121: 	var next_cost: int = DEALER_LOCKER_COST_BY_LEVEL[next_level]
+7122: 	var next_capacity: int = DEALER_LOCKER_CAPACITY_BY_LEVEL[next_level]
+7325: 	var dealer_card: PanelContainer = PanelContainer.new()
+7327: 	var dealer_box: VBoxContainer = VBoxContainer.new()
+7329: 	var dealer_detail: Label = Label.new()
+7390: 	var dealer_card: PanelContainer = PanelContainer.new()
+7392: 	var dealer_box: VBoxContainer = VBoxContainer.new()
+7394: 	var dealer_title: Label = Label.new()
+7398: 	var eligible_clients: Array[Dictionary] = _dealer_eligible_customers()
+7402: 	var dealer_detail: Label = Label.new()
+7404: 	var dealer_staff_names: String = ", ".join(PackedStringArray(friend_dealers)) if not friend_dealers.is_empty() else "No friend dealers"
+7405: 	var dealer_locker_cap: int = _dealer_locker_capacity()
+7406: 	var dealer_locker_used: int = _dealer_locker_total()
+7419: 		var friend_stats: Dictionary = _ensure_friend_dealer_stats(friend_dealer_name)
+7433: 		var dealer_toggle: Button = Button.new()
+7440: 		var fire_dealer_button: Button = Button.new()
+7447: 		var release_friend_dealer_button: Button = Button.new()
+7503: func _toggle_production_worker_auto_plant() -> void:
+7538: 	var capacity: int = _dealer_capacity()
+7539: 	var hire_cost: int = _dealer_hire_cost()
+7660: 				var dealer_offer: Button = Button.new()
+7699: func _critical_dealer_sender() -> String:
+7712: 	var had_dealers: bool = dealers_active and _total_dealer_count() > 0
+7725: 		var dealer_sender: String = _critical_dealer_sender()
+7748: func _pay_dealer_bail() -> void:
+7754: 	var amount: int = dealer_bail_due
+7770: 	var amount: int = production_worker_bail_due
+7782: 		var dealer_bail: Button = Button.new()
+9245: func _storage_capacity() -> int:
+9547: 	var loaded_friend_dealer_stats: Variant = data.get("friend_dealer_stats", {})
+9557: 	var loaded_dealer_customers_today: Variant = data.get("dealer_customers_served_today", {})
+9650: 	var lw: Variant = data.get("locker_weed", locker_weed)
+9653: 	var legacy_cash: int = maxi(0, int(data.get("locker_cash", 0)))
+9737: 	var advancement_metrics: Array[String] = ["plants_planted", "waters", "fertilizes", "harvests", "grams_trimmed", "bags_sealed", "grams_stored", "products_listed", "sales", "customers_known", "seeds_bought", "supplies_bought", "hybrids_created", "lights_toggled", "lamp_toggled", "grow_room_lights_toggled", "grow_lights_toggled", "ventilation_toggled", "power_bills_paid", "water_bills_paid", "night_sales", "dealer_sales", "staff_hired", "worker_tasks", "friend_recruits", "staff_purchases", "pressure_events", "contact_calls", "reeves_meetings", "reeves_arrangements", "reeves_payments", "reeves_negotiations", "reeves_missed_payments", "raids_survived", "reeves_freedom"]
+11422: func _dealer_premium_box(parent: Node3D, part_name: String, pos: Vector3, size: Vector3, color: Color, roughness: float = 0.45, texture_path: String = "", emissive: bool = false) -> MeshInstance3D:
+11444: func _dealer_premium_jar(parent: Node3D, part_name: String, pos: Vector3, radius: float, height: float, bud_color: Color) -> void:
+11465: func _build_premium_dealer_locker_visual() -> void:
+11551: func _sync_dealer_locker_visual() -> void:
+11552: 	var premium: bool = dealer_locker_level >= 3
+11569: func _set_premium_dealer_locker_open(opened: bool) -> void:
+11592: 	var show_hidden_stash: bool = storage_level >= 5
+11593: 	var show_vault: bool = storage_level >= 4 and not show_hidden_stash
+11752: 	var covering_panel: bool = phone_open or bagging_panel.visible or storage_panel.visible or (dealer_storage_panel != null and dealer_storage_panel.visible) or (supply_inventory_panel != null and supply_inventory_panel.visible) or (system_control_panel != null and system_control_panel.visible) or trim_panel.visible or bag_minigame_panel.visible or grow_panel.visible or (plant_direct_panel != null and plant_direct_panel.visible)
 ===== STORAGE VAULT SCRIPT =====
 extends Node3D
 
@@ -1316,4 +1333,192 @@ func world_bounds() -> AABB:
 			bounds = bounds.merge(box) if has_bounds else box
 			has_bounds = true
 	return bounds
+
+===== PLANT GROWTH SCRIPT =====
+extends RefCounted
+
+# Fictional game meters only. Integrate at resource/health boundaries rather than
+# subtracting an entire absence first: maturity must beat later dehydration.
+# No inventory, worker, money, story or clock references belong in this module.
+const EPS: float = 0.0000001
+
+static func advance(source: Dictionary, elapsed_seconds: float, settings: Dictionary) -> Dictionary:
+	var slot: Dictionary = source.duplicate(true)
+	if elapsed_seconds <= 0.0 or not is_finite(elapsed_seconds):
+		return slot
+	var stage: int = int(slot.get("stage", -1))
+	if stage < 0 or bool(slot.get("dead", false)):
+		return slot
+	# Ready plants have already won the race. Never drain or kill them later.
+	if stage >= 3:
+		return slot
+	var growth: float = clampf(float(slot.get("growth", 0.0)), 0.0, 100.0)
+	var water: float = clampf(float(slot.get("water", 0.0)), 0.0, 100.0)
+	var health: float = clampf(float(slot.get("health", 100.0)), 0.0, 100.0)
+	var fertilizer: float = clampf(float(slot.get("fertilizer", 0.0)), 0.0, 100.0)
+	if not is_finite(growth) or not is_finite(water) or not is_finite(health) or not is_finite(fertilizer):
+		return slot
+	var remaining: float = elapsed_seconds
+	var water_decay: float = maxf(0.0, float(settings.get("water_decay", 0.289)))
+	var fertilizer_decay: float = maxf(0.0, float(settings.get("fertilizer_decay", 0.10)))
+	var health_loss: float = maxf(0.0, float(settings.get("health_loss", 0.55)))
+	var health_recovery: float = maxf(0.0, float(settings.get("health_recovery", 0.06)))
+	var base_rate: float = 100.0 / maxf(EPS, float(settings.get("growth_seconds", 300.0)))
+	base_rate *= maxf(0.0, float(settings.get("light_factor", 1.0)))
+	base_rate *= maxf(0.0, float(settings.get("ventilation_factor", 1.0)))
+	var water_floor: float = 62.0 if bool(settings.get("auto_water", false)) else 0.0
+	# At most a handful of monotonic boundaries exist (50/25/0 water, empty
+	# fertilizer, 25/100/0 health, maturity). Returning after weeks is still O(pots).
+	for _segment: int in range(32):
+		if health <= EPS:
+			health = 0.0
+			slot["dead"] = true
+			break
+		if growth >= 100.0 - EPS:
+			growth = 100.0
+			break
+		if remaining <= EPS:
+			break
+		water = maxf(water, water_floor)
+		var duration: float = remaining
+		var water_factor: float = 0.0
+		if water > 50.0 + EPS:
+			water_factor = 1.0
+		elif water > 25.0 + EPS:
+			water_factor = 0.78
+		elif water > EPS:
+			water_factor = 0.45
+		if water_decay > EPS and water > water_floor + EPS:
+			var next_water: float = water_floor
+			if water > 50.0 + EPS:
+				next_water = maxf(next_water, 50.0)
+			elif water > 25.0 + EPS:
+				next_water = maxf(next_water, 25.0)
+			duration = minf(duration, (water - next_water) / water_decay)
+		if fertilizer_decay > EPS and fertilizer > EPS:
+			duration = minf(duration, fertilizer / fertilizer_decay)
+		var health_rate: float = 0.0
+		if water <= EPS:
+			health_rate = -health_loss
+		elif water > 25.0 + EPS and health < 100.0 - EPS:
+			health_rate = health_recovery
+		if health_rate > EPS:
+			var next_health: float = 25.0 if health < 25.0 - EPS else 100.0
+			duration = minf(duration, (next_health - health) / health_rate)
+		elif health_rate < -EPS:
+			var next_health: float = 25.0 if health > 25.0 + EPS else 0.0
+			duration = minf(duration, (health - next_health) / -health_rate)
+		var boost: float = 1.0 + (float(settings.get("fertilizer_bonus", 0.35)) if fertilizer > EPS else 0.0)
+		var rate: float = base_rate * water_factor * boost
+		var rate_start: float = rate * clampf(health / 100.0, 0.25, 1.0)
+		var rate_slope: float = 0.0
+		if (health_rate > EPS and health >= 25.0 - EPS) or (health_rate < -EPS and health > 25.0 + EPS):
+			rate_slope = rate * health_rate / 100.0
+		var gain: float = maxf(0.0, rate_start * duration + 0.5 * rate_slope * duration * duration)
+		var finished: bool = growth + gain >= 100.0 - EPS
+		if finished and rate_start > EPS:
+			var needed: float = maxf(0.0, 100.0 - growth)
+			if absf(rate_slope) <= EPS:
+				duration = minf(duration, needed / rate_start)
+			else:
+				# Stable quadratic root avoids cancellation for short final intervals.
+				var root: float = sqrt(maxf(0.0, rate_start * rate_start + 2.0 * rate_slope * needed))
+				duration = minf(duration, 2.0 * needed / maxf(EPS, rate_start + root))
+			gain = needed
+		water = maxf(water_floor, water - water_decay * duration)
+		fertilizer = maxf(0.0, fertilizer - fertilizer_decay * duration)
+		health = clampf(health + health_rate * duration, 0.0, 100.0)
+		growth = minf(100.0, growth + gain)
+		remaining = maxf(0.0, remaining - duration)
+		if finished:
+			growth = 100.0
+			break
+	slot["growth"] = growth
+	slot["water"] = water
+	slot["health"] = health
+	slot["fertilizer"] = fertilizer
+	slot["stage"] = 3 if growth >= 100.0 else (2 if growth >= 62.0 else (1 if growth >= 25.0 else 0))
+	if health <= EPS:
+		slot["health"] = 0.0
+		slot["dead"] = true
+	return slot
+
+===== OFFLINE PLANT CARE SCRIPT =====
+extends RefCounted
+
+# Away-time care for ONE existing crop batch. This module cannot plant, harvest,
+# sell, buy supplies, change the day or award progression. All state is explicit.
+const PlantGrowth = preload("res://scripts/plant_growth.gd")
+const CARE_INTERVAL: float = 5.0
+const WATER_THRESHOLD: float = 38.0
+const FERTILIZER_THRESHOLD: float = 15.0
+const EPS: float = 0.0000001
+
+static func _growing(slot: Dictionary) -> bool:
+	var stage: int = int(slot.get("stage", -1))
+	return stage >= 0 and stage < 3 and not bool(slot.get("dead", false)) and float(slot.get("health", 100.0)) > EPS
+
+static func _next_service(value: float) -> float:
+	return clampf(value, EPS, CARE_INTERVAL) if is_finite(value) and value > 0.0 else CARE_INTERVAL
+
+static func advance(plants: Array[Dictionary], elapsed_seconds: float, settings: Dictionary, fertilizer_units: int, worker_enabled: bool, next_service_seconds: float = CARE_INTERVAL) -> Dictionary:
+	var slots: Array[Dictionary] = plants.duplicate(true)
+	var remaining_units: int = maxi(0, fertilizer_units)
+	var next_service: float = _next_service(next_service_seconds)
+	var waterings: int = 0
+	var fertilizes: int = 0
+	var service_ticks: int = 0
+	if elapsed_seconds > 0.0 and is_finite(elapsed_seconds):
+		if not worker_enabled:
+			# Keep unattended plant outcomes identical to the established integrator.
+			for i: int in range(slots.size()):
+				slots[i] = PlantGrowth.advance(slots[i], elapsed_seconds, settings)
+		else:
+			var remaining: float = elapsed_seconds
+			# Only currently planted crops can be serviced. All actual game growth
+			# settings are positive, so this ends at maturity/death even after years
+			# away, instead of iterating through every second of the absence.
+			while remaining > EPS:
+				var has_growing: bool = false
+				for slot: Dictionary in slots:
+					if _growing(slot):
+						has_growing = true
+						break
+				if not has_growing:
+					break
+				var step: float = minf(remaining, next_service)
+				for i: int in range(slots.size()):
+					slots[i] = PlantGrowth.advance(slots[i], step, settings)
+				remaining = maxf(0.0, remaining - step)
+				next_service = maxf(0.0, next_service - step)
+				if next_service > EPS:
+					continue
+				next_service = CARE_INTERVAL
+				service_ticks += 1
+				# Growth/death is settled BEFORE a care action. Never revive a plant
+				# that died before the worker reached it or spend on a ready plant.
+				var target: int = -1
+				var lowest_water: float = WATER_THRESHOLD
+				for i: int in range(slots.size()):
+					if _growing(slots[i]) and float(slots[i].get("water", 0.0)) < lowest_water:
+						target = i
+						lowest_water = float(slots[i].get("water", 0.0))
+				if target >= 0:
+					slots[target]["water"] = 100.0
+					slots[target]["health"] = minf(100.0, float(slots[target].get("health", 100.0)) + 2.0)
+					waterings += 1
+					continue
+				if remaining_units <= 0:
+					continue
+				var lowest_feed: float = FERTILIZER_THRESHOLD
+				for i: int in range(slots.size()):
+					var slot: Dictionary = slots[i]
+					if _growing(slot) and int(slot.get("stage", -1)) >= 1 and float(slot.get("fertilizer", 0.0)) < lowest_feed:
+						target = i
+						lowest_feed = float(slot.get("fertilizer", 0.0))
+				if target >= 0:
+					slots[target]["fertilizer"] = 100.0
+					remaining_units -= 1
+					fertilizes += 1
+	return {"plants": slots, "fertilizer_units": remaining_units, "waterings": waterings, "fertilizes": fertilizes, "service_in": next_service, "service_ticks": service_ticks}
 
