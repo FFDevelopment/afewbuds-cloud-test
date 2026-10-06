@@ -6,7 +6,7 @@
 	<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 	<meta http-equiv="Pragma" content="no-cache">
 	<meta http-equiv="Expires" content="0">
-		<title>AFewBuds Cloud Test 0.7.9-beta.19-cloudtest.71</title>
+		<title>AFewBuds Cloud Test 0.7.9-beta.19-cloudtest.72</title>
 		<style>
 html, body, #canvas {
 	margin: 0;
@@ -306,8 +306,8 @@ body {
 				<div class="afb-pane" id="afb-forgot-pane" hidden>
 					<form class="afb-stack" id="afb-forgot-form" autocomplete="on">
 						<h3 style="margin:0;font-size:20px">Forgot password?</h3>
-						<p class="afb-auth-sub" style="margin-bottom:4px">Enter your AFewBuds username, not your email address. We’ll send the link to the recovery email already saved on that account. If the account has a recovery email saved, we’ll send a single-use reset link that expires in 30 minutes.</p>
-						<input class="afb-field" id="afb-forgot-user" placeholder="AFewBuds username" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="254" required>
+						<p class="afb-auth-sub" style="margin-bottom:4px">Enter your AFewBuds username or saved recovery email. If several accounts share that email, use your username. If the account has a recovery email saved, we’ll send a single-use reset link that expires in 30 minutes.</p>
+						<input class="afb-field" id="afb-forgot-user" placeholder="Username or recovery email" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="254" required>
 						<button class="afb-btn primary" id="afb-forgot-send" type="submit">Send reset email</button>
 						<button class="afb-btn secondary" id="afb-forgot-back" type="button">Back to sign in</button>
 						<div class="afb-message" id="afb-forgot-msg" role="status"></div>
@@ -447,8 +447,8 @@ body {
 		<script src="index-accountsync10.js?v=0.7.9-beta.19-accountsync10"></script>
 		<script src="shared/afb-runtime70.js?v=70"></script>
 		<script>
-const AFB_TEST_RELEASE = "0.7.9-beta.19-cloudtest.71";
-const AFB_TEST_TITLE = "AFewBuds Cloud Test v0.7.9-beta.19-cloudtest.71";
+const AFB_TEST_RELEASE = "0.7.9-beta.19-cloudtest.72";
+const AFB_TEST_TITLE = "AFewBuds Cloud Test v0.7.9-beta.19-cloudtest.72";
 function afbKeepTestTitle(){ if(document.title !== AFB_TEST_TITLE) document.title = AFB_TEST_TITLE; }
 afbKeepTestTitle();
 setInterval(afbKeepTestTitle, 1000);
@@ -622,7 +622,6 @@ document.getElementById('afb-forgot-form').addEventListener('submit', async (eve
 	afbMessage('afb-forgot-msg', 'Sending recovery email…');
 	try {
 		const identifier = document.getElementById('afb-forgot-user').value.trim();
-		if (identifier.includes('@')) throw new Error('Use your AFewBuds username here. Email-address lookup is not enabled yet.');
 		const data = await afbRequestPasswordReset(identifier);
 		afbMessage('afb-forgot-msg', data.message || 'If that account has a recovery email, a reset link has been sent.');
 	} catch (e) {
