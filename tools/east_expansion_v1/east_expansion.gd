@@ -37,6 +37,7 @@ func bench(at:Vector3, facing:float) -> void:
 	footprint=Transform3D(basis,at)*footprint
 	w._obstacle(at.x,at.z,footprint.size.x,footprint.size.z)
 	landmarks.append({"kind":"bench","at":at,"seat_top":.468})
+	w.bench_seating.add(at,facing,.468)
 
 func garage(x:float) -> void:
 	var at:=Vector3(x,0,-13.0)

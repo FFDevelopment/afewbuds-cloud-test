@@ -86,7 +86,7 @@ func run() -> void:
 	refresh();check(not world._walkable(Vector3(35,2.16,0)),"New head-level obstacle blocks walking")
 	head_test.free();refresh();check(world._walkable(Vector3(35,2.16,0)),"Removing head obstacle restores path")
 	game.camera.position=Vector3(-1.8,2.16,1.9);world._toggle_couch()
-	check(world.couch_seated and game.camera.position.y<1.3,"Existing player couch action still sits")
+	check(world.couch_seated and absf(game.camera.position.y-1.562837)<.001,"Couch camera matches shared-rig seated eye height")
 	world._toggle_couch();check(not world.couch_seated and is_equal_approx(game.camera.position.y,2.16),"Couch stand restores walking eye height")
 	var file:=FileAccess.open("res://../fit_results.json",FileAccess.WRITE)
 	file.store_string(JSON.stringify({"passed":failures==0,"failures":failures,"checks":results},"\t"));file.close()

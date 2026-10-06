@@ -1,14 +1,15 @@
 {
   "baseline_sha256": "ad563d67709a3c19eae78df5ed28c4fb87f62c61d860b0452a987415cab18fde",
-  "target_sha256": "5147b06c093cd4dd59ecd8463772f0d8f338e9261bc25262298dbe1636e65174",
-  "target_bytes": 33615920,
+  "target_sha256": "746ee56a3dee5bf02db4eb993752dc37a18fb7f72e720f0c8f4f24d6e56702a4",
+  "target_bytes": 33619500,
   "changed_existing_entries": [
     "scripts/neighborhood.gd"
   ],
   "added_entries": [
-    "scripts/east_expansion.gd"
+    "scripts/east_expansion.gd",
+    "scripts/seating.gd"
   ],
   "unchanged_entries": 210,
-  "all_interiors_characters_gameplay_unchanged": true,
+  "interior_and_character_assets_unchanged": true,
   "reconstruction_verified": true
 }

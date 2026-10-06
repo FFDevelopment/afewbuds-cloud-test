@@ -1,6 +1,6 @@
 # East residential expansion
 
-Release `0.7.9-beta.19-cloudtest.96-east.2`, built over the merged furniture-fit
+Release `0.7.9-beta.19-cloudtest.96-east.3`, built over the merged furniture-fit
 release at `ab71721ebd6e6ca8f97f872502dd0828266bfca9`.
 
 The map extends east from x=73 to x=137. The main street and rear lane continue
@@ -11,14 +11,15 @@ and residential layout rather than claiming its finished art quality.
 
 Two decorative buildings at the old east edge are replaced/reoriented as part
 of 19 residential exteriors. Their doors and garage doors are scenery for now;
-there are no new enterable interiors. Park benches are fitted outdoor props,
-without a new sit interaction. The three finished hub buildings, their
-interiors, furniture, gameplay and character assets remain unchanged.
+there are no new enterable interiors. All three park benches support sitting,
+and the seated camera now matches the shared rig's eyes. The three finished
+hub buildings, their interiors, furniture and character assets remain unchanged.
 
 ## Preservation and window checks
 
 Only `scripts/neighborhood.gd` changes in the existing runtime; the new district
-is in `scripts/east_expansion.gd`. All other 210 pack entries are byte-identical
+is in `scripts/east_expansion.gd`, with interactions in `scripts/seating.gd`.
+All other 210 pack entries are byte-identical
 to the merged furniture release. The original three functional buildings are
 not moved, resized, rebuilt or given new interior code.
 
@@ -54,6 +55,8 @@ already corrected these positions, so this expansion preserves that alignment.
 
 Screenshots and test results are in `previews/` and `validation/`.
 Open [review.html](review.html) to inspect the district and upper windows.
+See [seating validation](../park_seating_v1/README.md) for the added bench controls
+and corrected seated views in `.96-east.3`.
 Rod is staged only in review captures to show scale; no duplicate live NPC is
 added. Customizable-player integration is not part of this map release.
 

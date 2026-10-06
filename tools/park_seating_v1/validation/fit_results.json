@@ -1,0 +1,589 @@
+{
+	"checks": [
+		{
+			"check": "Isolated validation save directory",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Apartment coffee table at fitted height",
+			"data": 0.439999997615814,
+			"passed": true
+		},
+		{
+			"check": "Coffee table leaves shoe room",
+			"data": 1.26999998092651,
+			"passed": true
+		},
+		{
+			"check": "Cup supported by table",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Four coffee-table supports",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Apartment kitchen worktop height",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Counter rests on cabinet",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "House kitchen worktop height",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Market checkout height",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Dining seat matches character leg reference",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Bathroom seat matches reference",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Fridge fits character height",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Bed height adjusted without shortening mattress",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "House uses fitted couch without scaling",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Apartment couch unchanged",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Repeated fit does not move or duplicate furniture at upgrade 1",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Top shelf fit at level 1",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Storage contents supported at level 1",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Repeated fit does not move or duplicate furniture at upgrade 2",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Top shelf fit at level 2",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Storage contents supported at level 2",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Repeated fit does not move or duplicate furniture at upgrade 3",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Top shelf fit at level 3",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Storage contents supported at level 3",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Expansion shelf follows fitted rack",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Upgrade bin rests on top shelf",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Upgraded bench supports and overhead cabinet",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Repeated fit does not move or duplicate furniture at upgrade 4",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Upgraded bench supports and overhead cabinet",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Repeated fit does not move or duplicate furniture at upgrade 5",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Upgraded bench supports and overhead cabinet",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Repeated fit does not move or duplicate furniture at upgrade 1",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Top shelf fit at level 1",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Storage contents supported at level 1",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "All five existing map doors retained",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "ShopEntrance head clearance",
+			"data": 0.409999923706055,
+			"passed": true
+		},
+		{
+			"check": "ShopEntrance broad-character width clearance",
+			"data": 0.806,
+			"passed": true
+		},
+		{
+			"check": "ShopEntrance closed leaf blocks walking",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "ShopEntrance opens into a walkable doorway",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "ShopEntrance clearance sample -0.45",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "ShopEntrance clearance sample 0.0",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "ShopEntrance clearance sample 0.45",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "StockroomDoor head clearance",
+			"data": 0.409999923706055,
+			"passed": true
+		},
+		{
+			"check": "StockroomDoor broad-character width clearance",
+			"data": 0.456,
+			"passed": true
+		},
+		{
+			"check": "StockroomDoor closed leaf blocks walking",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "StockroomDoor opens into a walkable doorway",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "StockroomDoor clearance sample -0.45",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "StockroomDoor clearance sample 0.0",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "StockroomDoor clearance sample 0.45",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "HouseEntrance head clearance",
+			"data": 0.409999923706055,
+			"passed": true
+		},
+		{
+			"check": "HouseEntrance broad-character width clearance",
+			"data": 0.906,
+			"passed": true
+		},
+		{
+			"check": "HouseEntrance closed leaf blocks walking",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "HouseEntrance opens into a walkable doorway",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "HouseEntrance clearance sample -0.45",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "HouseEntrance clearance sample 0.0",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "HouseEntrance clearance sample 0.45",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "BathroomDoor head clearance",
+			"data": 0.409999923706055,
+			"passed": true
+		},
+		{
+			"check": "BathroomDoor broad-character width clearance",
+			"data": 0.406,
+			"passed": true
+		},
+		{
+			"check": "BathroomDoor closed leaf blocks walking",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "BathroomDoor opens into a walkable doorway",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "BathroomDoor clearance sample -0.45",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "BathroomDoor clearance sample 0.0",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "BathroomDoor clearance sample 0.45",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "BedroomDoor head clearance",
+			"data": 0.409999923706055,
+			"passed": true
+		},
+		{
+			"check": "BedroomDoor broad-character width clearance",
+			"data": 0.506,
+			"passed": true
+		},
+		{
+			"check": "BedroomDoor closed leaf blocks walking",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "BedroomDoor opens into a walkable doorway",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "BedroomDoor clearance sample -0.45",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "BedroomDoor clearance sample 0.0",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "BedroomDoor clearance sample 0.45",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Walkable aisle (35.0, 2.16, 0.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Walkable aisle (35.0, 2.16, -6.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Walkable aisle (32.65, 2.16, -8.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Walkable aisle (36.5, 2.16, -8.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Walkable aisle (20.55, 2.16, 4.4)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Walkable aisle (17.7, 2.16, 4.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Walkable aisle (18.0, 2.16, -3.1)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Walkable aisle (8.5, 2.16, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Walkable aisle (45.5, 2.16, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Walkable aisle (35.0, 2.16, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Tree size and trunk grounding",
+			"data": "[P: (-8.878449, 0.0, 8.6216), S: (4.084481, 6.42, 3.636807)]",
+			"passed": true
+		},
+		{
+			"check": "Tree size and trunk grounding",
+			"data": "[P: (8.003021, 0.0, 8.829377), S: (4.160081, 6.42, 3.580682)]",
+			"passed": true
+		},
+		{
+			"check": "Tree size and trunk grounding",
+			"data": "[P: (22.5085, 0.0, 8.591025), S: (4.157454, 6.42, 3.584402)]",
+			"passed": true
+		},
+		{
+			"check": "Tree size and trunk grounding",
+			"data": "[P: (44.94095, 0.0, 8.70938), S: (4.026001, 6.42, 3.64425)]",
+			"passed": true
+		},
+		{
+			"check": "Tree size and trunk grounding",
+			"data": "[P: (60.10292, 0.0, 8.761399), S: (4.098621, 6.42, 3.622968)]",
+			"passed": true
+		},
+		{
+			"check": "Tree size and trunk grounding",
+			"data": "[P: (70.24438, 0.0, 8.677207), S: (3.975533, 6.42, 3.654959)]",
+			"passed": true
+		},
+		{
+			"check": "Tree size and trunk grounding",
+			"data": "[P: (80.1222, 0.0, 8.621814), S: (4.083984, 6.42, 3.629285)]",
+			"passed": true
+		},
+		{
+			"check": "Tree size and trunk grounding",
+			"data": "[P: (89.98853, 0.0, 8.589116), S: (4.172249, 6.42, 3.568357)]",
+			"passed": true
+		},
+		{
+			"check": "Tree size and trunk grounding",
+			"data": "[P: (97.82137, 0.0, 8.810852), S: (4.153938, 6.42, 3.592153)]",
+			"passed": true
+		},
+		{
+			"check": "Tree size and trunk grounding",
+			"data": "[P: (65.16478, 0.0, 22.21639), S: (4.050758, 6.42, 3.642229)]",
+			"passed": true
+		},
+		{
+			"check": "Tree size and trunk grounding",
+			"data": "[P: (85.05193, 0.0, 22.10106), S: (4.133316, 6.42, 3.609631)]",
+			"passed": true
+		},
+		{
+			"check": "Tree size and trunk grounding",
+			"data": "[P: (123.8477, 0.0, 22.34697), S: (4.168465, 6.42, 3.566526)]",
+			"passed": true
+		},
+		{
+			"check": "Tree size and trunk grounding",
+			"data": "[P: (118.1922, 0.0, -12.6609), S: (4.164963, 6.42, 3.572962)]",
+			"passed": true
+		},
+		{
+			"check": "Tree size and trunk grounding",
+			"data": "[P: (129.3802, 0.0, -12.5949), S: (4.191223, 6.42, 3.513952)]",
+			"passed": true
+		},
+		{
+			"check": "Tree size and trunk grounding",
+			"data": "[P: (118.2922, 0.0, 1.839096), S: (4.164948, 6.42, 3.572962)]",
+			"passed": true
+		},
+		{
+			"check": "Tree size and trunk grounding",
+			"data": "[P: (129.1803, 0.0, 1.9051), S: (4.191208, 6.42, 3.513952)]",
+			"passed": true
+		},
+		{
+			"check": "Car size and wheel grounding",
+			"data": {
+				"bottom": 0.0,
+				"size": "(5.6875, 1.9125, 2.5)"
+			},
+			"passed": true
+		},
+		{
+			"check": "Enlarged car footprint blocks player",
+			"data": "(91.0, 0.0, 20.5)",
+			"passed": true
+		},
+		{
+			"check": "Car size and wheel grounding",
+			"data": {
+				"bottom": 0.0,
+				"size": "(5.6875, 1.9125, 2.499998)"
+			},
+			"passed": true
+		},
+		{
+			"check": "Enlarged car footprint blocks player",
+			"data": "(126.0, 0.0, 13.4)",
+			"passed": true
+		},
+		{
+			"check": "Car size and wheel grounding",
+			"data": {
+				"bottom": 0.0,
+				"size": "(5.6875, 1.9125, 2.5)"
+			},
+			"passed": true
+		},
+		{
+			"check": "Enlarged car footprint blocks player",
+			"data": "(100.0, 0.0, -19.0)",
+			"passed": true
+		},
+		{
+			"check": "Car size and wheel grounding",
+			"data": {
+				"bottom": 0.0,
+				"size": "(2.500002, 1.9125, 5.6875)"
+			},
+			"passed": true
+		},
+		{
+			"check": "Enlarged car footprint blocks player",
+			"data": "(18.0, 0.0, -6.5)",
+			"passed": true
+		},
+		{
+			"check": "Rotated truck fits a parking bay",
+			"data": "[P: (16.75, 0.0, -9.375), S: (2.500002, 1.9125, 5.6875)]",
+			"passed": true
+		},
+		{
+			"check": "Car size and wheel grounding",
+			"data": {
+				"bottom": 0.0,
+				"size": "(5.6875, 1.9125, 2.500002)"
+			},
+			"passed": true
+		},
+		{
+			"check": "Enlarged car footprint blocks player",
+			"data": "(-1.0, 0.0, 20.7)",
+			"passed": true
+		},
+		{
+			"check": "Car size and wheel grounding",
+			"data": {
+				"bottom": 0.0,
+				"size": "(5.6875, 1.9125, 2.499998)"
+			},
+			"passed": true
+		},
+		{
+			"check": "Enlarged car footprint blocks player",
+			"data": "(32.0, 0.0, 13.4)",
+			"passed": true
+		},
+		{
+			"check": "New head-level obstacle blocks walking",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Removing head obstacle restores path",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Couch camera matches shared-rig seated eye height",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Couch stand restores walking eye height",
+			"data": null,
+			"passed": true
+		}
+	],
+	"failures": 0,
+	"passed": true
+}

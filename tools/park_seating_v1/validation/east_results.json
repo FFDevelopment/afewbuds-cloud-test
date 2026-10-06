@@ -1,0 +1,7465 @@
+{
+	"all_windows_checked": 669,
+	"checks": [
+		{
+			"check": "Original hub above-ground exterior geometry unchanged",
+			"data": {
+				"batches": 45,
+				"buildings": 32,
+				"core_geometry_sha256": "9baf9aa5e325039669051814a0ce08602b2078fe818611445919ea8438b235aa",
+				"core_instances": 1667,
+				"static_instances": 4723
+			},
+			"passed": true
+		},
+		{
+			"check": "Nineteen residential exteriors replace two old edge buildings",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Expansion reuses batched geometry/materials",
+			"data": {
+				"after": 45,
+				"before": 34.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Bounded static-instance growth",
+			"data": {
+				"after": 4723,
+				"before": 2204.0
+			},
+			"passed": true
+		},
+		{
+			"check": "All original interactive doors retained",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Every trunk has a real rendered soil patch",
+			"data": {
+				"soil": 16,
+				"trunks": 16
+			},
+			"passed": true
+		},
+		{
+			"check": "Trunk touches soil vertically (-7.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk centered on soil (-7.17119, 0.0, 10.32)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk touches soil vertically (10.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk centered on soil (9.82881, 0.0, 10.32)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk touches soil vertically (24.5, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk centered on soil (24.32881, 0.0, 10.32)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk touches soil vertically (46.75, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk centered on soil (46.57881, 0.0, 10.32)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk touches soil vertically (62.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk centered on soil (61.82881, 0.0, 10.32)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk touches soil vertically (72.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk centered on soil (71.82881, 0.0, 10.32)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk touches soil vertically (82.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk centered on soil (81.82881, 0.0, 10.32)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk touches soil vertically (92.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk centered on soil (91.82881, 0.0, 10.32)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk touches soil vertically (100.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk centered on soil (99.82881, 0.0, 10.32)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk touches soil vertically (67.0, 24.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk centered on soil (66.82881, 0.0, 23.82)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk touches soil vertically (87.0, 24.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk centered on soil (86.82881, 0.0, 23.82)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk touches soil vertically (126.0, 24.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk centered on soil (125.8288, 0.0, 23.82)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk touches soil vertically (120.2, -11.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk centered on soil (120.0288, 0.0, -11.18)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk touches soil vertically (131.5, -11.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk centered on soil (131.3288, 0.0, -11.18)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk touches soil vertically (120.3, 3.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk centered on soil (120.1288, 0.0, 3.32)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk touches soil vertically (131.3, 3.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk centered on soil (131.1288, 0.0, 3.32)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Soil opening is not covered by paving or grass (-7.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Soil opening is not covered by paving or grass (10.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Soil opening is not covered by paving or grass (24.5, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Soil opening is not covered by paving or grass (46.75, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Soil opening is not covered by paving or grass (62.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Soil opening is not covered by paving or grass (72.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Soil opening is not covered by paving or grass (82.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Soil opening is not covered by paving or grass (92.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Soil opening is not covered by paving or grass (100.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Soil opening is not covered by paving or grass (67.0, 24.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Soil opening is not covered by paving or grass (87.0, 24.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Soil opening is not covered by paving or grass (126.0, 24.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Soil opening is not covered by paving or grass (120.2, -11.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Soil opening is not covered by paving or grass (131.5, -11.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Soil opening is not covered by paving or grass (120.3, 3.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Soil opening is not covered by paving or grass (131.3, 3.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Full tree crown clears buildings (-7.0, 0.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Full tree crown clears buildings (10.0, 0.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Full tree crown clears buildings (24.5, 0.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Full tree crown clears buildings (46.75, 0.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Full tree crown clears buildings (62.0, 0.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Full tree crown clears buildings (72.0, 0.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Full tree crown clears buildings (82.0, 0.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Full tree crown clears buildings (92.0, 0.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Full tree crown clears buildings (100.0, 0.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Full tree crown clears buildings (67.0, 0.0, 24.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Full tree crown clears buildings (87.0, 0.0, 24.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Full tree crown clears buildings (126.0, 0.0, 24.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Full tree crown clears buildings (120.2, 0.0, -11.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Full tree crown clears buildings (131.5, 0.0, -11.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Full tree crown clears buildings (120.3, 0.0, 3.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Full tree crown clears buildings (131.3, 0.0, 3.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Open east connection (72.0, -19.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Open east connection (73.0, -19.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Open east connection (74.0, -19.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Open east connection (78.8, -19.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Open east connection (79.2, -19.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Open east connection (72.0, 8.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Open east connection (73.0, 8.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Open east connection (74.0, 8.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Open east connection (78.8, 8.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Open east connection (79.2, 8.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Open east connection (72.0, 17.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Open east connection (73.0, 17.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Open east connection (74.0, 17.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Open east connection (78.8, 17.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Open east connection (79.2, 17.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Open east connection (72.0, 24.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Open east connection (73.0, 24.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Open east connection (74.0, 24.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Open east connection (78.8, 24.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Open east connection (79.2, 24.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Walk from hub to (81.5, 9.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Walk from hub to (91.0, 9.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Walk from hub to (100.0, 9.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Walk from hub to (125.5, -1.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Walk from hub to (125.5, -15.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Walk from hub to (115.5, -1.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Walk from hub to (111.0, -28.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Walk from hub to (111.0, 30.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Walk from hub to (122.0, 24.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Walk from hub to (131.0, -22.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Walk from hub to (88.0, -16.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Park central path remains clear -14",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Park central path remains clear -13",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Park central path remains clear -12",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Park central path remains clear -11",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Park central path remains clear -10",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Park central path remains clear -9",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Park central path remains clear -8",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Park central path remains clear -7",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Park central path remains clear -6",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Park central path remains clear -5",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Park central path remains clear -4",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Park central path remains clear -3",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Park central path remains clear -2",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Park central path remains clear -1",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Park central path remains clear 0",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Park central path remains clear 1",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Park central path remains clear 2",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Park central path remains clear 3",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Park central path remains clear 4",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Park central path remains clear 5",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Park central path remains clear 6",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Park central path remains clear 7",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Park central path remains clear 8",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Visible perimeter blocks escape (137.1, 2.16, 17.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Visible perimeter blocks escape (120.0, 2.16, 39.1)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Visible perimeter blocks escape (120.0, 2.16, -36.1)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "New building collision (78.0, 0.0, -8.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "New building collision (87.0, 0.0, -8.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "New building collision (96.0, 0.0, -8.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "New building collision (78.0, 0.0, -31.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "New building collision (78.0, 0.0, 27.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "New building collision (88.0, 0.0, -31.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "New building collision (88.0, 0.0, 27.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "New building collision (98.0, 0.0, -31.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "New building collision (98.0, 0.0, 27.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "New building collision (119.0, 0.0, -31.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "New building collision (119.0, 0.0, 27.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "New building collision (128.0, 0.0, -31.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "New building collision (128.0, 0.0, 27.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Rear garage collision",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Rear garage collision",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Rear garage collision",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Rear garage collision",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Rear garage collision",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Park bench at fitted seat height",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Park bench at fitted seat height",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Park bench at fitted seat height",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 1",
+			"data": {
+				"building": "ApartmentUpper",
+				"ceiling": 7.64000009536743,
+				"center": 6.44000005722046,
+				"floor": 4.40000009536743
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 2",
+			"data": {
+				"building": "ApartmentUpper",
+				"ceiling": 7.64000009536743,
+				"center": 6.44000005722046,
+				"floor": 4.40000009536743
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 3",
+			"data": {
+				"building": "ApartmentUpper",
+				"ceiling": 7.64000009536743,
+				"center": 6.44000005722046,
+				"floor": 4.40000009536743
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 4",
+			"data": {
+				"building": "ApartmentUpper",
+				"ceiling": 7.64000009536743,
+				"center": 6.44000005722046,
+				"floor": 4.40000009536743
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 5",
+			"data": {
+				"building": "ApartmentUpper",
+				"ceiling": 10.8800000953674,
+				"center": 9.68000030517578,
+				"floor": 7.64000009536743
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 6",
+			"data": {
+				"building": "ApartmentUpper",
+				"ceiling": 10.8800000953674,
+				"center": 9.68000030517578,
+				"floor": 7.64000009536743
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 7",
+			"data": {
+				"building": "ApartmentUpper",
+				"ceiling": 10.8800000953674,
+				"center": 9.68000030517578,
+				"floor": 7.64000009536743
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 8",
+			"data": {
+				"building": "ApartmentUpper",
+				"ceiling": 10.8800000953674,
+				"center": 9.68000030517578,
+				"floor": 7.64000009536743
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 9",
+			"data": {
+				"building": "ApartmentUpper",
+				"ceiling": 7.64000009536743,
+				"center": 6.44000005722046,
+				"floor": 4.40000009536743
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 10",
+			"data": {
+				"building": "ApartmentUpper",
+				"ceiling": 7.64000009536743,
+				"center": 6.44000005722046,
+				"floor": 4.40000009536743
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 11",
+			"data": {
+				"building": "ApartmentUpper",
+				"ceiling": 7.64000009536743,
+				"center": 6.44000005722046,
+				"floor": 4.40000009536743
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 12",
+			"data": {
+				"building": "ApartmentUpper",
+				"ceiling": 7.64000009536743,
+				"center": 6.44000005722046,
+				"floor": 4.40000009536743
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 13",
+			"data": {
+				"building": "ApartmentUpper",
+				"ceiling": 10.8800000953674,
+				"center": 9.68000030517578,
+				"floor": 7.64000009536743
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 14",
+			"data": {
+				"building": "ApartmentUpper",
+				"ceiling": 10.8800000953674,
+				"center": 9.68000030517578,
+				"floor": 7.64000009536743
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 15",
+			"data": {
+				"building": "ApartmentUpper",
+				"ceiling": 10.8800000953674,
+				"center": 9.68000030517578,
+				"floor": 7.64000009536743
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 16",
+			"data": {
+				"building": "ApartmentUpper",
+				"ceiling": 10.8800000953674,
+				"center": 9.68000030517578,
+				"floor": 7.64000009536743
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 17",
+			"data": {
+				"building": "ApartmentUpper",
+				"ceiling": 7.64000009536743,
+				"center": 6.44000005722046,
+				"floor": 4.40000009536743
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 18",
+			"data": {
+				"building": "ApartmentUpper",
+				"ceiling": 7.64000009536743,
+				"center": 6.44000005722046,
+				"floor": 4.40000009536743
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 19",
+			"data": {
+				"building": "ApartmentUpper",
+				"ceiling": 7.64000009536743,
+				"center": 6.44000005722046,
+				"floor": 4.40000009536743
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 20",
+			"data": {
+				"building": "ApartmentUpper",
+				"ceiling": 7.64000009536743,
+				"center": 6.44000005722046,
+				"floor": 4.40000009536743
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 21",
+			"data": {
+				"building": "ApartmentUpper",
+				"ceiling": 7.64000009536743,
+				"center": 6.44000005722046,
+				"floor": 4.40000009536743
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 22",
+			"data": {
+				"building": "ApartmentUpper",
+				"ceiling": 7.64000009536743,
+				"center": 6.44000005722046,
+				"floor": 4.40000009536743
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 23",
+			"data": {
+				"building": "ApartmentUpper",
+				"ceiling": 10.8800000953674,
+				"center": 9.68000030517578,
+				"floor": 7.64000009536743
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 24",
+			"data": {
+				"building": "ApartmentUpper",
+				"ceiling": 10.8800000953674,
+				"center": 9.68000030517578,
+				"floor": 7.64000009536743
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 25",
+			"data": {
+				"building": "ApartmentUpper",
+				"ceiling": 10.8800000953674,
+				"center": 9.68000030517578,
+				"floor": 7.64000009536743
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 26",
+			"data": {
+				"building": "ApartmentUpper",
+				"ceiling": 10.8800000953674,
+				"center": 9.68000030517578,
+				"floor": 7.64000009536743
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 27",
+			"data": {
+				"building": "ApartmentUpper",
+				"ceiling": 10.8800000953674,
+				"center": 9.68000030517578,
+				"floor": 7.64000009536743
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 28",
+			"data": {
+				"building": "ApartmentUpper",
+				"ceiling": 10.8800000953674,
+				"center": 9.68000030517578,
+				"floor": 7.64000009536743
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 29",
+			"data": {
+				"building": "ApartmentUpper",
+				"ceiling": 7.64000009536743,
+				"center": 6.44000005722046,
+				"floor": 4.40000009536743
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 30",
+			"data": {
+				"building": "ApartmentUpper",
+				"ceiling": 7.64000009536743,
+				"center": 6.44000005722046,
+				"floor": 4.40000009536743
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 31",
+			"data": {
+				"building": "ApartmentUpper",
+				"ceiling": 7.64000009536743,
+				"center": 6.44000005722046,
+				"floor": 4.40000009536743
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 32",
+			"data": {
+				"building": "ApartmentUpper",
+				"ceiling": 7.64000009536743,
+				"center": 6.44000005722046,
+				"floor": 4.40000009536743
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 33",
+			"data": {
+				"building": "ApartmentUpper",
+				"ceiling": 7.64000009536743,
+				"center": 6.44000005722046,
+				"floor": 4.40000009536743
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 34",
+			"data": {
+				"building": "ApartmentUpper",
+				"ceiling": 7.64000009536743,
+				"center": 6.44000005722046,
+				"floor": 4.40000009536743
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 35",
+			"data": {
+				"building": "ApartmentUpper",
+				"ceiling": 10.8800000953674,
+				"center": 9.68000030517578,
+				"floor": 7.64000009536743
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 36",
+			"data": {
+				"building": "ApartmentUpper",
+				"ceiling": 10.8800000953674,
+				"center": 9.68000030517578,
+				"floor": 7.64000009536743
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 37",
+			"data": {
+				"building": "ApartmentUpper",
+				"ceiling": 10.8800000953674,
+				"center": 9.68000030517578,
+				"floor": 7.64000009536743
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 38",
+			"data": {
+				"building": "ApartmentUpper",
+				"ceiling": 10.8800000953674,
+				"center": 9.68000030517578,
+				"floor": 7.64000009536743
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 39",
+			"data": {
+				"building": "ApartmentUpper",
+				"ceiling": 10.8800000953674,
+				"center": 9.68000030517578,
+				"floor": 7.64000009536743
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 40",
+			"data": {
+				"building": "ApartmentUpper",
+				"ceiling": 10.8800000953674,
+				"center": 9.68000030517578,
+				"floor": 7.64000009536743
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 41",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 42",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 43",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 44",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 45",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 46",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 47",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 48",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 49",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 50",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 51",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 52",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 53",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 54",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 55",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 56",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 57",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 58",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 59",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 60",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 61",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 62",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 63",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 64",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 65",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 66",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 67",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 68",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 69",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 70",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 71",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 72",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 73",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 74",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 75",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 76",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 77",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 78",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 79",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 80",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 81",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 82",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 83",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 84",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 85",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 86",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 87",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 88",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 89",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 90",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 91",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 92",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 93",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 94",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 95",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 96",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 97",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 98",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 99",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 100",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 101",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 102",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 103",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 104",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 105",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 106",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 107",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 108",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 109",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 110",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 111",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 112",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 113",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 114",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 115",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 116",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 117",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 118",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 119",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 120",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 121",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 122",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 123",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 124",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 125",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 126",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 127",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 128",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 129",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 130",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 131",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 132",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 133",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 134",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 135",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 136",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 137",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 138",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 139",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 140",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 141",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 142",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 143",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 144",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 145",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 146",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 147",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 148",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 149",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 150",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 151",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 152",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 153",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 154",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 155",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 156",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 157",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 158",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 159",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 160",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 161",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 162",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 163",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 164",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 165",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 166",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 167",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 168",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 169",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 170",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 171",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 172",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 173",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 174",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 175",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 176",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 177",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 178",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 179",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 180",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 181",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 182",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 183",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 184",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 185",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 186",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 187",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 188",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 189",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 190",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 191",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 192",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 193",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 194",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 195",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 196",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 197",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 198",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 199",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 200",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 201",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 202",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 203",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 204",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 205",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 206",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 207",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 208",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 209",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 210",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 211",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 212",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 213",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 214",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 215",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 216",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 217",
+			"data": {
+				"building": "OuterHouse",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 218",
+			"data": {
+				"building": "OuterHouse",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 219",
+			"data": {
+				"building": "OuterHouse",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 220",
+			"data": {
+				"building": "OuterHouse",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 221",
+			"data": {
+				"building": "OuterHouse",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 222",
+			"data": {
+				"building": "OuterHouse",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 223",
+			"data": {
+				"building": "OuterHouse",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 224",
+			"data": {
+				"building": "OuterHouse",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 225",
+			"data": {
+				"building": "OuterHouse",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 226",
+			"data": {
+				"building": "OuterHouse",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 227",
+			"data": {
+				"building": "OuterHouse",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 228",
+			"data": {
+				"building": "OuterHouse",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 229",
+			"data": {
+				"building": "OuterHouse",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 230",
+			"data": {
+				"building": "OuterHouse",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 231",
+			"data": {
+				"building": "OuterHouse",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 232",
+			"data": {
+				"building": "OuterHouse",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 233",
+			"data": {
+				"building": "OuterHouse",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 234",
+			"data": {
+				"building": "OuterHouse",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 235",
+			"data": {
+				"building": "OuterHouse",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 236",
+			"data": {
+				"building": "OuterHouse",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 237",
+			"data": {
+				"building": "OuterHouse",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 238",
+			"data": {
+				"building": "OuterHouse",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 239",
+			"data": {
+				"building": "OuterHouse",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 240",
+			"data": {
+				"building": "OuterHouse",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 241",
+			"data": {
+				"building": "OuterHouse",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 242",
+			"data": {
+				"building": "OuterHouse",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 243",
+			"data": {
+				"building": "OuterHouse",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 244",
+			"data": {
+				"building": "OuterHouse",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 245",
+			"data": {
+				"building": "OuterHouse",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 246",
+			"data": {
+				"building": "OuterHouse",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 247",
+			"data": {
+				"building": "OuterHouse",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 248",
+			"data": {
+				"building": "OuterHouse",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 249",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 250",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 251",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 252",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 253",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 254",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 255",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 256",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 257",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 258",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 259",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 260",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 261",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 262",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 263",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 264",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 265",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 266",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 267",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 268",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 269",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 270",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 271",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 272",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 273",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 274",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 275",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 276",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 277",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 278",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 279",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 280",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 281",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 282",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 283",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 284",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 285",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 286",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 287",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 288",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 289",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 290",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 291",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 292",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 293",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 294",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 295",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 296",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 297",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 298",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 299",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 300",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 301",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 302",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 303",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 304",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 305",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 306",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 307",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 308",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 309",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 310",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 311",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 312",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 313",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 314",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 315",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 316",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 317",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 318",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 319",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 320",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 321",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 322",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 323",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 324",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 325",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 326",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 327",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 328",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 329",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 330",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 331",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 332",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 333",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 334",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 335",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 336",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 337",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 338",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 339",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 340",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 341",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 342",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 343",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 344",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 345",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 346",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 347",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 348",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 349",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 350",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 351",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 352",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 353",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 354",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 355",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 356",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 357",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 358",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 359",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 360",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 361",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 362",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 363",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 364",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 365",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 366",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 367",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 368",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 369",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 370",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 371",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 372",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 373",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 374",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 375",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 376",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 377",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 378",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 379",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 380",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 381",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 382",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 383",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 384",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 385",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 386",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 387",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 388",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 389",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 390",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 391",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 392",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 393",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 394",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 395",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 396",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 397",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 398",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 399",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 400",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 401",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 402",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 403",
+			"data": {
+				"building": "EastResidence",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 404",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 405",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 406",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 407",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 408",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 409",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 410",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 411",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 412",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 413",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 414",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 415",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 416",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 417",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 418",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 419",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 420",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 421",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 422",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 423",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 424",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 425",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 426",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 427",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 428",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 429",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 430",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 431",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 432",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 433",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 434",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 435",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 436",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 437",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 438",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 439",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 440",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 441",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 442",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 443",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 444",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 445",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 446",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 447",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 448",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 449",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 450",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 451",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 452",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 453",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 454",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 455",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 456",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 457",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 458",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 459",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 460",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 461",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 462",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 463",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 464",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 465",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 466",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 467",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 468",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 469",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 470",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 471",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 472",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 473",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 474",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 475",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 476",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 477",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 478",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 479",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 480",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 481",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 482",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 483",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 484",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 485",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 486",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 487",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 488",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 489",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 490",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 491",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 492",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 493",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 494",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 495",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 496",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 497",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 498",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 499",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 500",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 501",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 502",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 503",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 504",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 505",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 506",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 507",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 508",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 509",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 510",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 511",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 512",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 513",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 514",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 515",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 516",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 517",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 518",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 519",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 520",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 521",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 522",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 523",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 524",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 525",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 526",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 527",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 528",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 529",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 530",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 531",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 532",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 533",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 534",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 535",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 536",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 537",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 538",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 539",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 540",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 541",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 542",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 543",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 544",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 545",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 546",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 547",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 548",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 549",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 550",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 551",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 552",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 553",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 554",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 555",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 556",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 557",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 558",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 559",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 560",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 561",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 562",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 563",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 564",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 565",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 566",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 567",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 568",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 569",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 570",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 571",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 572",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 573",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 574",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 575",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 576",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 577",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 578",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 579",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 580",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 581",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 582",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 583",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 584",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 585",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 586",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 587",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 588",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 589",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 590",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 591",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 592",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 593",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 594",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 595",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 596",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 597",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 598",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 599",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 600",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 601",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 602",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 603",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 604",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 605",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 606",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 607",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 608",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 609",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 610",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 611",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 612",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 613",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 614",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 615",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 616",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 617",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 618",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 619",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 620",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 621",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 622",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 623",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 624",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 625",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 626",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 627",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 628",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 629",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 630",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 631",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 632",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 633",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 634",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 635",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 636",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 637",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 638",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 639",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 640",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 641",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 642",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 643",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 644",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 645",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 646",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 647",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 648",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 649",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 650",
+			"data": {
+				"building": "RearBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 651",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 652",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 653",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 654",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 655",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 656",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 657",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 658",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 659",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 660",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 661",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 662",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 663",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 664",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 665",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 666",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 667",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 3.24,
+				"center": 2.03999996185303,
+				"floor": 0.0
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 668",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Window stays inside story 669",
+			"data": {
+				"building": "OppositeBuilding",
+				"ceiling": 6.48,
+				"center": 5.28000020980835,
+				"floor": 3.24
+			},
+			"passed": true
+		},
+		{
+			"check": "Upper-story windows audited",
+			"data": 372,
+			"passed": true
+		}
+	],
+	"failures": 0,
+	"geometry": {
+		"batches": 45,
+		"buildings": 32,
+		"core_geometry_sha256": "9baf9aa5e325039669051814a0ce08602b2078fe818611445919ea8438b235aa",
+		"core_instances": 1667,
+		"static_instances": 4723
+	},
+	"passed": true,
+	"upper_windows_checked": 372
+}
