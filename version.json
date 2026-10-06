@@ -1,5 +1,5 @@
 {
-  "release_id": "0.7.9-beta.19-cloudtest.96-fit.1",
+  "release_id": "0.7.9-beta.19-cloudtest.96-east.2",
   "game_build": "0.7.9-beta.19",
   "channel": "main-based-cloud-test",
   "updater": "network-only-no-service-worker",
@@ -105,7 +105,7 @@
   "expansion_lane": "New Advancements lane appears only after Chapter 3 is complete",
   "neighborhood": "Prototype 0.9.3 street, sidewalk and building footprint layout adapted with cloud-test texture atlas, opening door, analog controls and ground reserves.",
   "notification_audio": "Requested text ding at -14 dB; requested door knock at -10 dB.",
-  "runtime_delivery": "SHA-256-verified character-fit-v1 pack delta over unchanged .63 assets; derived from .96.",
+  "runtime_delivery": "SHA-256-verified east-expansion-v1 pack delta; additive district over merged .96-fit.1.",
   "interior_controls": "Free analog movement in apartment and grow room; nearby station double tap; Back restores walking position; walls and furniture collision.",
   "responsive_layout": "Automatic portrait/landscape game viewport, corner controls, centered phone menu and fitting browser splash/account overlays.",
   "walking_fov": 78,
@@ -147,5 +147,13 @@
     "car_scale": 1.25,
     "tree_scale": 1.2,
     "background_story_scale_y": 1.2
-  }
+  },
+  "east_expansion": {
+    "type": "Residential streets, rear lanes and pocket park",
+    "east_boundary": 137,
+    "core_buildings_and_interiors": "unchanged from .96-fit.1; two decorative east-edge buildings reorganized",
+    "new_buildings": "19 exterior residences and 5 rear-lane garages, replacing 2 old edge buildings; no new enterable interiors",
+    "upper_windows": "Audited per story, including apartment upper floors above the 4.4-unit ground-floor volume"
+  },
+  "tree_planting": "Shared placement list aligns trunks, soil and paving cutouts; trees moved out of narrow building gaps; soil meets trunk bases at floor level."
 }
