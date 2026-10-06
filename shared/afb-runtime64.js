@@ -45,7 +45,7 @@
       engine.preloadFile = function (file, path) {
         if (file !== 'index-cloudtest64.pck') return preload(file, path);
         if (!packPromise) packPromise = buildPack().catch(error => { packPromise = null; throw error; });
-        return packPromise.then(pack => preload(pack, path));
+        return packPromise.then(pack => preload(pack.buffer, path)).finally(() => { packPromise = null; });
       };
     }
   };
