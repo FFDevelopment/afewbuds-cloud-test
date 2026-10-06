@@ -6,7 +6,7 @@
 	<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 	<meta http-equiv="Pragma" content="no-cache">
 	<meta http-equiv="Expires" content="0">
-		<title>AFewBuds Cloud Test 0.7.9-beta.19-cloudtest.69</title>
+		<title>AFewBuds Cloud Test 0.7.9-beta.19-cloudtest.70</title>
 		<style>
 html, body, #canvas {
 	margin: 0;
@@ -263,6 +263,20 @@ body {
 	.afb-leaderboard-profile-grid{grid-template-columns:1fr}
 }
 
+
+/* Rotation keeps browser overlays and splash artwork inside the visible screen. */
+#status-splash { max-height:55dvh; }
+#afb-prelaunch { overflow:auto; padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left)); }
+.afb-launch-card { max-height:100%; overflow:auto; }
+@media (orientation:landscape) and (max-height:600px) {
+ #afb-account-gate { align-items:flex-start; padding:12px max(20px,env(safe-area-inset-right)) 12px max(20px,env(safe-area-inset-left)); }
+ .afb-auth-card { padding:18px; }
+ .afb-launch-card { padding:14px 24px; }
+ .afb-launch-logo { width:64px; height:64px; margin-bottom:8px; }
+ .afb-launch-card h1 { font-size:23px; }
+ #afb-prelaunch-progress { margin:12px 0 8px; }
+}
+
 </style>
 		<link id="-gd-engine-icon" rel="icon" type="image/png" href="index.icon.png?v=0.7.9-beta.19" />
 <link rel="apple-touch-icon" href="index.apple-touch-icon.png?v=0.7.9-beta.19"/>
@@ -431,14 +445,14 @@ body {
 		<script src="shared/afb-api.js"></script>
 		<script src="shared/afb-cloud-accountsync10.js?v=0.7.9-beta.19-leaderboard40"></script>
 		<script src="index-accountsync10.js?v=0.7.9-beta.19-accountsync10"></script>
-		<script src="shared/afb-runtime69.js?v=69"></script>
+		<script src="shared/afb-runtime70.js?v=70"></script>
 		<script>
-const AFB_TEST_RELEASE = "0.7.9-beta.19-cloudtest.69";
-const AFB_TEST_TITLE = "AFewBuds Cloud Test v0.7.9-beta.19-cloudtest.65";
+const AFB_TEST_RELEASE = "0.7.9-beta.19-cloudtest.70";
+const AFB_TEST_TITLE = "AFewBuds Cloud Test v0.7.9-beta.19-cloudtest.70";
 function afbKeepTestTitle(){ if(document.title !== AFB_TEST_TITLE) document.title = AFB_TEST_TITLE; }
 afbKeepTestTitle();
 setInterval(afbKeepTestTitle, 1000);
-const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":true,"fileSizes":{"index-cloudtest69.pck":26296512,"index.wasm":37902138},"focusCanvas":true,"mainPack":"index-cloudtest69.pck","gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":""};
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":true,"fileSizes":{"index-cloudtest70.pck":26297632,"index.wasm":37902138},"focusCanvas":true,"mainPack":"index-cloudtest70.pck","gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":""};
 const GODOT_THREADS_ENABLED = false;
 let AFB_GAME_STARTED = false;
 let AFB_GAME_STARTING = false;
@@ -554,7 +568,7 @@ async function afbLaunchGame() {
 }
 function launchGodotEngine() {
 	const engine = new Engine(GODOT_CONFIG);
-	AFB_RUNTIME69.install(engine);
+	AFB_RUNTIME70.install(engine);
 	const statusOverlay = document.getElementById('status');
 	const statusProgress = document.getElementById('status-progress');
 	const statusNotice = document.getElementById('status-notice');
