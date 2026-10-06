@@ -1,6 +1,6 @@
 # East residential expansion
 
-Release `0.7.9-beta.19-cloudtest.96-east.1`, built over the merged furniture-fit
+Release `0.7.9-beta.19-cloudtest.96-east.2`, built over the merged furniture-fit
 release at `ab71721ebd6e6ca8f97f872502dd0828266bfca9`.
 
 The map extends east from x=73 to x=137. The main street and rear lane continue
@@ -22,10 +22,15 @@ is in `scripts/east_expansion.gd`. All other 210 pack entries are byte-identical
 to the merged furniture release. The original three functional buildings are
 not moved, resized, rebuilt or given new interior code.
 
-The renderer comparison additionally hashes the 1,798 original batched
-instances with centers west of x=48, covering the preserved core exterior.
+The renderer comparison additionally hashes the 1,667 original aboveground
+batched instances with centers west of x=48, covering the preserved core exterior.
 Their geometry hash is identical before and after. Two decorative buildings
 east of that boundary are intentionally reorganized, as authorized.
+
+Tree trunks, soil patches and paving cutouts now share one placement list.
+Two displaced hub cutouts are corrected, and the cramped expansion trees move
+onto wider sidewalk planting areas. All 16 trunks are centered on their patches,
+meet the soil surface, and have canopy clearance from building bounds.
 
 All 669 generated facade windows were checked against their individual story
 bands, including 372 upper-story windows. The apartment upper floors start
@@ -36,14 +41,14 @@ already corrected these positions, so this expansion preserves that alignment.
 
 ## Validation
 
-- 753 expansion checks pass: preserved core geometry, original five functional
+- 818 expansion checks pass: preserved core geometry, tree planting, original five functional
   doors, open old boundary and ground seams, walking routes from the hub,
   unobstructed park path, exterior collisions, containment and window alignment.
-- The character/furniture checks pass with 112 checks across the larger map.
+- The character/furniture checks pass with 113 checks across the larger map.
 - Existing door-swing checks and house/market route checks report zero failures.
 - The actual JavaScript loader reconstructs the expected pack and verifies its
   SHA-256. Chrome guest startup is checked without a cloud-account sign-in.
-- Static batched geometry grows from 2,204 to 4,668 instances and from 34 to 44
+- Static batched geometry grows from 2,204 to 4,723 instances and from 34 to 45
   MultiMesh batches. This is a geometry budget check, not an FPS benchmark or
   a guarantee of performance on every phone.
 

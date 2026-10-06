@@ -1,5 +1,5 @@
 {
-  "release_id": "0.7.9-beta.19-cloudtest.96-east.1",
+  "release_id": "0.7.9-beta.19-cloudtest.96-east.2",
   "game_build": "0.7.9-beta.19",
   "channel": "main-based-cloud-test",
   "updater": "network-only-no-service-worker",
@@ -154,5 +154,6 @@
     "core_buildings_and_interiors": "unchanged from .96-fit.1; two decorative east-edge buildings reorganized",
     "new_buildings": "19 exterior residences and 5 rear-lane garages, replacing 2 old edge buildings; no new enterable interiors",
     "upper_windows": "Audited per story, including apartment upper floors above the 4.4-unit ground-floor volume"
-  }
+  },
+  "tree_planting": "Shared placement list aligns trunks, soil and paving cutouts; trees moved out of narrow building gaps; soil meets trunk bases at floor level."
 }

@@ -2,13 +2,13 @@
 	"all_windows_checked": 669,
 	"checks": [
 		{
-			"check": "Original hub exterior geometry unchanged",
+			"check": "Original hub above-ground exterior geometry unchanged",
 			"data": {
-				"batches": 44,
+				"batches": 45,
 				"buildings": 32,
-				"core_geometry_sha256": "0b58a299e91e64ddfe7000a8315f27065e07ae1573944d47619924834701d359",
-				"core_instances": 1798,
-				"static_instances": 4668
+				"core_geometry_sha256": "9baf9aa5e325039669051814a0ce08602b2078fe818611445919ea8438b235aa",
+				"core_instances": 1667,
+				"static_instances": 4723
 			},
 			"passed": true
 		},
@@ -20,7 +20,7 @@
 		{
 			"check": "Expansion reuses batched geometry/materials",
 			"data": {
-				"after": 44,
+				"after": 45,
 				"before": 34.0
 			},
 			"passed": true
@@ -28,13 +28,341 @@
 		{
 			"check": "Bounded static-instance growth",
 			"data": {
-				"after": 4668,
+				"after": 4723,
 				"before": 2204.0
 			},
 			"passed": true
 		},
 		{
 			"check": "All original interactive doors retained",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Every trunk has a real rendered soil patch",
+			"data": {
+				"soil": 16,
+				"trunks": 16
+			},
+			"passed": true
+		},
+		{
+			"check": "Trunk touches soil vertically (-7.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk centered on soil (-7.17119, 0.0, 10.32)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk touches soil vertically (10.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk centered on soil (9.82881, 0.0, 10.32)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk touches soil vertically (24.5, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk centered on soil (24.32881, 0.0, 10.32)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk touches soil vertically (46.75, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk centered on soil (46.57881, 0.0, 10.32)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk touches soil vertically (62.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk centered on soil (61.82881, 0.0, 10.32)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk touches soil vertically (72.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk centered on soil (71.82881, 0.0, 10.32)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk touches soil vertically (82.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk centered on soil (81.82881, 0.0, 10.32)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk touches soil vertically (92.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk centered on soil (91.82881, 0.0, 10.32)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk touches soil vertically (100.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk centered on soil (99.82881, 0.0, 10.32)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk touches soil vertically (67.0, 24.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk centered on soil (66.82881, 0.0, 23.82)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk touches soil vertically (87.0, 24.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk centered on soil (86.82881, 0.0, 23.82)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk touches soil vertically (126.0, 24.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk centered on soil (125.8288, 0.0, 23.82)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk touches soil vertically (120.2, -11.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk centered on soil (120.0288, 0.0, -11.18)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk touches soil vertically (131.5, -11.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk centered on soil (131.3288, 0.0, -11.18)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk touches soil vertically (120.3, 3.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk centered on soil (120.1288, 0.0, 3.32)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk touches soil vertically (131.3, 3.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Trunk centered on soil (131.1288, 0.0, 3.32)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Soil opening is not covered by paving or grass (-7.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Soil opening is not covered by paving or grass (10.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Soil opening is not covered by paving or grass (24.5, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Soil opening is not covered by paving or grass (46.75, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Soil opening is not covered by paving or grass (62.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Soil opening is not covered by paving or grass (72.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Soil opening is not covered by paving or grass (82.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Soil opening is not covered by paving or grass (92.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Soil opening is not covered by paving or grass (100.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Soil opening is not covered by paving or grass (67.0, 24.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Soil opening is not covered by paving or grass (87.0, 24.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Soil opening is not covered by paving or grass (126.0, 24.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Soil opening is not covered by paving or grass (120.2, -11.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Soil opening is not covered by paving or grass (131.5, -11.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Soil opening is not covered by paving or grass (120.3, 3.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Soil opening is not covered by paving or grass (131.3, 3.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Full tree crown clears buildings (-7.0, 0.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Full tree crown clears buildings (10.0, 0.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Full tree crown clears buildings (24.5, 0.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Full tree crown clears buildings (46.75, 0.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Full tree crown clears buildings (62.0, 0.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Full tree crown clears buildings (72.0, 0.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Full tree crown clears buildings (82.0, 0.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Full tree crown clears buildings (92.0, 0.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Full tree crown clears buildings (100.0, 0.0, 10.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Full tree crown clears buildings (67.0, 0.0, 24.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Full tree crown clears buildings (87.0, 0.0, 24.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Full tree crown clears buildings (126.0, 0.0, 24.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Full tree crown clears buildings (120.2, 0.0, -11.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Full tree crown clears buildings (131.5, 0.0, -11.0)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Full tree crown clears buildings (120.3, 0.0, 3.5)",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Full tree crown clears buildings (131.3, 0.0, 3.5)",
 			"data": null,
 			"passed": true
 		},
@@ -7126,11 +7454,11 @@
 	],
 	"failures": 0,
 	"geometry": {
-		"batches": 44,
+		"batches": 45,
 		"buildings": 32,
-		"core_geometry_sha256": "0b58a299e91e64ddfe7000a8315f27065e07ae1573944d47619924834701d359",
-		"core_instances": 1798,
-		"static_instances": 4668
+		"core_geometry_sha256": "9baf9aa5e325039669051814a0ce08602b2078fe818611445919ea8438b235aa",
+		"core_instances": 1667,
+		"static_instances": 4723
 	},
 	"passed": true,
 	"upper_windows_checked": 372

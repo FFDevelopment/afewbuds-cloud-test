@@ -28,7 +28,10 @@ def main():
         nonlocal text
         assert text.count(a)==1,repr(a)
         text=text.replace(a,b,1)
-    once('extends Node3D','extends Node3D\nvar window_layout_records:Array[Dictionary]=[]')
+    once('extends Node3D','extends Node3D\nconst TreeLayout=preload("res://scripts/east_expansion.gd")\nvar window_layout_records:Array[Dictionary]=[]')
+    once('if surface == 2 and pos.y < 0 and label_text in ["FrontSidewalk","HouseSidewalk","FarSidewalk","AlleySidewalk","InnerAlleySidewalk","SidewalkReturn","ApartmentSideWalkR","RearCourtyard"]:', 'if pos.y < 0 and ((surface == 2 and label_text in ["FrontSidewalk","HouseSidewalk","FarSidewalk","AlleySidewalk","InnerAlleySidewalk","SidewalkReturn","ApartmentSideWalkR","RearCourtyard","EastPaving"]) or label_text == "HouseLawn"):')
+    once('for x in [-7.0,9.0,24.5,45.5]:\n\t\t\tvar hole := Rect2(Vector2(x-0.75,9.75),Vector2(1.5,1.5))','for site in TreeLayout.TREE_SITES:\n\t\t\tvar hole := Rect2(Vector2(site.x,site.z)-Vector2.ONE*TreeLayout.TREE_BED_SIZE/2,Vector2.ONE*TreeLayout.TREE_BED_SIZE)')
+    once('for x in [-7.0,10.0,24.5,46.75]:\n\t\tpiece("TreeBed",Vector3(x,-0.055,10.5),Vector3(1.5,0.05,1.5),"4c4737",3)\n\t\ttree(Vector3(x,0,10.5))','for i in range(4):TreeLayout.plant(self,TreeLayout.TREE_SITES[i])')
     once('\t\t\t\t\tfacade_window(point,normal)','\t\t\t\t\twindow_layout_records.append({"at":point,"floor":pos.y+row*3.24,"ceiling":minf(pos.y+(row+1)*3.24,pos.y+size.y),"building":label_text,"row":row})\n\t\t\t\t\tfacade_window(point,normal)')
     once('\tfence(Vector3(73,0,-36),Vector3(73,0,39))','\t# The east fence moves outward; all core geometry stays in place.\n\tload("res://scripts/east_expansion.gd").new().build(self)')
     once('pos.x > 72.7','pos.x > 136.7')
@@ -74,14 +77,15 @@ def main():
     assert fit.read_recipe(recipe_path)==candidate
     loader=(ROOT/'shared/afb-runtime-character-fit-v1.js').read_text().replace('character-fit-v1','east-expansion-v1').replace('AFB_RUNTIME_CHARACTER_FIT_V1','AFB_RUNTIME_EAST_EXPANSION_V1')
     (ROOT/'shared/afb-runtime-east-expansion-v1.js').write_text(loader,newline='\n')
-    release='0.7.9-beta.19-cloudtest.96-east.1'
+    release='0.7.9-beta.19-cloudtest.96-east.2'
     index=(ROOT/'index.html').read_text().replace('character-fit-v1','east-expansion-v1').replace('AFB_RUNTIME_CHARACTER_FIT_V1','AFB_RUNTIME_EAST_EXPANSION_V1')
-    index=re.sub(r'0\.7\.9-beta\.19-cloudtest\.96-(?:fit|east)\.1',release,index)
+    index=re.sub(r'0\.7\.9-beta\.19-cloudtest\.96-(?:fit|east)\.\d+',release,index)
     index=re.sub(r'"fileSizes":\{[^}]*\}',f'"fileSizes":{{"index-east-expansion-v1.pck":{len(candidate)},"index.wasm":{(ROOT/"index.wasm").stat().st_size}}}',index,count=1)
     (ROOT/'index.html').write_text(index,newline='\n')
     version=json.loads((ROOT/'version.json').read_text());version['release_id']=release
     version['east_expansion']={'type':'Residential streets, rear lanes and pocket park','east_boundary':137,'core_buildings_and_interiors':'unchanged from .96-fit.1; two decorative east-edge buildings reorganized','new_buildings':'19 exterior residences and 5 rear-lane garages, replacing 2 old edge buildings; no new enterable interiors','upper_windows':'Audited per story, including apartment upper floors above the 4.4-unit ground-floor volume'}
     version['runtime_delivery']='SHA-256-verified east-expansion-v1 pack delta; additive district over merged .96-fit.1.'
+    version['tree_planting']='Shared placement list aligns trunks, soil and paving cutouts; trees moved out of narrow building gaps; soil meets trunk bases at floor level.'
     (ROOT/'version.json').write_text(json.dumps(version,indent=2)+'\n',newline='\n')
     (ROOT/'BUILD_VERSION.txt').write_text('AFewBuds Cloud Test\nGame build: 0.7.9-beta.19\nWeb release: '+release+'\nRuntime: East residential streets, rear lanes and pocket park\n',newline='\n')
     receipt={'baseline_sha256':hashlib.sha256(baseline).hexdigest(),'target_sha256':hashlib.sha256(candidate).hexdigest(),'target_bytes':len(candidate),'changed_existing_entries':changed,'added_entries':['scripts/east_expansion.gd'],'unchanged_entries':len(before)-len(changed),'all_interiors_characters_gameplay_unchanged':True,'reconstruction_verified':True}

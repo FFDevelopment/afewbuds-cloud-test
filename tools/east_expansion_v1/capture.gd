@@ -14,6 +14,8 @@ func run() -> void:
 	game.sun_light.hide();game.camera.environment=game.neighborhood.outdoor_environment
 	var rod:Node3D=game.neighborhood.location_ops.crew.character_instance("Rod");root.add_child(rod)
 	for shot in [
+		{"id":"hub_tree_soil","pos":Vector3(17,3.5,15),"look":Vector3(10,.4,10.5),"ortho":false,"rod":Vector3(13,0,8.6)},
+		{"id":"east_tree_soil","pos":Vector3(98,3.5,14.5),"look":Vector3(92,.4,10.5),"ortho":false,"rod":Vector3(90,0,8.6)},
 		{"id":"whole_neighborhood","pos":Vector3(52.5,105,65),"look":Vector3(52.5,0,0),"ortho":true,"size":118.0,"rod":Vector3(125.5,0,-1.6)},
 		{"id":"east_overview","pos":Vector3(111,62,43),"look":Vector3(106,0,-2),"ortho":true,"size":79.0,"rod":Vector3(125.5,0,-1.6)},
 		{"id":"park","pos":Vector3(125.5,2.16,8.5),"look":Vector3(125.5,1.5,-4),"ortho":false,"rod":Vector3(122,0,-1.2)},

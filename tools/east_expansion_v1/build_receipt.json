@@ -1,7 +1,7 @@
 {
   "baseline_sha256": "ad563d67709a3c19eae78df5ed28c4fb87f62c61d860b0452a987415cab18fde",
-  "target_sha256": "291dfaa429655d62deca542cd9f4da7808634d19a74e2c8a3d4641d2dacd53f0",
-  "target_bytes": 33615344,
+  "target_sha256": "5147b06c093cd4dd59ecd8463772f0d8f338e9261bc25262298dbe1636e65174",
+  "target_bytes": 33615920,
   "changed_existing_entries": [
     "scripts/neighborhood.gd"
   ],

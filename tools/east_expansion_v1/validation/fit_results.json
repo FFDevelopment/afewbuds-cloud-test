@@ -422,6 +422,46 @@
 		},
 		{
 			"check": "Tree size and trunk grounding",
+			"data": "[P: (60.10292, 0.0, 8.761399), S: (4.098621, 6.42, 3.622968)]",
+			"passed": true
+		},
+		{
+			"check": "Tree size and trunk grounding",
+			"data": "[P: (70.24438, 0.0, 8.677207), S: (3.975533, 6.42, 3.654959)]",
+			"passed": true
+		},
+		{
+			"check": "Tree size and trunk grounding",
+			"data": "[P: (80.1222, 0.0, 8.621814), S: (4.083984, 6.42, 3.629285)]",
+			"passed": true
+		},
+		{
+			"check": "Tree size and trunk grounding",
+			"data": "[P: (89.98853, 0.0, 8.589116), S: (4.172249, 6.42, 3.568357)]",
+			"passed": true
+		},
+		{
+			"check": "Tree size and trunk grounding",
+			"data": "[P: (97.82137, 0.0, 8.810852), S: (4.153938, 6.42, 3.592153)]",
+			"passed": true
+		},
+		{
+			"check": "Tree size and trunk grounding",
+			"data": "[P: (65.16478, 0.0, 22.21639), S: (4.050758, 6.42, 3.642229)]",
+			"passed": true
+		},
+		{
+			"check": "Tree size and trunk grounding",
+			"data": "[P: (85.05193, 0.0, 22.10106), S: (4.133316, 6.42, 3.609631)]",
+			"passed": true
+		},
+		{
+			"check": "Tree size and trunk grounding",
+			"data": "[P: (123.8477, 0.0, 22.34697), S: (4.168465, 6.42, 3.566526)]",
+			"passed": true
+		},
+		{
+			"check": "Tree size and trunk grounding",
 			"data": "[P: (118.1922, 0.0, -12.6609), S: (4.164963, 6.42, 3.572962)]",
 			"passed": true
 		},
@@ -438,41 +478,6 @@
 		{
 			"check": "Tree size and trunk grounding",
 			"data": "[P: (129.1803, 0.0, 1.9051), S: (4.191208, 6.42, 3.513952)]",
-			"passed": true
-		},
-		{
-			"check": "Tree size and trunk grounding",
-			"data": "[P: (73.19149, 0.0, 2.125527), S: (4.087616, 6.42, 3.632476)]",
-			"passed": true
-		},
-		{
-			"check": "Tree size and trunk grounding",
-			"data": "[P: (83.48005, 0.0, 2.18271), S: (3.987862, 6.42, 3.648842)]",
-			"passed": true
-		},
-		{
-			"check": "Tree size and trunk grounding",
-			"data": "[P: (92.65396, 0.0, 2.38665), S: (4.178612, 6.42, 3.530913)]",
-			"passed": true
-		},
-		{
-			"check": "Tree size and trunk grounding",
-			"data": "[P: (103.6538, 0.0, -11.13396), S: (4.172226, 6.42, 3.548978)]",
-			"passed": true
-		},
-		{
-			"check": "Tree size and trunk grounding",
-			"data": "[P: (115.3002, 0.0, 27.11368), S: (4.103271, 6.42, 3.620674)]",
-			"passed": true
-		},
-		{
-			"check": "Tree size and trunk grounding",
-			"data": "[P: (84.14555, 0.0, 26.58712), S: (4.166985, 6.42, 3.559944)]",
-			"passed": true
-		},
-		{
-			"check": "Tree size and trunk grounding",
-			"data": "[P: (93.797, 0.0, 26.61744), S: (4.094345, 6.42, 3.632835)]",
 			"passed": true
 		},
 		{

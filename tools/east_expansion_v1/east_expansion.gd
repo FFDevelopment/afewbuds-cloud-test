@@ -3,8 +3,17 @@ extends RefCounted
 ## Existing hub, buildings and interiors are owned by neighborhood.gd unchanged.
 const EAST_LIMIT:=137.0
 const PARK:=Rect2(118,-14,16,20)
+const TREE_BED_SIZE:=1.5
+# One list drives trunks, soil and the holes cut in all paving/grass surfaces.
+# First four sites retain the approved hub tree locations.
+const TREE_SITES:=[Vector3(-7,0,10.5),Vector3(10,0,10.5),Vector3(24.5,0,10.5),Vector3(46.75,0,10.5),Vector3(62,0,10.5),Vector3(72,0,10.5),Vector3(82,0,10.5),Vector3(92,0,10.5),Vector3(100,0,10.5),Vector3(67,0,24),Vector3(87,0,24),Vector3(126,0,24),Vector3(120.2,0,-11),Vector3(131.5,0,-11),Vector3(120.3,0,3.5),Vector3(131.3,0,3.5)]
 var w:Node3D
 var landmarks:Array[Dictionary]=[]
+
+static func plant(world:Node3D,at:Vector3) -> void:
+	# Soil top and trunk bottom meet at y=0.
+	world._box(at+Vector3(0,-.025,0),Vector3(TREE_BED_SIZE,.05,TREE_BED_SIZE),"4c4737",5)
+	world.tree(at)
 
 func slab(id:String, x0:float, x1:float, z0:float, z1:float, y:float, depth:float, color:String, surface:int) -> void:
 	w.piece(id,Vector3((x0+x1)/2,y,(z0+z1)/2),Vector3(x1-x0,depth,z1-z0),color,surface)
@@ -92,13 +101,12 @@ func build(world:Node3D) -> void:
 	w.fence(Vector3(118,0,-14),Vector3(118,0,-3))
 	w.fence(Vector3(118,0,-.2),Vector3(118,0,6))
 	w.fence(Vector3(134,0,-14),Vector3(134,0,6))
-	for at in [Vector3(120.2,0,-11),Vector3(131.5,0,-11),Vector3(120.3,0,3.5),Vector3(131.3,0,3.5)]:w.tree(at)
 	bench(Vector3(121.8,0,-5.4),-PI/2)
 	bench(Vector3(129.2,0,-5.4),PI/2)
 	bench(Vector3(130,0,3.8),0)
 	landmarks.append({"kind":"park","at":Vector3(125.5,0,-1.6)})
-	# Trees sit behind paving, leaving all junction and front-door approaches open.
-	for at in [Vector3(75.4,0,4),Vector3(85.7,0,4),Vector3(94.7,0,4),Vector3(105.8,0,-9.5),Vector3(117.5,0,29),Vector3(86.3,0,28.5),Vector3(96,0,28.5)]:w.tree(at)
+	# Broad sidewalk planting sites replace cramped gaps between buildings.
+	for i in range(4,TREE_SITES.size()):plant(w,TREE_SITES[i])
 	for at in [Vector3(82,0,23.4),Vector3(101,0,23.4),Vector3(131,0,23.4),Vector3(116.2,0,-12.5)]:w._lamp(at.x,at.z)
 	for at in [Vector3(121.5,0,-8.5),Vector3(130,0,-8.5)]:
 		w._cylinder(at+Vector3.UP*.46,.22,.92,"345c40")

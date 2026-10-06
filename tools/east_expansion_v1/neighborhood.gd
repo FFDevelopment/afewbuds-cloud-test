@@ -1,4 +1,5 @@
 extends Node3D
+const TreeLayout=preload("res://scripts/east_expansion.gd")
 var window_layout_records:Array[Dictionary]=[]
 const ScalePolicy=preload("res://scripts/scale_policy.gd")
 var prop_transform:=Transform3D.IDENTITY
@@ -406,10 +407,10 @@ func piece(label_text: String, pos: Vector3, size: Vector3, color: String, surfa
 	elif label_text in ["EntryTrim","EntryLintel","WindowFrame","WindowSill"]:
 		tile=7
 	# Paving is cut around recessed tree soil, so two materials never share a face.
-	if surface == 2 and pos.y < 0 and label_text in ["FrontSidewalk","HouseSidewalk","FarSidewalk","AlleySidewalk","InnerAlleySidewalk","SidewalkReturn","ApartmentSideWalkR","RearCourtyard"]:
+	if pos.y < 0 and ((surface == 2 and label_text in ["FrontSidewalk","HouseSidewalk","FarSidewalk","AlleySidewalk","InnerAlleySidewalk","SidewalkReturn","ApartmentSideWalkR","RearCourtyard","EastPaving"]) or label_text == "HouseLawn"):
 		var slabs: Array[Rect2] = [Rect2(Vector2(pos.x-size.x/2,pos.z-size.z/2),Vector2(size.x,size.z))]
-		for x in [-7.0,9.0,24.5,45.5]:
-			var hole := Rect2(Vector2(x-0.75,9.75),Vector2(1.5,1.5))
+		for site in TreeLayout.TREE_SITES:
+			var hole := Rect2(Vector2(site.x,site.z)-Vector2.ONE*TreeLayout.TREE_BED_SIZE/2,Vector2.ONE*TreeLayout.TREE_BED_SIZE)
 			var remaining: Array[Rect2] = []
 			for slab in slabs:
 				if not slab.intersects(hole):
@@ -592,9 +593,7 @@ func _build_block() -> void:
 			if (z >= -22 and z <= -16) or (z >= 11 and z <= 23): continue
 			piece("SideRoadStripe",Vector3(x,-0.012,z),Vector3(0.1,0.012,2.0),"c3a04c")
 	# Leave a clear approach to both crosswalks beside the wider tree trunks.
-	for x in [-7.0,10.0,24.5,46.75]:
-		piece("TreeBed",Vector3(x,-0.055,10.5),Vector3(1.5,0.05,1.5),"4c4737",3)
-		tree(Vector3(x,0,10.5))
+	for i in range(4):TreeLayout.plant(self,TreeLayout.TREE_SITES[i])
 	for x in [-4.0,18.0,41.0]:
 		piece("LampPost",Vector3(x,2.0,23),Vector3(0.13,4,0.13),"303a36")
 		piece("LampHead",Vector3(x,4,23),Vector3(0.45,0.25,0.45),"cfbd91")
