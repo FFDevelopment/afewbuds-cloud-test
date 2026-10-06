@@ -1128,7 +1128,7 @@ func _activate_room_interaction(action_id: String) -> bool:
 			status_label.text = "Grow lights %s. Plant growth is %s." % [("ON" if grow_lights_on else "OFF"), ("normal" if grow_lights_on else "very slow")]
 		"ventilation_switch":
 			if not ventilation_installed:
-				status_label.text = "Ventilation is not installed yet. Buy Grow Room Ventilation in Phone -> Business -> Upgrades."
+				status_label.text = "Ventilation is not installed yet. Buy Grow Room Ventilation in Central Market checkout."
 				return true
 			ventilation_on = not ventilation_on
 			_increment_advancement_stat("ventilation_toggled")
@@ -1389,7 +1389,7 @@ func _show_daily_report() -> void:
 	var friend_text: String = _daily_report_friend_dealers_text(report)
 	if not friend_text.is_empty():
 		friend_section = "\n\nFRIEND DEALERS\n%s" % friend_text
-	daily_report_body.text = "PRODUCT SOLD\n%s\n\nREVENUE / COSTS\nGross product revenue: $%d\n%s\nElectricity: $%d\nWater: $%d\n\nTotal operating cost: $%d\nDAY PROFIT: $%d\n\n%s%s\n\nElectric and water charges are posted to Business -> Bills and can be paid separately." % [_daily_report_sales_text(report), gross, _daily_report_expense_text(report), power_cost, water_cost, total_cost, profit, settlement_line, friend_section]
+	daily_report_body.text = "PRODUCT SOLD\n%s\n\nREVENUE / COSTS\nGross product revenue: $%d\n%s\nElectricity: $%d\nWater: $%d\n\nTotal operating cost: $%d\nDAY PROFIT: $%d\n\n%s%s\n\nElectric and water charges are posted to Phone -> Bills or apartment computer -> Bills and can be paid separately." % [_daily_report_sales_text(report), gross, _daily_report_expense_text(report), power_cost, water_cost, total_cost, profit, settlement_line, friend_section]
 	daily_report_action.text = ("SETTLE DEALERS  |  START DAY %d" % next_day) if dealer_count_report > 0 else ("START DAY %d" % next_day)
 	daily_report_panel.visible = true
 	_set_world_controls_visible(false)
@@ -1982,7 +1982,7 @@ func _build_grow_slot_marker(slot_number: int, center: Vector3) -> void:
 	_add_box(pad_name, center, Vector3(1.75, 0.045, 1.38), Color("4c5153"), 0.90, false, "res://assets/textures/rug.png", Vector3(1.3, 1.0, 1.0))
 	var label: Label3D = Label3D.new()
 	label.name = "GrowSlot%dLabel" % slot_number
-	label.text = "OPEN GROW SPACE %d\nBusiness -> Upgrades" % slot_number
+	label.text = "OPEN GROW SPACE %d\nCentral Market checkout" % slot_number
 	label.font_size = 30
 	label.pixel_size = 0.0035
 	label.position = center + Vector3(0, 0.07, 0)
@@ -3197,7 +3197,7 @@ func _populate_utility_controls(parent: VBoxContainer) -> void:
 		{"id": "floor_lamp", "title": "Living-room lamp", "note": "The standing lamp beside the seating area."},
 		{"id": "grow_room_light_switch", "title": "Grow-room light", "note": "Room lighting; separate from the plant lights."},
 		{"id": "grow_light_switch", "title": "Plant grow lights", "note": "Turning these OFF slows plant growth, including while away."},
-		{"id": "ventilation_switch", "title": "Ventilation", "note": "Buy the system in Business -> Upgrades first. OFF slows growth."}
+		{"id": "ventilation_switch", "title": "Ventilation", "note": "Buy the system in Central Market checkout first. OFF slows growth."}
 	]
 	for spec: Dictionary in specs:
 		var card: PanelContainer = PanelContainer.new()
@@ -3952,7 +3952,7 @@ func _build_supply_inventory_panel() -> void:
 	supply_inventory_panel = _make_full_panel(34, 132, -34, -72)
 	var root: VBoxContainer = _panel_root(supply_inventory_panel, "GROW SUPPLY SHELF", _close_supply_inventory_panel)
 	var help: Label = Label.new()
-	help.text = "Seeds and fertilizer purchased from the phone are delivered here. Capacity upgrades are in Phone -> Business -> Upgrades."
+	help.text = "Collect seed orders and fertilizer at Central Market, then deposit them at your apartment computer. Order capacity upgrades at market checkout and install them at the computer."
 	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	root.add_child(help)
 	supply_inventory_scroll = PhoneTouchScroll.new()
@@ -4661,9 +4661,9 @@ func _grow_room_status_text() -> String:
 
 func _grow_room_upgrade_text() -> String:
 	if grow_tent_count >= 3:
-		return "Both expansion bays are installed. Upgrade tent capacity and automation from Phone -> Business -> Upgrades."
+		return "Both expansion bays are installed. Upgrade tent capacity and automation from Central Market checkout."
 	var remaining: int = 3 - grow_tent_count
-	return "%d grow-room expansion bay(s) still open. Buy the next tent from Phone -> Business -> Upgrades." % remaining
+	return "%d grow-room expansion bay(s) still open. Buy the next tent from Central Market checkout." % remaining
 
 func _refresh_navigation_ui() -> void:
 	if neighborhood != null and neighborhood.active:
@@ -4772,13 +4772,13 @@ func _context_action() -> void:
 			if grow_tent_count >= 2:
 				_go_to_view("grow2")
 			else:
-				status_label.text = "Grow Tent 2 is still an empty expansion bay. Unlock it in Phone -> Business -> Upgrades."
+				status_label.text = "Grow Tent 2 is still an empty expansion bay. Unlock it in Central Market checkout."
 		"grow_room_tent": _go_to_view("grow")
 		"grow_room_tent3":
 			if grow_tent_count >= 3:
 				_go_to_view("grow3")
 			else:
-				status_label.text = "Grow Tent 3 is still an empty expansion bay. Unlock it in Phone -> Business -> Upgrades."
+				status_label.text = "Grow Tent 3 is still an empty expansion bay. Unlock it in Central Market checkout."
 		"grow_room_utility":
 			_go_to_view("grow_system")
 			_open_system_control_panel()
@@ -6252,7 +6252,7 @@ func _store_product(strain_name: String) -> void:
 	var free_capacity: int = maxi(0, _storage_capacity() - _total_stored_stock())
 	var moved: int = mini(amount, free_capacity)
 	if moved <= 0:
-		status_label.text = "Storage is full. Upgrade in Phone -> Business -> Upgrades (up to the 400g AFB vault)."
+		status_label.text = "Storage is full. Upgrade in Central Market checkout (up to the 400g AFB vault)."
 		return
 	bagged_inventory[strain_name] = amount - moved
 	_ensure_product_exists(strain_name)
@@ -6382,7 +6382,7 @@ func _refresh_dealer_storage_panel() -> void:
 
 	if dealer_locker_level <= 0:
 		var locked: Label = Label.new()
-		locked.text = "Unlock Dealer Locker I in Phone -> Business -> Upgrades."
+		locked.text = "Unlock Dealer Locker I in Central Market checkout."
 		dealer_storage_list.add_child(locked)
 		return
 
@@ -6479,7 +6479,7 @@ func _refresh_supply_inventory_panel() -> void:
 	if supply_shelf_level >= 3:
 		upgrade.text = "Shelf fully upgraded."
 	else:
-		upgrade.text = "More capacity available in Phone -> Business -> Upgrades."
+		upgrade.text = "More capacity available in Central Market checkout."
 	upgrade.modulate = Color("91c59d")
 	upgrade.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	supply_inventory_list.add_child(upgrade)
@@ -6577,7 +6577,7 @@ func _phone_go_home() -> void:
 func _phone_parent_app(app_name: String) -> String:
 	if app_name in ["seeds", "supplies"]:
 		return "shop"
-	if app_name in ["bills", "employees", "upgrades"]:
+	if app_name in ["employees", "upgrades"]:
 		return "business"
 	if app_name == "account":
 		return "settings"
@@ -6601,6 +6601,7 @@ func _open_phone_app(app_name: String) -> void:
 
 func _refresh_phone() -> void:
 	if neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.refresh_management():return
+	if phone_current_app in ["business"]:phone_current_app="home"
 	if phone_list == null:
 		return
 	var chapter_four_changed: bool = _sync_chapter_four_story()
@@ -6776,7 +6777,7 @@ func _build_budshop_app() -> void:
 	var grid: GridContainer = _phone_category_grid()
 	_add_phone_app_tile(grid, "", "Lights", "Lamp, lights & ventilation", "lights")
 	_add_phone_app_tile(grid, "", "Store", "Seed orders & market info", "shop")
-	_add_phone_app_tile(grid, "", "Business", "Rent, utilities & balances", "business")
+	_add_phone_app_tile(grid, "", "Bills", "Property rent, utilities & balances", "bills")
 	if (neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.management_allowed()) or tutorial_active:_add_phone_app_tile(grid, "", "Your Supply", "Stock, prices & listings", "products")
 	if (neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.management_allowed()) or tutorial_active:_add_phone_app_tile(grid, "", "Genetics", "Create hybrid seeds", "genetics")
 	_add_phone_app_tile(grid, "", "Clients", "Customers & loyalty", "clients")
@@ -7081,7 +7082,7 @@ func _build_supplies_app() -> void:
 		return
 	_add_fertilizer_stock_card()
 	var intro: Label = Label.new()
-	intro.text = "Fertilizer purchases are delivered to your grow-room supply shelf. Shelf upgrades are in Business -> Upgrades."
+	intro.text = "Fertilizer purchases are delivered to your grow-room supply shelf. Shelf upgrades are in Central Market checkout."
 	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	phone_list.add_child(intro)
 
@@ -9335,7 +9336,7 @@ func _add_progress(xp_amount: int, reputation_amount: int) -> void:
 					unlocked_names.append(seed_name)
 		if status_label != null:
 			if unlocked_names.is_empty():
-				status_label.text = "Grower Level %d reached. New upgrades may be available in Phone -> Business -> Upgrades." % grower_level
+				status_label.text = "Grower Level %d reached. New upgrades may be available in Central Market checkout." % grower_level
 			else:
 				status_label.text = "Grower Level %d reached. New seed unlocked: %s. Buy it in Phone -> Shop -> Seeds." % [grower_level, ", ".join(PackedStringArray(unlocked_names))]
 	brand_level = maxi(1, 1 + int(reputation / 75))
@@ -11222,7 +11223,7 @@ func _add_fertilizer_stock_card() -> void:
 	if fertilizer_units <= 2:
 		detail.text += " Low stock - restock soon."
 	if fertilizer_units >= _supply_fertilizer_capacity():
-		detail.text += " Shelf full - use some or upgrade it in Business -> Upgrades."
+		detail.text += " Shelf full - use some or upgrade it in Central Market checkout."
 	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	box.add_child(detail)
 	var buy: Button = Button.new()
@@ -11282,7 +11283,7 @@ func _build_help_app() -> void:
 		label.add_theme_font_size_override("font_size", 19)
 		phone_list.add_child(label)
 	var controls: Label = Label.new()
-	controls.text = "PHONE LAYOUT\nOrder seeds on the phone, collect them at Central Market checkout, then deposit carried supplies at your apartment computer. Fertilizer and equipment are bought at Central Market. Paid equipment waits for computer installation. Property computers manage inventory, listings, genetics, staff and production. Business -> Bills includes apartment rent: $600 every 14 game days, with a three-day grace period. The back arrow returns to the parent category.\n\nCONTROLS\nSwipe phone, packing-bench and storage lists anywhere on a card or button; lift without swiping to tap. Tap the actual room switches or lamp to toggle them. Phone -> Lights is the optional menu alternative. Small finger movements stay taps; swipe farther to look around. Swipe the room to look; tap a station to use it. While bagging, keep the same finger on the bud until you drop it. During trimming, keep hold of the scissors.\n\nPAUSING\nSwitching apps/tabs, closing the game, or pressing PAUSE stops the day, visitors, story, wages and sales. Only existing plants keep growing and consume water and applied fertilizer; dry plants lose health. A plant that finishes before dying stays harvestable. A hired, ON-DUTY production worker can water and fertilize those plants using your stored fertilizer. No supplies are bought; watering continues when fertilizer runs out and adds to your Water Bill. An off-duty/fired worker or raid lockdown gives no care. No new seeds, harvesting, trimming, bagging or selling occur while away; equipment auto-refill remains live-only. The first-day guide fully protects plants. Press RESUME when you return. Daily closeout keeps its day/time frozen until START DAY. Storefront AWAY is different: it closes sales while you are still playing.\n\nREWARDS\nRewards over $100 have harder goals or extra requirements. Complete every displayed requirement before claiming. Already-claimed rewards remain yours."
+	controls.text = "PHONE LAYOUT\nOrder seeds on the phone, collect them at Central Market checkout, then deposit carried supplies at your apartment computer. Fertilizer and equipment are bought at Central Market. Paid equipment waits for computer installation. Property computers manage inventory, listings, genetics, staff and production. Phone -> Bills or apartment computer -> Bills includes apartment rent: $600 every 14 game days, with a three-day grace period. The back arrow returns to the parent category.\n\nCONTROLS\nSwipe phone, packing-bench and storage lists anywhere on a card or button; lift without swiping to tap. Tap the actual room switches or lamp to toggle them. Phone -> Lights is the optional menu alternative. Small finger movements stay taps; swipe farther to look around. Swipe the room to look; tap a station to use it. While bagging, keep the same finger on the bud until you drop it. During trimming, keep hold of the scissors.\n\nPAUSING\nSwitching apps/tabs, closing the game, or pressing PAUSE stops the day, visitors, story, wages and sales. Only existing plants keep growing and consume water and applied fertilizer; dry plants lose health. A plant that finishes before dying stays harvestable. A hired, ON-DUTY production worker can water and fertilize those plants using your stored fertilizer. No supplies are bought; watering continues when fertilizer runs out and adds to your Water Bill. An off-duty/fired worker or raid lockdown gives no care. No new seeds, harvesting, trimming, bagging or selling occur while away; equipment auto-refill remains live-only. The first-day guide fully protects plants. Press RESUME when you return. Daily closeout keeps its day/time frozen until START DAY. Storefront AWAY is different: it closes sales while you are still playing.\n\nREWARDS\nRewards over $100 have harder goals or extra requirements. Complete every displayed requirement before claiming. Already-claimed rewards remain yours."
 	controls.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	phone_list.add_child(controls)
 	var pause_button: Button = Button.new()
