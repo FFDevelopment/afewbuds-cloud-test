@@ -6,7 +6,7 @@
 	<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 	<meta http-equiv="Pragma" content="no-cache">
 	<meta http-equiv="Expires" content="0">
-		<title>AFewBuds Cloud Test 0.7.9-beta.19-cloudtest.67</title>
+		<title>AFewBuds Cloud Test 0.7.9-beta.19-cloudtest.68</title>
 		<style>
 html, body, #canvas {
 	margin: 0;
@@ -431,14 +431,14 @@ body {
 		<script src="shared/afb-api.js"></script>
 		<script src="shared/afb-cloud-accountsync10.js?v=0.7.9-beta.19-leaderboard40"></script>
 		<script src="index-accountsync10.js?v=0.7.9-beta.19-accountsync10"></script>
-		<script src="shared/afb-runtime67.js?v=67"></script>
+		<script src="shared/afb-runtime68.js?v=68"></script>
 		<script>
-const AFB_TEST_RELEASE = "0.7.9-beta.19-cloudtest.67";
+const AFB_TEST_RELEASE = "0.7.9-beta.19-cloudtest.68";
 const AFB_TEST_TITLE = "AFewBuds Cloud Test v0.7.9-beta.19-cloudtest.65";
 function afbKeepTestTitle(){ if(document.title !== AFB_TEST_TITLE) document.title = AFB_TEST_TITLE; }
 afbKeepTestTitle();
 setInterval(afbKeepTestTitle, 1000);
-const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":true,"fileSizes":{"index-cloudtest67.pck":26284480,"index.wasm":37902138},"focusCanvas":true,"mainPack":"index-cloudtest67.pck","gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":""};
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":true,"fileSizes":{"index-cloudtest68.pck":26292608,"index.wasm":37902138},"focusCanvas":true,"mainPack":"index-cloudtest68.pck","gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":""};
 const GODOT_THREADS_ENABLED = false;
 let AFB_GAME_STARTED = false;
 let AFB_GAME_STARTING = false;
@@ -554,7 +554,7 @@ async function afbLaunchGame() {
 }
 function launchGodotEngine() {
 	const engine = new Engine(GODOT_CONFIG);
-	AFB_RUNTIME67.install(engine);
+	AFB_RUNTIME68.install(engine);
 	const statusOverlay = document.getElementById('status');
 	const statusProgress = document.getElementById('status-progress');
 	const statusNotice = document.getElementById('status-notice');
