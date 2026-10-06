@@ -6919,11 +6919,11 @@ func _phone_category_grid() -> GridContainer:
 func _build_shop_app() -> void:
 	if neighborhood!=null and neighborhood.location_ops!=null:neighborhood.location_ops.order_summary(phone_list)
 	var intro: Label = Label.new()
-	intro.text = "Order seeds here and collect them at Central Market. Fertilizer and equipment are sold at its checkout. Detailed operation management is at your property computer."
+	intro.text = "Order seeds and fertilizer here for Central Market pickup. Equipment is sold at its checkout. Detailed operation management is at your property computer."
 	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	phone_list.add_child(intro)
 	var grid: GridContainer = _phone_category_grid()
-	if tutorial_active:_add_phone_app_tile(grid, "", "Supplies", "Starter fertilizer purchase", "supplies")
+	_add_phone_app_tile(grid, "", "Supplies", "Fertilizer orders & pickup", "supplies")
 	_add_phone_app_tile(grid, "", "Seed Orders", "Order for Central Market pickup", "seeds")
 
 func _add_phone_app_tile(parent: GridContainer, icon_text: String, title_text: String, detail_text: String, app_name: String) -> void:
@@ -7062,11 +7062,8 @@ func _next_locked_seed_name() -> String:
 	return ""
 
 func _build_supplies_app() -> void:
-	if not tutorial_active:
-		var notice := Label.new()
-		notice.text="Buy fertilizer at Central Market. Collected supplies stay with you until deposited at your apartment computer."
-		notice.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
-		phone_list.add_child(notice)
+	if not tutorial_active and neighborhood!=null and neighborhood.location_ops!=null:
+		neighborhood.location_ops.phone_supplies()
 		return
 	_add_fertilizer_stock_card()
 	var intro: Label = Label.new()
@@ -11276,7 +11273,7 @@ func _build_help_app() -> void:
 		label.add_theme_font_size_override("font_size", 19)
 		phone_list.add_child(label)
 	var controls: Label = Label.new()
-	controls.text = "PHONE LAYOUT\nOrder seeds on the phone, collect them at Central Market checkout, then deposit carried supplies at your apartment computer. Fertilizer and equipment are bought at Central Market. Paid equipment waits for computer installation. Property computers manage inventory, listings, genetics, staff and production. Phone -> Illegal Businesses -> Bills or apartment computer -> Bills includes apartment rent: $600 every 14 game days, with a three-day grace period. The back arrow returns to the parent category.\n\nCONTROLS\nSwipe phone, packing-bench and storage lists anywhere on a card or button; lift without swiping to tap. Tap the actual room switches or lamp to toggle them. Use room switches or the property computer for lights and power. Small finger movements stay taps; swipe farther to look around. Swipe the room to look; tap a station to use it. While bagging, keep the same finger on the bud until you drop it. During trimming, keep hold of the scissors.\n\nPAUSING\nSwitching apps/tabs, closing the game, or pressing PAUSE stops the day, visitors, story, wages and sales. Only existing plants keep growing and consume water and applied fertilizer; dry plants lose health. A plant that finishes before dying stays harvestable. A hired, ON-DUTY production worker can water and fertilize those plants using your stored fertilizer. No supplies are bought; watering continues when fertilizer runs out and adds to your Water Bill. An off-duty/fired worker or raid lockdown gives no care. No new seeds, harvesting, trimming, bagging or selling occur while away; equipment auto-refill remains live-only. The first-day guide fully protects plants. Press RESUME when you return. Daily closeout keeps its day/time frozen until START DAY. Storefront AWAY is different: it closes sales while you are still playing.\n\nREWARDS\nRewards over $100 have harder goals or extra requirements. Complete every displayed requirement before claiming. Already-claimed rewards remain yours."
+	controls.text = "PHONE LAYOUT\nOrder seeds on the phone, collect them at Central Market checkout, then deposit carried supplies at your apartment computer. Seeds and fertilizer can be ordered on the phone for Central Market pickup; equipment is bought at its checkout. Paid equipment waits for computer installation. Property computers manage inventory, listings, genetics, staff and production. Phone -> Illegal Businesses -> Bills or apartment computer -> Bills includes apartment rent: $600 every 14 game days, with a three-day grace period. The back arrow returns to the parent category.\n\nCONTROLS\nSwipe phone, packing-bench and storage lists anywhere on a card or button; lift without swiping to tap. Tap the actual room switches or lamp to toggle them. Use room switches or the property computer for lights and power. Small finger movements stay taps; swipe farther to look around. Swipe the room to look; tap a station to use it. While bagging, keep the same finger on the bud until you drop it. During trimming, keep hold of the scissors.\n\nPAUSING\nSwitching apps/tabs, closing the game, or pressing PAUSE stops the day, visitors, story, wages and sales. Only existing plants keep growing and consume water and applied fertilizer; dry plants lose health. A plant that finishes before dying stays harvestable. A hired, ON-DUTY production worker can water and fertilize those plants using your stored fertilizer. No supplies are bought; watering continues when fertilizer runs out and adds to your Water Bill. An off-duty/fired worker or raid lockdown gives no care. No new seeds, harvesting, trimming, bagging or selling occur while away; equipment auto-refill remains live-only. The first-day guide fully protects plants. Press RESUME when you return. Daily closeout keeps its day/time frozen until START DAY. Storefront AWAY is different: it closes sales while you are still playing.\n\nREWARDS\nRewards over $100 have harder goals or extra requirements. Complete every displayed requirement before claiming. Already-claimed rewards remain yours."
 	controls.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	phone_list.add_child(controls)
 	var pause_button: Button = Button.new()
