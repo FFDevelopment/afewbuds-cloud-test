@@ -1,7 +1,7 @@
 {
 	"batches": 45,
 	"buildings": 32,
-	"core_geometry_sha256": "5bfadf2d8663acbf322407256410ed12e24217d16745b63e99cb15240286151d",
-	"core_instances": 3678,
+	"core_geometry_sha256": "aae740bc30fdcf2cfe9d0613ee027340057bd27a824c4114a9a535ed6bf43c27",
+	"core_instances": 3674,
 	"static_instances": 4723
 }

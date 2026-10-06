@@ -1,5 +1,6 @@
 extends Node3D
 var police_station:Node3D
+var entrance_records:Array[Dictionary]=[]
 const Seating=preload("res://scripts/seating.gd")
 var bench_seating=Seating.new()
 const TreeLayout=preload("res://scripts/east_expansion.gd")
@@ -115,7 +116,12 @@ func _material(color: String, tile: int = -1, glow: float = 0.0) -> Material:
 	var key := "%s:%d:%f" % [color, tile, glow]
 	if materials.has(key): return materials[key]
 	var material: Material
-	if tile >= 0:
+	if color=="74604a" and tile<0:
+		var bark:=ShaderMaterial.new()
+		bark.shader=load("res://scripts/bark.gdshader")
+		bark.set_shader_parameter("tint",Color(color))
+		material=bark
+	elif tile >= 0:
 		var textured := ShaderMaterial.new()
 		textured.shader = exterior_shader
 		textured.set_shader_parameter("surface_texture", tile_textures[tile])
@@ -468,6 +474,7 @@ func facade_window(at: Vector3, normal: Vector3) -> void:
 	facade_part("WindowSill",at+Vector3(0,-0.72,0)+normal*0.07,Vector3(1.08,0.1,0.24),normal,"a69f90")
 
 func entrance(at: Vector3, normal: Vector3) -> void:
+	entrance_records.append({"at":at,"normal":normal})
 	var tangent := Vector3.RIGHT if normal.z != 0 else Vector3.BACK
 	facade_part("EntryRecess",at+Vector3.UP*1.475+normal*0.025,Vector3(1.55,2.95,0.045),normal,"252a27")
 	facade_part("ExteriorDoor",at+Vector3.UP*1.425+normal*0.055,Vector3(1.18,2.85,0.065),normal,"4a493d")

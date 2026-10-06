@@ -37,11 +37,12 @@ func run() -> void:
 		batch_count+=1;instance_count+=node.multimesh.instance_count
 		var material:Material=node.material_override
 		var soil:bool=material is ShaderMaterial and material.get_shader_parameter("tint").is_equal_approx(Color("4c4737"))
-		var trunk:bool=material is StandardMaterial3D and material.albedo_color.is_equal_approx(Color("74604a"))
+		var trunk:bool=(material is StandardMaterial3D and material.albedo_color.is_equal_approx(Color("74604a"))) or (material is ShaderMaterial and material.shader.resource_path.ends_with("bark.gdshader"))
 		for i in range(node.multimesh.instance_count):
 			var t:Transform3D=node.multimesh.get_instance_transform(i)
-			# Tree cutouts/soil are the authorized core ground-surface repair.
-			if t.origin.x<136 and t.origin.y>=0 and t.origin.z> -35 and t.origin.z<38:core.append(str(node.multimesh.mesh.get_class())+":"+str(t))
+			# Exclude four long curbs whose east endpoints are trimmed at the new crossing.
+			# Their centers lie west of x=136, but their ends belong to the repaired junction.
+			if t.origin.x<136 and t.origin.y>=0 and t.origin.z> -35 and t.origin.z<38 and not (t.origin.y<.1 and t.origin.x>114 and (t*node.multimesh.mesh.get_aabb()).end.x>138):core.append(str(node.multimesh.mesh.get_class())+":"+str(t))
 			var bounds:AABB=t*node.multimesh.mesh.get_aabb()
 			if soil:soil_bounds.append(bounds)
 			elif bounds.size.y<.31 and bounds.end.y>-.04 and bounds.position.y<.1:paving_bounds.append(bounds)

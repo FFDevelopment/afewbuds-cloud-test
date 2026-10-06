@@ -1,6 +1,6 @@
 # Police station district
 
-Release `0.7.9-beta.19-cloudtest.97-police.1` extends the map east of the
+Release `0.7.9-beta.19-cloudtest.97-police.2` extends the map east of the
 pocket park with a two-floor police station, four parked patrol cars in the
 rear lot, public parking beside the station, a crossing street and four
 decorative homes across the main road. The east boundary moves from 137 to 201.
@@ -27,7 +27,7 @@ couch seating remain available with their corrected eye height.
 
 ## Validation
 
-- 249 station checks: closed/open door clearance, action-button and double-tap
+- 279 station checks: closed/open door clearance, action-button and double-tap
   interaction, modal guard, walking routes to every room, stair clearance,
   actual touch movement up/down, both eye heights, window bands and containment.
 - 901 map regression checks, including original tree/soil alignment, park
@@ -37,15 +37,17 @@ couch seating remain available with their corrected eye height.
 - JavaScript loader reconstruction matches the packaged SHA-256. Chrome guest
   startup is checked without signing into or changing a cloud career.
 - All 211 other prior pack entries remain byte-identical to `.96-east.3`.
-  Only existing neighborhood integration and the east containment fence change;
-  four new station scripts/shader are added. The three completed buildings,
+  Existing neighborhood integration, bark material, east containment fence
+  and four paving/curb endpoints change;
+  five new station scripts/shaders are added. The three completed buildings,
   interiors, characters, furniture and park assets are preserved.
-- 3,678 original aboveground batch instances inside x<136, -35<z<38 have the
-  same geometry hash before/after. Boundary rails and appended paving are
+- 3,674 original aboveground batch instances inside x<136, -35<z<38 have the
+  same geometry hash before/after. Four boundary-junction curbs are excluded from that hash because their ends
+  are shortened to clear the new crossing street. Boundary rails and paving are
   intentionally outside that comparison.
-- Static batch instances rise from 4,723 to 6,408, batches from 45 to 139.
+- Static batch instances rise from 4,723 to 6,476, batches from 45 to 141.
   These are geometry counts, not an FPS guarantee. The station itself uses
-  854 box instances across 85 material/floor batches plus doors/windows/lights.
+  914 box instances across 85 material/floor batches plus doors/windows/lights.
 
 The review page contains actual Godot renders, including each floor as a
 cutaway and first-person views. Cutaway captures hide the other floor/roof;
@@ -68,3 +70,33 @@ The builder is pinned to the verified `.96-east.3` recipe hash. If main's runtim
 changes, adapt the baseline before rebuilding. Native validation projects use
 an isolated save directory. Source reference images were supplied by the user;
 no external model or paid image-generation services were used.
+
+## Police district polish (.97-police.2)
+
+Parking finishes now use non-overlapping rectangles. The patrol lot reaches the
+rear lane, its painted bays follow the cars, and the forecourt no longer doubles
+up over the front sidewalk. The old district's paving stops at the new crossing
+street. All four opposite houses face the street and have connecting entrance
+paths (decorative closed doors, like the existing opposite-apartment buildings).
+
+Tree trunks share a procedural bark material with rough grain and shallow normal
+detail; no new image download is required. The station's window schedule follows
+room boundaries, with high frosted cell/toilet/locker windows, clearance from the
+briefing board and partitions, and a kitchen sill above its counter. The facade
+badge moves onto the solid navy column, and restroom mirrors sit on their walls.
+
+279 station checks include parking surface overlap, all 18 windows against nearby
+partitions/fixtures, four residence entrance orientations and paths, door
+interaction and stair/room movement. The 901 map, 125 fit and 55 seating checks
+also pass (1,360 total), plus room-route checks. Native renders cover 15 views;
+Chrome guest startup rendered successfully with no reported warnings or errors.
+
+The Pages staging script excludes unused historical packs/recipes and server-only
+source from the deployment. It preserves those files in Git for old builders.
+Its selection follows the active HTML loader and recipe rather than deleting old
+source inputs. See `validation/deployment_size.json` and `size_audit.json` for
+uncompressed sizes. These changes do not claim an FPS gain: the old files were
+not fetched by the running game. About 72 MB of startup assets remain before web
+compression, mostly the engine and immutable base pack; phone performance still
+needs measurement on the target devices. The polish adds only about 3 KB to the
+reconstructed game pack.

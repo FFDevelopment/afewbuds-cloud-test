@@ -33,6 +33,30 @@ func run() -> void:
 	game.session_paused=false;game.tutorial_active=false;game.daily_report_pending=false;game.customer_waiting=false
 	game.tutorial_panel.hide();game.pause_overlay.hide();game.daily_report_panel.hide();world.active=true
 	check(OS.get_user_data_dir().contains("AFB Character Fit Validation"),"Isolated validation save")
+	# Regression for the reported parking/partition/entrance defects.
+	var surfaces:Array=world.get_meta("police_surfaces")
+	var overlaps:Array=[]
+	for i in range(surfaces.size()):
+		for j in range(i+1,surfaces.size()):
+			var a:Dictionary=surfaces[i];var b:Dictionary=surfaces[j]
+			if a.tile not in [2,3] or b.tile not in [2,3]:continue
+			if absf(a.top-b.top)>.002:continue
+			var overlap:Rect2=a.rect.intersection(b.rect)
+			if overlap.size.x>.002 and overlap.size.y>.002:overlaps.append([a,b])
+	check(overlaps.is_empty(),"Parking and sidewalk finish surfaces do not overlap",overlaps)
+	for win in station.windows:
+		var clips:Array=[]
+		for p in station.parts:
+			if p.id in ["Front","Rear","West","East"] or p.id.ends_with("Skirting") or p.id.begins_with("Window"):continue
+			if win.bounds.grow(.22).intersects(p.bounds):clips.append(p.id)
+		check(clips.is_empty(),"Window clears partitions and adjacent fixtures "+str(win.at),clips)
+	var entries:=0
+	for entry in world.entrance_records:
+		if entry.at.x<149:continue
+		entries+=1
+		check(entry.normal==Vector3.FORWARD and is_equal_approx(entry.at.z,27.0),"Residence entry faces the police street",entry)
+		check(world._walkable(Vector3(entry.at.x,2.16,26.4)),"Residence entrance path is accessible",entry.at)
+	check(entries==4,"All four police-street residences have entrances")
 	check(station.doors.size()>=14,"Ground and upper doors registered",station.doors.size())
 	check(world.map_doors.size()==5,"Original five doors preserved")
 	check(world.bench_seating.benches.size()==3,"Park seating preserved")

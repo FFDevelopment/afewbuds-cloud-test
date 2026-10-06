@@ -12,6 +12,7 @@ var doors:Array[Node3D]=[]
 var rooms:Array[Dictionary]=[]
 var openings:Array[Dictionary]=[]
 var windows:Array[Dictionary]=[]
+var parts:Array[Dictionary]=[]
 var floor_index:=0
 var material_cache:Dictionary={}
 
@@ -19,6 +20,7 @@ func point(x:float,y:float,z:float) -> Vector3:return BASE+Vector3(x,y,z*.8)
 func local_point(at:Vector3) -> Vector3:
 	var p:=at-BASE;p.z/=.8;return p
 func box(id:String,at:Vector3,size:Vector3,color:String,solid:bool=true,wood:bool=false) -> void:
+	parts.append({"id":id,"bounds":AABB(at-size/2,size),"floor":floor_index})
 	var key:=str(floor_index)+":"+color+":"+str(wood)
 	if not batches.has(key):batches[key]={"floor":floor_index,"color":color,"wood":wood,"transforms":[]}
 	batches[key].transforms.append(Transform3D(Basis.from_scale(size),at))
@@ -77,17 +79,18 @@ func wall(id:String,x:float,z:float,length:float,along_x:bool,holes:Array=[],col
 			if hole.has_point(Vector2(mid,.08)):cut=true
 		if not cut:box(id+"Skirting",start+axis*mid+Vector3.UP*.07,Vector3(xs[i+1]-xs[i],.14,.245) if along_x else Vector3(.245,.14,xs[i+1]-xs[i]),"737777",false)
 
-func window_at(x:float,z:float,width:float,along_x:bool) -> void:
-	var at:=point(x,floor_index*STORY+1.95,z);var size:=Vector3(width,1.6,.035) if along_x else Vector3(.035,1.6,width)
+func window_at(x:float,z:float,width:float,along_x:bool,sill:float=1.15,height:float=1.6,privacy:bool=false) -> void:
+	var at:=point(x,floor_index*STORY+sill+height/2,z);var size:=Vector3(width,height,.035) if along_x else Vector3(.035,height,width)
 	var glass:=MeshInstance3D.new();var mesh:=BoxMesh.new();mesh.size=size;glass.mesh=mesh;glass.position=at
-	var m:=StandardMaterial3D.new();m.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA;m.albedo_color=Color(.32,.48,.53,.28);m.roughness=.24
+	var m:=StandardMaterial3D.new();m.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA;m.albedo_color=Color(.32,.48,.53,.28);m.roughness=.85 if privacy else .24
+	if privacy:m.albedo_color=Color(.59,.68,.69,.88)
 	glass.material_override=m;glass.layers=2;glass.set_meta("station_floor",floor_index);add_child(glass)
-	colliders.append(AABB(at-size/2,size));windows.append({"at":at,"floor":floor_index*STORY,"bottom":at.y-.8,"top":at.y+.8})
+	colliders.append(AABB(at-size/2,size));windows.append({"at":at,"floor":floor_index*STORY,"bottom":at.y-height/2,"top":at.y+height/2,"bounds":AABB(at-size/2,size),"privacy":privacy})
 	var axis:=Vector3.RIGHT if along_x else Vector3.BACK
 	for s in [-1.0,1.0]:
-		box("WindowJamb",at+axis*s*width/2,Vector3(.08,1.7,.24) if along_x else Vector3(.24,1.7,.08),"303e49",false)
-		box("WindowRail",at+Vector3.UP*s*.84,Vector3(width+.08,.08,.24) if along_x else Vector3(.24,.08,width+.08),"303e49",false)
-	box("WindowMullion",at,Vector3(.06,1.6,.14) if along_x else Vector3(.14,1.6,.06),"303e49",false)
+		box("WindowJamb",at+axis*s*width/2,Vector3(.08,height+.1,.24) if along_x else Vector3(.24,height+.1,.08),"303e49",false)
+		box("WindowRail",at+Vector3.UP*s*(height/2+.04),Vector3(width+.08,.08,.24) if along_x else Vector3(.24,.08,width+.08),"303e49",false)
+	box("WindowMullion",at,Vector3(.06,height,.14) if along_x else Vector3(.14,height,.06),"303e49",false)
 
 func door(id:String,x:float,z:float,width:float,side:bool=false,bars:bool=false,glazed:bool=false) -> void:
 	var pivot:Node3D=load("res://scripts/police_door.gd").new();pivot.name=id;pivot.width=width;pivot.host=world.host
@@ -157,7 +160,7 @@ func restroom(x:float,z:float) -> void:
 	part("Washstand",x+1.9,y+.55,z,Vector3(1.05,1.1,.65),"c0b8a5")
 	part("Basin",x+1.9,y+1.15,z,Vector3(1.1,.1,.72),"eee9dd")
 	part("Tap",x+1.9,y+1.35,z-.2,Vector3(.06,.3,.1),"a6afb0",false)
-	part("Mirror",x+1.9,y+1.95,z-.48,Vector3(.95,.95,.04),"71868a",false)
+	part("Mirror",x+1.9,y+1.95,z-1.03,Vector3(.95,.95,.04),"71868a",false)
 
 func build(owner:Node3D) -> void:
 	world=owner
@@ -169,18 +172,33 @@ func build(owner:Node3D) -> void:
 			part("UpperFloorWest",9.5,STORY-.1,14,Vector3(19,.2,22.4),"aaaead",false)
 			part("UpperFloorNorth",21.5,STORY-.1,6.75,Vector3(5,.2,10.8),"aaaead",false)
 			part("UpperFloorSouth",21.5,STORY-.1,25,Vector3(5,.2,4.8),"aaaead",false)
-		var front_holes:Array=[Rect2(1,1.15,5,1.6),Rect2(18,1.15,5,1.6)]
-		if f==0:front_holes.append(Rect2(10,0,2.4,2.9))
-		else:front_holes.append(Rect2(9,1.15,6,1.6))
+		# Openings follow each room, with solid margins at partition junctions.
+		var front_holes:Array=[Rect2(1,1.15,5,1.6)]
+		if f==0:
+			front_holes.append(Rect2(10,0,2.4,2.9))
+			front_holes.append(Rect2(20,2.05,2.8,.75))
+		else:
+			front_holes.append(Rect2(10,1.15,5,1.6))
+			front_holes.append(Rect2(20,1.15,3,1.6))
 		wall("Front",0,28,24,true,front_holes,"c6c1b4")
-		window_at(3.5,28,5,true);window_at(20.5,28,5,true)
-		if f==1:window_at(12,28,6,true)
-		wall("Rear",0,0,24,true,[Rect2(2,1.15,5,1.6),Rect2(13.4,0,1.8,2.9)] if f==0 else [Rect2(2,1.15,5,1.6),Rect2(11,1.15,5,1.6)],"c6c1b4")
+		window_at(3.5,28,5,true)
+		if f==0:window_at(21.4,28,2.8,true,2.05,.75,true)
+		else:
+			window_at(12.5,28,5,true);window_at(21.5,28,3,true)
+		wall("Rear",0,0,24,true,[Rect2(2,1.15,5,1.6),Rect2(13.4,0,1.8,2.9)] if f==0 else [Rect2(2,1.15,5,1.6),Rect2(11,1.45,5,1.3)],"c6c1b4")
 		window_at(4.5,0,5,true)
-		if f==1:window_at(13.5,0,5,true)
-		for x in [0.0,24.0]:
-			wall("Side",x,0,28,false,[Rect2(2,1.15,4,1.6),Rect2(23,1.15,4,1.6)],"c6c1b4")
-			window_at(x,4,3.2,false);window_at(x,25,3.2,false)
+		if f==1:window_at(13.5,0,5,true,1.45,1.3)
+		wall("West",0,0,28,false,[Rect2(1.5,1.15,3,1.6),Rect2(23,1.15,4,1.6)],"c6c1b4")
+		window_at(0,3,2.4,false);window_at(0,25,3.2,false)
+		if f==0:
+			# High frosted daylight in cells and public restroom; no low cell glazing.
+			wall("East",24,0,28,false,[Rect2(1.5,2.25,2.5,.65),Rect2(7.5,2.25,2.5,.65),Rect2(24,2.05,2.5,.75)],"c6c1b4")
+			window_at(24,2.75,2,false,2.25,.65,true);window_at(24,8.75,2,false,2.25,.65,true)
+			window_at(24,25.25,2,false,2.05,.75,true)
+		else:
+			wall("East",24,0,28,false,[Rect2(2,2.25,2.5,.65),Rect2(7,2.25,2.5,.65),Rect2(23,1.15,4,1.6)],"c6c1b4")
+			window_at(24,3.25,2,false,2.25,.65,true);window_at(24,8.25,2,false,2.25,.65,true)
+			window_at(24,25,3.2,false)
 		# Stairwell doors are at the bottom landing and top landing respectively.
 		wall("StairWest",19,12,10,false,[Rect2(8.15,0,2,2.9)] if f==0 else [Rect2(.15,0,2,2.9)])
 		wall("StairSouth",19,22,5,true,[])
@@ -216,10 +234,10 @@ func build(owner:Node3D) -> void:
 	door("PUBLIC_ENTRANCE",11.2,28,2.4,false,false,true);door("REAR_BOOKING_ENTRANCE",14.3,0,1.8)
 	for x in [8.0,16.0]:part("NavyFacade",x,3.5,28.18,Vector3(.8,7,.24),"254967",false)
 	part("EntranceCanopy",11.2,3.12,29,Vector3(6,.18,2),"354853",false)
-	part("StationNameBoard",12,6.8,28.3,Vector3(13,.65,.16),"d4d2c6",false)
-	label("AFEWBUDS POLICE",12,6.8,28.43,0,.009)
-	part("BadgeBacking",12,4.7,28.28,Vector3(1.2,1.2,.12),"254967",false)
-	label("AFB\nPOLICE",12,4.7,28.42,0,.005)
+	part("StationNameBoard",12,6.9,28.3,Vector3(13,.65,.16),"d4d2c6",false)
+	label("AFEWBUDS POLICE",12,6.9,28.43,0,.009)
+	part("BadgeBacking",8,4.7,28.28,Vector3(1.2,1.2,.12),"254967",false)
+	label("AFB\nPOLICE",8,4.7,28.42,0,.005)
 	for x in [2.0,6.0,18.0,22.0]:plant(x,29.8)
 	flush()
 
