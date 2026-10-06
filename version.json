@@ -1,5 +1,5 @@
 {
-  "release_id": "0.7.9-beta.19-cloudtest.93",
+  "release_id": "0.7.9-beta.19-cloudtest.94",
   "game_build": "0.7.9-beta.19",
   "channel": "main-based-cloud-test",
   "updater": "network-only-no-service-worker",
@@ -105,7 +105,7 @@
   "expansion_lane": "New Advancements lane appears only after Chapter 3 is complete",
   "neighborhood": "Prototype 0.9.3 street, sidewalk and building footprint layout adapted with cloud-test texture atlas, opening door, analog controls and ground reserves.",
   "notification_audio": "Requested text ding at -14 dB; requested door knock at -10 dB.",
-  "runtime_delivery": "SHA-256 verified .93 property inspection pack delta over unchanged .63 assets.",
+  "runtime_delivery": "SHA-256 verified .94 property inspection pack delta over unchanged .63 assets.",
   "interior_controls": "Free analog movement in apartment and grow room; nearby station double tap; Back restores walking position; walls and furniture collision.",
   "responsive_layout": "Automatic portrait/landscape game viewport, corner controls, centered phone menu and fitting browser splash/account overlays.",
   "walking_fov": 78,
@@ -131,5 +131,6 @@
   "door_dealer": "Assigned door dealer serves real waiting visits from Dealer Locker, unreserved apartment storage and packaged bench stock; mutually exclusive street/door role with a return-to-street contact action and stock failure texts.",
   "door_swing": "Prototype away-from-player swing direction on apartment and map doors, stored closing path, non-blocking swing, deferred leaf collision until player clears it.",
   "dealer_walk": "Assigned managers face their travel direction and play walk/idle clips; generic staff use the existing articulated gait. Seated poses preserved.",
-  "apartment_light_taps": "Single-tap nearby apartment main switch and floor lamp while freely walking; physical hit targets take precedence over couch double-tap regions. Original light, save and advancement handlers reused."
+  "apartment_light_taps": "Single-tap nearby apartment main switch and floor lamp while freely walking; physical hit targets take precedence over couch double-tap regions. Original light, save and advancement handlers reused.",
+  "walking_speed": 3.4
 }
