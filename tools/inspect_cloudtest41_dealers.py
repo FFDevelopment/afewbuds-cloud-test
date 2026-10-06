@@ -7,7 +7,7 @@ fb=struct.unpack_from("<Q",b,24)[0]
 do=struct.unpack_from("<Q",b,32)[0]
 n=struct.unpack_from("<I",b,do)[0]
 p=do+4
-wanted={"scripts/main.gd","scripts/personal_inventory.gd","scripts/touch_scroll.gd","scripts/storage_vault.gd"}
+wanted={"scripts/main.gd","scripts/personal_inventory.gd","scripts/touch_scroll.gd","scripts/storage_vault.gd","scripts/plant_growth.gd","scripts/offline_plant_care.gd"}
 found={}
 for _ in range(n):
     q=struct.unpack_from("<I",b,p)[0]; p+=4
@@ -41,7 +41,7 @@ for i,line in enumerate(main.splitlines(),1):
     if any(k in low for k in ["dealer_","dealer ","locker","personal_inventory","production_worker","storage_level","storage_capacity"]):
         if i < 1200 or "func " in line or "const " in line or "var " in line:
             out.append(f"{i}: {line}")
-out+=["===== STORAGE VAULT SCRIPT =====", found.get("scripts/storage_vault.gd","<MISSING>"), ""]
+out+=["===== STORAGE VAULT SCRIPT =====", found.get("scripts/storage_vault.gd","<MISSING>"), "", "===== PLANT GROWTH SCRIPT =====", found.get("scripts/plant_growth.gd","<MISSING>"), "", "===== OFFLINE PLANT CARE SCRIPT =====", found.get("scripts/offline_plant_care.gd","<MISSING>"), ""]
 Path("debug-dealer-audit.txt").write_text("\n".join(out)+"\n")
 print("found",sorted(found))
 
@@ -62,3 +62,5 @@ print("found",sorted(found))
 # inspect cloudtest59 roadmap sizing for cloudtest60 phone width fix
 
 # inspect cloudtest61 watering and utility billing for water-bill foundation
+
+# inspect plant care water routes for cloudtest62 utility billing
