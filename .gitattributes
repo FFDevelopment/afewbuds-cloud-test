@@ -6,3 +6,7 @@ tools/character_fit_v1/** text=auto eol=lf
 tools/character_fit_v1/**/*.png binary
 runtime/character-fit-v1.patch.json text eol=lf
 shared/afb-runtime-character-fit-v1.js text eol=lf
+tools/east_expansion_v1/** text=auto eol=lf
+tools/east_expansion_v1/**/*.png binary
+runtime/east-expansion-v1.patch.json text eol=lf
+shared/afb-runtime-east-expansion-v1.js text eol=lf
