@@ -1,5 +1,5 @@
 {
-  "release_id": "0.7.9-beta.19-cloudtest.78",
+  "release_id": "0.7.9-beta.19-cloudtest.79",
   "game_build": "0.7.9-beta.19",
   "channel": "main-based-cloud-test",
   "updater": "network-only-no-service-worker",
@@ -110,12 +110,15 @@
   "expansion_lane": "New Advancements lane appears only after Chapter 3 is complete",
   "neighborhood": "Prototype 0.9.3 street, sidewalk and building footprint layout adapted with cloud-test texture atlas, opening door, analog controls and ground reserves.",
   "notification_audio": "Requested text ding at -14 dB; requested door knock at -10 dB.",
-  "runtime_delivery": "SHA-256 verified .78 map pack delta over unchanged .63 assets.",
+  "runtime_delivery": "SHA-256 verified .79 map pack delta over unchanged .63 assets.",
   "interior_controls": "Free analog movement in apartment and grow room; nearby station double tap; Back restores walking position; walls and furniture collision.",
   "responsive_layout": "Automatic portrait/landscape game viewport, corner controls, centered phone menu and fitting browser splash/account overlays.",
   "walking_fov": 78,
   "password_recovery_input": "Username or full saved email, 254-character input; shared recovery emails require username; lookup patch applied.",
   "map_build": "Prototype 0.9.5 house and Central Market rooms, real window openings, glazed doors and five manually operated doors; existing textures, controls, game progression and account fixes preserved.",
   "house_window_privacy": "Bathroom frame fits its 1.1 x 1.0 m aperture; packing-room windows have closed blinds and grow-room windows have opaque blackout shades.",
-  "client_visits": "Away clients text instead of knocking; Stop by now, in 1 or 2 game hours, or Another time. Appointments persist in saved texts; walk to the door to answer; obsolete Go to Door button hidden."
+  "client_visits": "Away clients text instead of knocking; Stop by now, in 1 or 2 game hours, or Another time. Appointments persist in saved texts; walk to the door to answer; obsolete Go to Door button hidden.",
+  "house_controls": "Eight correctly mapped room switches, separate house grow-light service panel, and inside-only double-tap window coverings; states saved with the career.",
+  "house_grow_equipment": "House grow room starts without tents, planters or grow lights; separate house_grow_tent_count controls installation, independent of apartment upgrades. House purchasing/upgrades are not enabled by this map update.",
+  "apartment_window": "Real glazed aperture through apartment wall and brick exterior; original painted finish and side curtains retained, fake sky pane and sun removed, inside-only double-tap blinds default open and persist with the career."
 }
