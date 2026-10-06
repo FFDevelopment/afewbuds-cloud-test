@@ -6,6 +6,158 @@
 			"passed": true
 		},
 		{
+			"check": "Parking and sidewalk finish surfaces do not overlap",
+			"data": [],
+			"passed": true
+		},
+		{
+			"check": "Window clears partitions and adjacent fixtures (152.5, 1.95, 7.0)",
+			"data": [],
+			"passed": true
+		},
+		{
+			"check": "Window clears partitions and adjacent fixtures (170.4, 2.425, 7.0)",
+			"data": [],
+			"passed": true
+		},
+		{
+			"check": "Window clears partitions and adjacent fixtures (153.5, 1.95, -15.4)",
+			"data": [],
+			"passed": true
+		},
+		{
+			"check": "Window clears partitions and adjacent fixtures (149.0, 1.95, -13.0)",
+			"data": [],
+			"passed": true
+		},
+		{
+			"check": "Window clears partitions and adjacent fixtures (149.0, 1.95, 4.6)",
+			"data": [],
+			"passed": true
+		},
+		{
+			"check": "Window clears partitions and adjacent fixtures (173.0, 2.575, -13.2)",
+			"data": [],
+			"passed": true
+		},
+		{
+			"check": "Window clears partitions and adjacent fixtures (173.0, 2.575, -8.4)",
+			"data": [],
+			"passed": true
+		},
+		{
+			"check": "Window clears partitions and adjacent fixtures (173.0, 2.425, 4.800001)",
+			"data": [],
+			"passed": true
+		},
+		{
+			"check": "Window clears partitions and adjacent fixtures (152.5, 5.55, 7.0)",
+			"data": [],
+			"passed": true
+		},
+		{
+			"check": "Window clears partitions and adjacent fixtures (161.5, 5.55, 7.0)",
+			"data": [],
+			"passed": true
+		},
+		{
+			"check": "Window clears partitions and adjacent fixtures (170.5, 5.55, 7.0)",
+			"data": [],
+			"passed": true
+		},
+		{
+			"check": "Window clears partitions and adjacent fixtures (153.5, 5.55, -15.4)",
+			"data": [],
+			"passed": true
+		},
+		{
+			"check": "Window clears partitions and adjacent fixtures (162.5, 5.7, -15.4)",
+			"data": [],
+			"passed": true
+		},
+		{
+			"check": "Window clears partitions and adjacent fixtures (149.0, 5.55, -13.0)",
+			"data": [],
+			"passed": true
+		},
+		{
+			"check": "Window clears partitions and adjacent fixtures (149.0, 5.55, 4.6)",
+			"data": [],
+			"passed": true
+		},
+		{
+			"check": "Window clears partitions and adjacent fixtures (173.0, 6.175, -12.8)",
+			"data": [],
+			"passed": true
+		},
+		{
+			"check": "Window clears partitions and adjacent fixtures (173.0, 6.175, -8.799999)",
+			"data": [],
+			"passed": true
+		},
+		{
+			"check": "Window clears partitions and adjacent fixtures (173.0, 5.55, 4.6)",
+			"data": [],
+			"passed": true
+		},
+		{
+			"check": "Residence entry faces the police street",
+			"data": {
+				"at": "(155.0, 0.0, 27.0)",
+				"normal": "(0.0, 0.0, -1.0)"
+			},
+			"passed": true
+		},
+		{
+			"check": "Residence entrance path is accessible",
+			"data": "(155.0, 0.0, 27.0)",
+			"passed": true
+		},
+		{
+			"check": "Residence entry faces the police street",
+			"data": {
+				"at": "(168.0, 0.0, 27.0)",
+				"normal": "(0.0, 0.0, -1.0)"
+			},
+			"passed": true
+		},
+		{
+			"check": "Residence entrance path is accessible",
+			"data": "(168.0, 0.0, 27.0)",
+			"passed": true
+		},
+		{
+			"check": "Residence entry faces the police street",
+			"data": {
+				"at": "(185.0, 0.0, 27.0)",
+				"normal": "(0.0, 0.0, -1.0)"
+			},
+			"passed": true
+		},
+		{
+			"check": "Residence entrance path is accessible",
+			"data": "(185.0, 0.0, 27.0)",
+			"passed": true
+		},
+		{
+			"check": "Residence entry faces the police street",
+			"data": {
+				"at": "(196.0, 0.0, 27.0)",
+				"normal": "(0.0, 0.0, -1.0)"
+			},
+			"passed": true
+		},
+		{
+			"check": "Residence entrance path is accessible",
+			"data": "(196.0, 0.0, 27.0)",
+			"passed": true
+		},
+		{
+			"check": "All four police-street residences have entrances",
+			"data": null,
+			"passed": true
+		},
+		{
 			"check": "Ground and upper doors registered",
 			"data": 14,
 			"passed": true
@@ -1085,7 +1237,9 @@
 			"data": {
 				"at": "(152.5, 1.95, 7.0)",
 				"bottom": 1.15000004768372,
+				"bounds": "[P: (150.0, 1.15, 6.9825), S: (5.0, 1.6, 0.035)]",
 				"floor": 0.0,
+				"privacy": false,
 				"top": 2.75000004768372
 			},
 			"passed": true
@@ -1093,10 +1247,12 @@
 		{
 			"check": "Window contained in its floor",
 			"data": {
-				"at": "(169.5, 1.95, 7.0)",
-				"bottom": 1.15000004768372,
+				"at": "(170.4, 2.425, 7.0)",
+				"bottom": 2.04999995231628,
+				"bounds": "[P: (169.0, 2.05, 6.9825), S: (2.8, 0.75, 0.035)]",
 				"floor": 0.0,
-				"top": 2.75000004768372
+				"privacy": true,
+				"top": 2.79999995231628
 			},
 			"passed": true
 		},
@@ -1105,7 +1261,9 @@
 			"data": {
 				"at": "(153.5, 1.95, -15.4)",
 				"bottom": 1.15000004768372,
+				"bounds": "[P: (151.0, 1.15, -15.4175), S: (5.0, 1.6, 0.035)]",
 				"floor": 0.0,
+				"privacy": false,
 				"top": 2.75000004768372
 			},
 			"passed": true
@@ -1113,9 +1271,11 @@
 		{
 			"check": "Window contained in its floor",
 			"data": {
-				"at": "(149.0, 1.95, -12.2)",
+				"at": "(149.0, 1.95, -13.0)",
 				"bottom": 1.15000004768372,
+				"bounds": "[P: (148.9825, 1.15, -14.2), S: (0.035, 1.6, 2.4)]",
 				"floor": 0.0,
+				"privacy": false,
 				"top": 2.75000004768372
 			},
 			"passed": true
@@ -1125,7 +1285,9 @@
 			"data": {
 				"at": "(149.0, 1.95, 4.6)",
 				"bottom": 1.15000004768372,
+				"bounds": "[P: (148.9825, 1.15, 3.0), S: (0.035, 1.6, 3.2)]",
 				"floor": 0.0,
+				"privacy": false,
 				"top": 2.75000004768372
 			},
 			"passed": true
@@ -1133,20 +1295,36 @@
 		{
 			"check": "Window contained in its floor",
 			"data": {
-				"at": "(173.0, 1.95, -12.2)",
-				"bottom": 1.15000004768372,
+				"at": "(173.0, 2.575, -13.2)",
+				"bottom": 2.25000004768372,
+				"bounds": "[P: (172.9825, 2.25, -14.2), S: (0.035, 0.65, 2.0)]",
 				"floor": 0.0,
-				"top": 2.75000004768372
+				"privacy": true,
+				"top": 2.90000004768372
 			},
 			"passed": true
 		},
 		{
 			"check": "Window contained in its floor",
 			"data": {
-				"at": "(173.0, 1.95, 4.6)",
-				"bottom": 1.15000004768372,
+				"at": "(173.0, 2.575, -8.4)",
+				"bottom": 2.25000004768372,
+				"bounds": "[P: (172.9825, 2.25, -9.4), S: (0.035, 0.65, 2.0)]",
 				"floor": 0.0,
-				"top": 2.75000004768372
+				"privacy": true,
+				"top": 2.90000004768372
+			},
+			"passed": true
+		},
+		{
+			"check": "Window contained in its floor",
+			"data": {
+				"at": "(173.0, 2.425, 4.800001)",
+				"bottom": 2.04999995231628,
+				"bounds": "[P: (172.9825, 2.05, 3.800001), S: (0.035, 0.75, 2.0)]",
+				"floor": 0.0,
+				"privacy": true,
+				"top": 2.79999995231628
 			},
 			"passed": true
 		},
@@ -1155,7 +1333,9 @@
 			"data": {
 				"at": "(152.5, 5.55, 7.0)",
 				"bottom": 4.75000019073486,
+				"bounds": "[P: (150.0, 4.75, 6.9825), S: (5.0, 1.6, 0.035)]",
 				"floor": 3.6,
+				"privacy": false,
 				"top": 6.35000019073486
 			},
 			"passed": true
@@ -1163,9 +1343,11 @@
 		{
 			"check": "Window contained in its floor",
 			"data": {
-				"at": "(169.5, 5.55, 7.0)",
+				"at": "(161.5, 5.55, 7.0)",
 				"bottom": 4.75000019073486,
+				"bounds": "[P: (159.0, 4.75, 6.9825), S: (5.0, 1.6, 0.035)]",
 				"floor": 3.6,
+				"privacy": false,
 				"top": 6.35000019073486
 			},
 			"passed": true
@@ -1173,9 +1355,11 @@
 		{
 			"check": "Window contained in its floor",
 			"data": {
-				"at": "(161.0, 5.55, 7.0)",
+				"at": "(170.5, 5.55, 7.0)",
 				"bottom": 4.75000019073486,
+				"bounds": "[P: (169.0, 4.75, 6.9825), S: (3.0, 1.6, 0.035)]",
 				"floor": 3.6,
+				"privacy": false,
 				"top": 6.35000019073486
 			},
 			"passed": true
@@ -1185,7 +1369,9 @@
 			"data": {
 				"at": "(153.5, 5.55, -15.4)",
 				"bottom": 4.75000019073486,
+				"bounds": "[P: (151.0, 4.75, -15.4175), S: (5.0, 1.6, 0.035)]",
 				"floor": 3.6,
+				"privacy": false,
 				"top": 6.35000019073486
 			},
 			"passed": true
@@ -1193,19 +1379,23 @@
 		{
 			"check": "Window contained in its floor",
 			"data": {
-				"at": "(162.5, 5.55, -15.4)",
-				"bottom": 4.75000019073486,
+				"at": "(162.5, 5.7, -15.4)",
+				"bottom": 5.04999980926514,
+				"bounds": "[P: (160.0, 5.05, -15.4175), S: (5.0, 1.3, 0.035)]",
 				"floor": 3.6,
-				"top": 6.35000019073486
+				"privacy": false,
+				"top": 6.34999980926514
 			},
 			"passed": true
 		},
 		{
 			"check": "Window contained in its floor",
 			"data": {
-				"at": "(149.0, 5.55, -12.2)",
+				"at": "(149.0, 5.55, -13.0)",
 				"bottom": 4.75000019073486,
+				"bounds": "[P: (148.9825, 4.75, -14.2), S: (0.035, 1.6, 2.4)]",
 				"floor": 3.6,
+				"privacy": false,
 				"top": 6.35000019073486
 			},
 			"passed": true
@@ -1215,7 +1405,9 @@
 			"data": {
 				"at": "(149.0, 5.55, 4.6)",
 				"bottom": 4.75000019073486,
+				"bounds": "[P: (148.9825, 4.75, 3.0), S: (0.035, 1.6, 3.2)]",
 				"floor": 3.6,
+				"privacy": false,
 				"top": 6.35000019073486
 			},
 			"passed": true
@@ -1223,10 +1415,24 @@
 		{
 			"check": "Window contained in its floor",
 			"data": {
-				"at": "(173.0, 5.55, -12.2)",
-				"bottom": 4.75000019073486,
+				"at": "(173.0, 6.175, -12.8)",
+				"bottom": 5.85000019073486,
+				"bounds": "[P: (172.9825, 5.85, -13.8), S: (0.035, 0.65, 2.0)]",
 				"floor": 3.6,
-				"top": 6.35000019073486
+				"privacy": true,
+				"top": 6.50000019073486
+			},
+			"passed": true
+		},
+		{
+			"check": "Window contained in its floor",
+			"data": {
+				"at": "(173.0, 6.175, -8.799999)",
+				"bottom": 5.85000019073486,
+				"bounds": "[P: (172.9825, 5.85, -9.799999), S: (0.035, 0.65, 2.0)]",
+				"floor": 3.6,
+				"privacy": true,
+				"top": 6.50000019073486
 			},
 			"passed": true
 		},
@@ -1235,7 +1441,9 @@
 			"data": {
 				"at": "(173.0, 5.55, 4.6)",
 				"bottom": 4.75000019073486,
+				"bounds": "[P: (172.9825, 4.75, 3.0), S: (0.035, 1.6, 3.2)]",
 				"floor": 3.6,
+				"privacy": false,
 				"top": 6.35000019073486
 			},
 			"passed": true
@@ -1332,6 +1540,6 @@
 	"passed": true,
 	"room_count": 15,
 	"station_batches": 85,
-	"station_instances": 854,
+	"station_instances": 914,
 	"upper_reachable_cells": 3167
 }

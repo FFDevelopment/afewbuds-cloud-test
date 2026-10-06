@@ -13,6 +13,10 @@ func run() -> void:
 	game.game_time_minutes=720;game._update_day_night_visuals();world.weather.update(0)
 	game.sun_light.hide();game.camera.environment=world.outdoor_environment
 	var shots:Array=[
+		{"id":"public_parking","pos":Vector3(198,12,17),"look":Vector3(187,0,-4)},
+		{"id":"residences","pos":Vector3(177,4,17),"look":Vector3(177,2.5,29)},
+		{"id":"bark","pos":Vector3(120.2,2.16,-8.5),"look":Vector3(120.2,2,-11)},
+		{"id":"restroom","pos":station.point(21,2.16,25.8),"look":station.point(22,1.7,22)},
 		{"id":"district","pos":Vector3(165,65,50),"look":Vector3(161,0,-3),"size":82},
 		{"id":"front","pos":Vector3(158,3.0,19),"look":Vector3(161,3.2,7)},
 		{"id":"patrol_parking","pos":Vector3(177,11,-36),"look":Vector3(161,1,-26)},
