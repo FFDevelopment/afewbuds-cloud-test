@@ -1,5 +1,7 @@
 extends Node3D
 
+var neighborhood: Node3D
+
 
 const PlantGrowth = preload("res://scripts/plant_growth.gd")
 const OfflinePlantCare = preload("res://scripts/offline_plant_care.gd")
@@ -722,6 +724,9 @@ func _ready() -> void:
 	_build_ui()
 	get_viewport().size_changed.connect(_reset_world_pointer)
 	_build_audio_players()
+	neighborhood = load("res://scripts/neighborhood.gd").new()
+	add_child(neighborhood)
+	neighborhood.setup(self)
 	_update_day_night_visuals()
 	_build_visit_timer()
 	_build_customer_patience_timers()
@@ -791,6 +796,9 @@ func _process(delta: float) -> void:
 		_sync_room_view_from_yaw()
 
 func _input(event: InputEvent) -> void:
+	if neighborhood != null and neighborhood.active and not _any_modal_open() and not daily_report_pending:
+		neighborhood.handle_input(event)
+		return
 	if reset_confirmation_open or reset_in_progress:
 		_reset_world_pointer()
 		if event.is_action_pressed("ui_cancel") and not reset_in_progress:
@@ -1383,8 +1391,8 @@ func _show_daily_report() -> void:
 	_set_world_controls_visible(false)
 	if not closeout_announced:
 		closeout_announced = true
-		if dealer_count_report > 0 and knock_player != null and not session_paused:
-			knock_player.play()
+		if dealer_count_report > 0 and neighborhood != null and not session_paused:
+			neighborhood.play_text()
 	_refresh_tutorial_coach()
 	if status_label != null:
 		status_label.text = "DAY CLOSED  |  Time is frozen. Review the report, then press START DAY when ready."
@@ -1775,7 +1783,9 @@ func _build_world() -> void:
 	_add_box("MainFloor", Vector3(0, -0.10, 1.0), Vector3(10.2, 0.18, 10.0), Color("514030"), 0.90)
 	RoomSurfaces.add_main_floor(self)
 	_add_box("GrowRoomFloor", Vector3(0, -0.095, -7.10), Vector3(10.2, 0.19, 6.20), Color("353c3e"), 0.90, false, "res://assets/textures/matte_plastic.png", Vector3(4.0, 1.0, 3.0))
-	_add_box("FrontWall", Vector3(0, 2.15, 6.0), Vector3(10.2, 4.3, 0.18), Color("c2beb5"), 0.94, false, "res://assets/textures/painted_wall.png", Vector3(3.0, 2.0, 1.0))
+	_add_box("FrontWallL", Vector3(-3.075, 2.15, 6.0), Vector3(4.05, 4.3, 0.18), Color("c2beb5"), 0.94, false, "res://assets/textures/painted_wall.png")
+	_add_box("FrontWallR", Vector3(3.075, 2.15, 6.0), Vector3(4.05, 4.3, 0.18), Color("c2beb5"), 0.94, false, "res://assets/textures/painted_wall.png")
+	_add_box("FrontWallHeader", Vector3(0, 3.665, 6.0), Vector3(2.1, 1.27, 0.18), Color("c2beb5"), 0.94)
 	_add_box("RearWall", Vector3(0, 2.15, -10.15), Vector3(10.2, 4.3, 0.18), Color("b8bbb7"), 0.94, false, "res://assets/textures/painted_wall.png", Vector3(3.0, 2.0, 1.0))
 	_add_box("LeftWall", Vector3(-5.0, 2.15, -2.05), Vector3(0.18, 4.3, 16.35), Color("b7b5af"), 0.94, false, "res://assets/textures/painted_wall.png", Vector3(4.5, 2.0, 1.0))
 	_add_box("RightWall", Vector3(5.0, 2.15, -2.05), Vector3(0.18, 4.3, 16.35), Color("b7b5af"), 0.94, false, "res://assets/textures/painted_wall.png", Vector3(4.5, 2.0, 1.0))
@@ -4650,6 +4660,9 @@ func _grow_room_upgrade_text() -> String:
 	return "%d grow-room expansion bay(s) still open. Buy the next tent from Phone -> Business -> Upgrades." % remaining
 
 func _refresh_navigation_ui() -> void:
+	if neighborhood != null and neighborhood.active:
+		neighborhood.refresh_controls()
+		return
 	var data: Dictionary = views.get(current_view, {})
 	if room_ring.has(current_view):
 		view_label.text = "%s   |   SWIPE / DRAG TO LOOK" % str(data.get("label", current_view.capitalize()))
@@ -4733,11 +4746,14 @@ func _refresh_navigation_ui() -> void:
 			if customer_waiting:
 				contextual_button.text = "ANSWER DOOR" if peephole_checked else "LOOK THROUGH PEEPHOLE"
 			else:
-				contextual_button.text = "LOOK THROUGH PEEPHOLE"
+				contextual_button.text = "OPEN DOOR & WALK OUTSIDE"
 			contextual_button.disabled = false
 
 
 func _context_action() -> void:
+	if current_view == "door" and not customer_waiting and neighborhood != null:
+		neighborhood.leave_apartment()
+		return
 	if room_ring.has(current_view) and not _facing_station_threshold():
 		status_label.text = "Swipe until the interaction is centered, then use the action button."
 		return
@@ -7693,6 +7709,8 @@ func _push_phone_text(sender: String, body: String) -> void:
 	while phone_text_messages.size() > 60:
 		phone_text_messages.pop_front()
 	phone_text_unread += 1
+	if neighborhood != null:
+		neighborhood.play_text()
 	if phone_open and phone_current_app in ["home", "texts"]:
 		_refresh_phone()
 
@@ -8298,6 +8316,8 @@ func _chapter_four_append_story_text(body: String) -> void:
 	while phone_text_messages.size() > 60:
 		phone_text_messages.pop_front()
 	phone_text_unread += 1
+	if neighborhood != null:
+		neighborhood.play_text()
 
 func _sync_chapter_four_story() -> bool:
 	var target_stage: int = _chapter_four_target_story_stage()
@@ -10155,9 +10175,10 @@ func _build_visit_timer() -> void:
 
 func _build_audio_players() -> void:
 	knock_player = AudioStreamPlayer.new()
-	var knock_stream: AudioStream = load("res://assets/audio/door_knock.wav") as AudioStream
+	var knock_stream: AudioStreamMP3 = AudioStreamMP3.new()
+	knock_stream.data = FileAccess.get_file_as_bytes("res://assets/audio/door_knock_soft.mp3")
 	knock_player.stream = knock_stream
-	knock_player.volume_db = -1.5
+	knock_player.volume_db = -10.0
 	add_child(knock_player)
 
 func _play_door_knock() -> void:
@@ -11837,6 +11858,9 @@ func _handle_door_alert_pointer(event: InputEvent) -> bool:
 	return false
 
 func _go_to_waiting_customer() -> void:
+	if neighborhood != null and neighborhood.active:
+		status_label.text = "Walk back to your apartment entrance to answer the door."
+		return
 	if _simulation_blocked() or not customer_waiting or customer_departing or customer_answered:
 		return
 	_hide_learning_panels()
