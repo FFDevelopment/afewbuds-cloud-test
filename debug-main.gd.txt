@@ -7305,7 +7305,7 @@ Plant slots: %d   |   Tent equipment level: %d" % [grow_tent_count, plant_slots.
 
 func _build_business_app() -> void:
 	var property_note := Label.new()
-	property_note.text="APARTMENT · Active operation\nManage rent and utilities here. Use the apartment computer for inventory, staff, genetics, equipment and production.\nHOUSE · Property opportunity; not yet acquired."
+	property_note.text="APARTMENT · Active operation\nUse Bills here or open the complete apartment Business interface at its computer.\nHOUSE · Property opportunity; not yet acquired."
 	property_note.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 	phone_list.add_child(property_note)
 	var summary: Label = Label.new()
@@ -7315,6 +7315,7 @@ func _build_business_app() -> void:
 	phone_list.add_child(summary)
 	var grid: GridContainer = _phone_category_grid()
 	_add_phone_app_tile(grid, "", "Bills", "$%d outstanding" % (power_bill_due + water_bill_due + dealer_balance_due + (neighborhood.location_ops.balance() if neighborhood!=null and neighborhood.location_ops!=null else 0)), "bills")
+	if neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.rendering_management:neighborhood.location_ops.business_extras()
 
 func _build_bills_app() -> void:
 	if neighborhood!=null and neighborhood.location_ops!=null:neighborhood.location_ops.rent_ui(phone_list)
