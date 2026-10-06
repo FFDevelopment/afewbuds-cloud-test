@@ -1,0 +1,97 @@
+AFEWBUDS / MALIK v1.2 — CONNECTED SLEEVE TRIM, NO COLLAR
+First rigged character prototype — October 6, 2026
+
+REVISION 1.2
+  Removed the folded collar and collar seams. The button placket remains.
+  Removed separate cuff rings and baked the trim color onto the continuous
+  shirt surface. The band now shares sleeve vertices and skin weights, so
+  it stays attached through poses. The atlas was rebaked for the changed shirt.
+  The v1.1 knee and walk corrections are preserved and checked in Godot.
+  See preview/Malik_shirt_detail.png and source/garment_validation.json.
+
+REVISION 1.1
+  Corrected reversed hip/knee rotation in bend_test and walk; corrected the
+  walk arm swing to remain opposite the legs. Mesh, skin weights, rest rig,
+  atlas and idle are byte-identical to v1. The previous numeric checks verified
+  valid transforms but did not check anatomical bending direction. New checks
+  explicitly verify backward knee flexion at all animation sample times.
+  preview/Malik_knee_side.png is the new side-view inspection image.
+
+OPEN FIRST
+  preview/Malik_full.png             Studio full-body review
+  preview/Malik_portrait.png         Face and hair close-up
+  preview/Malik_bend_test.png        Shoulder, elbow, finger and knee pose
+  preview/Malik_AFewBuds_room.png    Actual room from an isolated local game copy
+  godot/project.godot               Interactive Godot character review
+  source/Malik.blend                Editable Blender 4.1 source with armature
+
+DESIGN
+  Smooth-shaded, simplified Malik with braids, beard, black collarless FFD shirt,
+  dark jeans, original sneakers and original forearm tattoo motifs.
+  No third-party clothing marks or purchased/generated meshes are included.
+  This is a first likeness and deformation study, not a final likeness match.
+  The tattoos are original simplified motifs, not traced reference tattoos.
+
+RUNTIME ASSET
+  godot/assets/Malik.glb             Self-contained skinned model and 3 test clips
+  godot/assets/Malik_BaseColor.png   Editable 2048 x 2048 color atlas
+  godot/assets/Malik.tscn            Godot wrapper using the external color atlas
+  godot/assets/malik_material.gd     Wrapper material setup
+
+  23,821 triangles; 24,386 exported vertices including UV seams; 1 material.
+  56 bones; normalized skin weights, maximum 4 influences per vertex.
+  Metres, +Y up, -Z forward. The master bone names, order, parents, and
+  identity rest bases are preserved. Rest pose is a T-pose.
+  Blender has different display-bone axes. Use the included custom exporter
+  when rebuilding; a default Blender GLB export changes the rest-basis contract.
+
+REVIEW CONTROLS
+  Open godot/project.godot in Godot 4.7.2 and press F6 on review.tscn or F5.
+  1 = idle, 2 = walk, 3 = bend test, 4 = T-pose.
+  Drag left mouse to orbit, wheel to zoom, Space to pause/resume.
+  The clips are preview motions, not finished gameplay locomotion or actions.
+
+EDITING TEXTURES LATER
+  In the Malik.tscn wrapper, the external PNG overrides the embedded GLB atlas.
+  Edit the PNG without changing its layout; Godot reimports the color changes.
+  For larger revisions use Texture Paint on the atlas UVs in Blender, or edit
+  the named source materials and rebuild. Skin, clothes, hair and embroidery
+  retain separate authoring material slots in the Blender source.
+  The standalone GLB contains its original embedded atlas; use the wrapper to
+  see external PNG changes without repacking that file.
+
+INTEGRATION
+  Copy the assets into your character folder, then adjust the wrapper's three
+  resource paths to match the new location. Alternatively import Malik.glb alone.
+  Put the visual scene under an NPC CharacterBody3D; keep navigation/collision
+  on that gameplay parent. Select idle on its AnimationPlayer for an arms-down
+  pose. The visual origin is at ground level.
+  This model already includes the matching skeleton. Do not parent it under a
+  second master skeleton and assume its skin bindings transfer automatically.
+  Bone attachment children are provided for hands, headwear, back and mouth;
+  prop grips still require calibration against the final animations.
+
+VERIFIED
+  source/static_validation.json: GLB structure, exact ordered bone contract,
+  inverse binds, unit normals, skin weights, indices, atlas and triangle budget.
+  source/godot_validation.json: imported Skeleton3D, all rest transforms,
+  bound mesh, normalized weights and finite poses for all 3 imported clips.
+  Godot 4.7.2 OpenGL Compatibility render on the local RTX 3070 was inspected.
+  A separate local AFewBuds room copy was used for appearance/scale review.
+  The original game project and original save directory were not edited.
+
+REMAINING BEFORE PRODUCTION
+  Further face/hand likeness and cloth refinement, finished movement/action
+  animation, collision/navigation integration, phone profiling and LODs.
+  No facial blend shapes, lip sync, IK controls or smoke effects are included.
+  The current polygon count is a first close-view asset, not a proven mobile
+  crowd budget. No claim of target-device performance is made.
+
+SOURCE / PROVENANCE
+  Geometry, atlas, code and sample motions were authored locally for AFewBuds
+  from the user's Malik reference and AFB_MasterRig_v1.zip. The reference image
+  is not redistributed. No paid generation services or third-party models were
+  used. The game-dev CLI was not available; checks are the included local Python
+  and Godot checks, not game-dev canonical-package certification.
+  source/build_malik.py reproduces the mesh, atlas, GLB, Blender scene and renders.
+  source/master_rig/ preserves the supplied master rig and its documentation.

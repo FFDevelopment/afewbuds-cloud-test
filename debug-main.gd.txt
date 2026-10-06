@@ -1591,6 +1591,9 @@ func _roll_daily_heat_pressure_event() -> void:
 		status_label.text = "%s Heat +%d." % [message, int(extra_heat)]
 
 func _start_lay_low() -> void:
+	if neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.crew!=null and not neighborhood.location_ops.crew.applying:
+		neighborhood.location_ops.crew.shutdown()
+		return
 	lay_low_active = true
 	reeves_quiet_pause_seconds = 0.0
 	if business_open:
@@ -5420,8 +5423,9 @@ func _update_production_worker_visual(delta: float) -> void:
 	if production_worker_node == null:
 		return
 	var on_duty: bool = packing_employee_hired and packing_employee_active
-	production_worker_node.visible = on_duty
+	production_worker_node.visible = on_duty or (packing_employee_hired and lay_low_active and not production_worker_arrested)
 	if not on_duty:
+		if production_worker_node.visible:production_worker_node.position=production_worker_node.position.move_toward(_production_worker_station_position("idle"),PRODUCTION_WORKER_MOVE_SPEED*delta)
 		return
 	var move_target: Vector3 = _production_worker_navigation_target()
 	var before: Vector3 = production_worker_node.position
@@ -5816,7 +5820,7 @@ func _staff_count() -> int:
 	return (1 if packing_employee_hired else 0) + _total_dealer_count()
 
 func _current_power_rate_per_game_minute() -> float:
-	var rate: float = POWER_BASE_COST_PER_GAME_MINUTE
+	var rate: float = 0.0 if lay_low_active else POWER_BASE_COST_PER_GAME_MINUTE
 	if main_ceiling_light_on:
 		rate += POWER_MAIN_LIGHT_COST_PER_GAME_MINUTE
 	if floor_lamp_on:
@@ -5835,7 +5839,7 @@ func _track_power_usage(elapsed_game_minutes: float) -> void:
 	current_day_power_cost += _current_power_rate_per_game_minute() * elapsed_game_minutes
 
 func _finalize_daily_power_bill(show_feedback: bool) -> void:
-	var bill: int = maxi(1, int(ceil(current_day_power_cost)))
+	var bill: int = maxi(0, int(ceil(current_day_power_cost)))
 	last_power_bill = bill
 	power_bill_due = mini(POWER_BILL_MAX_BALANCE, power_bill_due + bill)
 	lifetime_power_cost += bill
@@ -6016,7 +6020,7 @@ func _dealer_eligible_customers() -> Array[Dictionary]:
 		eligible.append(customer)
 	return eligible
 
-func _dealer_sell_one(show_feedback: bool, assigned_dealer_name: String = "") -> bool:
+func _dealer_sell_one(show_feedback: bool, assigned_dealer_name: String = "", door_customer: Dictionary = {}, door_order: Dictionary = {}) -> bool:
 	if _simulation_blocked():
 		return false
 	if dealer_balance_due > 0:
@@ -6037,11 +6041,18 @@ func _dealer_sell_one(show_feedback: bool, assigned_dealer_name: String = "") ->
 	if available_customers.is_empty():
 		return false
 	var chosen_customer: Dictionary = available_customers[rng.randi_range(0, available_customers.size() - 1)]
-	var favorite: String = str(chosen_customer.get("favorite", ""))
+	if not door_customer.is_empty():
+		var matches: bool=false
+		for candidate in available_customers:
+			if candidate.get("name","")==door_customer.get("name",""):matches=true
+		if not matches:return false
+		chosen_customer=door_customer
+	var favorite: String = str(door_order.get("product",chosen_customer.get("favorite", "")))
 	var product_name: String = ""
 	if products.has(favorite) and int(locker_weed.get(favorite, 0)) > 0:
 		product_name = favorite
 	if product_name.is_empty():
+		if not door_customer.is_empty():return false
 		var alternatives: Array[String] = []
 		for name_variant: Variant in locker_weed.keys():
 			var candidate: String = str(name_variant)
@@ -6060,6 +6071,9 @@ func _dealer_sell_one(show_feedback: bool, assigned_dealer_name: String = "") ->
 	if max_qty <= 0:
 		return false
 	var qty: int = rng.randi_range(min_qty, max_qty)
+	if not door_customer.is_empty():
+		qty=int(door_order.get("qty",0))
+		if qty<=0 or available<qty:return false
 	locker_weed[product_name] = available - qty
 	if int(locker_weed.get(product_name, 0)) <= 0:
 		locker_weed.erase(product_name)
@@ -6584,9 +6598,13 @@ func _phone_parent_app(app_name: String) -> String:
 	return "home"
 
 func _phone_go_back() -> void:
+	if neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.crew!=null and phone_current_app=="texts" and not neighborhood.location_ops.crew.thread.is_empty():
+		neighborhood.location_ops.crew.back()
+		return
 	_open_phone_app(_phone_parent_app(phone_current_app))
 
 func _open_phone_app(app_name: String) -> void:
+	if neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.crew!=null and app_name=="texts":neighborhood.location_ops.crew.thread=""
 	if neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.redirect(app_name):return
 	_cancel_phone_gesture()
 	phone_scroll.scroll_vertical = 0
@@ -6738,37 +6756,10 @@ func _build_budshop_app() -> void:
 	business_state.add_theme_font_size_override("font_size", 19)
 	business_state.modulate = Color("8ed6a3") if business_open else Color("e1b07a")
 	business_box.add_child(business_state)
-	var away_copy: Label = Label.new()
-	away_copy.text = "Away text: \"%s\"" % away_message
-	away_copy.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	away_copy.modulate = Color("aeb9c0")
-	business_box.add_child(away_copy)
-	var availability_button: Button = Button.new()
-	availability_button.text = "REOPEN  |  RESTORE LISTINGS" if not business_open else "GO AWAY  |  UNLIST ALL  |  TEXT CLIENTS"
-	availability_button.custom_minimum_size.y = 58
-	if not business_open:
-		availability_button.pressed.connect(_reopen_business)
-	else:
-		availability_button.pressed.connect(_set_business_away)
-	business_box.add_child(availability_button)
-	if business_open:
-		var unlist_button: Button = Button.new()
-		unlist_button.text = "UNLIST ALL PRODUCTS"
-		unlist_button.custom_minimum_size.y = 54
-		unlist_button.pressed.connect(_unlist_all_products)
-		business_box.add_child(unlist_button)
-	else:
-		var resend_button: Button = Button.new()
-		resend_button.text = "RESEND AWAY TEXT TO KNOWN CLIENTS"
-		resend_button.custom_minimum_size.y = 54
-		resend_button.pressed.connect(_broadcast_away_message)
-		business_box.add_child(resend_button)
-	if not last_customer_broadcast.is_empty():
-		var last_text: Label = Label.new()
-		last_text.text = "Last client text: %s" % last_customer_broadcast
-		last_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		last_text.modulate = Color("8fa8b8")
-		business_box.add_child(last_text)
+	var note := Label.new()
+	note.text="Open, close or lay low from the apartment computer. Contact your assigned crew for remote shutdown."
+	note.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	business_box.add_child(note)
 	var intro: Label = Label.new()
 	intro.text = "Manage the shop, supplies, customers and business operations."
 	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -6779,7 +6770,7 @@ func _build_budshop_app() -> void:
 	_add_phone_app_tile(grid, "", "Business", "Property overview & bills", "business")
 	if (neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.management_allowed()) or tutorial_active:_add_phone_app_tile(grid, "", "Your Supply", "Stock, prices & listings", "products")
 	if (neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.management_allowed()) or tutorial_active:_add_phone_app_tile(grid, "", "Genetics", "Create hybrid seeds", "genetics")
-	_add_phone_app_tile(grid, "", "Clients", "Customers & loyalty", "clients")
+	_add_phone_app_tile(grid, "", "Contacts", "Clients, crew & messages", "clients")
 	_add_phone_app_tile(grid, "", "Heat", "%s  |  %d/100" % [_heat_stage_name(), int(round(heat))], "heat")
 	_add_phone_app_tile(grid, "", "Stats", "Progress & revenue", "stats")
 
@@ -6815,7 +6806,7 @@ func _build_phone_home() -> void:
 	phone_list.add_child(summary)
 	var grid: GridContainer = _phone_category_grid()
 	_add_phone_app_tile(grid, "", "BudShop", "Store, business & operations", "budshop")
-	_add_phone_app_tile(grid, "", "Texts", ("%d unread" % phone_text_unread) if phone_text_unread > 0 else "Crew & story messages", "texts")
+	_add_phone_app_tile(grid, "", "Messages", ("%d unread" % phone_text_unread) if phone_text_unread > 0 else "Crew & story messages", "texts")
 	_add_phone_app_tile(grid, "", "Task", "Chapter progress & rewards", "task")
 	_add_phone_app_tile(grid, "", "Leaderboard", "Weekly & lifetime rankings", "leaderboard")
 	_add_phone_app_tile(grid, "", "Settings", "Help & system controls", "settings")
@@ -7650,6 +7641,9 @@ func _apply_customer_art(target: TextureRect, customer: Dictionary, art_key: Str
 	target.visible = true
 
 func _build_clients_app() -> void:
+	if neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.crew!=null:
+		neighborhood.location_ops.crew.contacts()
+		return
 	var intro: Label = Label.new()
 	intro.text = "Customers become identifiable through repeat encounters. Recognized contacts can have their own character portrait; unknown buyers keep their name and preferences hidden until you know them."
 	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -7733,7 +7727,7 @@ func _push_phone_text(sender: String, body: String) -> void:
 		"time": _format_game_clock(),
 		"read": false
 	})
-	while phone_text_messages.size() > 60:
+	while phone_text_messages.size() > 120:
 		phone_text_messages.pop_front()
 	phone_text_unread += 1
 	if neighborhood != null:
@@ -7823,6 +7817,9 @@ func _pay_production_bail() -> void:
 	_refresh_phone()
 
 func _build_texts_app() -> void:
+	if neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.crew!=null:
+		neighborhood.location_ops.crew.threads()
+		return
 	if dealer_arrested and dealer_bail_due > 0:
 		var dealer_bail: Button = Button.new()
 		dealer_bail.text = "SEND DEALER BAIL  |  $%d" % dealer_bail_due
@@ -8342,7 +8339,7 @@ func _chapter_four_append_story_text(body: String) -> void:
 		"time": _format_game_clock(),
 		"read": false
 	})
-	while phone_text_messages.size() > 60:
+	while phone_text_messages.size() > 120:
 		phone_text_messages.pop_front()
 	phone_text_unread += 1
 	if neighborhood != null:

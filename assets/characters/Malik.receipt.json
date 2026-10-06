@@ -1,0 +1,213 @@
+{
+  "source": "User supplied AFB_Malik_v1_2.zip",
+  "sha256": "48ff7a81bdd4d12774d7ae6ad80fe10149a3128fb7a7e98f9c9e66d00e7583cb",
+  "size": 2513804,
+  "validation": "All supplied manifest file hashes verified; Godot runtime import tested separately",
+  "provenance": "AFB_MasterRig_v1",
+  "original_manifest": {
+    "name": "AFB_Malik_v1_2",
+    "status": "first rigged prototype, sleeve trim integrated and collar removed; corrected knees retained",
+    "source_rig": "AFB_MasterRig_v1",
+    "static_validation": {
+      "passed": true,
+      "sha256": "48ff7a81bdd4d12774d7ae6ad80fe10149a3128fb7a7e98f9c9e66d00e7583cb",
+      "bones": 56,
+      "triangles": 23821,
+      "vertices_with_uv_seams": 24386,
+      "materials": 1,
+      "atlas_pixels": [
+        2048,
+        2048
+      ],
+      "clips": [
+        "idle",
+        "walk",
+        "bend_test"
+      ],
+      "checks": [
+        "GLB byte integrity",
+        "exact ordered skeleton contract",
+        "inverse binds",
+        "finite unit normals",
+        "normalized max-four weights",
+        "valid indices",
+        "embedded editable atlas",
+        "under 25000 triangles"
+      ]
+    },
+    "godot_validation": {
+      "animation_clips": [
+        "bend_test",
+        "idle",
+        "walk"
+      ],
+      "bone_count": 56,
+      "engine": "4.7.2-stable (official)",
+      "failures": [],
+      "mesh_instances": 1,
+      "passed": true,
+      "vertices": 24386
+    },
+    "garment_validation": {
+      "collar_removed": true,
+      "separate_cuff_objects": 0,
+      "trim_is_surface_color": true,
+      "shirt_connected_components": 1,
+      "shirt_vertices": 1265,
+      "trim_vertices": {
+        "L": 135,
+        "R": 138
+      },
+      "cuff_clearance_checks": {
+        "L": {
+          "edge_vertices": 59,
+          "minimum_radius_m": 0.07745960201191102,
+          "all_edge_weights_on_upper_arm": true
+        },
+        "R": {
+          "edge_vertices": 58,
+          "minimum_radius_m": 0.07764075204008246,
+          "all_edge_weights_on_upper_arm": true
+        }
+      }
+    },
+    "files": {
+      "godot/assets/Malik.glb": {
+        "bytes": 2513804,
+        "sha256": "48ff7a81bdd4d12774d7ae6ad80fe10149a3128fb7a7e98f9c9e66d00e7583cb"
+      },
+      "godot/assets/Malik.tscn": {
+        "bytes": 302,
+        "sha256": "eb1cfefa87f812c5996619ff8b7d140d3d9e5ac95ac50cb161601b65f3070fa4"
+      },
+      "godot/assets/Malik_0.png": {
+        "bytes": 732433,
+        "sha256": "9b0794ce68a3620a0328b5737530c7f8daeea23584cc8bb91e91ba8ea130a120"
+      },
+      "godot/assets/Malik_BaseColor.png": {
+        "bytes": 762386,
+        "sha256": "4848653ad1a5cf6d5790171cf47aee05ac8e9431ad25b6d6354ffbe55bcfeac2"
+      },
+      "godot/assets/malik_material.gd": {
+        "bytes": 645,
+        "sha256": "614bfa781956218292e28173c46831d771fe1372496376945d456fb3dd229c71"
+      },
+      "godot/check_rig.gd": {
+        "bytes": 3674,
+        "sha256": "0e3a9fd27e4d26ac8a75e30fb3d87595c681d702e543dd0570e7fdca829467dc"
+      },
+      "godot/project.godot": {
+        "bytes": 390,
+        "sha256": "d5fd53e8a69e07c614ea5a3064362064fafe54163e103fd8922a4d9fc74fce0e"
+      },
+      "godot/review.gd": {
+        "bytes": 4009,
+        "sha256": "54067d0bbe821cc516beff2f6718a1abcb401b34237cbac8708341b211f3d64d"
+      },
+      "godot/review.tscn": {
+        "bytes": 160,
+        "sha256": "a5633d8312f75e9fff188c8e32d8e4b33bc245b79878db6b2f4dc0f0abd5a467"
+      },
+      "preview/Malik_AFewBuds_room.png": {
+        "bytes": 803669,
+        "sha256": "13e46b3fd4b11c343875022b17afc461d481049d76813406fe76da67e099ce05"
+      },
+      "preview/Malik_bend_test.png": {
+        "bytes": 1242674,
+        "sha256": "a75786a32f5423ea92c84a7eb3458562f07ad07be170d7e5e8d6e95ccc8ae625"
+      },
+      "preview/Malik_full.png": {
+        "bytes": 1233428,
+        "sha256": "f265ee7129f60f2ce82beb2dbe81847c9cacea54cf691fad5f92d8fc9e4d796a"
+      },
+      "preview/Malik_Godot.png": {
+        "bytes": 174389,
+        "sha256": "de8e1fc6e0e3b31980a74c93c54efce46ddb0d476bd0eb5b6cca62291831d9f0"
+      },
+      "preview/Malik_knee_side.png": {
+        "bytes": 1197449,
+        "sha256": "03ec3c730af027e8c920ee02c7fa76eab209b3c591597cb363f80d54948af11f"
+      },
+      "preview/Malik_portrait.png": {
+        "bytes": 993550,
+        "sha256": "e839e85b93411587c347d498f58aa00570e34278feaf7a5422566de1319b9207"
+      },
+      "preview/Malik_shirt_detail.png": {
+        "bytes": 1303244,
+        "sha256": "2cea7d95bf58ae33202536188112235bd975a1300845967341d63d6e1582f636"
+      },
+      "README.txt": {
+        "bytes": 5726,
+        "sha256": "b15a62d8adaefb529f0aa4d9502e2c59a5e5e09450634ebfd2e491b281d4f250"
+      },
+      "source/blender_knee_validation.json": {
+        "bytes": 317,
+        "sha256": "7ad0055a1a4fc6e9d7b7352530c2d301e9cbaadbb77dc39eb02860b06941bfc9"
+      },
+      "source/build_malik.py": {
+        "bytes": 36143,
+        "sha256": "6ed835f1641aae5c948d5e5e68b279739faeb2698503aa2a39d74aa3bbb677d1"
+      },
+      "source/capture_game.gd": {
+        "bytes": 1165,
+        "sha256": "abfc6f84260191028b33ec961e7908974e36016ef44f186639fdbae39f6d935d"
+      },
+      "source/garment_validation.json": {
+        "bytes": 532,
+        "sha256": "3895b4c401a997c545433709106cdab4f15b35f2b3804e4f8d91c7300718bac8"
+      },
+      "source/godot_validation.json": {
+        "bytes": 195,
+        "sha256": "9be3b765994afa3795678454b1bbd0ad6d2490e4522d18abe8934263ce21e991"
+      },
+      "source/Malik.blend": {
+        "bytes": 4996888,
+        "sha256": "1225bf8be3667b6bfba81e2b50441066233477649bdbc1160380e97f07b9995e"
+      },
+      "source/master_rig/AFB_MasterRig.tscn": {
+        "bytes": 15317,
+        "sha256": "759fe8e8da7d8134a30b529fceb913826fcd1003b2365a7e6c0cf84558c07693"
+      },
+      "source/master_rig/bone_contract.json": {
+        "bytes": 7548,
+        "sha256": "495e8272e1fc1ec349383fe05b5c35a54145b9577e4437c20df13296aa47ae68"
+      },
+      "source/master_rig/build_rig.py": {
+        "bytes": 3003,
+        "sha256": "9307bbd86b47c706dc371a238bd40c5c9157848135c691c8841c13c43f7aff01"
+      },
+      "source/master_rig/README.md": {
+        "bytes": 2962,
+        "sha256": "0e90daa51f47f775d92c39e21419681087f709638f711a40db3280d79f721f4c"
+      },
+      "source/mesh_stats.json": {
+        "bytes": 215,
+        "sha256": "567acdf6ffee2c5ece355d1adab4432468ac3622bc9d0089c307cb47bc44fd8f"
+      },
+      "source/package_malik.py": {
+        "bytes": 1598,
+        "sha256": "1bcf5ff3350b8c109c16f70e966a84014b952626006336f60788264055c6e1c0"
+      },
+      "source/render_corrected_knees.py": {
+        "bytes": 2971,
+        "sha256": "e7e66bf485e089e03a65a22550891629b6070b9612514282c87cbb25eaf67536"
+      },
+      "source/setup_game_review.py": {
+        "bytes": 772,
+        "sha256": "6e94043a1a9386f9d03a9a9632a77a92c0b08c655e5af9efb3f3124ac2c56365"
+      },
+      "source/static_validation.json": {
+        "bytes": 565,
+        "sha256": "24e4edd1a7bf6fe4d88c162cca9a486570c38d66ce694f6843a8bc45c68dd260"
+      },
+      "source/update_delivery_stats.py": {
+        "bytes": 454,
+        "sha256": "56c5a2258a2856112ad35f018a9052d2c328e62fd1c35f1074fd982aefd9fa4c"
+      },
+      "source/validate_glb.py": {
+        "bytes": 3166,
+        "sha256": "488fdc7429dae9f6837141783ff88ffe40b421843758e0c2aea7e59fa037e722"
+      }
+    }
+  }
+}
