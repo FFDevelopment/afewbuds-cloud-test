@@ -1,5 +1,5 @@
 {
-  "release_id": "0.7.9-beta.19-cloudtest.70",
+  "release_id": "0.7.9-beta.19-cloudtest.71",
   "game_build": "0.7.9-beta.19",
   "channel": "main-based-cloud-test",
   "updater": "network-only-no-service-worker",
@@ -113,5 +113,6 @@
   "runtime_delivery": "SHA-256 verified .70 pack delta over unchanged .63 assets.",
   "interior_controls": "Free analog movement in apartment and grow room; nearby station double tap; Back restores walking position; walls and furniture collision.",
   "responsive_layout": "Automatic portrait/landscape game viewport, corner controls, centered phone menu and fitting browser splash/account overlays.",
-  "walking_fov": 78
+  "walking_fov": 78,
+  "password_recovery_input": "Removed input truncation; clear username instructions and email-address feedback. Email lookup database patch prepared, not applied."
 }
