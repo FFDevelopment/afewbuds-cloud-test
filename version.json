@@ -1,5 +1,5 @@
 {
-  "release_id": "0.7.9-beta.19-cloudtest.96-east.2",
+  "release_id": "0.7.9-beta.19-cloudtest.96-east.3",
   "game_build": "0.7.9-beta.19",
   "channel": "main-based-cloud-test",
   "updater": "network-only-no-service-worker",
@@ -155,5 +155,6 @@
     "new_buildings": "19 exterior residences and 5 rear-lane garages, replacing 2 old edge buildings; no new enterable interiors",
     "upper_windows": "Audited per story, including apartment upper floors above the 4.4-unit ground-floor volume"
   },
-  "tree_planting": "Shared placement list aligns trunks, soil and paving cutouts; trees moved out of narrow building gaps; soil meets trunk bases at floor level."
+  "tree_planting": "Shared placement list aligns trunks, soil and paving cutouts; trees moved out of narrow building gaps; soil meets trunk bases at floor level.",
+  "player_seating": "Three usable park benches; couch and bench cameras match shared-rig seated eyes at about 1.563 units. Move or use Stand Up to leave the seat."
 }

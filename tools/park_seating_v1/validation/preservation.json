@@ -1,0 +1,13 @@
+{
+  "baseline_main": "024c60729d796d9580130cd97b3b7915b846493c",
+  "baseline_sha256": "5147b06c093cd4dd59ecd8463772f0d8f338e9261bc25262298dbe1636e65174",
+  "target_sha256": "746ee56a3dee5bf02db4eb993752dc37a18fb7f72e720f0c8f4f24d6e56702a4",
+  "changed": [
+    "scripts/neighborhood.gd",
+    "scripts/east_expansion.gd"
+  ],
+  "added": [
+    "scripts/seating.gd"
+  ],
+  "unchanged_entries": 210
+}

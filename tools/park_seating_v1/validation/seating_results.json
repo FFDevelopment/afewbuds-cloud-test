@@ -1,0 +1,226 @@
+{
+	"checks": [
+		{
+			"check": "Isolated validation save",
+			"passed": true
+		},
+		{
+			"check": "All three park benches registered",
+			"passed": true
+		},
+		{
+			"check": "Malik actual sit eye bones match camera reference",
+			"passed": true
+		},
+		{
+			"check": "Rod actual sit eye bones match camera reference",
+			"passed": true
+		},
+		{
+			"check": "Bench 0 approach is walkable",
+			"passed": true
+		},
+		{
+			"check": "Bench 0 front is reachable",
+			"passed": true
+		},
+		{
+			"check": "Bench 0 sit button visible",
+			"passed": true
+		},
+		{
+			"check": "Bench 0 button sits at eyes",
+			"passed": true
+		},
+		{
+			"check": "Bench 0 faces away from backrest",
+			"passed": true
+		},
+		{
+			"check": "Bench 0 does not occupy apartment couch",
+			"passed": true
+		},
+		{
+			"check": "Bench 0 camera stays at seated height",
+			"passed": true
+		},
+		{
+			"check": "Bench 0 stand button visible",
+			"passed": true
+		},
+		{
+			"check": "Bench 0 button restores safe standing position",
+			"passed": true
+		},
+		{
+			"check": "Bench 0 cannot sit through backrest",
+			"passed": true
+		},
+		{
+			"check": "Bench 0 first tap only hints",
+			"passed": true
+		},
+		{
+			"check": "Bench 0 double tap sits",
+			"passed": true
+		},
+		{
+			"check": "Bench 0 movement stands and stays walkable",
+			"passed": true
+		},
+		{
+			"check": "Bench 0 keyboard stands",
+			"passed": true
+		},
+		{
+			"check": "Bench 0 modal blocks seating",
+			"passed": true
+		},
+		{
+			"check": "Bench 1 approach is walkable",
+			"passed": true
+		},
+		{
+			"check": "Bench 1 front is reachable",
+			"passed": true
+		},
+		{
+			"check": "Bench 1 sit button visible",
+			"passed": true
+		},
+		{
+			"check": "Bench 1 button sits at eyes",
+			"passed": true
+		},
+		{
+			"check": "Bench 1 faces away from backrest",
+			"passed": true
+		},
+		{
+			"check": "Bench 1 does not occupy apartment couch",
+			"passed": true
+		},
+		{
+			"check": "Bench 1 camera stays at seated height",
+			"passed": true
+		},
+		{
+			"check": "Bench 1 stand button visible",
+			"passed": true
+		},
+		{
+			"check": "Bench 1 button restores safe standing position",
+			"passed": true
+		},
+		{
+			"check": "Bench 1 cannot sit through backrest",
+			"passed": true
+		},
+		{
+			"check": "Bench 1 first tap only hints",
+			"passed": true
+		},
+		{
+			"check": "Bench 1 double tap sits",
+			"passed": true
+		},
+		{
+			"check": "Bench 1 movement stands and stays walkable",
+			"passed": true
+		},
+		{
+			"check": "Bench 1 keyboard stands",
+			"passed": true
+		},
+		{
+			"check": "Bench 1 modal blocks seating",
+			"passed": true
+		},
+		{
+			"check": "Bench 2 approach is walkable",
+			"passed": true
+		},
+		{
+			"check": "Bench 2 front is reachable",
+			"passed": true
+		},
+		{
+			"check": "Bench 2 sit button visible",
+			"passed": true
+		},
+		{
+			"check": "Bench 2 button sits at eyes",
+			"passed": true
+		},
+		{
+			"check": "Bench 2 faces away from backrest",
+			"passed": true
+		},
+		{
+			"check": "Bench 2 does not occupy apartment couch",
+			"passed": true
+		},
+		{
+			"check": "Bench 2 camera stays at seated height",
+			"passed": true
+		},
+		{
+			"check": "Bench 2 stand button visible",
+			"passed": true
+		},
+		{
+			"check": "Bench 2 button restores safe standing position",
+			"passed": true
+		},
+		{
+			"check": "Bench 2 cannot sit through backrest",
+			"passed": true
+		},
+		{
+			"check": "Bench 2 first tap only hints",
+			"passed": true
+		},
+		{
+			"check": "Bench 2 double tap sits",
+			"passed": true
+		},
+		{
+			"check": "Bench 2 movement stands and stays walkable",
+			"passed": true
+		},
+		{
+			"check": "Bench 2 keyboard stands",
+			"passed": true
+		},
+		{
+			"check": "Bench 2 modal blocks seating",
+			"passed": true
+		},
+		{
+			"check": "Blocked saved exit uses clear front fallback",
+			"passed": true
+		},
+		{
+			"check": "Cannot remotely activate a bench",
+			"passed": true
+		},
+		{
+			"check": "Couch uses actual seated eye height",
+			"passed": true
+		},
+		{
+			"check": "Couch uses actual eye forward offset",
+			"passed": true
+		},
+		{
+			"check": "Couch seated view remains stable",
+			"passed": true
+		},
+		{
+			"check": "Couch stand restores walking eyes",
+			"passed": true
+		}
+	],
+	"failures": 0,
+	"passed": true
+}

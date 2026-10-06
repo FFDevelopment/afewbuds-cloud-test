@@ -36,9 +36,11 @@ def main():
     once('\tfence(Vector3(73,0,-36),Vector3(73,0,39))','\t# The east fence moves outward; all core geometry stays in place.\n\tload("res://scripts/east_expansion.gd").new().build(self)')
     once('pos.x > 72.7','pos.x > 136.7')
     once('for x in [-28.0,61.0]:','for x in [-28.0]: # East-edge exteriors are reorganized by east_expansion.gd.')
+    text=module('seating_patch',ROOT/'tools/park_seating_v1/patch.py').apply(text)
     (HERE/'neighborhood.gd').write_text(text,encoding='utf-8',newline='\n')
     updated=[[n,text.encode() if n=='scripts/neighborhood.gd' else b,f] for n,b,f in entries]
     updated.append(['scripts/east_expansion.gd',(HERE/'east_expansion.gd').read_text(encoding='utf-8').encode(),0])
+    updated.append(['scripts/seating.gd',(ROOT/'tools/park_seating_v1/seating.gd').read_text(encoding='utf-8').encode(),0])
     candidate=pack.rebuild(baseline,fb,updated)
     after={n:b for n,b,f in pack.parse(candidate)[1]}
     changed=[n for n in before if before[n]!=after[n]]
@@ -77,7 +79,7 @@ def main():
     assert fit.read_recipe(recipe_path)==candidate
     loader=(ROOT/'shared/afb-runtime-character-fit-v1.js').read_text().replace('character-fit-v1','east-expansion-v1').replace('AFB_RUNTIME_CHARACTER_FIT_V1','AFB_RUNTIME_EAST_EXPANSION_V1')
     (ROOT/'shared/afb-runtime-east-expansion-v1.js').write_text(loader,newline='\n')
-    release='0.7.9-beta.19-cloudtest.96-east.2'
+    release='0.7.9-beta.19-cloudtest.96-east.3'
     index=(ROOT/'index.html').read_text().replace('character-fit-v1','east-expansion-v1').replace('AFB_RUNTIME_CHARACTER_FIT_V1','AFB_RUNTIME_EAST_EXPANSION_V1')
     index=re.sub(r'0\.7\.9-beta\.19-cloudtest\.96-(?:fit|east)\.\d+',release,index)
     index=re.sub(r'"fileSizes":\{[^}]*\}',f'"fileSizes":{{"index-east-expansion-v1.pck":{len(candidate)},"index.wasm":{(ROOT/"index.wasm").stat().st_size}}}',index,count=1)
@@ -86,8 +88,9 @@ def main():
     version['east_expansion']={'type':'Residential streets, rear lanes and pocket park','east_boundary':137,'core_buildings_and_interiors':'unchanged from .96-fit.1; two decorative east-edge buildings reorganized','new_buildings':'19 exterior residences and 5 rear-lane garages, replacing 2 old edge buildings; no new enterable interiors','upper_windows':'Audited per story, including apartment upper floors above the 4.4-unit ground-floor volume'}
     version['runtime_delivery']='SHA-256-verified east-expansion-v1 pack delta; additive district over merged .96-fit.1.'
     version['tree_planting']='Shared placement list aligns trunks, soil and paving cutouts; trees moved out of narrow building gaps; soil meets trunk bases at floor level.'
+    version['player_seating']='Three usable park benches; couch and bench cameras match shared-rig seated eyes at about 1.563 units. Move or use Stand Up to leave the seat.'
     (ROOT/'version.json').write_text(json.dumps(version,indent=2)+'\n',newline='\n')
     (ROOT/'BUILD_VERSION.txt').write_text('AFewBuds Cloud Test\nGame build: 0.7.9-beta.19\nWeb release: '+release+'\nRuntime: East residential streets, rear lanes and pocket park\n',newline='\n')
-    receipt={'baseline_sha256':hashlib.sha256(baseline).hexdigest(),'target_sha256':hashlib.sha256(candidate).hexdigest(),'target_bytes':len(candidate),'changed_existing_entries':changed,'added_entries':['scripts/east_expansion.gd'],'unchanged_entries':len(before)-len(changed),'all_interiors_characters_gameplay_unchanged':True,'reconstruction_verified':True}
+    receipt={'baseline_sha256':hashlib.sha256(baseline).hexdigest(),'target_sha256':hashlib.sha256(candidate).hexdigest(),'target_bytes':len(candidate),'changed_existing_entries':changed,'added_entries':['scripts/east_expansion.gd','scripts/seating.gd'],'unchanged_entries':len(before)-len(changed),'interior_and_character_assets_unchanged':True,'reconstruction_verified':True}
     (HERE/'build_receipt.json').write_text(json.dumps(receipt,indent=2)+'\n',newline='\n');print(json.dumps(receipt))
 if __name__=='__main__':main()

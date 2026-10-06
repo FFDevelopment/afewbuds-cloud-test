@@ -1,4 +1,6 @@
 extends Node3D
+const Seating=preload("res://scripts/seating.gd")
+var bench_seating=Seating.new()
 const TreeLayout=preload("res://scripts/east_expansion.gd")
 var window_layout_records:Array[Dictionary]=[]
 const ScalePolicy=preload("res://scripts/scale_policy.gd")
@@ -56,6 +58,7 @@ var saved_indoor_sun_visible: bool = true
 
 func setup(owner_node: Node3D) -> void:
 	host = owner_node
+	bench_seating.setup(self)
 	client_visits = load("res://scripts/client_visits.gd").new()
 	client_visits.setup(self)
 	house_controls=load("res://scripts/house_controls.gd").new()
@@ -812,6 +815,9 @@ func _process(delta: float) -> void:
 	var movement: Vector2=pad.value
 	movement+=Vector2(float(Input.is_physical_key_pressed(KEY_D))-float(Input.is_physical_key_pressed(KEY_A)),float(Input.is_physical_key_pressed(KEY_S) or Input.is_physical_key_pressed(KEY_DOWN))-float(Input.is_physical_key_pressed(KEY_W) or Input.is_physical_key_pressed(KEY_UP)))
 	movement=movement.limit_length(1.0)
+	if bench_seating.seated>=0:
+		if movement.length()>0.15:bench_seating.stand()
+		if bench_seating.seated>=0:movement=Vector2.ZERO
 	if couch_seated:
 		if movement.length()>0.15:_toggle_couch()
 		else:movement=Vector2.ZERO
@@ -821,7 +827,7 @@ func _process(delta: float) -> void:
 	if _walkable(next): local=next
 	next=local+Vector3(0,0,step.z)
 	if _walkable(next): local=next
-	if not couch_seated:local.y=WALK_EYE_HEIGHT-ORIGIN.y
+	if not couch_seated and bench_seating.seated<0:local.y=WALK_EYE_HEIGHT-ORIGIN.y
 	host.camera.position=ORIGIN+local
 	host.view_label.text="Apartment" if _indoors(host.camera.position) else "Neighborhood"
 	var target:=_near_target()
@@ -830,6 +836,7 @@ func _process(delta: float) -> void:
 	action.text=("CLOSE APARTMENT DOOR" if door_open else "OPEN APARTMENT DOOR") if target=="apartment" else (("INSPECT HOUSE" if host.property_offer_unlocked else "HOUSE | NOT AVAILABLE YET") if target=="house" else ("USE "+target.trim_prefix("station_").replace("_"," ").to_upper() if target.begins_with("station_") else "APPROACH A STATION OR ENTRANCE"))
 	if target.begins_with("housecontrol_"): action.text=house_controls.title(target.trim_prefix("housecontrol_"))
 	if target.begins_with("operation_"):action.text="USE "+target.trim_prefix("operation_").replace("_"," ").to_upper()
+	if target.begins_with("bench_"):action.text="STAND UP" if bench_seating.seated>=0 else "SIT ON BENCH"
 	if target=="couch":action.text="STAND UP" if couch_seated else "SIT ON COUCH"
 	if target=="station_door": action.text="CHECK DOOR"
 	action.text=action.text.replace("APARTMENT DOOR","DOOR").replace("APARTMENT COMPUTER","COMPUTER").replace("HOUSE COMPUTER","COMPUTER").replace("HOUSE DETAILS","HOUSE").replace("NOT AVAILABLE YET","LOCKED")
@@ -863,6 +870,8 @@ func _walkable(pos: Vector3) -> bool:
 
 func _near_target() -> String:
 	if couch_seated:return "couch"
+	var bench_target:String=bench_seating.target()
+	if not bench_target.is_empty():return bench_target
 	if _indoors(host.camera.position) and Vector2(host.camera.position.x+2.28,host.camera.position.z-3.07).length()<2.0:return "couch"
 	var house_target: String=house_controls.nearby()
 	if not house_target.is_empty(): return "housecontrol_"+house_target
@@ -879,6 +888,9 @@ func _near_target() -> String:
 func _interact() -> void:
 	if not active or host._any_modal_open() or host.daily_report_pending: return
 	var target:=_near_target()
+	if target.begins_with("bench_"):
+		bench_seating.use(target)
+		return
 	if target=="couch":
 		_toggle_couch()
 		return
@@ -933,6 +945,7 @@ func _near_station() -> String:
 
 func _tap(point: Vector2) -> void:
 	if tap_distance>24.0: return
+	if bench_seating.tap(point):return
 	if _tap_apartment_light(point):return
 	if _near_target()=="couch":
 		var at:=Vector3(-1.78,0.8,3.07)
@@ -1112,7 +1125,7 @@ func _toggle_couch() -> void:
 	else:
 		couch_stand=host.camera.position
 		couch_seated=true
-		host.camera.position=Vector3(-1.785,1.18,3.035)
+		host.camera.position=Seating.eyes(Vector3(-1.785,0,3.035),0,ScalePolicy.SEAT_HEIGHT)
 		host.camera.rotation=Vector3.ZERO
 	host.status_label.text="Relaxing on the couch. Move to stand up." if couch_seated else "Back on your feet."
 

@@ -10,3 +10,5 @@ tools/east_expansion_v1/** text=auto eol=lf
 tools/east_expansion_v1/**/*.png binary
 runtime/east-expansion-v1.patch.json text eol=lf
 shared/afb-runtime-east-expansion-v1.js text eol=lf
+tools/park_seating_v1/** text=auto eol=lf
+tools/park_seating_v1/**/*.png binary
