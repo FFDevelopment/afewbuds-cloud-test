@@ -1785,7 +1785,7 @@ func _build_world() -> void:
 	_add_box("GrowRoomFloor", Vector3(0, -0.095, -7.10), Vector3(10.2, 0.19, 6.20), Color("353c3e"), 0.90, false, "res://assets/textures/matte_plastic.png", Vector3(4.0, 1.0, 3.0))
 	_add_box("FrontWallL", Vector3(-3.075, 2.15, 6.0), Vector3(4.05, 4.3, 0.18), Color("c2beb5"), 0.94, false, "res://assets/textures/painted_wall.png")
 	_add_box("FrontWallR", Vector3(3.075, 2.15, 6.0), Vector3(4.05, 4.3, 0.18), Color("c2beb5"), 0.94, false, "res://assets/textures/painted_wall.png")
-	_add_box("FrontWallHeader", Vector3(0, 3.665, 6.0), Vector3(2.1, 1.27, 0.18), Color("c2beb5"), 0.94)
+	_add_box("FrontWallHeader", Vector3(0, 3.695, 6.0), Vector3(2.1, 1.27, 0.18), Color("c2beb5"), 0.94)
 	_add_box("RearWall", Vector3(0, 2.15, -10.15), Vector3(10.2, 4.3, 0.18), Color("b8bbb7"), 0.94, false, "res://assets/textures/painted_wall.png", Vector3(3.0, 2.0, 1.0))
 	_add_box("LeftWall", Vector3(-5.0, 2.15, -2.05), Vector3(0.18, 4.3, 16.35), Color("b7b5af"), 0.94, false, "res://assets/textures/painted_wall.png", Vector3(4.5, 2.0, 1.0))
 	_add_box("RightWall", Vector3(5.0, 2.15, -2.05), Vector3(0.18, 4.3, 16.35), Color("b7b5af"), 0.94, false, "res://assets/textures/painted_wall.png", Vector3(4.5, 2.0, 1.0))
@@ -4571,8 +4571,8 @@ func _cancel_camera_view_tween() -> void:
 	camera_view_tween = null
 
 func _go_to_view(view_name: String, animate: bool = true) -> void:
-	if neighborhood != null and neighborhood.active:
-		neighborhood.end_walk()
+	if neighborhood != null and neighborhood.handle_view_request(view_name):
+		return
 	if not views.has(view_name):
 		return
 	_cancel_camera_view_tween()
