@@ -59,7 +59,8 @@ func wall(id:String,x:float,z:float,length:float,along_x:bool,holes:Array=[],col
 	var span:=length if along_x else length*.8
 	var cuts:Array[Rect2]=[]
 	for raw in holes:cuts.append(Rect2(raw.position*Vector2(1 if along_x else .8,1),raw.size*Vector2(1 if along_x else .8,1)))
-	var xs:Array[float]=[0,span];var ys:Array[float]=[0,STORY]
+	var wall_height:float=STORY-.20 if floor_index==0 else STORY-.23
+	var xs:Array[float]=[0,span];var ys:Array[float]=[0,wall_height]
 	for h in cuts:
 		xs.append(h.position.x);xs.append(h.end.x);ys.append(h.position.y);ys.append(h.end.y)
 		openings.append({"wall":id,"floor":floor_index,"origin":start,"axis":axis,"rect":h})
@@ -226,7 +227,7 @@ func build(owner:Node3D) -> void:
 	for i in range(20):
 		var h:float=(i+1)*STORY/20
 		part("StairTread",21.5,h/2,20.5-(i+.5)*.35,Vector3(4.6,h,.28),"888d8e",false)
-		part("StairNosing",21.5,h+.009,20.5-i*.35,Vector3(4.6,.018,.035),"bfc4c1",false)
+		if i<19:part("StairNosing",21.5,h+.009,20.5-i*.35,Vector3(4.6,.018,.035),"bfc4c1",false)
 	for x in [19.4,23.6]:
 		rail(point(x,.95,20.5),point(x,STORY+.95,13.5))
 		for t in [.1,.4,.7,.9]:
