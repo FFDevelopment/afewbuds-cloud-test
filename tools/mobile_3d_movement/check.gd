@@ -96,6 +96,23 @@ func run() -> void:
 	var station:Node3D=w.police_station
 	check(station.get_node_or_null("StationStructure") is StaticBody3D,"Police station has native StaticBody3D structure")
 	check(station.get_node_or_null("StationStructure/StairRamp") is CollisionShape3D,"Police stairs expose a continuous physics ramp")
+	# Visual stairwell pieces must not occupy volume inside the upstairs deck.
+	var upper_decks:Array[AABB]=[]
+	for entry in station.parts:
+		if str(entry.id) in ["UpperFloorWest","UpperFloorNorth","UpperFloorSouth","TopLanding"]:
+			upper_decks.append(entry.bounds)
+	var stair_clips:Array[String]=[]
+	for entry in station.parts:
+		var id_text:=str(entry.id)
+		if int(entry.floor)==0 and (id_text.begins_with("Stair") or id_text=="ContinuousHandrail" or id_text=="RailWallBracket"):
+			for deck in upper_decks:
+				if entry.bounds.intersects(deck):
+					stair_clips.append(id_text)
+	check(stair_clips.is_empty(),"Police stair/wall geometry does not clip through upstairs floor",stair_clips)
+	var final_nosing_count:=0
+	for entry in station.parts:
+		if str(entry.id)=="StairNosing" and int(entry.floor)==0:final_nosing_count+=1
+	check(final_nosing_count==19,"Top stair nosing stops below upstairs landing",final_nosing_count)
 	var public_door:Node3D=station.get_node("PUBLIC_ENTRANCE")
 	await frames(2)
 	check(public_door.get_node_or_null("Leaf/DoorPhysics") is StaticBody3D,"Police door uses shared physical door controller")
@@ -161,6 +178,7 @@ func run() -> void:
 	check(w.physics_body.is_sprinting and sprint_speed>4.8,"Full forward touch stick engages sprint",sprint_speed)
 	check(stamina_after_sprint<w.physics_body.STAMINA_MAX-5.0,"Sprint drains stamina",stamina_after_sprint)
 	check(w.stamina_bar!=null and w.stamina_bar.visible and w.stamina_bar.value<100.0,"Sprint stamina bar becomes visible",w.stamina_bar.value if w.stamina_bar!=null else -1)
+	check(w.stamina_text!=null and w.stamina_text.text=="SPRINTING","Sprint HUD says SPRINTING",w.stamina_text.text if w.stamina_text!=null else "")
 
 	w.pad.value=Vector2(0,-.72)
 	await frames(35)
