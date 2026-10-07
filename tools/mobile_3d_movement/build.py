@@ -20,6 +20,7 @@ var physics_body: CharacterBody3D
 var physics_obstacle_root: Node3D
 var physics_door_body: StaticBody3D
 var physics_door_shape: CollisionShape3D
+var physics_obstacle_signature := ""
 var physics_ready := false
 const PHYSICS_MAP:=Rect2(-32,-36,233,75)
 ''',1)
@@ -87,8 +88,16 @@ func _apartment_shell_rect(rect:Rect2) -> bool:
 	var c:=rect.get_center()
 	return c.distance_to(Vector2(0,-2.1))<.35 and rect.size.x>10.0 and rect.size.y>16.0
 
-func _rebuild_physics_obstacles() -> void:
+func _physics_signature() -> String:
+	# Rect arrays are deterministic for a given world state. Avoid rebuilding
+	# dozens of StaticBody3D nodes every collision scan when nothing changed.
+	return str(obstacles)+"|"+str(map_obstacles)+"|"+str(interior_obstacles)
+
+func _rebuild_physics_obstacles(force:bool=false) -> void:
 	if physics_obstacle_root==null:return
+	var signature:=_physics_signature()
+	if not force and signature==physics_obstacle_signature:return
+	physics_obstacle_signature=signature
 	for child in physics_obstacle_root.get_children():child.free()
 	for rect in obstacles:
 		if _apartment_shell_rect(rect):continue
@@ -187,6 +196,7 @@ func _stop_physics_walk() -> void:
     for required in [
         'MobilePhysicsPlayer','_rebuild_physics_obstacles()','physics_body.drive',
         'MobilePhysicsApartmentDoor','_set_physics_door_closed(false)',
+        'physics_obstacle_signature','_physics_signature()',
         'if node==door_pivot:return','3D PHYSICS TEST','_sync_physics_from_camera()'
     ]:
         assert required in source,required
