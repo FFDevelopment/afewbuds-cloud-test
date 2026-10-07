@@ -18,6 +18,8 @@ def patch_neighborhood(source:str) -> str:
         '''var couch_stand := Vector3.ZERO
 var physics_body: CharacterBody3D
 var physics_obstacle_root: Node3D
+var physics_door_body: StaticBody3D
+var physics_door_shape: CollisionShape3D
 var physics_ready := false
 const PHYSICS_MAP:=Rect2(-32,-36,233,75)
 ''',1)
@@ -48,8 +50,23 @@ func _build_physics_walk() -> void:
 	collision.position=Vector3(PHYSICS_MAP.get_center().x,-.05,PHYSICS_MAP.get_center().y)
 	ground.add_child(collision)
 	add_child(ground)
+	physics_door_body=StaticBody3D.new()
+	physics_door_body.name="MobilePhysicsApartmentDoor"
+	physics_door_body.collision_layer=1
+	physics_door_body.collision_mask=4
+	physics_door_shape=CollisionShape3D.new()
+	var door_box:=BoxShape3D.new()
+	door_box.size=Vector3(1.88,2.96,.14)
+	physics_door_shape.shape=door_box
+	physics_door_shape.position=Vector3(0,1.48,5.84)
+	physics_door_body.add_child(physics_door_shape)
+	add_child(physics_door_body)
+	_set_physics_door_closed(not door_open)
 	_sync_physics_from_camera()
 	physics_ready=true
+
+func _set_physics_door_closed(solid:bool) -> void:
+	if physics_door_shape!=null:physics_door_shape.set_deferred("disabled",not solid)
 
 func _physics_rect(source:Rect2,shrink:float) -> void:
 	if physics_obstacle_root==null:return
@@ -156,7 +173,8 @@ func _stop_physics_walk() -> void:
 
     for required in [
         'MobilePhysicsPlayer','_rebuild_physics_obstacles()','physics_body.drive',
-        '3D PHYSICS TEST','_sync_physics_from_camera()'
+        'MobilePhysicsApartmentDoor','_set_physics_door_closed(false)',
+        'if node==door_pivot:return','3D PHYSICS TEST','_sync_physics_from_camera()'
     ]:
         assert required in source,required
     return source
