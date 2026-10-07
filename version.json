@@ -1,5 +1,5 @@
 {
-  "release_id": "0.7.9-beta.19-cloudtest.99-mobile3d.2",
+  "release_id": "0.7.9-beta.19-cloudtest.99-mobile3d.3",
   "game_build": "0.7.9-beta.19",
   "channel": "main-based-cloud-test",
   "updater": "network-only-no-service-worker",
@@ -182,8 +182,8 @@
     "branch": "experiment/mobile-3d-movement",
     "player": "CharacterBody3D capsule",
     "input": "existing touch joystick + drag look",
-    "physics": "gravity, floor snap, real StaticBody3D obstacle proxies",
-    "police_station": "retains proven floor-aware station movement in this first migration pass",
+    "physics": "gravity, floor snap, cached StaticBody3D world proxies, physical doors and police stair ramp",
+    "police_station": "same CharacterBody3D capsule with physical walls, doors, floors and stair ramp",
     "save_schema": "unchanged"
   }
 }

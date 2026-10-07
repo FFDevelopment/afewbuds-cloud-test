@@ -1,13 +1,15 @@
 {
   "baseline_sha256": "bbc788e5d4dd19b59af7dd2824f34943361d901d08ae5b5c25f8e7c6b9a75410",
-  "target_sha256": "6d87ce702e2225f8baa632822780ac8a90d85a2a52debea8ce88d26966f49eb4",
-  "target_bytes": 37247252,
+  "target_sha256": "4f671d13c31833fbf74a10c70b1b9540ea9e2bf55da77e58f58dc24bf48f314c",
+  "target_bytes": 37249044,
   "changed_existing_entries": [
-    "scripts/neighborhood.gd"
+    "scripts/interior_door.gd",
+    "scripts/neighborhood.gd",
+    "scripts/police_station.gd"
   ],
   "added_entries": [
     "scripts/mobile_physics_player.gd"
   ],
-  "unchanged_entries": 219,
+  "unchanged_entries": 217,
   "reconstruction_verified": true
 }
