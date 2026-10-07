@@ -484,7 +484,7 @@ func go_back() -> void:
 func build_ui() -> void:
  layer=CanvasLayer.new();layer.layer=35;add_child(layer)
  var hud:=Control.new();hud.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);hud.mouse_filter=Control.MOUSE_FILTER_IGNORE;layer.add_child(hud)
- backpack_button=button("Backpack  [I]",open_backpack,hud)
+ backpack_button=button("Backpack",open_backpack,hud)
  backpack_button.set_anchors_preset(Control.PRESET_TOP_RIGHT);backpack_button.offset_left=-200;backpack_button.offset_right=-18;backpack_button.offset_top=120;backpack_button.offset_bottom=166
  if host.has_method("_use_target"):
   phone_button=button("Phone",host._toggle_phone,hud)
