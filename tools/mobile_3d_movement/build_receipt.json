@@ -1,7 +1,7 @@
 {
   "baseline_sha256": "bbc788e5d4dd19b59af7dd2824f34943361d901d08ae5b5c25f8e7c6b9a75410",
-  "target_sha256": "8f507e90f33040842df9cd8f432c8d01486b3360b1fb154cb2ebe893b8415182",
-  "target_bytes": 37317912,
+  "target_sha256": "e3191a6b98ba3f4e50f9d5b12222c94e339d3d66ccb637dc884d301bd7280098",
+  "target_bytes": 48635284,
   "changed_existing_entries": [
     "scripts/main.gd",
     "scripts/interior_door.gd",
@@ -15,7 +15,13 @@
   "added_entries": [
     "scripts/mobile_physics_player.gd",
     "scripts/districts.gd",
-    "scripts/container_inventory.gd"
+    "scripts/container_inventory.gd",
+    "assets/inventory/cash.png",
+    "assets/inventory/equipment.png",
+    "assets/inventory/fertilizer.png",
+    "assets/inventory/jar.png",
+    "assets/inventory/product.png",
+    "assets/inventory/seeds.png"
   ],
   "unchanged_entries": 212,
   "reconstruction_verified": true

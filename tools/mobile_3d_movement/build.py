@@ -774,6 +774,9 @@ def main():
     updated.append(['scripts/districts.gd',(HERE/'districts.gd').read_bytes(),0])
 
     updated.append(['scripts/container_inventory.gd',(ROOT/'tools/inventory_v1/container_inventory.gd').read_bytes(),0])
+    inventory_art=sorted((ROOT/"assets/inventory").glob("*.png"))
+    assert len(inventory_art)==6
+    for asset in inventory_art:updated.append(["assets/inventory/"+asset.name,asset.read_bytes(),0])
     built=east.pack.rebuild(baseline,fb,updated)
     after={n:b for n,b,f in east.pack.parse(built)[1]}
     changed=[n for n in before if before[n]!=after[n]]
@@ -798,6 +801,7 @@ def main():
         'assets/characters/Malik_BaseColor.png','assets/characters/Rod_BaseColor.png',
         'assets/furniture/walnut.png'
     ]
+    assets.extend("assets/inventory/"+asset.name for asset in inventory_art)
     for name,offset,size in east.directory(built):
         if offset>cursor:
             assert not any(built[cursor:offset]);segments.append(['zero',offset-cursor])
@@ -836,13 +840,14 @@ def main():
 
     loader=(ROOT/'shared/afb-runtime-kobi-v1.js').read_text()
     loader=loader.replace('kobi-v1','mobile-3d-v1').replace('AFB_RUNTIME_KOBI_V1','AFB_RUNTIME_MOBILE_3D_V1')
-    loader=re.sub(r'patch\.json\?v=\d+','patch.json?v=inventory1',loader)
+    loader=re.sub(r'patch\.json\?v=\d+','patch.json?v=inventory2',loader)
     (ROOT/'shared/afb-runtime-mobile-3d-v1.js').write_text(loader,newline='\n')
 
-    release='0.7.9-beta.19-cloudtest.99-inventory.1'
+    release='0.7.9-beta.19-cloudtest.99-inventory.2'
     index=(ROOT/'index.html').read_text()
+    index=index.replace('inventory1','inventory2')
     index=index.replace('kobi-v1','mobile-3d-v1').replace('AFB_RUNTIME_KOBI_V1','AFB_RUNTIME_MOBILE_3D_V1')
-    index=re.sub(r'afb-runtime-mobile-3d-v1\.js\?v=\d+','afb-runtime-mobile-3d-v1.js?v=inventory1',index)
+    index=re.sub(r'afb-runtime-mobile-3d-v1\.js\?v=\d+','afb-runtime-mobile-3d-v1.js?v=inventory2',index)
     index=re.sub(r'0\.7\.9-beta\.19-cloudtest\.(?:98-kobi|99-mobile3d|99-inventory)\.\d+',release,index)
     index=re.sub(r'"fileSizes":\{[^}]*\\}',f'"fileSizes":{{"index-mobile-3d-v1.pck":{len(built)},"index.wasm":{(ROOT/"index.wasm").stat().st_size}}}',index,count=1)
     if 'MOBILE 3D TEST</title>' not in index:index=index.replace('</title>',' Â· MOBILE 3D TEST</title>',1)
@@ -878,7 +883,7 @@ def main():
         'target_sha256':hashlib.sha256(built).hexdigest(),
         'target_bytes':len(built),
         'changed_existing_entries':changed,
-        'added_entries':['scripts/mobile_physics_player.gd','scripts/districts.gd','scripts/container_inventory.gd'],
+        'added_entries':['scripts/mobile_physics_player.gd','scripts/districts.gd','scripts/container_inventory.gd']+['assets/inventory/'+asset.name for asset in inventory_art],
         'unchanged_entries':len(before)-len(changed),
         'reconstruction_verified':True
     }

@@ -1,0 +1,35 @@
+{
+  "generator": "built-in image_gen",
+  "assets": [
+    {
+      "name": "seeds",
+      "path": "seeds.png",
+      "prompt": "Use case: stylized-concept. Asset type: single transparent game inventory item icon for AFewBuds. Subject: a small upright kraft-paper seed pouch with a simple dark green botanical leaf emblem, six brown seeds spilling beside its base. Premium cozy game inventory art: detailed softly realistic 3D illustration, warm cream highlights, earthy brown/olive palette, polished readable silhouette, soft top-left studio light, front three-quarter view. One centered object composition occupying about 80 percent of a square canvas. Genuine transparent background, no scene, no UI, no text, no numbers, no border, no watermark, no floor plane. All parts inside canvas with clean alpha edges. Shown at 80-160 pixels on dark charcoal inventory cards."
+    },
+    {
+      "name": "fertilizer",
+      "path": "fertilizer.png",
+      "prompt": "Use case: stylized-concept. Asset type: single transparent game inventory item icon for AFewBuds. Subject: a squat ivory plastic fertilizer jug with molded handle and capped spout, a cream label with a dark green botanical leaf emblem. Premium cozy game inventory art: detailed softly realistic 3D illustration, warm cream highlights, earthy brown/olive palette, polished readable silhouette, soft top-left studio light, front three-quarter view. One centered object composition occupying about 80 percent of a square canvas. Genuine transparent background, no scene, no UI, no text, no numbers, no border, no watermark, no floor plane. All parts inside canvas with clean alpha edges. Shown at 80-160 pixels on dark charcoal inventory cards."
+    },
+    {
+      "name": "equipment",
+      "path": "equipment.png",
+      "prompt": "Use case: stylized-concept. Asset type: single transparent game inventory item icon for AFewBuds. Subject: a sealed warm brown cardboard furniture delivery box in three-quarter view, neat packing tape, simple dark brown side-table pictogram on its front. Premium cozy game inventory art: detailed softly realistic 3D illustration, warm cream highlights, earthy brown/olive palette, polished readable silhouette, soft top-left studio light, front three-quarter view. One centered object composition occupying about 80 percent of a square canvas. Genuine transparent background, no scene, no UI, no text, no numbers, no border, no watermark, no floor plane. All parts inside canvas with clean alpha edges. Shown at 80-160 pixels on dark charcoal inventory cards."
+    },
+    {
+      "name": "cash",
+      "path": "cash.png",
+      "prompt": "Use case: stylized-concept. Asset type: single transparent game inventory item icon for AFewBuds. Subject: a compact neatly banded stack of generic green paper game currency, no real banknote reproduction, three-quarter view. Premium cozy game inventory art: detailed softly realistic 3D illustration, warm cream highlights, earthy brown/olive palette, polished readable silhouette, soft top-left studio light, front three-quarter view. One centered object composition occupying about 80 percent of a square canvas. Genuine transparent background, no scene, no UI, no text, no numbers, no border, no watermark, no floor plane. All parts inside canvas with clean alpha edges. Shown at 80-160 pixels on dark charcoal inventory cards."
+    },
+    {
+      "name": "product",
+      "path": "product.png",
+      "prompt": "Use case: stylized-concept. Asset type: single transparent game inventory item icon for AFewBuds. Subject: a clear resealable stand-up bag containing chunky olive-green fictional dried flower buds, cream label with a dark green botanical leaf emblem. Premium cozy game inventory art: detailed softly realistic 3D illustration, warm cream highlights, earthy brown/olive palette, polished readable silhouette, soft top-left studio light, front three-quarter view. One centered object composition occupying about 80 percent of a square canvas. Genuine transparent background, no scene, no UI, no text, no numbers, no border, no watermark, no floor plane. All parts inside canvas with clean alpha edges. Shown at 80-160 pixels on dark charcoal inventory cards."
+    },
+    {
+      "name": "jar",
+      "path": "jar.png",
+      "prompt": "Use case: stylized-concept. Asset type: single transparent game inventory item icon for AFewBuds. Subject: a round clear glass jar full of chunky olive-green fictional dried flower buds, brushed silver screw lid, cream label with a dark green botanical leaf emblem. Premium cozy game inventory art: detailed softly realistic 3D illustration, warm cream highlights, earthy brown/olive palette, polished readable silhouette, soft top-left studio light, front three-quarter view. One centered object composition occupying about 80 percent of a square canvas. Genuine transparent background, no scene, no UI, no text, no numbers, no border, no watermark, no floor plane. All parts inside canvas with clean alpha edges. Shown at 80-160 pixels on dark charcoal inventory cards."
+    }
+  ]
+}

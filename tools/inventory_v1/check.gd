@@ -39,7 +39,7 @@ func run():
  game.location_state.carried_seeds={"Purple Dream":5};game.location_state.carried_fertilizer=3
  game.location_state.property_storage=["Grow Tent upgrade","Grow Tent upgrade"]
  game.cash=500
- inv.ensure_state()
+ inv.ensure_state();inv.state.backpack_level=4
  var first:Dictionary=inv.contents("apartment:supply")
  inv.ensure_state();inv.ensure_state()
  check(first==inv.contents("apartment:supply") and first.get("seed|Purple Dream")==8,"Repeated migration preserves existing shelf stock without duplication")
@@ -96,7 +96,7 @@ func run():
  inv.set_process(true)
  for dimensions in [Vector2i(390,844),Vector2i(844,390),Vector2i(1280,800)]:
   root.content_scale_size=dimensions;root.size=dimensions;await frames()
-  stand("apartment:supply");inv.open_container("supply");inv.adding=true;inv.render();await frames(30)
+  stand("apartment:supply");inv.open_container("supply");inv.adding=true;inv.select_item("backpack","seed|Purple Dream");await frames(30)
   var screen:Vector2=root.get_visible_rect().size
   check(inv.columns.vertical==(screen.y>screen.x),"Portrait stacks panels; landscape uses side-by-side at "+str(dimensions))
   var rect:Rect2=inv.panel.get_global_rect()
