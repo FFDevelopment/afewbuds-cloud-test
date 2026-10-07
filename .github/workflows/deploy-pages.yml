@@ -1,5 +1,5 @@
 name: Deploy standalone cloud test
-# deploy-current-main
+# deploy-current-main-plus-isolated-mobile3d-preview
 
 on:
   push:
@@ -31,14 +31,31 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: main
+
       - uses: actions/configure-pages@v5
         with:
           enablement: true
+
       - name: Stage active web runtime
         run: python3 tools/stage_pages.py --output "${{ runner.temp }}/afb-pages"
+
+      - name: Check out isolated mobile 3D experiment
+        uses: actions/checkout@v4
+        with:
+          ref: experiment/mobile-3d-movement
+          path: preview-mobile3d
+
+      - name: Add mobile 3D preview subfolder
+        run: |
+          set -euo pipefail
+          python3 preview-mobile3d/tools/stage_pages.py --output "${RUNNER_TEMP}/afb-mobile3d"
+          mkdir -p "${RUNNER_TEMP}/afb-pages/mobile-3d-movement"
+          cp -a "${RUNNER_TEMP}/afb-mobile3d/." "${RUNNER_TEMP}/afb-pages/mobile-3d-movement/"
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: ${{ runner.temp }}/afb-pages
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
