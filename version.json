@@ -1,5 +1,5 @@
 {
-  "release_id": "0.7.9-beta.19-cloudtest.97-police.3",
+  "release_id": "0.7.9-beta.19-cloudtest.98-kobi.1",
   "game_build": "0.7.9-beta.19",
   "channel": "main-based-cloud-test",
   "updater": "network-only-no-service-worker",
@@ -105,7 +105,7 @@
   "expansion_lane": "New Advancements lane appears only after Chapter 3 is complete",
   "neighborhood": "Prototype 0.9.3 street, sidewalk and building footprint layout adapted with cloud-test texture atlas, opening door, analog controls and ground reserves.",
   "notification_audio": "Requested text ding at -14 dB; requested door knock at -10 dB.",
-  "runtime_delivery": "SHA-256-verified police-station-v1 delta over .96-east.3",
+  "runtime_delivery": "SHA-256-verified kobi-v1 delta over .97-police.3",
   "interior_controls": "Free analog movement in apartment and grow room; nearby station double tap; Back restores walking position; walls and furniture collision.",
   "responsive_layout": "Automatic portrait/landscape game viewport, corner controls, centered phone menu and fitting browser splash/account overlays.",
   "walking_fov": 78,
@@ -162,5 +162,20 @@
     "interior": "Two continuous floors, working doors and walkable stairs",
     "area": "Police station, rear patrol parking, east public parking and road extension",
     "gameplay": "Explorable building; no arrest, police AI or evidence gameplay added"
+  },
+  "kobi_npc": {
+    "appearances": [
+      "existing customer visits",
+      "production worker",
+      "manager"
+    ],
+    "shared_rig_bones": 56,
+    "clips": [
+      "idle",
+      "walk",
+      "bend_test",
+      "sit"
+    ],
+    "outfit": "Plain white crewneck, khaki trousers, original light sneakers"
   }
 }

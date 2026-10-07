@@ -1,0 +1,13 @@
+{
+  "surfaces": [
+    {
+      "material": "Kobi skinned mesh",
+      "vertices": 24040,
+      "triangles": 21362
+    }
+  ],
+  "vertices": 24040,
+  "triangles": 21362,
+  "bones": 56,
+  "max_weights": 4
+}

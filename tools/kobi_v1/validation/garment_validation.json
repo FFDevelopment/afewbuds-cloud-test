@@ -1,0 +1,11 @@
+{
+  "collar_removed": true,
+  "separate_cuff_objects": 0,
+  "trim_is_surface_color": true,
+  "shirt_connected_components": 1,
+  "shirt_vertices": 1075,
+  "trim_vertices": {
+    "L": 129,
+    "R": 128
+  }
+}

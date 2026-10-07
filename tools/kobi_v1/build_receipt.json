@@ -1,0 +1,14 @@
+{
+  "baseline_sha256": "21702e3db6652ef425c1d072a797cdf6f9e4686b2cb9b2253e1c70d1c9f849a4",
+  "target_sha256": "bbc788e5d4dd19b59af7dd2824f34943361d901d08ae5b5c25f8e7c6b9a75410",
+  "target_bytes": 37241100,
+  "changed_existing_entries": [
+    "scripts/crew_phone.gd"
+  ],
+  "added_entries": [
+    "assets/characters/Kobi.glb",
+    "assets/characters/Kobi_BaseColor.png"
+  ],
+  "unchanged_entries": 217,
+  "reconstruction_verified": true
+}

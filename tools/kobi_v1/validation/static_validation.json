@@ -1,0 +1,28 @@
+{
+  "passed": true,
+  "sha256": "73aaa79f95a5cbae6c99aef3263ae6b771eff0ef54a43e32487663b089d3020c",
+  "bones": 56,
+  "triangles": 21362,
+  "vertices_with_uv_seams": 24040,
+  "materials": 1,
+  "atlas_pixels": [
+    2048,
+    2048
+  ],
+  "clips": [
+    "idle",
+    "walk",
+    "bend_test",
+    "sit"
+  ],
+  "checks": [
+    "GLB byte integrity",
+    "exact ordered skeleton contract",
+    "inverse binds",
+    "finite unit normals",
+    "normalized max-four weights",
+    "valid indices",
+    "embedded editable atlas",
+    "under 25000 triangles"
+  ]
+}

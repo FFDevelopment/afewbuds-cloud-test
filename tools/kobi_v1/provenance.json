@@ -1,0 +1,23 @@
+{
+  "character": "Kobi",
+  "reference_source": "User-supplied AFewBuds character art",
+  "references": {
+    "kobi_door.png": "480a7ebb0d58f1f48668cbca9ee510e8a0a5cdb8737c06ba6a3069c039bc1f0d",
+    "kobi_face.png": "b0c28a89fcc62a3f0868c793fd2e9feadebf274e4a7c47976f5966dc74d19dbf",
+    "kobi_portrait.png": "6a36707c5d2d6d81d22944ed7c13bbff21f36f0dc24ff8376babc12f229d0af8"
+  },
+  "geometry": "Original procedural Blender mesh based on the existing AFewBuds shared character builder",
+  "rig": "User-supplied AFB_MasterRig_v1, exact 56-bone contract",
+  "materials": "Original baked color atlas; plain unbranded clothing",
+  "third_party_downloaded_assets": [],
+  "assets": {
+    "Kobi.glb": {
+      "bytes": 2667808,
+      "sha256": "73aaa79f95a5cbae6c99aef3263ae6b771eff0ef54a43e32487663b089d3020c"
+    },
+    "Kobi_BaseColor.png": {
+      "bytes": 922530,
+      "sha256": "162899183e88dcbfca8877bd3cdfd340a3d22198dd720da219d7045f49c8026f"
+    }
+  }
+}

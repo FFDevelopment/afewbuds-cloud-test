@@ -1,0 +1,8 @@
+{
+	"failures": [],
+	"feet_grounded": true,
+	"foot_clearance": -0.00000000558793544769287,
+	"passed": true,
+	"pelvis_cushion_y": 0.468246966600418,
+	"sit_to_idle_reset": true
+}
