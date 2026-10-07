@@ -275,34 +275,27 @@ func show_relocation() -> void:
 	if str(state().get("agreement",""))=="lease":
 		label("OWNERSHIP EQUITY: $%d / $%d" % [int(state().get("equity_paid",0)),LEASE_TOTAL],21)
 	label("APARTMENT LEASE",23)
-	label("You can keep the apartment as a second property. If you keep it, apartment rent continues at $600 every 14 game days in addition to the house payment. Releasing the lease stops future apartment rent, but any balance already owed remains due.",19)
-	button("MOVE + KEEP APARTMENT · $600 / 14 DAYS",confirm_relocation.bind(true))
-	button("MOVE + RELEASE APARTMENT LEASE",confirm_relocation.bind(false))
+	label("Your apartment lease stays active when you move. Apartment rent continues at $600 every 14 game days in addition to any house payment. Manage or release the apartment later in Phone > Real Estate.",19)
+	button("MOVE OPERATION",confirm_relocation)
 	button("BACK TO PROPERTY",show_details)
 	overlay.show();tour_bar.hide();resize()
 
-func confirm_relocation(keep_apartment:bool=true) -> void:
+func confirm_relocation() -> void:
 	if not bool(state().get("agreement_signed",false)) or bool(state().get("relocated",false)):return
 	state()["relocated"]=true
 	state()["relocation_day"]=host.game_day
-	state()["keep_apartment"]=keep_apartment
+	state()["keep_apartment"]=true
 	host.location_state["active_property"]="house"
 	if host.location_state.get("house",{}) is Dictionary:
 		host.location_state["house"]["active"]=true
 	if not host.apartment_rent_state.has("lease_active"):
 		host.apartment_rent_state["lease_active"]=true
-	if keep_apartment:
-		host.apartment_rent_state["lease_active"]=true
-		host.apartment_rent_state.erase("released_day")
-	else:
-		host.apartment_rent_state["lease_active"]=false
-		host.apartment_rent_state["released_day"]=host.game_day
 	host._save_game()
 	overlay.hide()
 	tour_bar.hide()
 	touring=false
 	_mark_first_entry_if_inside()
-	host.status_label.text=("Relocation confirmed. Apartment lease kept; both property obligations remain active." if keep_apartment else "Relocation confirmed. Apartment lease released; existing apartment balance remains due.")+" Enter the house to complete Chapter 4 and begin Chapter 5."
+	host.status_label.text="Relocation confirmed. The apartment lease remains active; manage both properties in Phone > Real Estate. Enter the house to complete Chapter 4 and begin Chapter 5."
 
 func _mark_first_entry_if_inside() -> void:
 	if not bool(state().get("relocated",false)) or bool(state().get("first_entry",false)):return
