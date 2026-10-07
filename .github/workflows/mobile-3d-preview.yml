@@ -4,18 +4,18 @@ on:
   push:
     branches: [experiment/mobile-3d-movement]
     paths:
-      - "tools/mobile_3d_movement/**"
+      - "tools/mobile_3d_movement/build.py"
+      - "tools/mobile_3d_movement/check.gd"
+      - "tools/mobile_3d_movement/mobile_physics_player.gd"
       - ".github/workflows/mobile-3d-preview.yml"
   workflow_dispatch:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 concurrency:
-  group: pages
-  cancel-in-progress: false
+  group: mobile-3d-preview-build
+  cancel-in-progress: true
 
 jobs:
   build-test:
@@ -55,43 +55,7 @@ jobs:
           git add runtime/mobile-3d-v1.patch.json shared/afb-runtime-mobile-3d-v1.js index.html version.json BUILD_VERSION.txt tools/mobile_3d_movement/build_receipt.json
           if ! git diff --cached --quiet; then
             git commit -m "Build cloud-test mobile 3D movement preview"
+            git fetch origin experiment/mobile-3d-movement
+            git rebase origin/experiment/mobile-3d-movement
             git push origin HEAD:experiment/mobile-3d-movement
           fi
-
-  deploy-preview:
-    needs: build-test
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: experiment/mobile-3d-movement
-          fetch-depth: 0
-
-      - name: Check out current live main
-        uses: actions/checkout@v4
-        with:
-          ref: main
-          path: main-live
-
-      - name: Stage live site plus isolated preview
-        run: |
-          set -euo pipefail
-          python3 main-live/tools/stage_pages.py --output "${RUNNER_TEMP}/afb-pages"
-          python3 tools/stage_pages.py --output "${RUNNER_TEMP}/afb-mobile3d"
-          mkdir -p "${RUNNER_TEMP}/afb-pages/mobile-3d-movement"
-          cp -a "${RUNNER_TEMP}/afb-mobile3d/." "${RUNNER_TEMP}/afb-pages/mobile-3d-movement/"
-
-      - uses: actions/configure-pages@v5
-        with:
-          enablement: true
-
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: ${{ runner.temp }}/afb-pages
-
-      - name: Deploy preview without replacing live root
-        id: deployment
-        uses: actions/deploy-pages@v4
