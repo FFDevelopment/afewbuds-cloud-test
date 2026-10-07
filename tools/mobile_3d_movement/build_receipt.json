@@ -1,7 +1,7 @@
 {
   "baseline_sha256": "bbc788e5d4dd19b59af7dd2824f34943361d901d08ae5b5c25f8e7c6b9a75410",
-  "target_sha256": "7d4b66cb573fb26c37a406af9227d97db30f036ff2ca68d94f8605cbbdf1e716",
-  "target_bytes": 48666520,
+  "target_sha256": "2652ae1839432061955cda084ab76502f55c8691cbf623b3a0af72b9abe9ffef",
+  "target_bytes": 48663864,
   "changed_existing_entries": [
     "scripts/main.gd",
     "scripts/interior_door.gd",
