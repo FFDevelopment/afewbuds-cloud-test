@@ -257,6 +257,247 @@ func _update_stamina_hud() -> void:
     return source
 
 
+def _replace_func(source:str,name:str,replacement:str) -> str:
+    pattern=re.compile(r'^func '+re.escape(name)+r'\([^\n]*\)(?: -> [^:\n]+)?:\n.*?(?=^func |\Z)',re.M|re.S)
+    match=pattern.search(source)
+    assert match is not None,name
+    return source[:match.start()]+replacement.rstrip()+"\n\n"+source[match.end():]
+
+def patch_progression_main(source:str) -> str:
+    # Heat: routine attention builds more slowly, while staying live and
+    # deliberately cooling the operation is materially faster than logging off.
+    replacements={
+        'const HEAT_DECAY_OPEN_PER_GAME_MINUTE: float = 0.0010':'const HEAT_DECAY_OPEN_PER_GAME_MINUTE: float = 0.0120',
+        'const HEAT_DECAY_QUIET_PER_GAME_MINUTE: float = 0.0040':'const HEAT_DECAY_QUIET_PER_GAME_MINUTE: float = 0.0160',
+        'const HEAT_DECAY_AWAY_PER_GAME_MINUTE: float = 0.0180':'const HEAT_DECAY_AWAY_PER_GAME_MINUTE: float = 0.0240\nconst HEAT_ROUTINE_GAIN_MULTIPLIER: float = 0.70',
+        'var paused_heat_rate: float = 100.0 / (72.0 * 60.0)':'var paused_heat_rate: float = 100.0 / (180.0 * 60.0)',
+        'var chance: float = clampf(0.18 + heat / 300.0, 0.18, 0.55)':'var chance: float = clampf(0.12 + heat / 400.0, 0.12, 0.40)',
+        'rate *= 0.65':'rate *= 0.80',
+        'Heat measures how much attention your operation is drawing. Fast sales, dealers, customer traffic and complaints raise it. Quiet time lowers it.':'Heat measures how much attention your operation is drawing. Routine sales and traffic build attention more gradually now. Staying in-game and going quiet cools Heat faster than logging off.',
+        'Lay low at the property computer or text assigned crew through Contacts.':'Lay low at the property computer or text assigned crew through Contacts. Active in-game cooldown is intentionally faster than offline cooldown.'
+    }
+    for old,new in replacements.items():
+        assert old in source,old
+        source=source.replace(old,new,1)
+
+    source=_replace_func(source,'_add_heat',r'''func _add_heat(amount: float, cause: String, show_feedback: bool = false) -> void:
+	if amount <= 0.0 or not _story_chapter_two_complete():
+		return
+	if cause in ["Dealer activity", "Door sale", "Customer traffic", "Customer complaint", "Doorstep complaint"]:
+		amount *= HEAT_ROUTINE_GAIN_MULTIPLIER
+	if _reeves_protection_active():
+		amount *= REEVES_PROTECTION_HEAT_MULTIPLIER
+	var old_heat: float = heat
+	heat = clampf(heat + amount, 0.0, 100.0)
+	heat_peak = maxf(heat_peak, heat)
+	last_heat_cause = cause
+	var old_stage: int = _heat_stage_index(old_heat)
+	var new_stage: int = _heat_stage_index(heat)
+	if new_stage > old_stage:
+		_trigger_heat_threshold_event(new_stage)
+	elif show_feedback and status_label != null:
+		status_label.text = "%s  |  Heat +%.1f (%s)." % [cause, heat - old_heat, _heat_stage_name()]
+	if heat >= 100.0 and not critical_staff_event_active:
+		_handle_critical_heat_staff()
+	_check_reeves_trigger()
+	if phone_open and phone_current_app in ["home", "heat", "business", "bills", "employees", "upgrades", "stats"]:
+		_refresh_phone()''')
+
+    # Branching roadmap choices. Claimed history is never removed. Once one
+    # Reeves payment outcome is chosen, its incompatible unclaimed objective
+    # disappears from the active roadmap.
+    assert 'var advancement_claimed: Dictionary = {}' in source
+    source=source.replace('var advancement_claimed: Dictionary = {}','var advancement_claimed: Dictionary = {}\nvar advancement_choice_state: Dictionary = {}',1)
+
+    old_c4='{"id": "c4_expansion_ready", "category": "Expansion", "tier": 5, "title": "Expansion Ready", "description": "Prove the operation is mature enough to support a larger property.", "state": "chapter_four_complete", "target": 1, "reward_cash": 0, "reward_xp": 500, "reward_rep": 25, "reward_unlock": "PROPERTY OPPORTUNITY"},'
+    new_c4='{"id": "c4_expansion_ready", "category": "Expansion", "tier": 5, "title": "Expansion Ready", "description": "Prove the operation is mature enough to support a larger property.", "state": "chapter_four_operation_ready", "target": 1, "reward_cash": 0, "reward_xp": 500, "reward_rep": 25, "reward_unlock": "PROPERTY OPPORTUNITY"},\n\t{"id": "c4_new_base", "category": "Expansion", "tier": 6, "title": "Choose Your Next Base", "description": "Secure the house, relocate AFewBuds and enter the new operation.", "state": "chapter_four_complete", "target": 1, "reward_cash": 0, "reward_xp": 600, "reward_rep": 30, "reward_unlock": "CHAPTER 5 + HOUSE OPERATION"},'
+    assert old_c4 in source
+    source=source.replace(old_c4,new_c4,1)
+
+    value_anchor='\tif state_name == "chapter_four_complete":\n\t\treturn 1 if _story_chapter_four_complete() else 0'
+    value_repl='\tif state_name == "chapter_four_operation_ready":\n\t\treturn 1 if _story_chapter_four_operation_complete() else 0\n'+value_anchor
+    assert value_anchor in source
+    source=source.replace(value_anchor,value_repl,1)
+
+    source=_replace_func(source,'_story_chapter_four_complete',r'''func _story_chapter_four_complete() -> bool:
+	return _story_chapter_four_operation_complete() 		and bool(property_opportunity_state.get("relocated", false)) 		and bool(property_opportunity_state.get("first_entry", false))''')
+
+    source=_replace_func(source,'_chapter_four_target_story_stage',r'''func _chapter_four_target_story_stage() -> int:
+	if not _story_chapter_three_complete():
+		return 0
+	var target: int = 1
+	if _story_chapter_four_apartment_complete():
+		target = 2
+	if _story_chapter_four_distribution_complete():
+		target = 3
+	if _story_chapter_four_crew_complete():
+		target = 4
+	if _story_chapter_four_demand_complete():
+		target = 5
+	if _story_chapter_four_operation_complete():
+		target = 6
+	if _story_chapter_four_complete():
+		target = 7
+	return target''')
+
+    source=_replace_func(source,'_sync_chapter_four_story',r'''func _sync_chapter_four_story() -> bool:
+	var target_stage: int = _chapter_four_target_story_stage()
+	if target_stage <= chapter_four_story_stage:
+		if _story_chapter_four_operation_complete() and not property_offer_unlocked:
+			property_offer_unlocked = true
+			return true
+		return false
+
+	var changed: bool = false
+	while chapter_four_story_stage < target_stage:
+		chapter_four_story_stage += 1
+		changed = true
+		match chapter_four_story_stage:
+			1:
+				_chapter_four_append_story_text("You made it through all that pressure and this apartment is starting to feel real small. Keep building the operation, but start thinking bigger.")
+			2:
+				_chapter_four_append_story_text("Three tents and that new bench? Every wall in that place has a job now. You are officially out of room.")
+			3:
+				_chapter_four_append_story_text("Dealer Storage is maxed and the crew is moving product. This is bigger than people coming to your door now.")
+			4:
+				_chapter_four_append_story_text("You are running a crew now, not just doing everything yourself. The apartment is becoming the bottleneck.")
+			5:
+				_chapter_four_append_story_text("The numbers do not lie. Too many customers, too much product, too much traffic for one apartment. Finish proving the operation can handle a real move.")
+			6:
+				property_offer_unlocked = true
+				_chapter_four_append_story_text("I got a line on a house that can actually fit this operation. You can rent it, lease it to own, or buy it outright. Go inspect it and decide how you want to secure it.")
+			7:
+				_chapter_four_append_story_text("You made the move. The house is the AFewBuds operation now. Chapter 4 is done. Chapter 5 starts here — build something bigger.")
+	return changed''')
+
+    source=_replace_func(source,'_advancement_story_label',r'''func _advancement_story_label() -> String:
+	if not _story_chapter_one_complete():
+		return "CHAPTER 1 - STARTING SMALL"
+	if not _story_chapter_two_complete():
+		return "CHAPTER 2 - BUILDING A NAME"
+	if not _story_chapter_three_complete():
+		return "CHAPTER 3 - GETTING NOTICED"
+	if not _story_chapter_four_complete():
+		return "CHAPTER 4 - OUTGROWING THE APARTMENT"
+	return "CHAPTER 5 - BUILDING AN OPERATION"''')
+
+    assert 'chapter_title.text = "STORY\\nCHAPTER 4 COMPLETE\\nEXPANSION OPPORTUNITY UNLOCKED"' in source
+    source=source.replace('chapter_title.text = "STORY\\nCHAPTER 4 COMPLETE\\nEXPANSION OPPORTUNITY UNLOCKED"','chapter_title.text = "STORY\\nCHAPTER 5 - BUILDING AN OPERATION"',1)
+
+    objective='\t\t\t_story_checkmark(_story_chapter_four_operation_complete(), "Proven Operation - Grower 10 + 3 hybrid batches + 250g moved into storage")'
+    objective_repl='\t\t\t_story_checkmark(_story_chapter_four_operation_complete(), "Proven Operation - Grower 10 + 3 hybrid batches + 250g moved into storage"),\n\t\t\t_story_checkmark(bool(property_opportunity_state.get("inspection_complete", false)), "Inspect the house - tour all 6 rooms"),\n\t\t\t_story_checkmark(bool(property_opportunity_state.get("agreement_signed", false)), "Choose your next base - sign Rent, Lease to Own or Purchase"),\n\t\t\t_story_checkmark(bool(property_opportunity_state.get("relocated", false)), "Move Operation - confirm relocation to the house"),\n\t\t\t_story_checkmark(bool(property_opportunity_state.get("first_entry", false)), "Start Chapter 5 - enter the new house operation")'
+    assert objective in source
+    source=source.replace(objective,objective_repl,1)
+
+    # Apply retirement filtering to all existing advancement-catalog loops
+    # before inserting helpers (so helper loops remain explicit).
+    source=source.replace('\tfor entry: Dictionary in advancement_catalog:\n','\tfor entry: Dictionary in advancement_catalog:\n\t\tif _advancement_is_retired(entry):\n\t\t\tcontinue\n')
+    source=source.replace('\t\tfor lane_entry: Dictionary in advancement_catalog:\n','\t\tfor lane_entry: Dictionary in advancement_catalog:\n\t\t\tif _advancement_is_retired(lane_entry):\n\t\t\t\tcontinue\n')
+    source=source.replace('\t\t\tfor next_entry: Dictionary in advancement_catalog:\n','\t\t\tfor next_entry: Dictionary in advancement_catalog:\n\t\t\t\tif _advancement_is_retired(next_entry):\n\t\t\t\t\tcontinue\n')
+
+    helper=r'''func _advancement_choice_group(advancement_id: String) -> String:
+	if advancement_id in ["reeves_payments", "reeves_miss"]:
+		return "reeves_payment_outcome"
+	return ""
+
+func _advancement_is_retired(entry: Dictionary) -> bool:
+	var advancement_id: String = str(entry.get("id", ""))
+	if bool(advancement_claimed.get(advancement_id, false)):
+		return false
+	var group: String = _advancement_choice_group(advancement_id)
+	if group.is_empty():
+		return false
+	var selected: String = str(advancement_choice_state.get(group, ""))
+	if selected in ["", "legacy_both"]:
+		return false
+	if advancement_id == "reeves_miss":
+		return selected == "pay"
+	if advancement_id == "reeves_payments":
+		return selected == "miss"
+	return false
+
+func _lock_advancement_choice(advancement_id: String) -> void:
+	var group: String = _advancement_choice_group(advancement_id)
+	if group.is_empty() or advancement_choice_state.has(group):
+		return
+	advancement_choice_state[group] = "miss" if advancement_id == "reeves_miss" else "pay"
+
+func _migrate_advancement_choices() -> void:
+	if advancement_choice_state.has("reeves_payment_outcome"):
+		return
+	var paid: bool = bool(advancement_claimed.get("reeves_payments", false)) or int(advancement_stats.get("reeves_payments", 0)) > 0
+	var missed: bool = bool(advancement_claimed.get("reeves_miss", false)) or int(advancement_stats.get("reeves_missed_payments", 0)) > 0
+	if paid and missed:
+		advancement_choice_state["reeves_payment_outcome"] = "legacy_both"
+	elif missed:
+		advancement_choice_state["reeves_payment_outcome"] = "miss"
+	elif paid:
+		advancement_choice_state["reeves_payment_outcome"] = "pay"
+
+func _advancement_active_count() -> int:
+	var count: int = 0
+	for entry: Dictionary in advancement_catalog:
+		if not _advancement_is_retired(entry):
+			count += 1
+	return count
+
+'''
+    marker='func _advancement_ready_count() -> int:'
+    assert marker in source
+    source=source.replace(marker,helper+marker,1)
+
+    source=_replace_func(source,'_increment_advancement_stat',r'''func _increment_advancement_stat(metric_name: String, amount: int = 1) -> void:
+	if metric_name.is_empty() or amount <= 0:
+		return
+	if metric_name == "reeves_payments":
+		_lock_advancement_choice("reeves_payments")
+	elif metric_name == "reeves_missed_payments":
+		_lock_advancement_choice("reeves_miss")
+	advancement_stats[metric_name] = int(advancement_stats.get(metric_name, 0)) + amount''')
+
+    source=_replace_func(source,'_advancement_is_ready',r'''func _advancement_is_ready(entry: Dictionary) -> bool:
+	if _advancement_is_retired(entry):
+		return false
+	if _advancement_value(entry) < int(entry.get("target", 1)):
+		return false
+	for requirement_variant: Variant in entry.get("requires", []):
+		if not (requirement_variant is Dictionary):
+			return false
+		var requirement: Dictionary = requirement_variant as Dictionary
+		if _advancement_value(requirement) < int(requirement.get("target", 1)):
+			return false
+	return true''')
+
+    source=source.replace('advancement_catalog.size()','_advancement_active_count()')
+
+    # Persist and migrate branch choice state.
+    assert '"advancement_claimed": advancement_claimed,' in source
+    source=source.replace('"advancement_claimed": advancement_claimed,','"advancement_claimed": advancement_claimed,\n\t\t"advancement_choice_state": advancement_choice_state,',1)
+    load_anchor='\tif loaded_advancement_claimed is Dictionary:\n\t\tadvancement_claimed = loaded_advancement_claimed as Dictionary\n\tchapter_four_story_stage = clampi(int(data.get("chapter_four_story_stage", chapter_four_story_stage)), 0, 6)'
+    load_repl='\tif loaded_advancement_claimed is Dictionary:\n\t\tadvancement_claimed = loaded_advancement_claimed as Dictionary\n\tvar loaded_advancement_choices: Variant = data.get("advancement_choice_state", {})\n\tif loaded_advancement_choices is Dictionary:\n\t\tadvancement_choice_state = (loaded_advancement_choices as Dictionary).duplicate(true)\n\t_migrate_advancement_choices()\n\tchapter_four_story_stage = clampi(int(data.get("chapter_four_story_stage", chapter_four_story_stage)), 0, 7)'
+    assert load_anchor in source
+    source=source.replace(load_anchor,load_repl,1)
+
+    # Help copy follows the new active-property and Heat rules.
+    source=source.replace('Phone -> Illegal Businesses -> Bills or apartment computer -> Bills includes apartment rent: $600 every 14 game days, with a three-day grace period.',
+                          'Phone -> Illegal Businesses -> Bills or your active property computer -> Bills shows the current property payment. Apartment rent stops after relocation; house Rent and Lease-to-Own use 7-day payment cycles.')
+    source=source.replace('No new seeds, harvesting, trimming, bagging or selling occur while away; equipment auto-refill remains live-only.',
+                          'No new seeds, harvesting, trimming, bagging or selling occur while away; equipment auto-refill remains live-only. Offline Heat cooling is intentionally slower than staying in-game and going quiet.')
+
+    # Static guarantees for this progression patch.
+    for required in [
+        'HEAT_ROUTINE_GAIN_MULTIPLIER',
+        '100.0 / (180.0 * 60.0)',
+        '"c4_new_base"',
+        '"chapter_four_operation_ready"',
+        'advancement_choice_state',
+        '_advancement_is_retired',
+        'CHAPTER 5 - BUILDING AN OPERATION',
+        'property_opportunity_state.get("first_entry", false)'
+    ]:
+        assert required in source,required
+    return source
+
 def patch_station(source:str) -> str:
     if 'func build_physics() -> void:' in source:
         return source
@@ -324,13 +565,19 @@ def main():
     fb,entries=east.pack.parse(baseline)
     before={n:b for n,b,f in entries}
 
+    main_script=patch_progression_main(before['scripts/main.gd'].decode())
     neighborhood=patch_neighborhood(before['scripts/neighborhood.gd'].decode())
     station=patch_station((ROOT/'tools/police_station_v1/station.gd').read_text())
     door=(HERE/'interior_door_physics.gd').read_bytes()
+    property_opportunity=(ROOT/'tools/progression_v1/property_opportunity.gd').read_bytes()
+    location_ops=(ROOT/'tools/progression_v1/location_ops.gd').read_bytes()
     replacements={
+        'scripts/main.gd':main_script.encode(),
         'scripts/neighborhood.gd':neighborhood.encode(),
         'scripts/police_station.gd':station.encode(),
         'scripts/interior_door.gd':door,
+        'scripts/property_opportunity.gd':property_opportunity,
+        'scripts/location_ops.gd':location_ops,
     }
     updated=[]
     for n,b,f in entries:
@@ -340,7 +587,8 @@ def main():
     built=east.pack.rebuild(baseline,fb,updated)
     after={n:b for n,b,f in east.pack.parse(built)[1]}
     changed=[n for n in before if before[n]!=after[n]]
-    assert changed==['scripts/interior_door.gd','scripts/neighborhood.gd','scripts/police_station.gd'],changed
+    expected_changed={'scripts/interior_door.gd','scripts/location_ops.gd','scripts/main.gd','scripts/neighborhood.gd','scripts/police_station.gd','scripts/property_opportunity.gd'}
+    assert set(changed)==expected_changed,changed
     assert 'scripts/mobile_physics_player.gd' in after
 
     (out/'candidate.pck').write_bytes(built)
@@ -398,13 +646,13 @@ def main():
 
     loader=(ROOT/'shared/afb-runtime-kobi-v1.js').read_text()
     loader=loader.replace('kobi-v1','mobile-3d-v1').replace('AFB_RUNTIME_KOBI_V1','AFB_RUNTIME_MOBILE_3D_V1')
-    loader=re.sub(r'patch\.json\?v=\d+','patch.json?v=7',loader)
+    loader=re.sub(r'patch\.json\?v=\d+','patch.json?v=8',loader)
     (ROOT/'shared/afb-runtime-mobile-3d-v1.js').write_text(loader,newline='\n')
 
-    release='0.7.9-beta.19-cloudtest.99-mobile3d.7'
+    release='0.7.9-beta.19-cloudtest.99-mobile3d.8'
     index=(ROOT/'index.html').read_text()
     index=index.replace('kobi-v1','mobile-3d-v1').replace('AFB_RUNTIME_KOBI_V1','AFB_RUNTIME_MOBILE_3D_V1')
-    index=re.sub(r'afb-runtime-mobile-3d-v1\.js\?v=\d+','afb-runtime-mobile-3d-v1.js?v=7',index)
+    index=re.sub(r'afb-runtime-mobile-3d-v1\.js\?v=\d+','afb-runtime-mobile-3d-v1.js?v=8',index)
     index=re.sub(r'0\.7\.9-beta\.19-cloudtest\.(?:98-kobi|99-mobile3d)\.\d+',release,index)
     index=re.sub(r'"fileSizes":\{[^}]*\\}',f'"fileSizes":{{"index-mobile-3d-v1.pck":{len(built)},"index.wasm":{(ROOT/"index.wasm").stat().st_size}}}',index,count=1)
     index=index.replace('</title>',' · MOBILE 3D TEST</title>',1)
@@ -419,8 +667,11 @@ def main():
         'physics':'gravity, floor snap, cached StaticBody3D world proxies, physical doors and police stair ramp',
         'police_station':'clean floor closure; side-door widths match scaled apertures; jamb/header trim sits inside openings; wall-base trim is surface-mounted',
         'sprint':'5.4 m/s with shared 100-point stamina, drain/recovery/exhaustion and HUD label SPRINTING',
-        'save_schema':'unchanged'
+        'save_schema':'backward-compatible; adds property agreement/relocation and advancement choice state'
     }
+    version['chapter_4_5']={'property_finale':'Rent / Lease to Own / Purchase -> relocate -> first house entry completes Chapter 4','chapter_5':'Building an Operation starts in house','agreement_terms':'Rent 1800 + 600/7d; Lease 4500 + 1000/7d toward 18500; Purchase 17500'}
+    version['heat_balance']={'routine_gain_multiplier':0.70,'online_open_decay_per_game_minute':0.012,'online_quiet_decay_per_game_minute':0.016,'online_lay_low_decay_per_game_minute':0.024,'offline_full_cool_minutes':180,'daily_pressure_chance':'12%-40%'}
+    version['branching_tasks']={'reeves_payment_outcome':'On-time payment vs missed-payment objectives are mutually exclusive; incompatible unclaimed task retires automatically'}
     version['runtime_delivery']='SHA-256-verified mobile-3d-v1 delta over .98-kobi.1'
     (ROOT/'version.json').write_text(json.dumps(version,indent=2)+'\n',newline='\n')
     (ROOT/'BUILD_VERSION.txt').write_text(
