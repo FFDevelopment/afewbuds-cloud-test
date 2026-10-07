@@ -32,6 +32,8 @@ var revision:=0
 var selected_revision:=-1
 var busy:=false
 var resume_container:=""
+var packing_return:=""
+var packing_action:Button
 # Integer weight units preserve 1g of product exactly. One unit is 0.00001g.
 const POUND:=45359237
 const GRAM:=100000
@@ -51,8 +53,13 @@ const POSITIONS:={
 
 func setup(owner:Node3D) -> void:
  host=owner
+ process_priority=50
  ensure_state()
  build_ui()
+ if host.neighborhood.get("action")!=null:style_button(host.neighborhood.action,true)
+ for work_panel in [host.trim_panel,host.bag_minigame_panel]:
+  work_panel.add_theme_stylebox_override("panel",ui_style("111713","566052",16))
+  for action in work_panel.find_children("*","Button",true,false):style_button(action,true)
  host.get_viewport().size_changed.connect(resize)
  # Label the house's containers so each has a distinct physical interaction.
  for id in POSITIONS:
@@ -287,6 +294,12 @@ func transfer(source:String,destination:String,item:String,amount:int,expected_r
  set_amount(source,item,from_amount-amount)
  set_amount(destination,item,to_amount+amount)
  revision+=1
+ if destination==operation()+":storage" and category(item)=="product":
+  var strain:String=item.get_slice("|",1)
+  if host.tutorial_active and host.tutorial_step==8 and strain==host.tutorial_harvest_strain:host.products[strain]["listed"]=false
+  host._increment_advancement_stat("grams_stored",amount)
+  host._tutorial_record("store",-1,strain)
+  host._schedule_next_customer(true)
  host._update_cash_ui()
  host._save_game()
  busy=false
@@ -347,14 +360,31 @@ func pause_inventory() -> void:
 func resume_inventory() -> void:
  if not resume_container.is_empty():
   var reopening:=resume_container;resume_container="";open_container(reopening)
+func native_station_target(target:String) -> bool:
+ return target in ["station_workbench","station_storage","storage_vault","station_supply","station_locker"]
+func sync_station_prompt(nearby:String) -> void:
+ if host.get("fp_player")!=null:
+  var target:Node=host.get("fp_target")
+  if target!=null and native_station_target(str(target.get_meta("interaction_id",""))) and not nearby.is_empty():
+   host.fp_prompt.text=""
+   nearby_button.text+="  [E]"
+ else:
+  var world:Node=host.neighborhood
+  if world.get("action")!=null:
+   var target:String=world._near_target()
+   if not nearby.is_empty() and (target.is_empty() or native_station_target(target)):world.action.hide()
+   elif not target.is_empty():nearby_button.hide()
+ if nearby_button.visible:host.contextual_button.hide()
 func _process(_delta:float) -> void:
  if host==null:return
  if is_open():_fit()
  var modal:bool=host._any_modal_open() or host.daily_report_pending or host.tutorial_active
  backpack_button.visible=not modal
  var nearby:String=near_container() if not modal else ""
+ if nearby=="market:orders":nearby=""
  nearby_button.visible=not nearby.is_empty()
  if not nearby.is_empty():nearby_button.text="OPEN "+title(nearby).get_slice(" · ",1).to_upper()
+ sync_station_prompt(nearby)
  if is_open() and not container_id.is_empty() and not reachable(container_id):close()
 func ui_style(bg:String,border:String="343b34",radius:int=12,width:int=1) -> StyleBoxFlat:
  var style:=StyleBoxFlat.new();style.bg_color=Color(bg);style.border_color=Color(border)
@@ -393,6 +423,8 @@ func short_name(item:String) -> String:
  var name:String=item.get_slice("|",1) if item.contains("|") else item_name(item)
  if category(item)=="seed":name+=" Seeds"
  if category(item)=="product":name+=" Pack"
+ if category(item)=="raw":name+=" · Untrimmed"
+ if category(item)=="trimmed":name+=" · Trimmed"
  return name
 func set_filter(value:String) -> void:
  filter_kind=value;selected="";render()
@@ -463,7 +495,7 @@ func select_item(source:String,item:String) -> void:
  selected=item;selected_source=source;selected_revision=revision
  render()
 func render() -> void:
- clear(columns);clear(inspector)
+ clear(columns);clear(inspector);packing_action=null
  var screen:Vector2=host.get_viewport().get_visible_rect().size
  var compact:bool=screen.y<500
  heading.text="Backpack" if container_id.is_empty() else title(container_id)
@@ -543,14 +575,14 @@ func render_inventory(id:String) -> void:
   if int(items[item])<=0 or (not adding and not filter_matches(item)):continue
   count+=1
   var compact:bool=host.get_viewport().get_visible_rect().size.y<500
-  var card:=Button.new();card.custom_minimum_size=Vector2(0,112 if compact else 170);card.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+  var card:=Button.new();card.custom_minimum_size=Vector2(0,128 if compact else 190);card.size_flags_horizontal=Control.SIZE_EXPAND_FILL
   card.add_theme_stylebox_override("normal",ui_style("1b201c","3a4039",12))
   card.add_theme_stylebox_override("hover",ui_style("242e20","789d61",12))
   card.add_theme_stylebox_override("pressed",ui_style("22371c","83e35b",12,3))
   card.add_theme_stylebox_override("disabled",ui_style("161a17","30362f",12))
   card.toggle_mode=true;card.button_pressed=selected==item and selected_source==id
   card.disabled=id=="backpack" and not container_id.is_empty() and not accepts(container_id,item)
-  card.tooltip_text=item_name(item)+" · "+weight_text(unit_weight(item))+" each"+(" · Not accepted here" if card.disabled else "")
+  card.tooltip_text=item_name(item)+" · "+("1 g" if group(item)=="grams" else weight_text(unit_weight(item)))+" each"+(" · Not accepted here" if card.disabled else "")
   grid.add_child(card)
   var stack:=VBoxContainer.new();card.add_child(stack);stack.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);stack.offset_left=8;stack.offset_right=-8;stack.offset_top=6;stack.offset_bottom=-6
   stack.add_theme_constant_override("separation",2)
@@ -564,11 +596,32 @@ func render_inventory(id:String) -> void:
   if card.disabled:stack.modulate=Color(1,1,1,.38);badge.modulate=Color(1,1,1,.4)
   card.pressed.connect(select_item.bind(id,item))
   if card.button_pressed:reveal_selection.call_deferred(scroll,card)
- if count==0:label("No items in this category.",grid,16)
+ if count==0:
+  grid.columns=1
+  var empty:=label("No items in this category.",grid,16)
+  empty.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+  empty.custom_minimum_size.x=180
+  empty.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
 func reveal_selection(scroll:ScrollContainer,card:Control) -> void:
  await get_tree().process_frame
  await get_tree().process_frame
  if is_instance_valid(scroll) and is_instance_valid(card):scroll.ensure_control_visible(card)
+func packing_allowed() -> bool:
+ return container_id==operation()+":packing" and selected_source==container_id and category(selected) in ["raw","trimmed"] and available(container_id,selected)>0
+func process_selected() -> void:
+ if not packing_allowed() or not reachable(container_id):return
+ var item:String=selected
+ packing_return=container_id
+ close()
+ if category(item)=="raw":host._start_trim_minigame(item.get_slice("|",1))
+ else:host._start_bag_minigame(item.get_slice("|",1))
+ Input.mouse_mode=Input.MOUSE_MODE_VISIBLE
+ if not host.trim_panel.visible and not host.bag_minigame_panel.visible:return_to_packing()
+func return_to_packing() -> void:
+ host.bagging_panel.hide()
+ var id:String=packing_return if not packing_return.is_empty() else operation()+":packing"
+ packing_return=""
+ open_container(id)
 func render_inspector() -> void:
  var screen:Vector2=host.get_viewport().get_visible_rect().size
  var portrait:bool=screen.y>screen.x
@@ -578,7 +631,11 @@ func render_inspector() -> void:
  label(short_name(selected),text_box,18)
  var owned:int=int(contents(selected_source).get(selected,0))
  label("Owned: "+units(selected,owned),text_box,15)
- label("Weightless" if selected=="cash" else weight_text(unit_weight(selected))+" each",text_box,14).modulate=Color("b6c1ae")
+ label("Weightless" if selected=="cash" else ("1 g" if group(selected)=="grams" else weight_text(unit_weight(selected)))+" each",text_box,14).modulate=Color("b6c1ae")
+ if container_id.ends_with(":packing") and selected_source==container_id and category(selected) in ["raw","trimmed"]:
+  packing_action=button("Trim by hand" if category(selected)=="raw" else "Bag by hand",process_selected,text_box,true)
+  packing_action.disabled=not packing_allowed()
+  if not packing_allowed():label("Processing is available at your active operation's bench.",text_box,13)
  if container_id.is_empty():
   var hint:String="Open a nearby container to store this item."
   if category(selected)=="delivery":hint="Install at your active property computer."

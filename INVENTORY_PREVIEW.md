@@ -23,3 +23,7 @@ Existing production inventory remains authoritative for planting, workers, packi
 ## Release checks
 
 Run the inventory integration test, existing gameplay suites, and browser save-isolation tests before publishing. Preview deployment stages main unchanged at the root and mobile-3d-movement compatibility URL, then adds inventory-preview. Both source branches remain experiments until reviewed. A later ordinary main deployment can remove the temporary preview URL; rerun this branch workflow to restore it.
+
+## Station UI update
+
+Packing now opens the shared inventory screen. Select untrimmed product for Trim by hand or trimmed product for Bag by hand; completing or leaving either work area returns to the bench. Take packaged product into the backpack and carry it to storage. Production work uses the active operation bench. The modern nearby button replaces duplicate legacy station prompts, while other interactions retain their actions. Empty-category messages span the panel width. The tutorial redesign remains deferred.

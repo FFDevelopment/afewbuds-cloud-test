@@ -14,4 +14,14 @@ def patch_main(s):
     s=s.replace('"PUT IN STORAGE", _store_product','"TAKE TO BACKPACK", _inventory_take_packed')
     s+='\nfunc _inventory_take_packed(strain_name:String) -> void:\n\tbagging_panel.hide()\n\tinventory_system.open_container("packing")\n\tinventory_system.select_item(inventory_system.container_id,"product|"+strain_name)\n'
     for old,new in {'then deposit them at your apartment computer.': 'then collect them into your backpack and store them at the grow shelf using Add Stock.', 'then deposit carried seeds at your computer.': 'then put carried seeds on your grow shelf using Add Stock.', 'then deposit carried supplies at your apartment computer.': 'then store carried supplies at your grow shelf using Add Stock.', 'Paid equipment waits for computer installation.': 'Paid equipment must be collected into your backpack before computer installation.'}.items():s=s.replace(old,new)
+    return patch_stations(s)
+
+def patch_stations(s):
+    s=s.replace('func _open_bagging_panel() -> void:\n','func _open_bagging_panel() -> void:\n\tif inventory_system!=null:\n\t\tinventory_system.open_container("packing")\n\t\treturn\n',1)
+    for name in ['_close_trim_minigame','_close_bag_minigame']:
+        start=s.index('func '+name+'()')
+        end=s.index('\nfunc ',start+1)
+        body=s[start:end]
+        body=body.replace('\tbagging_panel.visible = true\n\t_refresh_bagging_panel()', '\tif inventory_system!=null:\n\t\tinventory_system.return_to_packing()\n\telse:\n\t\tbagging_panel.visible = true\n\t\t_refresh_bagging_panel()')
+        s=s[:start]+body+s[end:]
     return s
