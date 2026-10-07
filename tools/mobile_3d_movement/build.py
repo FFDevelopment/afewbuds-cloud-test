@@ -244,6 +244,15 @@ func _update_stamina_hud() -> void:
         'host.status_label.text="Walk through the open doorway. You can close the door from either side."',
         'host.status_label.text="3D PHYSICS TEST · Use the left stick to walk and drag the world to look."',1)
 
+    # After relocation the house entrance is a normal owned/rented front door,
+    # not a permanent property-preview trigger.
+    source=source.replace(
+        'elif not map_door.opened and not property_opportunity.touring:',
+        'elif not map_door.opened and not property_opportunity.touring and not bool(host.property_opportunity_state.get("relocated",false)):',1)
+    source=source.replace(
+        'if id=="HouseEntrance" and not door.opened and not property_opportunity.touring:',
+        'if id=="HouseEntrance" and not door.opened and not property_opportunity.touring and not bool(host.property_opportunity_state.get("relocated",false)):',1)
+
     for required in [
         'MobilePhysicsPlayer','_rebuild_physics_obstacles()','physics_body.drive',
         'MobilePhysicsApartmentDoor','_set_physics_door_closed(false)',
