@@ -59,7 +59,9 @@ func wall(id:String,x:float,z:float,length:float,along_x:bool,holes:Array=[],col
 	var span:=length if along_x else length*.8
 	var cuts:Array[Rect2]=[]
 	for raw in holes:cuts.append(Rect2(raw.position*Vector2(1 if along_x else .8,1),raw.size*Vector2(1 if along_x else .8,1)))
-	var wall_height:float=STORY-.20 if floor_index==0 else STORY-.23
+	var wall_height:float=STORY
+	if floor_index==0 and id.begins_with("Stair"):wall_height=STORY-.20
+	elif floor_index==1:wall_height=STORY-.23
 	var xs:Array[float]=[0,span];var ys:Array[float]=[0,wall_height]
 	for h in cuts:
 		xs.append(h.position.x);xs.append(h.end.x);ys.append(h.position.y);ys.append(h.end.y)
