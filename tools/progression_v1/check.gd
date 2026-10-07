@@ -89,6 +89,12 @@ func run() -> void:
 	op.confirm_relocation()
 	check(bool(game.property_opportunity_state.get("relocated",false)) and str(game.location_state.get("active_property",""))=="house","Relocation switches active operation to house")
 	check(not game._story_chapter_four_complete(),"Relocation waits for first house entry before Chapter 4 completion")
+	var house_door:Node3D=game.neighborhood.get_node("HouseEntrance")
+	game.camera.global_position=Vector3(35,1.64,4.8)
+	game.camera.look_at(Vector3(35,1.4,3.0))
+	game.neighborhood._use_map_door("HouseEntrance")
+	await create_timer(.5).timeout
+	check(house_door.opened and not op.is_open(),"Relocated house entrance opens normally instead of reopening property preview")
 	game.camera.global_position=Vector3(30,1.64,0)
 	op.update(0.0)
 	check(bool(game.property_opportunity_state.get("first_entry",false)) and bool(game.property_opportunity_state.get("chapter5_started",false)),"First house entry starts Chapter 5")
