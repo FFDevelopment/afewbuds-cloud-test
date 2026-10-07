@@ -43,8 +43,8 @@ func run() -> void:
 
 	# Repeated legacy collision scans must not churn StaticBody3D nodes when the
 	# world layout did not actually change.
-	var proxy_count:=w.physics_obstacle_root.get_child_count()
-	var proxy_id:=w.physics_obstacle_root.get_child(0).get_instance_id() if proxy_count>0 else 0
+	var proxy_count:int=int(w.physics_obstacle_root.get_child_count())
+	var proxy_id:int=int(w.physics_obstacle_root.get_child(0).get_instance_id()) if proxy_count>0 else 0
 	for i in range(20):w._rebuild_physics_obstacles()
 	check(w.physics_obstacle_root.get_child_count()==proxy_count and (proxy_count==0 or w.physics_obstacle_root.get_child(0).get_instance_id()==proxy_id),"Stable world state reuses physics obstacle proxies")
 
@@ -58,7 +58,7 @@ func run() -> void:
 	w.pad.value=Vector2.ZERO
 	check(w.physics_body.global_position.z<5.75,"Closed apartment door physically blocks exit",w.physics_body.global_position)
 	w._toggle_door()
-	await get_tree().create_timer(.5).timeout
+	await create_timer(.5).timeout
 	w.physics_body.global_position=Vector3(0,0.02,4.4)
 	w.physics_body.velocity=Vector3.ZERO
 	w._sync_camera_from_physics()
