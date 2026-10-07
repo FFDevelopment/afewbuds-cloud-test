@@ -91,6 +91,61 @@ func run() -> void:
 	w._sync_camera_from_physics()
 	check(absf(game.camera.global_position.y-w.physics_body.global_position.y-w.WALK_EYE_HEIGHT)<.01,"Camera follows physics body at walking eye height")
 
+	# Police station now uses the same physical capsule, including door leaves,
+	# floors and one smooth collision ramp beneath the visible stair treads.
+	var station:Node3D=w.police_station
+	check(station.get_node_or_null("StationStructure") is StaticBody3D,"Police station has native StaticBody3D structure")
+	check(station.get_node_or_null("StationStructure/StairRamp") is CollisionShape3D,"Police stairs expose a continuous physics ramp")
+	var public_door:Node3D=station.get_node("PUBLIC_ENTRANCE")
+	await frames(2)
+	check(public_door.get_node_or_null("Leaf/DoorPhysics") is StaticBody3D,"Police door uses shared physical door controller")
+	w.physics_body.global_position=station.point(11.2,.02,30)
+	w.physics_body.velocity=Vector3.ZERO
+	w._sync_camera_from_physics()
+	game.camera.rotation=Vector3.ZERO
+	w.pad.value=Vector2(0,-1)
+	await frames(55)
+	w.pad.value=Vector2.ZERO
+	check(station.local_point(w.physics_body.global_position).z>28.0,"Closed police entrance physically blocks capsule",w.physics_body.global_position)
+	public_door.toggle(game.camera.global_position)
+	await create_timer(.55).timeout
+	w.physics_body.global_position=station.point(11.2,.02,30)
+	w.physics_body.velocity=Vector3.ZERO
+	w._sync_camera_from_physics()
+	game.camera.rotation=Vector3.ZERO
+	w.pad.value=Vector2(0,-1)
+	await frames(100)
+	w.pad.value=Vector2.ZERO
+	check(station.local_point(w.physics_body.global_position).z<27.5,"Open police entrance permits same capsule",w.physics_body.global_position)
+
+	w.physics_body.global_position=station.point(21.5,.02,20.7)
+	w.physics_body.velocity=Vector3.ZERO
+	w._sync_camera_from_physics()
+	game.camera.rotation=Vector3.ZERO
+	w.pad.value=Vector2(0,-1)
+	await frames(165)
+	w.pad.value=Vector2.ZERO
+	var stair_top:Vector3=station.local_point(w.physics_body.global_position)
+	check(stair_top.y>3.15 and stair_top.z<14.7,"Same mobile capsule climbs police stair ramp continuously",stair_top)
+
+	# Acceleration is intentionally eased: touch movement starts smoothly rather
+	# than snapping immediately to full walk speed.
+	w.physics_body.global_position=Vector3(80,.02,17)
+	w.physics_body.velocity=Vector3.ZERO
+	w._sync_camera_from_physics()
+	game.camera.rotation=Vector3.ZERO
+	w.pad.value=Vector2(1,0)
+	await frames(1)
+	var first_speed:float=Vector2(w.physics_body.velocity.x,w.physics_body.velocity.z).length()
+	await frames(24)
+	var cruise_speed:float=Vector2(w.physics_body.velocity.x,w.physics_body.velocity.z).length()
+	w.pad.value=Vector2.ZERO
+	await frames(18)
+	var stopped_speed:float=Vector2(w.physics_body.velocity.x,w.physics_body.velocity.z).length()
+	check(first_speed>0.0 and first_speed<w.physics_body.WALK_SPEED,"Touch movement accelerates instead of snapping to full speed",first_speed)
+	check(cruise_speed>3.0,"Touch movement reaches normal walking speed",cruise_speed)
+	check(stopped_speed<.25,"Touch movement decelerates cleanly",stopped_speed)
+
 	w.physics_body.stop()
 	game.queue_free()
 	await frames()
