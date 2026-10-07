@@ -1,5 +1,5 @@
 {
-  "release_id": "0.7.9-beta.19-cloudtest.99-mobile3d.4",
+  "release_id": "0.7.9-beta.19-cloudtest.99-mobile3d.5",
   "game_build": "0.7.9-beta.19",
   "channel": "main-based-cloud-test",
   "updater": "network-only-no-service-worker",
@@ -183,8 +183,8 @@
     "player": "CharacterBody3D capsule",
     "input": "touch joystick + drag look; full forward stick sprints; Shift+forward sprints on keyboard",
     "physics": "gravity, floor snap, cached StaticBody3D world proxies, physical doors and police stair ramp",
-    "police_station": "same CharacterBody3D capsule with physical walls, doors, floors and stair ramp",
-    "sprint": "5.4 m/s with shared 100-point stamina, drain/recovery/exhaustion and HUD bar",
+    "police_station": "same CharacterBody3D capsule; stairwell walls terminate below upper slab and final nosing no longer clips the landing",
+    "sprint": "5.4 m/s with shared 100-point stamina, drain/recovery/exhaustion and HUD label SPRINTING",
     "save_schema": "unchanged"
   }
 }
