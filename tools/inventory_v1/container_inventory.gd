@@ -697,6 +697,11 @@ func commit_selection() -> void:
  selected="";selected_source="";render();notice.text=str(result.reason)
 
 func _input(event:InputEvent) -> void:
+ if host.tutorial_panel.visible:
+  var intro_scroll:ScrollContainer=host.tutorial_panel.get_child(0)
+  if event is InputEventScreenTouch or event is InputEventScreenDrag or event is InputEventMouseButton or event is InputEventMouseMotion:
+   if (intro_scroll.is_gesture_busy() or host._pointer_in_control(intro_scroll,event.position)) and intro_scroll.handle_pointer(event):
+    get_viewport().set_input_as_handled();return
  for ui in [host.neighborhood.location_ops.ui,host.neighborhood.property_opportunity]:
   if ui.handle_scroll(event):
    get_viewport().set_input_as_handled();return
