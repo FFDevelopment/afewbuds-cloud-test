@@ -195,6 +195,7 @@ func run() -> void:
 	game.location_state["operation_assets_property"]="house"
 	game.location_state["operation_contents_property"]="house"
 
+	apt_util=ops.utility_state("apartment")
 	apt_util["power_due"]=12
 	apt_util["water_due"]=4
 	ops._sync_legacy_utility_totals()
