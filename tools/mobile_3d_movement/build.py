@@ -473,6 +473,70 @@ def patch_progression_main(source:str) -> str:
     source=source.replace('phone_title.text = "Apartment · Inventory"','phone_title.text = ("%s · Inventory" % (neighborhood.location_ops.active_property().capitalize() if neighborhood!=null and neighborhood.location_ops!=null else "Operation"))',1)
     source=source.replace('phone_title.text = "Apartment · Genetics"','phone_title.text = ("%s · Genetics" % (neighborhood.location_ops.active_property().capitalize() if neighborhood!=null and neighborhood.location_ops!=null else "Operation"))',1)
 
+    source=_replace_func(source,'_build_budshop_app',r'''func _build_budshop_app() -> void:
+	var card:=PanelContainer.new()
+	card.add_theme_stylebox_override("panel",_style_box(Color("152029"),Color("33434f"),16,1))
+	phone_list.add_child(card)
+	var box:=VBoxContainer.new()
+	card.add_child(box)
+	var property_name:String="Operation"
+	if neighborhood!=null and neighborhood.location_ops!=null:
+		property_name=neighborhood.location_ops.active_property().capitalize()
+	var status:=Label.new()
+	status.text="%s\nStorefront: %s" % [property_name.to_upper(),"LAYING LOW" if lay_low_active else ("OPEN" if business_open else "AWAY")]
+	status.add_theme_font_size_override("font_size",20)
+	status.modulate=Color("8ed6a3") if business_open and not lay_low_active else Color("e1b07a")
+	box.add_child(status)
+	var note:=Label.new()
+	note.text="Manage the active operation at its property computer. Property leases, ownership and access are in Real Estate."
+	note.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(note)
+	var grid:GridContainer=_phone_category_grid()
+	_add_phone_app_tile(grid,"","Bills","Property utilities & balances","bills")
+	_add_phone_app_tile(grid,"","Heat","%s | %d/100" % [_heat_stage_name(),int(round(heat))],"heat")
+	_add_phone_app_tile(grid,"","Stats","Progress & revenue","stats")''')
+
+    source=_replace_func(source,'_build_business_app',r'''func _build_business_app() -> void:
+	var active_name:String="Operation"
+	var property_due:int=0
+	var utility_due:int=power_bill_due+water_bill_due
+	if neighborhood!=null and neighborhood.location_ops!=null:
+		active_name=neighborhood.location_ops.active_property().capitalize()
+		property_due=neighborhood.location_ops.balance()
+		utility_due=neighborhood.location_ops.utility_total_due()
+	var property_note:=Label.new()
+	property_note.text="%s · Active operation\nUse Real Estate for property ownership/leases and Bills for balances." % active_name.to_upper()
+	property_note.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	phone_list.add_child(property_note)
+	var summary:=Label.new()
+	summary.text="GROWER LEVEL %d   |   XP %d / %d\nBrand Level %d   |   Reputation %d\nStorefront: %s" % [grower_level,grower_xp,_xp_needed_for_next_level(),brand_level,reputation,"OPEN" if business_open else "AWAY"]
+	summary.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	summary.add_theme_font_size_override("font_size",19)
+	phone_list.add_child(summary)
+	var grid:GridContainer=_phone_category_grid()
+	_add_phone_app_tile(grid,"","Bills","$%d outstanding" % (property_due+utility_due+dealer_balance_due),"bills")
+	if neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.rendering_management:
+		neighborhood.location_ops.business_extras()''')
+
+    source=_replace_func(source,'_build_bills_app',r'''func _build_bills_app() -> void:
+	if neighborhood!=null and neighborhood.location_ops!=null:
+		neighborhood.location_ops.property_bills_ui(phone_list)
+	var dealer_card:=PanelContainer.new()
+	phone_list.add_child(dealer_card)
+	var dealer_box:=VBoxContainer.new()
+	dealer_card.add_child(dealer_box)
+	var dealer_detail:=Label.new()
+	dealer_detail.text="DEALER BALANCE\nOutstanding: $%d\nCash held for nightly drop-off: $%d" % [dealer_balance_due,dealer_cash_held]
+	dealer_detail.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	dealer_box.add_child(dealer_detail)
+	if dealer_balance_due>0:
+		var pay_dealers:=Button.new()
+		pay_dealers.text="PAY DEALER BALANCE  |  $%d" % dealer_balance_due
+		pay_dealers.disabled=cash<dealer_balance_due
+		pay_dealers.custom_minimum_size.y=50
+		pay_dealers.pressed.connect(_pay_dealer_balance)
+		dealer_box.add_child(pay_dealers)''')
+
     source=_replace_func(source,'_advancement_story_label',r'''func _advancement_story_label() -> String:
 	if not _story_chapter_one_complete():
 		return "CHAPTER 1 - STARTING SMALL"
@@ -589,7 +653,7 @@ func _advancement_active_count() -> int:
 
     # Help copy follows the new active-property and Heat rules.
     source=source.replace('Phone -> Illegal Businesses -> Bills or apartment computer -> Bills includes apartment rent: $600 every 14 game days, with a three-day grace period.',
-                          'Phone -> Real Estate manages every property separately. Moving to the house keeps the apartment lease active by default, so its $600/14-day rent continues until you explicitly release that lease. House Rent and Lease-to-Own use 7-day payment cycles.')
+                          'Phone -> Real Estate manages every property separately. Moving to the house keeps the apartment lease active by default, so its $600/14-day rent continues until you explicitly release that lease. Electric and water are tracked per property and accrue only where utilities are actually being used. Released properties disappear from normal operation management and can be rented again later through Real Estate. House Rent and Lease-to-Own use 7-day payment cycles.')
     source=source.replace('No new seeds, harvesting, trimming, bagging or selling occur while away; equipment auto-refill remains live-only.',
                           'No new seeds, harvesting, trimming, bagging or selling occur while away; equipment auto-refill remains live-only. Offline Heat cooling is intentionally slower than staying in-game and going quiet.')
 
@@ -755,13 +819,13 @@ def main():
 
     loader=(ROOT/'shared/afb-runtime-kobi-v1.js').read_text()
     loader=loader.replace('kobi-v1','mobile-3d-v1').replace('AFB_RUNTIME_KOBI_V1','AFB_RUNTIME_MOBILE_3D_V1')
-    loader=re.sub(r'patch\.json\?v=\d+','patch.json?v=9',loader)
+    loader=re.sub(r'patch\.json\?v=\d+','patch.json?v=10',loader)
     (ROOT/'shared/afb-runtime-mobile-3d-v1.js').write_text(loader,newline='\n')
 
-    release='0.7.9-beta.19-cloudtest.99-mobile3d.9'
+    release='0.7.9-beta.19-cloudtest.99-mobile3d.10'
     index=(ROOT/'index.html').read_text()
     index=index.replace('kobi-v1','mobile-3d-v1').replace('AFB_RUNTIME_KOBI_V1','AFB_RUNTIME_MOBILE_3D_V1')
-    index=re.sub(r'afb-runtime-mobile-3d-v1\.js\?v=\d+','afb-runtime-mobile-3d-v1.js?v=9',index)
+    index=re.sub(r'afb-runtime-mobile-3d-v1\.js\?v=\d+','afb-runtime-mobile-3d-v1.js?v=10',index)
     index=re.sub(r'0\.7\.9-beta\.19-cloudtest\.(?:98-kobi|99-mobile3d)\.\d+',release,index)
     index=re.sub(r'"fileSizes":\{[^}]*\\}',f'"fileSizes":{{"index-mobile-3d-v1.pck":{len(built)},"index.wasm":{(ROOT/"index.wasm").stat().st_size}}}',index,count=1)
     index=index.replace('</title>',' · MOBILE 3D TEST</title>',1)
@@ -779,10 +843,10 @@ def main():
         'sprint':'5.4 m/s with shared 100-point stamina, drain/recovery/exhaustion and HUD label SPRINTING',
         'save_schema':'backward-compatible; adds property agreement/relocation and advancement choice state'
     }
-    version['chapter_4_5']={'property_finale':'Rent / Lease to Own / Purchase -> relocate -> first house entry completes Chapter 4','chapter_5':'Building an Operation starts in house','agreement_terms':'Rent 1800 + 600/7d; Lease 4500 + 1000/7d toward 18500; Purchase 17500','apartment_lease':'continues at 600/14d after relocation unless explicitly released in Real Estate; existing balance survives release'}
+    version['chapter_4_5']={'property_finale':'Rent / Lease to Own / Purchase -> relocate -> first house entry completes Chapter 4','chapter_5':'Building an Operation starts in house','agreement_terms':'Rent 1800 + 600/7d; Lease 4500 + 1000/7d toward 18500; Purchase 17500','apartment_lease':'continues at 600/14d after relocation unless explicitly released in Real Estate; existing rent and utility debt survives release'}
     version['heat_balance']={'routine_gain_multiplier':0.70,'online_open_decay_per_game_minute':0.012,'online_quiet_decay_per_game_minute':0.016,'online_lay_low_decay_per_game_minute':0.024,'offline_full_cool_minutes':180,'daily_pressure_chance':'12%-40%'}
     version['branching_tasks']={'reeves_payment_outcome':'On-time payment vs missed-payment objectives are mutually exclusive; incompatible unclaimed task retires automatically'}
-    version['real_estate_app']={'phone_home':True,'portfolio':'apartment + house shown separately','billing':'independent balances and due dates','apartment_release':'explicit two-step release; future rent stops, existing debt remains'}
+    version['real_estate_app']={'phone_home':True,'portfolio':'apartment + house shown separately','billing':'independent rent/lease, electric and water balances by property','apartment_release':'requires another property and cleared apartment-assigned contents; future rent/utilities stop, existing debt remains; apartment door/computer lock','property_storage':'paid upgrades remain player-owned and can be unplaced/stored instead of deleted','apartment_reacquire':'released apartment can be rented again after prior debt is cleared'}
     version['phone_home']='Illegal Businesses, Real Estate, Store, Contacts, Messages, Tasks & Rewards, Leaderboard, Settings'
     version['runtime_delivery']='SHA-256-verified mobile-3d-v1 delta over .98-kobi.1'
     (ROOT/'version.json').write_text(json.dumps(version,indent=2)+'\n',newline='\n')
