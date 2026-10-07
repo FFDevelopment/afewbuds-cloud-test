@@ -1,0 +1,11942 @@
+extends Node3D
+
+var neighborhood: Node3D
+var house_control_state: Dictionary = {}
+
+
+const PlantGrowth = preload("res://scripts/plant_growth.gd")
+const OfflinePlantCare = preload("res://scripts/offline_plant_care.gd")
+const PhoneTouchScroll = preload("res://scripts/touch_scroll.gd")
+const StorageVault = preload("res://scripts/storage_vault.gd")
+const LivingCouch = preload("res://scripts/living_couch.gd")
+const GrowSupplyShelf = preload("res://scripts/grow_supply_shelf.gd")
+const RoomSurfaces = preload("res://scripts/room_surfaces.gd")
+const VAULT_SUPPLY: String = "AFB Storage Vault"
+const HIDDEN_STASH_SUPPLY: String = "Hidden Wall Stash"
+
+const APP_LOGO: Texture2D = preload("res://assets/branding/afb_logo.png")
+
+const START_CASH: int = 400
+const CUSTOMER_WAIT_MIN: float = 26.0
+const CUSTOMER_WAIT_MAX: float = 72.0
+const HYPE_CUSTOMER_WAIT_MIN: float = 12.0
+const HYPE_CUSTOMER_WAIT_MAX: float = 26.0
+const GAME_MINUTES_PER_REAL_SECOND: float = 1.0 # 1 real second = 1 in-game minute; 24 active minutes per full day.
+const SUNSET_START_MINUTE: float = 17.5 * 60.0
+const SUNSET_END_MINUTE: float = 20.5 * 60.0
+const CUSTOMER_DOOR_PATIENCE: float = 28.0
+const CUSTOMER_COMPLAINT_SECONDS: float = 2.4
+const STAGES: Array[String] = ["Seedling", "Growing", "Flowering", "Ready"]
+const GROWTH_SECONDS_TO_READY: float = 300.0
+const WATER_DECAY_PER_SECOND: float = 0.289 # 15% less water consumption; growth is unchanged.
+const DRY_HEALTH_LOSS_PER_SECOND: float = 0.55
+const HEALTH_RECOVERY_PER_SECOND: float = 0.06
+const FERTILIZER_DECAY_PER_SECOND: float = 0.10
+const FERTILIZER_GROWTH_BONUS: float = 0.35
+const SAVE_PATH: String = "user://bud_empire_beta_save.json"
+const AUTO_TICK_SECONDS: float = 5.0
+const AUTO_SALE_SECONDS: float = 24.0
+const PACKER_HIRE_COST: int = 850
+const PACKER_DAILY_WAGE: int = 120
+const DEALER_BASE_HIRE_COST: int = 600
+const DEALER_DAILY_WAGE: int = 0
+const DEALER_COMMISSION_RATE: float = 0.10
+const DEALER_LOCKER_CAPACITY_BY_LEVEL: Array[int] = [0, 100, 200, 300, 400]
+const DEALER_LOCKER_COST_BY_LEVEL: Array[int] = [0, 300, 600, 900, 1200]
+const PRODUCTION_WORKER_DWELL_SECONDS: float = 0.95
+const PRODUCTION_WORKER_MOVE_SPEED: float = 2.55
+const PRODUCTION_WORKER_BATCH_SIZE: int = 3
+const FRIEND_RECRUIT_LOYALTY: int = 70
+const FRIEND_RECRUIT_PLAYER_SALES: int = 4
+const FRIEND_STAFF_PURCHASE_RATE: float = 0.85
+const FRIEND_STAFF_PURCHASE_CHANCE: float = 0.70
+const HEAT_DECAY_OPEN_PER_GAME_MINUTE: float = 0.0010
+const HEAT_DECAY_QUIET_PER_GAME_MINUTE: float = 0.0040
+const HEAT_DECAY_AWAY_PER_GAME_MINUTE: float = 0.0180
+const HEAT_CONTACT_MINIMUM: float = 35.0
+const HEAT_CONTACT_REDUCTION: float = 22.0
+const HEAT_CONTACT_BASE_COST: int = 500
+const REEVES_TRIGGER_HEAT: float = 60.0
+const REEVES_PAYMENT_INTERVAL_DAYS: int = 3
+const REEVES_BASE_PAYMENT: int = 1200
+const REEVES_INITIAL_HEAT_REDUCTION: float = 18.0
+const REEVES_PROTECTION_HEAT_MULTIPLIER: float = 0.75
+const REEVES_QUIET_EXIT_DAYS: int = 3
+const REEVES_FINAL_PAYOFF_BASE: int = 10000
+const REEVES_TOTAL_OBLIGATION: int = 8000
+const RAID_RISK_WARNING_THRESHOLD: float = 60.0
+const GROW_LIGHTS_OFF_GROWTH_MULTIPLIER: float = 0.18
+const VENTILATION_INACTIVE_GROWTH_MULTIPLIER: float = 0.55
+const POWER_BASE_COST_PER_GAME_MINUTE: float = 0.006
+const POWER_MAIN_LIGHT_COST_PER_GAME_MINUTE: float = 0.004
+const POWER_LAMP_COST_PER_GAME_MINUTE: float = 0.0015
+const POWER_GROW_ROOM_LIGHT_COST_PER_GAME_MINUTE: float = 0.003
+const POWER_GROW_LIGHT_COST_PER_TENT_PER_GAME_MINUTE: float = 0.012
+const POWER_VENTILATION_COST_PER_GAME_MINUTE: float = 0.006
+const POWER_BILL_MAX_BALANCE: int = 2500
+const WATER_COST_PER_WATERING: float = 2.0
+const WATER_BILL_MAX_BALANCE: int = 2000
+const BUILD_VERSION: String = "0.7.9-beta.19"
+const SAVE_SCHEMA_VERSION: int = 2
+const FRAME_GAP_PAUSE_MSEC: int = 2000
+const SEED_ORDER: Array[String] = ["Street Green", "Purple Dream", "Citrus Rush", "Blue Frost", "Velvet Haze", "Frozen Purple", "Golden Ember", "Cherry Glow", "Neon Berry", "Moon Cake", "Midnight Crown", "Black Cherry", "Aurora Reserve", "Solar Frost", "Citrus Velvet", "Cherry Frost", "Ember Berry", "Crown Cake"]
+const SUPPLY_SEED_CAPACITY_BY_LEVEL: Array[int] = [0, 12, 24, 48]
+const SUPPLY_FERTILIZER_CAPACITY_BY_LEVEL: Array[int] = [0, 20, 40, 80]
+
+var cash: int = START_CASH
+var current_view: String = "main_grow_door"
+var current_room: String = "main"
+var phone_open: bool = false
+var tent_open: bool = false
+var customer_waiting: bool = false
+var customer_departing: bool = false
+var customer_answered: bool = false
+var peephole_checked: bool = false
+var current_customer: Dictionary = {}
+var active_request: Dictionary = {}
+var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+var fertilizer_units: int = 6
+var grower_level: int = 1
+var grower_xp: int = 0
+var reputation: int = 0
+var brand_level: int = 1
+var lifetime_revenue: int = 0
+var bagging_level: int = 1
+var storage_level: int = 1
+var storage_vault: StorageVault
+var hidden_stash_frame_pivot: Node3D
+var hidden_stash_interior_root: Node3D
+var hidden_stash_frame_open: bool = false
+var hidden_stash_frame_tween: Tween
+var hidden_stash_art_texture: Texture2D
+var storage_world_label: Label3D
+var locker_weed: Dictionary = {}
+var supply_shelf_level: int = 1
+var supply_shelf_ref: Node3D
+var climate_status_label: Label3D
+var tent_level: int = 1
+var grow_tent_count: int = 1
+var auto_water_unlocked: bool = false
+var auto_bagger_unlocked: bool = false
+var auto_sales_unlocked: bool = false
+var packing_employee_hired: bool = false
+var packing_employee_active: bool = false
+var production_worker_auto_plant: bool = false
+var production_worker_task: String = "Off duty"
+var production_worker_pending_action: String = ""
+var production_worker_pending_slot: int = -1
+var production_worker_pending_strain: String = ""
+var production_worker_target_position: Vector3 = Vector3(0.75, 0.0, 2.55)
+var production_worker_action_dwell: float = 0.0
+var production_worker_stall_seconds: float = 0.0
+var production_worker_tasks_today: int = 0
+var production_worker_last_action: String = "Off duty"
+var production_worker_node: Node3D
+var production_worker_task_label: Label3D
+var production_worker_head: MeshInstance3D
+var production_worker_face_shell: MeshInstance3D
+var production_worker_walk_phase: float = 0.0
+var production_worker_route_points: Array[Vector3] = []
+var production_worker_route_index: int = 0
+var production_worker_route_destination: Vector3 = Vector3.ZERO
+var production_worker_route_valid: bool = false
+var production_worker_friend_name: String = ""
+var friend_staff_roles: Dictionary = {}
+var friend_dealer_stats: Dictionary = {}
+var dealer_count: int = 0
+var dealers_active: bool = false
+var dealer_sales_today: int = 0
+var dealer_cash_held: int = 0
+var dealer_commission_held: int = 0
+var dealer_balance_due: int = 0
+var dealer_locker_level: int = 0
+var dealer_customers_served_today: Dictionary = {}
+var daily_sales_by_product: Dictionary = {}
+var daily_expenses_by_category: Dictionary = {}
+var daily_report_pending: bool = false
+var daily_report_data: Dictionary = {}
+var last_daily_report: Dictionary = {}
+var last_production_payroll_cost: int = 0
+var last_payroll_day: int = 1
+var last_customer_name: String = ""
+var last_dealer_customer_name: String = ""
+var heat: float = 0.0
+var heat_peak: float = 0.0
+var heat_reduced_total: float = 0.0
+var heat_events_seen: Dictionary = {}
+var heat_event_log: Array[String] = []
+var corrupt_contact_unlocked: bool = false
+var corrupt_contact_calls: int = 0
+var lay_low_active: bool = false
+var last_heat_cause: String = "No recent attention."
+var reeves_met: bool = false
+var reeves_arrangement_active: bool = false
+var reeves_arrangement_ended: bool = false
+var reeves_next_payment_day: int = 0
+var reeves_missed_payments: int = 0
+var reeves_payment_level: int = 0
+var reeves_relationship: int = 0
+var reeves_total_paid: int = 0
+var reeves_quiet_days: int = 0
+var reeves_quiet_pause_seconds: float = 0.0
+var reeves_visit_pending: bool = false
+var reeves_visit_reason: String = ""
+var enforcement_risk: float = 0.0
+var raid_warning_day: int = -1
+var raids_survived: int = 0
+var last_raid_day: int = -1
+var raid_lockdown_until_day: int = 0
+var reeves_last_payment_day: int = -1
+var reeves_last_missed_day: int = -1
+var enforcement_report_pending: bool = false
+var last_enforcement_report: String = ""
+var tutorial_seen: bool = false
+var session_paused: bool = false
+var gameplay_ready: bool = false
+var loaded_existing_game: bool = false
+var last_active_frame_msec: int = 0
+var last_active_frame_unix: float = 0.0
+var away_started_unix: float = 0.0
+var away_growth_allowed: bool = false
+var away_worker_care_allowed: bool = false
+var away_worker_next_service: float = OfflinePlantCare.CARE_INTERVAL
+var offline_plant_report: Dictionary = {}
+var phone_refresh_pending: bool = false
+var phone_refresh_revision: int = 0
+var closeout_announced: bool = false
+var restored_runtime: Dictionary = {}
+var reset_confirmation_open: bool = false
+var reset_in_progress: bool = false
+var reset_overlay: Control
+var reset_message: Label
+var save_notice_panel: PanelContainer
+var save_notice_title: Label
+var save_notice_detail: Label
+var save_notice_timer: Timer
+var reset_cancel_button: Button
+var reset_confirm_button: Button
+var door_alert_layer: CanvasLayer
+var door_alert_detail: Label
+var door_alert_button: Button
+var door_alert_dot: Label
+var door_alert_pointer: int = -99
+var door_alert_start: Vector2 = Vector2.ZERO
+var door_alert_is_tap: bool = false
+var door_alert_suppress_mouse_until: int = 0
+var pause_overlay: Control
+var pause_message: Label
+var brand_label: Label
+var web_lifecycle: JavaScriptObject
+var web_pause_callback: JavaScriptObject
+var web_touch_cancel_callback: JavaScriptObject
+var browser_touch_cancelled: bool = false
+var tutorial_active: bool = true
+var tutorial_step: int = 0
+var tutorial_slot: int = 0
+var tutorial_harvest_strain: String = "Purple Dream"
+var tutorial_world_coach: PanelContainer
+var tutorial_phone_coach: PanelContainer
+var tutorial_coach_labels: Array[Label] = []
+var active_drag_kind: String = ""
+var active_drag_pointer: int = -99
+var active_drag_offset: Vector2 = Vector2.ZERO
+const TUTORIAL_ACTIONS: Array[String] = ["harvest", "plant", "water", "fertilize", "supplies", "buy_fertilizer", "trim", "bag", "store", "list"]
+const TUTORIAL_TITLES: Array[String] = ["Harvest the ready plant", "Plant a seed", "Water your new plant", "Use one fertilizer", "Find Shop Supplies", "Buy more fertilizer", "Trim your harvest", "Bag the trimmed buds", "Move bags into storage", "List your stored product"]
+const TUTORIAL_HINTS: Array[String] = [
+	"Enter the grow room, approach Tent 1, tap the ready Purple Dream plant, then HARVEST. SHOW ME takes you there.",
+	"Tap the now-empty pot and choose an owned seed. Each planting uses one seed.",
+	"Tap WATER on the plant you just planted. Its water meter rises. Water comes from the property plumbing and is added to your Water Bill; it does not cost fertilizer.",
+	"Tap FERTILIZE. This spends one use from your fertilizer stock and boosts the plant.",
+	"Open PHONE -> SHOP -> SUPPLIES. This page shows your fertilizer stock and the restock button.",
+	"Tap BUY +5 USES in Shop -> Supplies. A pack costs $45 in game and adds five fertilizer uses.",
+	"Go to the bagging station. Tap TRIM BY HAND for your harvested strain, then drag the scissors over every bud. When finished, tap CONTINUE TO BAGGING.",
+	"Back at the station, tap BAG BY HAND. Drag three buds into the bag, then tap SEAL BAG.",
+	"At the station, tap PUT IN STORAGE on your finished bag. Customers buy from storage, not the workbench.",
+	"Open PHONE -> STORAGE and list the product you stored. Then you can check the peephole when a customer knocks."
+]
+var grow_timer: Timer
+var automation_timer: Timer
+var grow_save_accumulator: float = 0.0
+var auto_sale_accumulator: float = 0.0
+var phone_current_app: String = "home"
+var customer_relationships: Dictionary = {}
+var main_room_ring: Array[String] = ["main_grow_door", "main_workbench", "main_door", "main_storage"]
+var grow_room_ring: Array[String] = ["grow_room_tent2", "grow_room_tent", "grow_room_tent3", "grow_room_utility", "grow_room_exit", "grow_room_upgrades"]
+var room_ring: Array[String] = ["main_grow_door", "main_workbench", "main_door", "main_storage"]
+var room_look_drag_active: bool = false
+var room_look_last_position: Vector2 = Vector2.ZERO
+var room_look_sensitivity: float = 0.0034
+var room_target_yaw: float = 0.0
+var room_target_pitch: float = 0.0
+var room_look_smoothing: float = 11.0
+var room_pitch_min: float = deg_to_rad(-11.0)
+var room_pitch_max: float = deg_to_rad(8.0)
+var force_rod_test_visit: bool = false
+var preferred_customer_name: String = ""
+
+var advancement_stats: Dictionary = {
+	"plants_planted": 0,
+	"waters": 0,
+	"fertilizes": 0,
+	"harvests": 0,
+	"grams_trimmed": 0,
+	"bags_sealed": 0,
+	"grams_stored": 0,
+	"products_listed": 0,
+	"sales": 0,
+	"customers_known": 0,
+	"seeds_bought": 0,
+	"supplies_bought": 0,
+	"hybrids_created": 0,
+	"lights_toggled": 0,
+	"lamp_toggled": 0,
+	"grow_room_lights_toggled": 0,
+	"grow_lights_toggled": 0,
+	"ventilation_toggled": 0,
+	"power_bills_paid": 0,
+	"night_sales": 0,
+	"dealer_sales": 0,
+	"staff_hired": 0,
+	"worker_tasks": 0,
+	"friend_recruits": 0,
+	"staff_purchases": 0,
+	"pressure_events": 0,
+	"contact_calls": 0,
+	"reeves_meetings": 0,
+	"reeves_arrangements": 0,
+	"reeves_payments": 0,
+	"reeves_negotiations": 0,
+	"reeves_missed_payments": 0,
+	"raids_survived": 0,
+	"reeves_freedom": 0
+}
+var advancement_claimed: Dictionary = {}
+var advancement_catalog: Array[Dictionary] = [
+	{"id": "first_roots", "category": "Growing", "tier": 1, "title": "First Roots", "description": "Plant your first seed.", "metric": "plants_planted", "target": 1, "reward_cash": 35, "reward_xp": 10, "reward_rep": 0},
+	{"id": "keep_alive", "category": "Growing", "tier": 1, "title": "Keep It Alive", "description": "Water plants 5 times.", "metric": "waters", "target": 5, "reward_cash": 0, "reward_xp": 20, "reward_rep": 2},
+	{"id": "feed_them", "category": "Growing", "tier": 1, "title": "Give Them a Boost", "description": "Use fertilizer 5 times.", "metric": "fertilizes", "target": 5, "reward_cash": 25, "reward_xp": 20, "reward_rep": 1, "reward_fertilizer": 2},
+	{"id": "first_harvest", "category": "Growing", "tier": 1, "title": "First Harvest", "description": "Harvest your first mature plant.", "metric": "harvests", "target": 1, "reward_cash": 60, "reward_xp": 20, "reward_rep": 2},
+	{"id": "ten_harvests", "category": "Growing", "tier": 2, "title": "Green Routine", "description": "Complete 15 harvests.", "metric": "harvests", "target": 15, "reward_cash": 250, "reward_xp": 70, "reward_rep": 5, "reward_fertilizer": 4},
+	{"id": "grower_five", "category": "Growing", "tier": 2, "title": "Getting Serious", "description": "Reach Grower Level 5.", "state": "grower_level", "target": 5, "reward_cash": 250, "reward_xp": 50, "reward_rep": 4, "requires": [{"metric": "harvests", "target": 12, "label": "Harvests"}, {"metric": "sales", "target": 12, "label": "Personal sales"}]},
+	{"id": "grower_ten", "category": "Growing", "tier": 3, "title": "Seasoned Grower", "description": "Reach Grower Level 10.", "state": "grower_level", "target": 10, "reward_cash": 300, "reward_xp": 150, "reward_rep": 10, "reward_seed": "Midnight Crown", "reward_seed_count": 1, "requires": [{"metric": "harvests", "target": 30, "label": "Harvests"}, {"metric": "sales", "target": 35, "label": "Personal sales"}]},
+
+	{"id": "hands_on", "category": "Processing", "tier": 1, "title": "Hands On", "description": "Hand-trim 5g at the workstation.", "metric": "grams_trimmed", "target": 5, "reward_cash": 50, "reward_xp": 20, "reward_rep": 2},
+	{"id": "trim_twentyfive", "category": "Processing", "tier": 2, "title": "Clean Cuts", "description": "Trim 50g total.", "metric": "grams_trimmed", "target": 50, "reward_cash": 175, "reward_xp": 55, "reward_rep": 4},
+	{"id": "bag_it", "category": "Processing", "tier": 1, "title": "Bag It Up", "description": "Seal your first finished bag.", "metric": "bags_sealed", "target": 1, "reward_cash": 40, "reward_xp": 15, "reward_rep": 1},
+	{"id": "ten_bags", "category": "Processing", "tier": 2, "title": "Packaging Run", "description": "Seal 20 finished bags.", "metric": "bags_sealed", "target": 20, "reward_cash": 200, "reward_xp": 60, "reward_rep": 4},
+	{"id": "stocked", "category": "Processing", "tier": 1, "title": "Stock the Shelf", "description": "Move 10g of finished product into storage.", "metric": "grams_stored", "target": 10, "reward_cash": 75, "reward_xp": 20, "reward_rep": 2},
+	{"id": "full_shelf", "category": "Processing", "tier": 2, "title": "Built Up Inventory", "description": "Move 100g total into storage.", "metric": "grams_stored", "target": 100, "reward_cash": 300, "reward_xp": 80, "reward_rep": 5},
+	{"id": "bench_two", "category": "Processing", "tier": 2, "title": "Better Workbench", "description": "Upgrade the bagging station to Level 2.", "state": "bagging_level", "target": 2, "reward_cash": 150, "reward_xp": 60, "reward_rep": 3, "requires": [{"metric": "bags_sealed", "target": 15, "label": "Bags sealed"}]},
+	{"id": "bench_three", "category": "Processing", "tier": 3, "title": "Production Station", "description": "Install Bagging Bench III and move into continuous production.", "state": "bagging_level", "target": 3, "reward_cash": 250, "reward_xp": 125, "reward_rep": 7, "requires": [{"metric": "bags_sealed", "target": 30, "label": "Bags sealed"}]},
+	{"id": "production_volume", "category": "Processing", "tier": 3, "title": "Production Run", "description": "Build a real production rhythm and move 250g of finished product into storage.", "metric": "grams_stored", "target": 250, "reward_cash": 350, "reward_xp": 150, "reward_rep": 8, "requires": [{"metric": "grams_trimmed", "target": 150, "label": "Grams trimmed"}, {"metric": "bags_sealed", "target": 60, "label": "Bags sealed"}]},
+
+	{"id": "open_storefront", "category": "Sales", "tier": 1, "title": "Open for Business", "description": "List a product for customers.", "metric": "products_listed", "target": 1, "reward_cash": 0, "reward_xp": 15, "reward_rep": 3},
+	{"id": "first_sale", "category": "Sales", "tier": 1, "title": "First Sale", "description": "Complete your first customer sale.", "metric": "sales", "target": 1, "reward_cash": 100, "reward_xp": 25, "reward_rep": 5},
+	{"id": "ten_sales", "category": "Sales", "tier": 2, "title": "Regular Business", "description": "Complete 20 personal customer sales.", "metric": "sales", "target": 20, "reward_cash": 300, "reward_xp": 80, "reward_rep": 8},
+	{"id": "dealer_storage_one", "category": "Dealers", "tier": 1, "title": "Stock the Team", "description": "Unlock Dealer Storage and give your dealer network dedicated inventory.", "state": "dealer_locker_level", "target": 1, "reward_cash": 50, "reward_xp": 40, "reward_rep": 2},
+	{"id": "first_dealer_sale", "category": "Sales", "tier": 2, "title": "First Delegated Sale", "description": "Have a hired dealer complete a sale with an eligible known client.", "metric": "dealer_sales", "target": 1, "reward_cash": 50, "reward_xp": 60, "reward_rep": 4},
+	{"id": "fifty_sales", "category": "Sales", "tier": 3, "title": "Neighborhood Name", "description": "Complete 75 personal customer sales.", "metric": "sales", "target": 75, "reward_cash": 500, "reward_xp": 200, "reward_rep": 20},
+	{"id": "first_rack", "category": "Sales", "tier": 1, "title": "First Rack", "description": "Earn $1,000 lifetime revenue.", "state": "lifetime_revenue", "target": 1000, "reward_cash": 250, "reward_xp": 50, "reward_rep": 5, "requires": [{"metric": "sales", "target": 15, "label": "Personal sales"}]},
+	{"id": "ten_racks", "category": "Sales", "tier": 3, "title": "Real Money", "description": "Earn $10,000 lifetime revenue.", "state": "lifetime_revenue", "target": 10000, "reward_cash": 400, "reward_xp": 175, "reward_rep": 15, "requires": [{"metric": "sales", "target": 60, "label": "Personal sales"}]},
+	{"id": "hundred_sales", "category": "Sales", "tier": 4, "title": "Always Moving", "description": "Complete 150 personal customer sales.", "metric": "sales", "target": 150, "reward_cash": 250, "reward_xp": 300, "reward_rep": 20},
+	{"id": "twentyfive_racks", "category": "Sales", "tier": 4, "title": "Serious Revenue", "description": "Earn $25,000 lifetime revenue.", "state": "lifetime_revenue", "target": 25000, "reward_cash": 250, "reward_xp": 300, "reward_rep": 20, "requires": [{"metric": "sales", "target": 100, "label": "Personal sales"}]},
+
+	{"id": "familiar_face", "category": "Customers", "tier": 1, "title": "Familiar Face", "description": "Learn the identity of your first customer.", "metric": "customers_known", "target": 1, "reward_cash": 0, "reward_xp": 25, "reward_rep": 6},
+	{"id": "know_four", "category": "Customers", "tier": 2, "title": "Know the Neighborhood", "description": "Learn the identities of 6 customers.", "metric": "customers_known", "target": 6, "reward_cash": 150, "reward_xp": 75, "reward_rep": 10},
+	{"id": "rep_fifty", "category": "Customers", "tier": 2, "title": "Word Gets Around", "description": "Reach 75 reputation.", "state": "reputation", "target": 75, "reward_cash": 200, "reward_xp": 75, "reward_rep": 5},
+	{"id": "brand_rising", "category": "Customers", "tier": 2, "title": "Name Getting Around", "description": "Reach Brand Level 3.", "state": "brand_level", "target": 3, "reward_cash": 200, "reward_xp": 40, "reward_rep": 0, "requires": [{"metric": "sales", "target": 30, "label": "Personal sales"}]},
+	{"id": "brand_five", "category": "Customers", "tier": 3, "title": "Recognized Brand", "description": "Reach Brand Level 5.", "state": "brand_level", "target": 5, "reward_cash": 650, "reward_xp": 150, "reward_rep": 8, "requires": [{"metric": "sales", "target": 75, "label": "Personal sales"}]},
+	{"id": "loyal_friend", "category": "Customers", "tier": 2, "title": "Real Loyalty", "description": "Build one friend to 70 loyalty.", "state": "max_friend_loyalty", "target": 70, "reward_cash": 0, "reward_xp": 90, "reward_rep": 8},
+	{"id": "loyal_circle", "category": "Customers", "tier": 3, "title": "Inner Circle", "description": "Build 3 friends to 70 loyalty.", "state": "loyal_friend_count", "target": 3, "reward_cash": 0, "reward_xp": 180, "reward_rep": 15},
+	{"id": "know_eight", "category": "Customers", "tier": 3, "title": "Growing Network", "description": "Learn the identities of 8 customers.", "metric": "customers_known", "target": 8, "reward_cash": 75, "reward_xp": 150, "reward_rep": 15},
+	{"id": "rep_hundred", "category": "Customers", "tier": 3, "title": "People Are Talking", "description": "Reach 100 reputation.", "state": "reputation", "target": 100, "reward_cash": 0, "reward_xp": 175, "reward_rep": 10},
+
+	{"id": "moving_up", "category": "Business", "tier": 1, "title": "Moving Up", "description": "Reach Grower Level 3.", "state": "grower_level", "target": 3, "reward_cash": 150, "reward_xp": 30, "reward_rep": 0, "requires": [{"metric": "harvests", "target": 5, "label": "Harvests"}]},
+	{"id": "make_room", "category": "Business", "tier": 2, "title": "Make More Room", "description": "Install a second grow tent.", "state": "grow_tent_count", "target": 2, "reward_cash": 100, "reward_xp": 35, "reward_rep": 3},
+	{"id": "three_tents", "category": "Business", "tier": 3, "title": "Fill the Grow Room", "description": "Install all 3 grow tents.", "state": "grow_tent_count", "target": 3, "reward_cash": 500, "reward_xp": 120, "reward_rep": 8, "requires": [{"metric": "harvests", "target": 25, "label": "Harvests"}]},
+	{"id": "storage_two", "category": "Business", "tier": 1, "title": "More Shelf Space", "description": "Upgrade storage to Level 2.", "state": "storage_level", "target": 2, "reward_cash": 125, "reward_xp": 40, "reward_rep": 2, "requires": [{"metric": "grams_stored", "target": 75, "label": "Grams stored"}]},
+	{"id": "storage_three", "category": "Business", "tier": 3, "title": "Stockroom", "description": "Upgrade storage to Level 3.", "state": "storage_level", "target": 3, "reward_cash": 400, "reward_xp": 100, "reward_rep": 6, "requires": [{"metric": "grams_stored", "target": 200, "label": "Grams stored"}]},
+	{"id": "tent_two", "category": "Business", "tier": 2, "title": "Dialed In", "description": "Upgrade the grow tent to Level 2.", "state": "tent_level", "target": 2, "reward_cash": 200, "reward_xp": 65, "reward_rep": 4, "requires": [{"metric": "harvests", "target": 15, "label": "Harvests"}]},
+	{"id": "automation_one", "category": "Business", "tier": 2, "title": "First Hire", "description": "Hire your first staff member.", "state": "staff_count", "target": 1, "reward_cash": 75, "reward_xp": 60, "reward_rep": 3},
+	{"id": "automation_three", "category": "Business", "tier": 3, "title": "Build a Crew", "description": "Hire a production worker and at least 2 dealers.", "state": "staff_count", "target": 3, "reward_cash": 250, "reward_xp": 175, "reward_rep": 10, "requires": [{"metric": "worker_tasks", "target": 40, "label": "Worker tasks"}, {"metric": "dealer_sales", "target": 15, "label": "Dealer sales"}, {"state": "production_worker_hired", "target": 1, "label": "Production worker hired"}]},
+	{"id": "worker_ten", "category": "Business", "tier": 2, "title": "Hands Off", "description": "Have your production worker complete 10 operation tasks.", "metric": "worker_tasks", "target": 10, "reward_cash": 75, "reward_xp": 65, "reward_rep": 4},
+	{"id": "worker_fifty", "category": "Business", "tier": 3, "title": "Runs Without You", "description": "Have your production worker complete 75 operation tasks.", "metric": "worker_tasks", "target": 75, "reward_cash": 200, "reward_xp": 160, "reward_rep": 8},
+	{"id": "friend_on_payroll", "category": "Business", "tier": 2, "title": "Put Your People On", "description": "Recruit a loyal friend as staff.", "metric": "friend_recruits", "target": 1, "reward_cash": 50, "reward_xp": 100, "reward_rep": 6},
+	{"id": "trusted_crew", "category": "Business", "tier": 3, "title": "Trusted Crew", "description": "Have 2 friends working for AFewBuds at the same time.", "state": "friend_staff_count", "target": 2, "reward_cash": 75, "reward_xp": 175, "reward_rep": 12},
+	{"id": "dealer_five", "category": "Business", "tier": 2, "title": "Delegating", "description": "Have dealers complete 5 sales to known clients.", "metric": "dealer_sales", "target": 5, "reward_cash": 75, "reward_xp": 100, "reward_rep": 7},
+	{"id": "dealer_fifteen", "category": "Dealers", "tier": 3, "title": "Street Coverage", "description": "Have dealers complete 15 total sales.", "metric": "dealer_sales", "target": 15, "reward_cash": 150, "reward_xp": 160, "reward_rep": 10},
+	{"id": "dealer_storage_premium", "category": "Dealers", "tier": 3, "title": "Secure Distribution", "description": "Upgrade Dealer Storage to Level III and install the premium cabinet.", "state": "dealer_locker_level", "target": 3, "reward_cash": 200, "reward_xp": 140, "reward_rep": 8, "requires": [{"metric": "dealer_sales", "target": 10, "label": "Dealer sales"}]},
+	{"id": "dealer_storage_max", "category": "Dealers", "tier": 4, "title": "Fully Stocked Network", "description": "Max Dealer Storage at Level IV.", "state": "dealer_locker_level", "target": 4, "reward_cash": 250, "reward_xp": 220, "reward_rep": 12, "requires": [{"metric": "dealer_sales", "target": 30, "label": "Dealer sales"}]},
+	{"id": "dealer_twentyfive", "category": "Business", "tier": 4, "title": "Dealer Network", "description": "Have dealers complete 40 sales to known clients.", "metric": "dealer_sales", "target": 40, "reward_cash": 125, "reward_xp": 260, "reward_rep": 18},
+	{"id": "worker_hundred", "category": "Business", "tier": 4, "title": "Production Line", "description": "Have the production worker complete 100 tasks.", "metric": "worker_tasks", "target": 100, "reward_cash": 100, "reward_xp": 260, "reward_rep": 14},
+	{"id": "staff_smoke", "category": "Business", "tier": 2, "title": "Still One of Us", "description": "Have an employed friend make a personal staff purchase.", "metric": "staff_purchases", "target": 1, "reward_cash": 0, "reward_xp": 80, "reward_rep": 5},
+
+	{"id": "buy_three_seeds", "category": "Genetics", "tier": 1, "title": "Seed Collector", "description": "Buy 3 seeds from the Seed Shop.", "metric": "seeds_bought", "target": 3, "reward_cash": 75, "reward_xp": 30, "reward_rep": 1},
+	{"id": "four_varieties", "category": "Genetics", "tier": 2, "title": "Variety Pack", "description": "Own seeds from 4 different strains at once.", "state": "seed_varieties", "target": 4, "reward_cash": 200, "reward_xp": 65, "reward_rep": 4, "requires": [{"metric": "seeds_bought", "target": 10, "label": "Seeds purchased"}]},
+	{"id": "first_hybrid", "category": "Genetics", "tier": 2, "title": "First Cross", "description": "Create your first hybrid seed batch.", "metric": "hybrids_created", "target": 1, "reward_cash": 250, "reward_xp": 80, "reward_rep": 6, "reward_seed": "Frozen Purple", "reward_seed_count": 1, "requires": [{"metric": "harvests", "target": 15, "label": "Harvests"}, {"metric": "seeds_bought", "target": 12, "label": "Seeds purchased"}]},
+	{"id": "seed_shop_regular", "category": "Genetics", "tier": 2, "title": "Seed Shop Regular", "description": "Buy 15 seeds total.", "metric": "seeds_bought", "target": 15, "reward_cash": 225, "reward_xp": 75, "reward_rep": 3},
+	{"id": "six_varieties", "category": "Genetics", "tier": 3, "title": "Genetics Shelf", "description": "Own seeds from 6 different strains at once.", "state": "seed_varieties", "target": 6, "reward_cash": 75, "reward_xp": 150, "reward_rep": 8},
+	{"id": "twentyfive_seeds", "category": "Genetics", "tier": 3, "title": "Seed Vault", "description": "Buy 25 seeds total.", "metric": "seeds_bought", "target": 25, "reward_cash": 100, "reward_xp": 175, "reward_rep": 8, "reward_seed": "Aurora Reserve", "reward_seed_count": 1},
+	{"id": "three_hybrids", "category": "Genetics", "tier": 4, "title": "Breeding Program", "description": "Create 3 hybrid seed batches.", "metric": "hybrids_created", "target": 3, "reward_cash": 100, "reward_xp": 250, "reward_rep": 15},
+	{"id": "recipe_citrus_velvet", "category": "Genetics", "tier": 2, "title": "Flavor Notes", "description": "Complete a hybrid batch and build a five-variety seed shelf.", "metric": "hybrids_created", "target": 1, "reward_cash": 0, "reward_xp": 90, "reward_rep": 5, "reward_recipe": "Citrus Velvet", "requires": [{"state": "seed_varieties", "target": 5, "label": "Seed varieties"}]},
+	{"id": "recipe_cherry_frost", "category": "Genetics", "tier": 3, "title": "Cold & Sweet", "description": "Create 3 hybrid batches and reach Grower Level 7.", "metric": "hybrids_created", "target": 3, "reward_cash": 0, "reward_xp": 150, "reward_rep": 8, "reward_recipe": "Cherry Frost", "requires": [{"state": "grower_level", "target": 7, "label": "Grower Level"}]},
+	{"id": "recipe_ember_berry", "category": "Genetics", "tier": 3, "title": "Color Theory", "description": "Create 5 hybrid batches and reach Grower Level 9.", "metric": "hybrids_created", "target": 5, "reward_cash": 0, "reward_xp": 200, "reward_rep": 10, "reward_recipe": "Ember Berry", "requires": [{"state": "grower_level", "target": 9, "label": "Grower Level"}]},
+	{"id": "recipe_crown_cake", "category": "Genetics", "tier": 4, "title": "Crown Lab", "description": "Create 8 hybrid batches, reach Grower Level 11, and complete 50 harvests.", "metric": "hybrids_created", "target": 8, "reward_cash": 0, "reward_xp": 300, "reward_rep": 15, "reward_recipe": "Crown Cake", "requires": [{"state": "grower_level", "target": 11, "label": "Grower Level"}, {"metric": "harvests", "target": 50, "label": "Harvests"}]},
+	{"id": "supply_runner", "category": "Business", "tier": 1, "title": "Supply Run", "description": "Buy 10 supplies or upgrades.", "metric": "supplies_bought", "target": 10, "reward_cash": 175, "reward_xp": 55, "reward_rep": 2, "reward_fertilizer": 3, "requires": [{"metric": "sales", "target": 10, "label": "Personal sales"}]},
+
+	{"id": "heat_radar", "category": "Heat", "tier": 2, "title": "On the Radar", "description": "Reach 25 Heat for the first time.", "state": "heat_peak", "target": 25, "reward_cash": 0, "reward_xp": 80, "reward_rep": 4},
+	{"id": "heat_watched", "category": "Heat", "tier": 3, "title": "People Are Watching", "description": "Reach 50 Heat and unlock the pressure-contact storyline.", "state": "heat_peak", "target": 50, "reward_cash": 0, "reward_xp": 140, "reward_rep": 6},
+	{"id": "heat_pressure", "category": "Heat", "tier": 3, "title": "Pressure Building", "description": "Experience 2 Heat pressure events.", "metric": "pressure_events", "target": 2, "reward_cash": 0, "reward_xp": 120, "reward_rep": 5},
+	{"id": "heat_lay_low", "category": "Heat", "tier": 3, "title": "Lay Low", "description": "Reduce 15 total Heat through downtime or contacts.", "state": "heat_reduced", "target": 15, "reward_cash": 0, "reward_xp": 130, "reward_rep": 5},
+	{"id": "heat_contact", "category": "Heat", "tier": 3, "title": "Make the Call", "description": "Use the Reeves contact once to reduce Heat.", "metric": "contact_calls", "target": 1, "reward_cash": 0, "reward_xp": 100, "reward_rep": 3},
+	{"id": "reeves_meeting", "category": "Heat", "tier": 3, "title": "Talk It Out", "description": "Meet Agent Reeves at the door for the first time.", "metric": "reeves_meetings", "target": 1, "reward_cash": 0, "reward_xp": 120, "reward_rep": 4},
+	{"id": "reeves_deal", "category": "Heat", "tier": 3, "title": "Make a Deal", "description": "Agree to Reeves's recurring protection arrangement.", "metric": "reeves_arrangements", "target": 1, "reward_cash": 0, "reward_xp": 150, "reward_rep": 5},
+	{"id": "reeves_payments", "category": "Heat", "tier": 4, "title": "Keep Your End", "description": "Make 3 on-time Reeves payments.", "metric": "reeves_payments", "target": 3, "reward_cash": 0, "reward_xp": 180, "reward_rep": 6},
+	{"id": "reeves_negotiate", "category": "Heat", "tier": 4, "title": "Settle Up", "description": "Clear Reeves's remaining protection balance in one payment.", "metric": "reeves_negotiations", "target": 1, "reward_cash": 0, "reward_xp": 180, "reward_rep": 5},
+	{"id": "reeves_miss", "category": "Heat", "tier": 4, "title": "Lose His Protection", "description": "Miss a Reeves payment and trigger enforcement risk.", "metric": "reeves_missed_payments", "target": 1, "reward_cash": 0, "reward_xp": 90, "reward_rep": 0},
+	{"id": "close_call", "category": "Heat", "tier": 4, "title": "Close Call", "description": "Survive a raid-style enforcement event.", "metric": "raids_survived", "target": 1, "reward_cash": 0, "reward_xp": 300, "reward_rep": 8},
+	{"id": "reeves_freedom", "category": "Heat", "tier": 5, "title": "Freedom", "description": "End the Reeves arrangement through any available route.", "metric": "reeves_freedom", "target": 1, "reward_cash": 0, "reward_xp": 400, "reward_rep": 12},
+
+	{"id": "c4_apartment_capacity", "category": "Expansion", "tier": 1, "title": "Apartment at Capacity", "description": "Fill the apartment grow room and install the top apartment bagging bench.", "state": "chapter_four_apartment_ready", "target": 1, "reward_cash": 0, "reward_xp": 150, "reward_rep": 10},
+	{"id": "c4_distribution_network", "category": "Expansion", "tier": 2, "title": "Distribution Network", "description": "Max Dealer Storage and prove the dealer side can move volume.", "state": "chapter_four_distribution_ready", "target": 1, "reward_cash": 0, "reward_xp": 200, "reward_rep": 12},
+	{"id": "c4_crew_operations", "category": "Expansion", "tier": 3, "title": "Crew Operations", "description": "Run AFewBuds with a real crew instead of doing every job yourself.", "state": "chapter_four_crew_ready", "target": 1, "reward_cash": 0, "reward_xp": 250, "reward_rep": 15},
+	{"id": "c4_demand_pressure", "category": "Expansion", "tier": 4, "title": "Demand Outgrows the Space", "description": "Build enough revenue, reputation and client reach that the apartment is holding the business back.", "state": "chapter_four_demand_ready", "target": 1, "reward_cash": 0, "reward_xp": 300, "reward_rep": 20},
+	{"id": "c4_expansion_ready", "category": "Expansion", "tier": 5, "title": "Expansion Ready", "description": "Prove the operation is mature enough to support a larger property.", "state": "chapter_four_complete", "target": 1, "reward_cash": 0, "reward_xp": 500, "reward_rep": 25, "reward_unlock": "PROPERTY OPPORTUNITY"},
+
+	{"id": "lights_out", "category": "Property", "tier": 1, "title": "Lights Out", "description": "Use the apartment wall switch for the first time.", "metric": "lights_toggled", "target": 1, "reward_cash": 25, "reward_xp": 10, "reward_rep": 0},
+	{"id": "mood_lighting", "category": "Property", "tier": 1, "title": "Set the Mood", "description": "Turn the living-room lamp on or off.", "metric": "lamp_toggled", "target": 1, "reward_cash": 25, "reward_xp": 10, "reward_rep": 0},
+	{"id": "grow_room_switch", "category": "Property", "tier": 1, "title": "Utility Room", "description": "Use the grow-room room-light switch.", "metric": "grow_room_lights_toggled", "target": 1, "reward_cash": 0, "reward_xp": 15, "reward_rep": 0},
+	{"id": "grow_light_switch", "category": "Property", "tier": 1, "title": "Lights On", "description": "Use the dedicated grow-light switch.", "metric": "grow_lights_toggled", "target": 1, "reward_cash": 0, "reward_xp": 15, "reward_rep": 0},
+	{"id": "ventilation_install", "category": "Business", "tier": 2, "title": "Fresh Air", "description": "Install the grow-room ventilation system.", "state": "ventilation_installed", "target": 1, "reward_cash": 0, "reward_xp": 45, "reward_rep": 2},
+	{"id": "ventilation_switch", "category": "Property", "tier": 2, "title": "Air Moving", "description": "Use the grow-room ventilation switch.", "metric": "ventilation_toggled", "target": 1, "reward_cash": 0, "reward_xp": 20, "reward_rep": 0},
+	{"id": "first_power_bill", "category": "Business", "tier": 1, "title": "Keep the Power On", "description": "Pay your first utility bill.", "metric": "power_bills_paid", "target": 1, "reward_cash": 0, "reward_xp": 25, "reward_rep": 1},
+	{"id": "first_water_bill", "category": "Business", "tier": 1, "title": "Pay the Water", "description": "Pay your first water bill after using the property plumbing to care for plants.", "metric": "water_bills_paid", "target": 1, "reward_cash": 0, "reward_xp": 25, "reward_rep": 1},
+	{"id": "night_owl", "category": "Property", "tier": 2, "title": "Night Owl", "description": "Complete 10 customer sales at night.", "metric": "night_sales", "target": 10, "reward_cash": 225, "reward_xp": 65, "reward_rep": 5},
+	{"id": "three_day_grind", "category": "Property", "tier": 2, "title": "Three-Day Grind", "description": "Reach Day 3 in the same career.", "state": "game_day", "target": 3, "reward_cash": 150, "reward_xp": 50, "reward_rep": 3, "requires": [{"metric": "sales", "target": 12, "label": "Personal sales"}, {"metric": "harvests", "target": 5, "label": "Harvests"}]},
+	{"id": "week_one", "category": "Property", "tier": 3, "title": "First Week", "description": "Reach Day 7 in the same career.", "state": "game_day", "target": 7, "reward_cash": 500, "reward_xp": 120, "reward_rep": 8, "requires": [{"metric": "sales", "target": 40, "label": "Personal sales"}, {"metric": "harvests", "target": 15, "label": "Harvests"}]},
+	{"id": "week_two", "category": "Property", "tier": 4, "title": "Two Weeks In", "description": "Reach Day 14 in the same career.", "state": "game_day", "target": 14, "reward_cash": 100, "reward_xp": 250, "reward_rep": 15}
+]
+
+var game_time_minutes: float = 17.0 * 60.0
+var game_day: int = 1
+var business_open: bool = true
+var away_message: String = "Be back in a few hours - away from the house."
+var paused_listing_snapshot: Dictionary = {}
+var last_customer_broadcast: String = ""
+var phone_text_messages: Array[Dictionary] = []
+var phone_text_unread: int = 0
+var chapter_four_story_stage: int = 0
+var property_offer_unlocked: bool = false
+var property_opportunity_state: Dictionary = {}
+var location_state: Dictionary = {}
+var apartment_rent_state: Dictionary = {}
+var critical_staff_event_active: bool = false
+var dealer_arrested: bool = false
+var dealer_bail_due: int = 0
+var production_worker_arrested: bool = false
+var production_worker_bail_due: int = 0
+var product_launch_seen: Dictionary = {}
+var hype_visits_remaining: int = 0
+var hype_product_name: String = ""
+var day_phase: String = "DAY"
+var world_environment_ref: Environment
+var sun_light: DirectionalLight3D
+var living_window_glass: MeshInstance3D
+var window_sun_disc: MeshInstance3D
+var day_night_label: Label
+var room_light_ref: OmniLight3D
+var fill_light_ref: OmniLight3D
+var grow_light_ref: OmniLight3D
+var grow_fill_ref: OmniLight3D
+var floor_lamp_light_ref: OmniLight3D
+var main_ceiling_light_on: bool = true
+var floor_lamp_on: bool = false
+var grow_room_light_on: bool = true
+var grow_lights_on: bool = true
+var ventilation_installed: bool = false
+var ventilation_on: bool = false
+var current_day_power_cost: float = 0.0
+var power_bill_due: int = 0
+var last_power_bill: int = 0
+var lifetime_power_cost: int = 0
+var current_day_water_cost: float = 0.0
+var current_day_water_uses: int = 0
+var water_bill_due: int = 0
+var last_water_bill: int = 0
+var lifetime_water_cost: int = 0
+var plant_tap_drag_distance: float = 0.0
+
+var products: Dictionary = {
+	"Purple Dream": {"grade": "A", "stock": 3, "price": 19, "listed": true, "reserved": 0, "profile": "purple"},
+	"Blue Frost": {"grade": "A", "stock": 0, "price": 24, "listed": false, "reserved": 0, "profile": "cool"},
+	"Street Green": {"grade": "B", "stock": 2, "price": 12, "listed": true, "reserved": 0, "profile": "budget"},
+	"Frozen Purple": {"grade": "S", "stock": 0, "price": 31, "listed": false, "reserved": 0, "profile": "premium", "recipe_only": true}
+}
+
+var seed_inventory: Dictionary = {
+	"Street Green": 5,
+	"Purple Dream": 4,
+	"Citrus Rush": 0,
+	"Blue Frost": 0,
+	"Velvet Haze": 0,
+	"Frozen Purple": 0,
+	"Golden Ember": 0,
+	"Neon Berry": 0,
+	"Midnight Crown": 0,
+	"Aurora Reserve": 0,
+	"Citrus Velvet": 0,
+	"Cherry Frost": 0,
+	"Ember Berry": 0,
+	"Crown Cake": 0
+}
+
+var seed_catalog: Dictionary = {
+	"Street Green": {"unlock": 1, "cost": 12, "price": 12, "grade": "B", "profile": "budget", "harvest": 10, "description": "Reliable starter genetics with forgiving yields."},
+	"Purple Dream": {"unlock": 1, "cost": 18, "price": 19, "grade": "A", "profile": "purple", "harvest": 8, "description": "Balanced quality and demand for an early signature product."},
+	"Citrus Rush": {"unlock": 2, "cost": 24, "price": 21, "grade": "A", "profile": "citrus", "harvest": 9, "description": "Bright mid-value genetics that unlock early in progression."},
+	"Blue Frost": {"unlock": 3, "cost": 32, "price": 24, "grade": "A", "profile": "cool", "harvest": 7, "description": "Higher-value cool-profile genetics with stronger customer demand."},
+	"Velvet Haze": {"unlock": 4, "cost": 42, "price": 28, "grade": "A", "profile": "smooth", "harvest": 8, "description": "A more premium line aimed at established regular customers."},
+	"Frozen Purple": {"unlock": 5, "cost": 55, "price": 31, "grade": "S", "profile": "premium", "harvest": 7, "description": "Premium genetics with strong brand appeal."},
+	"Golden Ember": {"unlock": 6, "cost": 70, "price": 36, "grade": "S", "profile": "gold", "harvest": 8, "description": "Higher-tier genetics with strong value and balanced output."},
+	"Cherry Glow": {"unlock": 7, "cost": 85, "price": 39, "grade": "S", "profile": "cherry", "harvest": 7, "description": "Deep red-accent genetics that open a new premium customer lane."},
+	"Neon Berry": {"unlock": 8, "cost": 95, "price": 43, "grade": "S", "profile": "berry", "harvest": 7, "description": "Rare colorful genetics that attract higher-paying clients."},
+	"Moon Cake": {"unlock": 9, "cost": 110, "price": 47, "grade": "S", "profile": "dessert", "harvest": 6, "description": "Dense fictional dessert-profile genetics for established clients."},
+	"Midnight Crown": {"unlock": 10, "cost": 130, "price": 52, "grade": "S+", "profile": "luxury", "harvest": 6, "description": "Late-game prestige genetics for premium orders."},
+	"Black Cherry": {"unlock": 11, "cost": 150, "price": 58, "grade": "S+", "profile": "darkfruit", "harvest": 6, "description": "Dark-colored premium genetics with strong brand prestige."},
+	"Aurora Reserve": {"unlock": 12, "cost": 175, "price": 64, "grade": "S+", "profile": "reserve", "harvest": 6, "description": "Top-shelf fictional reserve genetics for the highest business tier."},
+	"Solar Frost": {"unlock": 14, "cost": 210, "price": 70, "grade": "S+", "profile": "solar", "harvest": 5, "description": "Late-career prestige genetics intended for reserve-level customers."},
+	"Citrus Velvet": {"unlock": 99, "cost": 0, "price": 34, "grade": "S", "profile": "citrus", "harvest": 8, "recipe_only": true, "description": "A fictional crossbreed unlocked through Story rewards."},
+	"Cherry Frost": {"unlock": 99, "cost": 0, "price": 46, "grade": "S+", "profile": "cherry", "harvest": 6, "recipe_only": true, "description": "A fictional cold-fruit crossbreed unlocked through progression."},
+	"Ember Berry": {"unlock": 99, "cost": 0, "price": 54, "grade": "S+", "profile": "berry", "harvest": 6, "recipe_only": true, "description": "A fictional gold-and-berry crossbreed unlocked through progression."},
+	"Crown Cake": {"unlock": 99, "cost": 0, "price": 63, "grade": "S+", "profile": "luxury", "harvest": 5, "recipe_only": true, "description": "A fictional prestige crossbreed reserved for late-career genetics work."}
+}
+
+var supply_catalog: Dictionary = {
+	"Fertilizer Pack": {"unlock": 1, "cost": 45, "description": "+5 fertilizer uses."},
+	"Grow Supply Shelf II": {"unlock": 2, "cost": 180, "description": "Expand grow-room supplies to 24 seeds and 40 fertilizer uses."},
+	"Grow Supply Shelf III": {"unlock": 5, "cost": 500, "description": "Expand grow-room supplies to 48 seeds and 80 fertilizer uses."},
+	"Storage Shelving II": {"unlock": 2, "cost": 220, "description": "Add more shelving and increase storage capacity."},
+	"Grow Tent Slot 2": {"unlock": 3, "cost": 480, "description": "Install a second grow tent in Grow Room expansion bay 2 and add 3 plant slots."},
+	"Grow Room Ventilation": {"unlock": 2, "cost": 350, "description": "Install the grow-room ventilation system. Plants grow slowly when ventilation is unavailable or switched off."},
+	"Bagging Bench II": {"unlock": 3, "cost": 275, "description": "Better packaging adds value to every sale."},
+	"Bagging Bench III": {"unlock": 6, "cost": 850, "description": "Industrial production workstation. Enables continuous manual bagging with variable 1-4g bags until the selected strain is fully packaged."},
+	"Tent Upgrade II": {"unlock": 3, "cost": 320, "description": "Improve output from all installed grow tents."},
+	"Storage Shelving III": {"unlock": 5, "cost": 650, "description": "Expand storage to 160g with a second shelving bank."},
+	"AFB Storage Vault": {"unlock": 7, "cost": 1800, "description": "Replace all storage shelves with the AFB steel-and-green vault. 400g TOTAL sellable storage. Requires Storage Shelving III. Existing stock, reservations and listings stay unchanged."},
+	"Hidden Wall Stash": {"unlock": 9, "cost": 3250, "description": "Replace the 400g vault with a framed concealed wall stash. 1000g TOTAL sellable storage. Federal raids cannot find stored product. Requires the AFB Storage Vault."},
+	"Grow Tent Slot 3": {"unlock": 6, "cost": 1050, "description": "Install a third grow tent in Grow Room expansion bay 3 and add another 3 plant slots."},
+	"Auto Water Kit": {"unlock": 4, "cost": 420, "description": "Keeps thirsty plants from drying out. This is equipment, not an employee."}
+}
+
+var untrimmed_inventory: Dictionary = {}
+var trimmed_inventory: Dictionary = {}
+var bagged_inventory: Dictionary = {}
+
+var plant_slots: Array[Dictionary] = [
+	{"strain": "Purple Dream", "stage": 3, "growth": 100.0, "water": 72.0, "health": 96.0, "fertilizer": 0.0, "dead": false},
+	{"strain": "Street Green", "stage": 1, "growth": 34.0, "water": 68.0, "health": 100.0, "fertilizer": 25.0, "dead": false},
+	{"strain": "", "stage": -1, "growth": 0.0, "water": 0.0, "health": 0.0, "fertilizer": 0.0, "dead": false}
+]
+
+var customers: Array[Dictionary] = [
+	{"name": "Rod", "face_art": "res://assets/characters/worker_faces/rod.png", "recognition_visits": 1, "favorite": "Purple Dream", "fallback_profile": "purple", "flexibility": 0.82, "min_qty": 1, "max_qty": 3, "tier": "Friend", "unlock_level": 1, "avatar": "res://assets/characters/rod_portrait.png", "peephole_art": "res://assets/characters/rod_portrait.png", "door_art": "res://assets/characters/rod_door.png", "social_art": "res://assets/characters/rod_door.png", "personality": "Reliable friend and early regular who is easy to build trust with.", "smoke_style": "Regular"},
+	{"name": "Malik", "face_art": "res://assets/characters/worker_faces/malik.png", "recognition_visits": 1, "favorite": "Street Green", "fallback_profile": "budget", "flexibility": 0.48, "min_qty": 1, "max_qty": 2, "tier": "Friend", "unlock_level": 1, "personality": "Gets paranoid during smoke sessions and double-checks everything.", "smoke_style": "Cautious", "avatar": "res://assets/characters/malik_portrait.png", "peephole_art": "res://assets/characters/malik_portrait.png", "door_art": "res://assets/characters/malik_door.png", "social_art": "res://assets/characters/malik_door.png"},
+	{"name": "Diddy", "face_art": "res://assets/characters/worker_faces/diddy.png", "recognition_visits": 1, "favorite": "Purple Dream", "fallback_profile": "purple", "flexibility": 0.78, "min_qty": 2, "max_qty": 5, "tier": "Friend", "unlock_level": 1, "personality": "Social and relaxed; always talks about rolling a fat blunt.", "smoke_style": "Big blunts", "avatar": "res://assets/characters/diddy_portrait.png", "peephole_art": "res://assets/characters/diddy_portrait.png", "door_art": "res://assets/characters/diddy_door.png", "social_art": "res://assets/characters/diddy_door.png"},
+	{"name": "Jeremias", "face_art": "res://assets/characters/worker_faces/jeremias.png", "recognition_visits": 1, "favorite": "Citrus Rush", "fallback_profile": "citrus", "flexibility": 0.66, "min_qty": 2, "max_qty": 5, "tier": "Friend", "unlock_level": 2, "personality": "Competitive and constantly swears he smokes more than everybody else.", "smoke_style": "Competitive", "avatar": "res://assets/characters/jeremias_portrait.png", "peephole_art": "res://assets/characters/jeremias_portrait.png", "door_art": "res://assets/characters/jeremias_door.png", "social_art": "res://assets/characters/jeremias_door.png"},
+	{"name": "Dre", "recognition_visits": 0, "favorite": "Street Green", "fallback_profile": "budget", "flexibility": 0.85, "min_qty": 1, "max_qty": 2, "tier": "Local", "unlock_level": 1},
+	{"name": "Marcuss", "face_art": "res://assets/characters/worker_faces/marcuss.png", "recognition_visits": 1, "favorite": "Purple Dream", "fallback_profile": "purple", "flexibility": 0.74, "min_qty": 1, "max_qty": 3, "tier": "Friend", "unlock_level": 1, "personality": "Every time he comes by, he is talking about getting a PC in two weeks.", "smoke_style": "PC in two weeks", "avatar": "res://assets/characters/marcuss_portrait.png", "peephole_art": "res://assets/characters/marcuss_portrait.png", "door_art": "res://assets/characters/marcuss_door.png", "social_art": "res://assets/characters/marcuss_door.png"},
+	{"name": "Kobi", "face_art": "res://assets/characters/worker_faces/kobi.png", "recognition_visits": 1, "favorite": "Street Green", "fallback_profile": "budget", "flexibility": 0.70, "min_qty": 1, "max_qty": 3, "tier": "Friend", "unlock_level": 1, "personality": "Oh, it is just fuck Kobi.", "smoke_style": "Just Kobi", "avatar": "res://assets/characters/kobi_portrait.png", "peephole_art": "res://assets/characters/kobi_portrait.png", "door_art": "res://assets/characters/kobi_door.png", "social_art": "res://assets/characters/kobi_door.png"},
+	{"name": "Tyler", "face_art": "res://assets/characters/worker_faces/tyler.png", "recognition_visits": 1, "favorite": "Purple Dream", "fallback_profile": "purple", "flexibility": 0.72, "min_qty": 1, "max_qty": 3, "tier": "Friend", "unlock_level": 1, "personality": "You got any head sets?", "smoke_style": "Headsets", "avatar": "res://assets/characters/tyler_portrait.png", "peephole_art": "res://assets/characters/tyler_portrait.png", "door_art": "res://assets/characters/tyler_door.png", "social_art": "res://assets/characters/tyler_door.png"},
+	{"name": "Mahto", "face_art": "res://assets/characters/worker_faces/mahto.png", "recognition_visits": 1, "favorite": "Citrus Rush", "fallback_profile": "citrus", "flexibility": 0.64, "min_qty": 1, "max_qty": 4, "tier": "Friend", "unlock_level": 2, "personality": "Have a baby by a baby, have a lot of problems.", "smoke_style": "Always something going on", "avatar": "res://assets/characters/mahto_portrait.png", "peephole_art": "res://assets/characters/mahto_portrait.png", "door_art": "res://assets/characters/mahto_door.png", "social_art": "res://assets/characters/mahto_door.png"},
+	{"name": "Mike", "face_art": "res://assets/characters/worker_faces/mike.png", "recognition_visits": 1, "favorite": "Velvet Haze", "fallback_profile": "smooth", "flexibility": 0.68, "min_qty": 1, "max_qty": 3, "tier": "Friend", "unlock_level": 2, "personality": "Got his back broken from two friends he would have stopped them, but his gun was in the shop.", "smoke_style": "Always has a story", "avatar": "res://assets/characters/mike_portrait.png", "peephole_art": "res://assets/characters/mike_portrait.png", "door_art": "res://assets/characters/mike_door.png", "social_art": "res://assets/characters/mike_door.png"},
+	{"name": "Jules", "recognition_visits": 1, "favorite": "Citrus Rush", "fallback_profile": "citrus", "flexibility": 0.72, "min_qty": 1, "max_qty": 3, "tier": "Regular", "unlock_level": 2},
+	{"name": "Ashley", "recognition_visits": 2, "favorite": "Blue Frost", "fallback_profile": "cool", "flexibility": 0.50, "min_qty": 1, "max_qty": 3, "tier": "Regular", "unlock_level": 3},
+	{"name": "Maya", "recognition_visits": 2, "favorite": "Velvet Haze", "fallback_profile": "smooth", "flexibility": 0.55, "min_qty": 2, "max_qty": 4, "tier": "Established", "unlock_level": 4},
+	{"name": "Nova", "recognition_visits": 2, "favorite": "Frozen Purple", "fallback_profile": "premium", "flexibility": 0.35, "min_qty": 1, "max_qty": 2, "tier": "Premium", "unlock_level": 5},
+	{"name": "Rico", "recognition_visits": 2, "favorite": "Golden Ember", "fallback_profile": "gold", "flexibility": 0.45, "min_qty": 2, "max_qty": 4, "tier": "Premium", "unlock_level": 6},
+	{"name": "Skye", "recognition_visits": 3, "favorite": "Neon Berry", "fallback_profile": "berry", "flexibility": 0.38, "min_qty": 2, "max_qty": 5, "tier": "VIP", "unlock_level": 8},
+	{"name": "Knox", "recognition_visits": 3, "favorite": "Midnight Crown", "fallback_profile": "luxury", "flexibility": 0.28, "min_qty": 3, "max_qty": 6, "tier": "VIP", "unlock_level": 10},
+	{"name": "Avery", "recognition_visits": 3, "favorite": "Aurora Reserve", "fallback_profile": "reserve", "flexibility": 0.22, "min_qty": 3, "max_qty": 6, "tier": "Reserve", "unlock_level": 12},
+	{"name": "Nia", "recognition_visits": 1, "favorite": "Purple Dream", "fallback_profile": "purple", "flexibility": 0.66, "min_qty": 1, "max_qty": 3, "tier": "Local", "unlock_level": 1},
+	{"name": "CJ", "recognition_visits": 1, "favorite": "Citrus Rush", "fallback_profile": "citrus", "flexibility": 0.61, "min_qty": 1, "max_qty": 4, "tier": "Regular", "unlock_level": 2},
+	{"name": "Tasha", "recognition_visits": 2, "favorite": "Blue Frost", "fallback_profile": "cool", "flexibility": 0.46, "min_qty": 2, "max_qty": 4, "tier": "Regular", "unlock_level": 3},
+	{"name": "Eli", "recognition_visits": 2, "favorite": "Velvet Haze", "fallback_profile": "smooth", "flexibility": 0.58, "min_qty": 2, "max_qty": 5, "tier": "Established", "unlock_level": 4},
+	{"name": "Sage", "recognition_visits": 3, "favorite": "Neon Berry", "fallback_profile": "berry", "flexibility": 0.40, "min_qty": 2, "max_qty": 5, "tier": "VIP", "unlock_level": 8},
+	{"name": "Kira", "recognition_visits": 2, "favorite": "Cherry Glow", "fallback_profile": "cherry", "flexibility": 0.54, "min_qty": 2, "max_qty": 4, "tier": "Premium", "unlock_level": 7},
+	{"name": "Zay", "recognition_visits": 2, "favorite": "Moon Cake", "fallback_profile": "dessert", "flexibility": 0.49, "min_qty": 2, "max_qty": 5, "tier": "Premium", "unlock_level": 9},
+	{"name": "Bree", "recognition_visits": 3, "favorite": "Black Cherry", "fallback_profile": "darkfruit", "flexibility": 0.36, "min_qty": 2, "max_qty": 5, "tier": "VIP", "unlock_level": 11},
+	{"name": "Ace", "recognition_visits": 2, "favorite": "Blue Frost", "fallback_profile": "cool", "flexibility": 0.52, "min_qty": 1, "max_qty": 3, "tier": "Established", "unlock_level": 6},
+	{"name": "Carmen", "recognition_visits": 1, "favorite": "Street Green", "fallback_profile": "balanced", "flexibility": 0.65, "min_qty": 1, "max_qty": 2, "tier": "New", "unlock_level": 2},
+	{"name": "Marcus", "recognition_visits": 1, "favorite": "Purple Dream", "fallback_profile": "balanced", "flexibility": 0.62, "min_qty": 1, "max_qty": 2, "tier": "New", "unlock_level": 3},
+	{"name": "Simone", "recognition_visits": 2, "favorite": "Citrus Rush", "fallback_profile": "citrus", "flexibility": 0.55, "min_qty": 1, "max_qty": 3, "tier": "Regular", "unlock_level": 4},
+	{"name": "Dani", "recognition_visits": 2, "favorite": "Velvet Haze", "fallback_profile": "smooth", "flexibility": 0.5, "min_qty": 1, "max_qty": 3, "tier": "Established", "unlock_level": 5},
+	{"name": "Theo", "recognition_visits": 2, "favorite": "Golden Ember", "fallback_profile": "gold", "flexibility": 0.45, "min_qty": 2, "max_qty": 4, "tier": "Established", "unlock_level": 7},
+	{"name": "Devon", "recognition_visits": 2, "favorite": "Cherry Glow", "fallback_profile": "cherry", "flexibility": 0.48, "min_qty": 2, "max_qty": 4, "tier": "Established", "unlock_level": 8},
+	{"name": "Omar", "recognition_visits": 3, "favorite": "Neon Berry", "fallback_profile": "berry", "flexibility": 0.4, "min_qty": 2, "max_qty": 5, "tier": "Established", "unlock_level": 9},
+	{"name": "Nico", "recognition_visits": 3, "favorite": "Moon Cake", "fallback_profile": "dessert", "flexibility": 0.36, "min_qty": 3, "max_qty": 5, "tier": "Premium", "unlock_level": 11},
+	{"name": "Nolan", "recognition_visits": 3, "favorite": "Midnight Crown", "fallback_profile": "luxury", "flexibility": 0.32, "min_qty": 3, "max_qty": 6, "tier": "Premium", "unlock_level": 12},
+	{"name": "Tino", "recognition_visits": 3, "favorite": "Solar Frost", "fallback_profile": "solar", "flexibility": 0.30, "min_qty": 3, "max_qty": 6, "tier": "Reserve", "unlock_level": 14}
+]
+
+var camera: Camera3D
+var camera_view_tween: Tween
+var views: Dictionary = {}
+var plant_visuals: Array[Node3D] = []
+
+var hud: Control
+var world_top_bar: Control
+var world_pointer: int = -99
+var world_pointer_start: Vector2 = Vector2.ZERO
+var world_pointer_target: String = ""
+var world_pointer_swiped: bool = false
+const WORLD_TAP_SLOP: float = 24.0
+const ROOM_TOUCH_MIN_SIZE: Vector2 = Vector2(88.0, 88.0)
+const ROOM_SWITCH_TARGETS: Array[Dictionary] = [
+	{"id": "main_light_switch", "room": "main", "meshes": ["MainLightSwitchPlate", "MainLightSwitchToggle"]},
+	{"id": "floor_lamp", "room": "main", "meshes": ["FloorLampShade", "FloorLampStem"]}
+]
+const ROOM_DIRECT_STATIONS: Array[Dictionary] = [
+	{"id": "room_enter_grow", "room": "main", "pos": Vector3(0.0, 1.55, -3.88), "view": ""},
+	{"id": "room_enter_main", "room": "grow", "pos": Vector3(0.0, 1.55, -3.88), "view": ""},
+	{"id": "station_workbench", "room": "main", "pos": Vector3(3.95, 1.15, 0.78), "view": "workbench"},
+	{"id": "station_locker", "room": "main", "pos": Vector3(4.13, 1.30, -2.20), "view": "locker"},
+	{"id": "station_storage", "room": "main", "pos": Vector3(-4.35, 1.35, -0.06), "view": "storage"},
+	{"id": "station_door", "room": "main", "pos": Vector3(0.0, 1.50, 5.78), "view": "door"},
+	{"id": "station_tent1", "room": "grow", "pos": Vector3(0.0, 1.25, -9.10), "view": "grow"},
+	{"id": "station_tent2", "room": "grow", "pos": Vector3(-3.20, 1.18, -9.28), "view": "grow2"},
+	{"id": "station_tent3", "room": "grow", "pos": Vector3(3.20, 1.18, -9.28), "view": "grow3"},
+	{"id": "station_system", "room": "grow", "pos": Vector3(4.72, 1.95, -6.65), "view": "grow_system"},
+	{"id": "station_supply", "room": "grow", "pos": Vector3(-4.55, 1.35, -6.45), "view": "grow_supply_shelf"}
+]
+
+var phone_panel: PanelContainer
+var phone_list: VBoxContainer
+var phone_scroll: PhoneTouchScroll
+var phone_title: Label
+var phone_back_button: Button
+var phone_status_label: Label
+var phone_clock_label: Label
+var knock_player: AudioStreamPlayer
+var tutorial_panel: PanelContainer
+var sale_panel: PanelContainer
+var sale_title: Label
+var sale_body: Label
+var sale_customer_art: TextureRect
+var sale_primary_button: Button
+var sale_secondary_button: Button
+var sale_decline_button: Button
+var substitute_box: VBoxContainer
+var grow_panel: PanelContainer
+var grow_list: VBoxContainer
+var plant_direct_panel: PanelContainer
+var plant_direct_box: VBoxContainer
+var plant_direct_scroll: PhoneTouchScroll
+var selected_plant_slot: int = -1
+var active_tool_prop: Node3D
+var bagging_panel: PanelContainer
+var bagging_list: VBoxContainer
+var bagging_scroll: PhoneTouchScroll
+var bagging_refresh_pending: bool = false
+var bagging_refresh_revision: int = 0
+var storage_panel: PanelContainer
+var storage_list: VBoxContainer
+var storage_scroll: PhoneTouchScroll
+var storage_refresh_pending: bool = false
+var storage_refresh_revision: int = 0
+var dealer_storage_panel: PanelContainer
+var dealer_storage_list: VBoxContainer
+var dealer_storage_scroll: PhoneTouchScroll
+var premium_dealer_locker_root: Node3D
+var premium_dealer_locker_left_door_pivot: Node3D
+var premium_dealer_locker_right_door_pivot: Node3D
+var premium_dealer_locker_open: bool = false
+var premium_dealer_locker_left_tween: Tween
+var premium_dealer_locker_right_tween: Tween
+var dealer_storage_reopen_after_pause: bool = false
+var supply_inventory_panel: PanelContainer
+var supply_inventory_list: VBoxContainer
+var supply_inventory_scroll: PhoneTouchScroll
+var system_control_panel: PanelContainer
+var system_control_list: VBoxContainer
+var system_control_scroll: PhoneTouchScroll
+var system_control_status: Label
+var knock_banner: PanelContainer
+var status_label: Label
+var cash_label: Label
+var view_label: Label
+var contextual_button: Button
+var left_button: Button
+var right_button: Button
+var forward_button: Button
+var back_button: Button
+var visit_timer: Timer
+var customer_patience_timer: Timer
+var customer_exit_timer: Timer
+var knock_text: Label
+var door_quick_button: Button
+var peephole_panel: PanelContainer
+var peephole_identity_label: Label
+var peephole_detail_label: Label
+var peephole_portrait: TextureRect
+var peephole_silhouette: Label
+
+var daily_report_panel: PanelContainer
+var daily_report_title: Label
+var daily_report_body: Label
+var daily_report_action: Button
+
+var trim_panel: PanelContainer
+var trim_play_area: Control
+var trim_scissors: TextureRect
+var trim_instruction: Label
+var trim_progress_label: Label
+var trim_continue_button: Button
+var trim_active_strain: String = ""
+var trim_total_units: int = 0
+var trim_cut_units: int = 0
+var trim_harvest_amount: int = 0
+var trim_scissors_picked: bool = false
+var trim_targets: Array[TextureButton] = []
+
+var bag_minigame_panel: PanelContainer
+var bag_play_area: Control
+var bag_bud_token: TextureRect
+var bag_target_panel: PanelContainer
+var bag_weight_label: Label
+var bag_instruction: Label
+var bag_active_strain: String = ""
+var bag_available_units: int = 0
+var bag_current_units: int = 0
+var bag_target_units: int = 0
+var bag_dragging: bool = false
+var bag_drag_offset: Vector2 = Vector2.ZERO
+var bag_token_home: Vector2 = Vector2.ZERO
+var bag_seal_button: Button
+
+var item_icon_cache: Dictionary = {}
+var packing_bench_loose_bud_root: Node3D
+var packing_bench_filled_bag_root: Node3D
+var packing_bench_visual_signature: String = ""
+
+func _ready() -> void:
+	rng.randomize()
+	_apply_cloud_boot_save()
+	_load_game()
+	_ensure_tent_capacity()
+	_build_world()
+	_apply_visual_upgrades()
+	_build_ui()
+	get_viewport().size_changed.connect(_reset_world_pointer)
+	_build_audio_players()
+	neighborhood = load("res://scripts/neighborhood.gd").new()
+	add_child(neighborhood)
+	neighborhood.setup(self)
+	_update_day_night_visuals()
+	_build_visit_timer()
+	_build_customer_patience_timers()
+	_build_grow_timer()
+	_build_automation_timer()
+	_update_all_plant_visuals()
+	_go_to_view("main_grow_door", false)
+	_restore_runtime_state()
+	_refresh_phone()
+	gameplay_ready = true
+	_install_lifecycle_hooks()
+	last_active_frame_msec = Time.get_ticks_msec()
+	last_active_frame_unix = Time.get_unix_time_from_system()
+	if not tutorial_seen:
+		_show_tutorial()
+	if daily_report_pending:
+		_show_daily_report()
+	if loaded_existing_game:
+		_pause_gameplay("Welcome back. Your day and visitors are waiting for you.")
+	_sync_simulation_pause()
+	_refresh_tutorial_coach()
+	if not _simulation_blocked():
+		_schedule_next_customer()
+		_check_reeves_trigger()
+		_maybe_start_reeves_visit()
+
+func _process(delta: float) -> void:
+	_refresh_door_alert()
+	_sync_packing_bench_visuals()
+	_update_room_status_panel()
+	_update_supply_shelf_display()
+	var now_msec: int = Time.get_ticks_msec()
+	if gameplay_ready and not session_paused:
+		if web_lifecycle != null and bool(web_lifecycle.away):
+			_pause_gameplay("Your day and visitors are paused.")
+		elif last_active_frame_msec > 0 and now_msec - last_active_frame_msec > FRAME_GAP_PAUSE_MSEC:
+			_pause_gameplay("The game was interrupted. Your day and visitors are paused.", last_active_frame_unix)
+	last_active_frame_msec = now_msec
+	last_active_frame_unix = Time.get_unix_time_from_system()
+	if phone_refresh_pending and phone_scroll != null and not phone_scroll.is_gesture_busy():
+		_refresh_phone()
+	if bagging_refresh_pending and bagging_scroll != null and not bagging_scroll.is_gesture_busy():
+		_refresh_bagging_panel()
+	if storage_refresh_pending and storage_scroll != null and not storage_scroll.is_gesture_busy():
+		_refresh_storage_panel()
+	if session_paused or reset_confirmation_open or reset_in_progress:
+		return
+	if daily_report_pending:
+		if daily_report_panel != null and not daily_report_panel.visible:
+			_show_daily_report()
+		return
+	if not _simulation_blocked():
+		_maybe_start_reeves_visit()
+		_advance_day_night(delta)
+		if daily_report_pending:
+			return
+		_update_production_worker_visual(delta)
+	if camera == null or _any_modal_open():
+		return
+	var can_free_look: bool = room_ring.has(current_view) or current_view in ["grow", "grow2", "grow3"]
+	if not can_free_look:
+		return
+	var blend: float = 1.0 - exp(-room_look_smoothing * delta)
+	camera.rotation.y = lerp_angle(camera.rotation.y, room_target_yaw, blend)
+	camera.rotation.x = lerpf(camera.rotation.x, room_target_pitch, blend)
+	if room_ring.has(current_view):
+		_sync_room_view_from_yaw()
+
+func _input(event: InputEvent) -> void:
+	if neighborhood != null and neighborhood.active and not _any_modal_open() and not daily_report_pending:
+		neighborhood.handle_input(event)
+		return
+	if reset_confirmation_open or reset_in_progress:
+		_reset_world_pointer()
+		if event.is_action_pressed("ui_cancel") and not reset_in_progress:
+			_cancel_beta_reset()
+			get_viewport().set_input_as_handled()
+		return
+	if _handle_door_alert_pointer(event):
+		get_viewport().set_input_as_handled()
+		return
+	if browser_touch_cancelled:
+		if event is InputEventScreenTouch and event.pressed:
+			browser_touch_cancelled = false
+		elif event is InputEventMouseButton and event.device == -1 and event.pressed:
+			browser_touch_cancelled = false
+		elif event is InputEventScreenTouch or event is InputEventScreenDrag or (event.device == -1 and (event is InputEventMouseButton or event is InputEventMouseMotion)):
+			get_viewport().set_input_as_handled()
+			return
+	if session_paused or daily_report_pending:
+		_reset_world_pointer()
+		return
+	if phone_open and phone_scroll != null and phone_scroll.handle_pointer(event):
+		get_viewport().set_input_as_handled()
+		return
+	if plant_direct_panel != null and plant_direct_panel.visible and plant_direct_scroll != null and plant_direct_scroll.handle_pointer(event):
+		get_viewport().set_input_as_handled()
+		return
+	if _handle_station_list_pointer(event):
+		get_viewport().set_input_as_handled()
+		return
+	if _handle_station_pointer(event):
+		get_viewport().set_input_as_handled()
+		return
+	if event.device == -1 and (event is InputEventMouseButton or event is InputEventMouseMotion):
+		return
+	if event is InputEventKey:
+		var key_event: InputEventKey = event as InputEventKey
+		if key_event.pressed and not key_event.echo and key_event.keycode == KEY_P:
+			_toggle_phone()
+		return
+
+	if plant_direct_panel != null and plant_direct_panel.visible and current_view in ["grow", "grow2", "grow3"]:
+		if _handle_room_pointer(event, false, false, true):
+			get_viewport().set_input_as_handled()
+		return
+	if _any_modal_open():
+		_reset_world_pointer()
+		return
+
+	var can_room_look: bool = room_ring.has(current_view) or current_view in ["grow", "grow2", "grow3"]
+	var can_tap_plants: bool = current_view in ["grow", "grow2", "grow3"]
+	var can_tap_world: bool = current_room in ["main", "grow"] and current_view != "room_transition"
+	if not can_room_look and not can_tap_plants and not can_tap_world:
+		_reset_world_pointer()
+		return
+
+	if _handle_room_pointer(event, can_room_look, can_tap_world, can_tap_plants):
+		get_viewport().set_input_as_handled()
+
+func _pointer_over_room_ui(point: Vector2) -> bool:
+	for control: Control in [world_top_bar, view_label, status_label, contextual_button, left_button, right_button, back_button, door_quick_button, tutorial_world_coach, plant_direct_panel]:
+		if _pointer_in_control(control, point):
+			return true
+	return false
+
+func _reset_world_pointer() -> void:
+	world_pointer = -99
+	world_pointer_start = Vector2.ZERO
+	world_pointer_target = ""
+	world_pointer_swiped = false
+	plant_tap_drag_distance = 0.0
+	room_look_drag_active = false
+
+func _handle_room_pointer(event: InputEvent, can_look: bool, can_world: bool, can_plants: bool) -> bool:
+	var pointer: int = -99
+	var point: Vector2 = Vector2.ZERO
+	var pressed: bool = false
+	var released: bool = false
+	var canceled: bool = false
+	var moved: bool = false
+	if event is InputEventScreenTouch:
+		pointer = event.index
+		point = event.position
+		pressed = event.pressed
+		released = not event.pressed
+		canceled = event.canceled
+	elif event is InputEventScreenDrag:
+		pointer = event.index
+		point = event.position
+		moved = true
+	elif event is InputEventMouseButton:
+		if event.button_index != MOUSE_BUTTON_LEFT:
+			return false
+		pointer = -1
+		point = event.position
+		pressed = event.pressed
+		released = not event.pressed
+	elif event is InputEventMouseMotion:
+		pointer = -1
+		point = event.position
+		moved = true
+	else:
+		return false
+	if pressed:
+		if world_pointer != -99:
+			return pointer >= 0
+		if _pointer_over_room_ui(point):
+			return false
+		world_pointer = pointer
+		world_pointer_start = point
+		room_look_last_position = point
+		world_pointer_target = _room_interaction_at(point) if can_world else ""
+		world_pointer_swiped = false
+		room_look_drag_active = false
+		plant_tap_drag_distance = 0.0
+		return true
+	if world_pointer != pointer or world_pointer == -99:
+		return world_pointer != -99 and pointer >= 0
+	if canceled:
+		_reset_world_pointer()
+		return true
+	plant_tap_drag_distance = maxf(plant_tap_drag_distance, world_pointer_start.distance_to(point))
+	if moved:
+		var relative: Vector2 = point - room_look_last_position
+		if not world_pointer_swiped and plant_tap_drag_distance >= WORLD_TAP_SLOP:
+			world_pointer_swiped = true
+			room_look_drag_active = can_look
+			relative = point - world_pointer_start
+		if room_look_drag_active:
+			_apply_room_look_delta(relative)
+		room_look_last_position = point
+	elif released:
+		var was_tap: bool = not world_pointer_swiped and plant_tap_drag_distance < WORLD_TAP_SLOP
+		var pressed_target: String = world_pointer_target
+		_reset_world_pointer()
+		if not was_tap or _pointer_over_room_ui(point):
+			return true
+		if can_world and not pressed_target.is_empty():
+			if _room_interaction_at(point) == pressed_target:
+				_activate_room_interaction(pressed_target)
+			return true
+		if can_plants:
+			_try_tap_plant(point)
+	return true
+
+func _room_target_screen_rect(mesh_names: Array) -> Rect2:
+	var result: Rect2 = Rect2()
+	var found: bool = false
+	for mesh_name: String in mesh_names:
+		var visual: MeshInstance3D = get_node_or_null(mesh_name) as MeshInstance3D
+		if visual == null or visual.mesh == null or not visual.is_visible_in_tree():
+			continue
+		var box: AABB = visual.get_aabb()
+		var projected: Rect2 = Rect2()
+		var valid: bool = true
+		for corner_index: int in range(8):
+			var corner: Vector3 = visual.global_transform * box.get_endpoint(corner_index)
+			if camera.is_position_behind(corner):
+				valid = false
+				break
+			var point: Vector2 = camera.unproject_position(corner)
+			projected = Rect2(point, Vector2.ZERO) if corner_index == 0 else projected.expand(point)
+		if valid:
+			result = result.merge(projected) if found else projected
+			found = true
+	return result if found else Rect2()
+
+func _direct_station_at(screen_position: Vector2) -> String:
+	if camera == null:
+		return ""
+	var visible: Rect2 = get_viewport().get_visible_rect()
+	var best_id: String = ""
+	var best_distance: float = INF
+	for spec: Dictionary in ROOM_DIRECT_STATIONS:
+		if str(spec.get("room", "")) != current_room:
+			continue
+		if str(spec.get("id", "")) == "station_tent2" and grow_tent_count < 2:
+			continue
+		if str(spec.get("id", "")) == "station_tent3" and grow_tent_count < 3:
+			continue
+		var world_pos: Vector3 = spec.get("pos", Vector3.ZERO)
+		if camera.is_position_behind(world_pos):
+			continue
+		var screen_pos: Vector2 = camera.unproject_position(world_pos)
+		if not visible.has_point(screen_pos):
+			continue
+		var distance: float = screen_pos.distance_to(screen_position)
+		var radius: float = 92.0
+		if str(spec.get("id", "")).begins_with("station_tent"):
+			radius = 130.0
+		if distance <= radius and distance < best_distance:
+			best_distance = distance
+			best_id = str(spec.get("id", ""))
+	return best_id
+
+func _direct_station_view(action_id: String) -> String:
+	for spec: Dictionary in ROOM_DIRECT_STATIONS:
+		if str(spec.get("id", "")) == action_id:
+			return str(spec.get("view", ""))
+	return ""
+
+func _approach_station_then_open(action_id: String) -> bool:
+	var target_view: String = _direct_station_view(action_id)
+	if target_view.is_empty() or not views.has(target_view):
+		return false
+	status_label.text = "Approaching..."
+	_go_to_view(target_view, true)
+	if action_id == "station_locker":
+		var locker_timer: SceneTreeTimer = get_tree().create_timer(0.40)
+		locker_timer.timeout.connect(_open_dealer_locker_after_approach, CONNECT_ONE_SHOT)
+		return true
+	if camera_view_tween != null:
+		camera_view_tween.finished.connect(_finish_direct_station_approach.bind(action_id), CONNECT_ONE_SHOT)
+	else:
+		_finish_direct_station_approach(action_id)
+	return true
+
+func _open_dealer_locker_after_approach() -> void:
+	if current_view != "locker":
+		return
+	if dealer_storage_panel == null:
+		status_label.text = "Dealer Storage panel failed to initialize."
+		return
+	if dealer_locker_level >= 3:
+		_set_premium_dealer_locker_open(true)
+		await get_tree().create_timer(0.30).timeout
+	_open_dealer_storage_panel()
+
+func _finish_direct_station_approach(action_id: String) -> void:
+	match action_id:
+		"station_workbench":
+			_open_bagging_panel()
+		"station_locker":
+			_open_dealer_locker_after_approach()
+		"station_storage", "storage_vault":
+			_open_storage_panel()
+		"station_door":
+			if customer_waiting:
+				if peephole_checked:
+					_open_customer_sale()
+				else:
+					_open_peephole()
+			else:
+				_open_peephole()
+		"station_tent1", "station_tent2", "station_tent3":
+			tent_open = true
+			status_label.text = "Tap a plant or empty pot directly in this tent to tend it."
+		"station_system":
+			_open_system_control_panel()
+		"station_supply":
+			_open_supply_inventory_panel()
+
+func _room_interaction_at(screen_position: Vector2) -> String:
+	if camera == null or current_room not in ["main", "grow"]:
+		return ""
+	var visible: Rect2 = get_viewport().get_visible_rect()
+	if not visible.has_point(screen_position):
+		return ""
+	var nearest_action: String = ""
+	var nearest_distance: float = INF
+	var nearest_is_exact: bool = false
+	for spec: Dictionary in ROOM_SWITCH_TARGETS:
+		if str(spec["room"]) != current_room:
+			continue
+		var bounds: Rect2 = _room_target_screen_rect(spec["meshes"])
+		if not bounds.has_area() or not visible.intersects(bounds):
+			continue
+		var touch_size: Vector2 = (bounds.size + Vector2(12.0, 12.0)).max(ROOM_TOUCH_MIN_SIZE)
+		var touch_bounds: Rect2 = Rect2(bounds.get_center() - touch_size * 0.5, touch_size).intersection(visible)
+		if not touch_bounds.has_point(screen_position):
+			continue
+		var exact: bool = bounds.has_point(screen_position)
+		var distance: float = bounds.get_center().distance_squared_to(screen_position)
+		if (exact and not nearest_is_exact) or (exact == nearest_is_exact and distance < nearest_distance):
+			nearest_action = str(spec["id"])
+			nearest_distance = distance
+			nearest_is_exact = exact
+	if nearest_action.is_empty():
+		var station_action: String = _direct_station_at(screen_position)
+		if not station_action.is_empty():
+			return station_action
+	if nearest_action.is_empty() and current_room == "main" and storage_level >= 4:
+		var vault_bounds: Rect2 = _room_target_screen_rect(["StorageVault/DoorFace", "StorageVault/RoundDoor"])
+		if vault_bounds.has_area() and vault_bounds.has_point(screen_position):
+			return "storage_vault"
+	return nearest_action
+
+func _try_tap_room_interactable(screen_position: Vector2) -> bool:
+	var action: String = _room_interaction_at(screen_position)
+	return not action.is_empty() and _activate_room_interaction(action)
+
+
+func _activate_room_interaction(action_id: String) -> bool:
+	if session_paused or daily_report_pending or tutorial_active:
+		return false
+	match action_id:
+		"storage_vault":
+			if storage_level < 4:
+				return false
+			return _approach_station_then_open("station_storage")
+		"room_enter_grow":
+			_enter_grow_room()
+			return true
+		"room_enter_main":
+			_leave_grow_room()
+			return true
+		"station_workbench", "station_locker", "station_storage", "station_door", "station_tent1", "station_tent2", "station_tent3", "station_system", "station_supply":
+			return _approach_station_then_open(action_id)
+		"main_light_switch":
+			main_ceiling_light_on = not main_ceiling_light_on
+			_increment_advancement_stat("lights_toggled")
+			status_label.text = "Main lights %s." % ("ON" if main_ceiling_light_on else "OFF")
+		"floor_lamp":
+			floor_lamp_on = not floor_lamp_on
+			_increment_advancement_stat("lamp_toggled")
+			status_label.text = "Living-room lamp %s." % ("ON" if floor_lamp_on else "OFF")
+		"grow_room_light_switch":
+			grow_room_light_on = not grow_room_light_on
+			_increment_advancement_stat("grow_room_lights_toggled")
+			status_label.text = "Grow-room utility lights %s." % ("ON" if grow_room_light_on else "OFF")
+		"grow_light_switch":
+			grow_lights_on = not grow_lights_on
+			_increment_advancement_stat("grow_lights_toggled")
+			status_label.text = "Grow lights %s. Plant growth is %s." % [("ON" if grow_lights_on else "OFF"), ("normal" if grow_lights_on else "very slow")]
+		"ventilation_switch":
+			if not ventilation_installed:
+				status_label.text = "Ventilation is not installed yet. Buy Grow Room Ventilation in Central Market checkout."
+				return true
+			ventilation_on = not ventilation_on
+			_increment_advancement_stat("ventilation_toggled")
+			status_label.text = "Ventilation %s. Plant growth is %s." % [("ON" if ventilation_on else "OFF"), ("normal" if ventilation_on else "slower")]
+		_:
+			return false
+	_refresh_light_interaction_visuals()
+	_update_day_night_visuals()
+	_refresh_utility_controls()
+	_save_game()
+	return true
+
+
+func _try_tap_plant(screen_position: Vector2) -> void:
+	if camera == null or not (current_view in ["grow", "grow2", "grow3"]):
+		return
+	var ray_origin: Vector3 = camera.project_ray_origin(screen_position)
+	var ray_direction: Vector3 = camera.project_ray_normal(screen_position)
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(ray_origin, ray_origin + ray_direction * 20.0)
+	query.collision_mask = 8
+	query.collide_with_areas = true
+	query.collide_with_bodies = false
+	var hit: Dictionary = get_world_3d().direct_space_state.intersect_ray(query)
+	if hit.is_empty():
+		status_label.text = "Tap directly on a plant or empty pot to tend it."
+		return
+	var collider_variant: Variant = hit.get("collider")
+	if not (collider_variant is Area3D):
+		return
+	var collider: Area3D = collider_variant as Area3D
+	if not collider.has_meta("plant_slot"):
+		return
+	var slot_index: int = int(collider.get_meta("plant_slot"))
+	_open_direct_plant(slot_index)
+
+func _advance_day_night(delta: float) -> void:
+	if _simulation_blocked() or delta <= 0.0:
+		return
+	var previous_phase: String = day_phase
+	var elapsed_game_minutes: float = minf(delta * GAME_MINUTES_PER_REAL_SECOND, maxf(0.0, 1440.0 - game_time_minutes))
+	game_time_minutes += elapsed_game_minutes
+	_track_power_usage(elapsed_game_minutes)
+	_update_heat_over_time(elapsed_game_minutes)
+	if game_time_minutes >= 1439.999:
+		game_time_minutes = 1439.999
+		_finalize_daily_power_bill(false)
+		_finalize_daily_water_bill(false)
+		_process_daily_payroll(false)
+		_prepare_daily_report(game_day)
+	_update_day_night_visuals()
+	if not daily_report_pending and previous_phase != day_phase and visit_timer != null and business_open and not customer_waiting:
+		status_label.text = "%s. Customer traffic changes with the time of day." % day_phase.capitalize()
+		_schedule_next_customer(true)
+
+func _record_daily_sale(product_name: String, qty: int, gross: int, source: String) -> void:
+	if product_name.is_empty() or qty <= 0 or gross < 0:
+		return
+	var entry: Dictionary = {}
+	if daily_sales_by_product.has(product_name) and daily_sales_by_product[product_name] is Dictionary:
+		entry = (daily_sales_by_product[product_name] as Dictionary).duplicate(true)
+	entry["units"] = int(entry.get("units", 0)) + qty
+	entry["gross"] = int(entry.get("gross", 0)) + gross
+	var units_key: String = "%s_units" % source
+	var gross_key: String = "%s_gross" % source
+	entry[units_key] = int(entry.get(units_key, 0)) + qty
+	entry[gross_key] = int(entry.get(gross_key, 0)) + gross
+	daily_sales_by_product[product_name] = entry
+
+func _record_daily_expense(category: String, amount: int) -> void:
+	if category.is_empty() or amount <= 0:
+		return
+	daily_expenses_by_category[category] = int(daily_expenses_by_category.get(category, 0)) + amount
+
+func _sum_daily_sales_gross() -> int:
+	var total: int = 0
+	for product_variant in daily_sales_by_product.keys():
+		var entry_variant: Variant = daily_sales_by_product.get(product_variant, {})
+		if entry_variant is Dictionary:
+			total += int((entry_variant as Dictionary).get("gross", 0))
+	return total
+
+func _sum_daily_expenses() -> int:
+	var total: int = 0
+	for value_variant in daily_expenses_by_category.values():
+		total += int(value_variant)
+	return total
+
+func _prepare_daily_report(closing_day: int) -> void:
+	if daily_report_pending:
+		return
+	var dealer_wages: int = 0
+	if _total_dealer_count() > 0 and (dealers_active or dealer_sales_today > 0):
+		dealer_wages = _total_dealer_count() * DEALER_DAILY_WAGE
+	var dealer_gross: int = dealer_cash_held
+	var dealer_commission: int = dealer_commission_held
+	var gross_revenue: int = _sum_daily_sales_gross()
+	var recorded_expenses: int = _sum_daily_expenses()
+	var power_cost: int = last_power_bill
+	var water_cost: int = last_water_bill
+	var total_cost: int = recorded_expenses + power_cost + water_cost + dealer_commission + dealer_wages
+	var operating_profit: int = gross_revenue - total_cost
+	var dealer_net: int = dealer_gross - dealer_commission - dealer_wages
+	var friend_dealer_report: Array[Dictionary] = _friend_dealer_daily_report(dealer_wages > 0)
+	daily_report_data = {
+		"day": closing_day,
+		"next_day": closing_day + 1,
+		"sales": daily_sales_by_product.duplicate(true),
+		"gross": gross_revenue,
+		"dealer_gross": dealer_gross,
+		"dealer_commission": dealer_commission,
+		"dealer_wages": dealer_wages,
+		"dealer_net": dealer_net,
+		"expenses": daily_expenses_by_category.duplicate(true),
+		"power_cost": power_cost,
+		"water_cost": water_cost,
+		"total_cost": total_cost,
+		"profit": operating_profit,
+		"dealer_count": _total_dealer_count(),
+		"personal_sales": int(advancement_stats.get("sales", 0)),
+		"dealer_sales_count": dealer_sales_today,
+		"friend_dealers": friend_dealer_report
+	}
+	daily_report_pending = true
+	_hide_learning_panels()
+	knock_banner.visible = false
+	closeout_announced = false
+	_cancel_station_drag()
+	if knock_player != null:
+		knock_player.stop()
+	_sync_simulation_pause()
+	dealer_cash_held = 0
+	dealer_commission_held = 0
+	daily_sales_by_product = {}
+	daily_expenses_by_category = {}
+	dealer_sales_today = 0
+	dealer_customers_served_today = {}
+	_reset_friend_dealer_daily_stats()
+	production_worker_tasks_today = 0
+	last_production_payroll_cost = 0
+	if visit_timer != null:
+		visit_timer.stop()
+	_save_game()
+	_show_daily_report()
+
+func _daily_report_sales_text(report: Dictionary) -> String:
+	var sales_variant: Variant = report.get("sales", {})
+	if not (sales_variant is Dictionary):
+		return "No product sales recorded."
+	var sales: Dictionary = sales_variant as Dictionary
+	if sales.is_empty():
+		return "No product sales recorded."
+	var names: Array[String] = []
+	for key_variant in sales.keys():
+		names.append(str(key_variant))
+	names.sort()
+	var lines: Array[String] = []
+	for product_name: String in names:
+		var entry: Dictionary = sales[product_name] as Dictionary
+		var units: int = int(entry.get("units", 0))
+		var gross: int = int(entry.get("gross", 0))
+		var you_units: int = int(entry.get("player_units", 0))
+		var dealer_units: int = int(entry.get("dealer_units", 0))
+		var staff_units: int = int(entry.get("staff_units", 0))
+		var detail: String = "%s - %dg  |  $%d" % [product_name, units, gross]
+		var sources: Array[String] = []
+		if you_units > 0:
+			sources.append("you %dg" % you_units)
+		if dealer_units > 0:
+			sources.append("dealers %dg" % dealer_units)
+		if staff_units > 0:
+			sources.append("staff %dg" % staff_units)
+		if not sources.is_empty():
+			detail += "  (%s)" % ", ".join(PackedStringArray(sources))
+		lines.append(detail)
+	return "\n".join(PackedStringArray(lines))
+
+func _daily_report_expense_text(report: Dictionary) -> String:
+	var lines: Array[String] = []
+	var expenses_variant: Variant = report.get("expenses", {})
+	if expenses_variant is Dictionary:
+		var expenses: Dictionary = expenses_variant as Dictionary
+		var names: Array[String] = []
+		for key_variant in expenses.keys():
+			names.append(str(key_variant))
+		names.sort()
+		for expense_name: String in names:
+			var amount: int = int(expenses.get(expense_name, 0))
+			if amount > 0:
+				lines.append("%s: $%d" % [expense_name, amount])
+	var dealer_commission: int = int(report.get("dealer_commission", 0))
+	var dealer_wages: int = int(report.get("dealer_wages", 0))
+	var power_cost: int = int(report.get("power_cost", 0))
+	if dealer_commission > 0:
+		lines.append("Dealer commission: $%d" % dealer_commission)
+	if dealer_wages > 0:
+		lines.append("Dealer wages: $%d" % dealer_wages)
+	if power_cost > 0:
+		lines.append("Power charge posted: $%d" % power_cost)
+	if lines.is_empty():
+		return "No operating costs recorded."
+	return "\n".join(PackedStringArray(lines))
+
+func _build_daily_report_panel() -> void:
+	daily_report_panel = _make_full_panel(28, 80, -28, -32)
+	daily_report_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	daily_report_panel.offset_left = 28
+	daily_report_panel.offset_right = -28
+	daily_report_panel.offset_top = 90
+	daily_report_panel.offset_bottom = -32
+	var root: VBoxContainer = _panel_root(daily_report_panel, "DAILY CLOSEOUT", _settle_daily_report)
+	var header_variant: Variant = root.get_child(1) if root.get_child_count() > 1 else null
+	if header_variant is HBoxContainer:
+		var header: HBoxContainer = header_variant as HBoxContainer
+		if header.get_child_count() > 2 and header.get_child(2) is Button:
+			(header.get_child(2) as Button).visible = false
+	daily_report_title = Label.new()
+	daily_report_title.add_theme_font_size_override("font_size", 22)
+	daily_report_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	root.add_child(daily_report_title)
+	var scroll: ScrollContainer = ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.custom_minimum_size.y = 410
+	root.add_child(scroll)
+	daily_report_body = Label.new()
+	daily_report_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	daily_report_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	daily_report_body.add_theme_font_size_override("font_size", 17)
+	scroll.add_child(daily_report_body)
+	daily_report_action = Button.new()
+	daily_report_action.custom_minimum_size.y = 58
+	daily_report_action.pressed.connect(_settle_daily_report)
+	root.add_child(daily_report_action)
+
+func _show_daily_report() -> void:
+	if not daily_report_pending or daily_report_panel == null:
+		return
+	var report: Dictionary = daily_report_data
+	var closing_day: int = int(report.get("day", maxi(1, game_day - 1)))
+	var next_day: int = int(report.get("next_day", game_day))
+	var dealer_count_report: int = int(report.get("dealer_count", 0))
+	var dealer_gross: int = int(report.get("dealer_gross", 0))
+	var dealer_commission: int = int(report.get("dealer_commission", 0))
+	var dealer_wages: int = int(report.get("dealer_wages", 0))
+	var dealer_net: int = int(report.get("dealer_net", 0))
+	var gross: int = int(report.get("gross", 0))
+	var power_cost: int = int(report.get("power_cost", 0))
+	var water_cost: int = int(report.get("water_cost", 0))
+	var total_cost: int = int(report.get("total_cost", 0))
+	var profit: int = int(report.get("profit", 0))
+	daily_report_title.text = ("DEALER DROP-OFF  |  DAY %d" % closing_day) if dealer_count_report > 0 else ("DAY %d CLOSEOUT" % closing_day)
+	var settlement_line: String = "No dealer settlement tonight."
+	if dealer_count_report > 0:
+		if dealer_net >= 0:
+			settlement_line = "Dealer cash collected: $%d\nDealer commission (10%%): $%d\nCASH THEY HAND YOU AFTER COMMISSION: $%d" % [dealer_gross, dealer_commission, dealer_net]
+		else:
+			settlement_line = "Dealer cash collected: $%d\nDealer commission (10%%): $%d\nBALANCE: $%d" % [dealer_gross, dealer_commission, -dealer_net]
+	var friend_section: String = ""
+	var friend_text: String = _daily_report_friend_dealers_text(report)
+	if not friend_text.is_empty():
+		friend_section = "\n\nFRIEND DEALERS\n%s" % friend_text
+	daily_report_body.text = "PRODUCT SOLD\n%s\n\nREVENUE / COSTS\nGross product revenue: $%d\n%s\nElectricity: $%d\nWater: $%d\n\nTotal operating cost: $%d\nDAY PROFIT: $%d\n\n%s%s\n\nElectric and water charges are posted to Phone -> Illegal Businesses -> Bills or apartment computer -> Bills and can be paid separately." % [_daily_report_sales_text(report), gross, _daily_report_expense_text(report), power_cost, water_cost, total_cost, profit, settlement_line, friend_section]
+	daily_report_action.text = ("SETTLE DEALERS  |  START DAY %d" % next_day) if dealer_count_report > 0 else ("START DAY %d" % next_day)
+	daily_report_panel.visible = true
+	_set_world_controls_visible(false)
+	if not closeout_announced:
+		closeout_announced = true
+		if dealer_count_report > 0 and neighborhood != null and not session_paused:
+			neighborhood.play_text()
+	_refresh_tutorial_coach()
+	if status_label != null:
+		status_label.text = "DAY CLOSED  |  Time is frozen. Review the report, then press START DAY when ready."
+
+func _settle_daily_report() -> void:
+	if session_paused:
+		return
+	if not daily_report_pending:
+		return
+	var dealer_net: int = int(daily_report_data.get("dealer_net", 0))
+	if dealer_net >= 0:
+		cash += dealer_net
+	else:
+		var shortfall: int = -dealer_net
+		var paid_now: int = mini(cash, shortfall)
+		cash -= paid_now
+		var unpaid: int = shortfall - paid_now
+		if unpaid > 0:
+			dealer_balance_due += unpaid
+			dealers_active = false
+	var closing_day: int = int(daily_report_data.get("day", game_day))
+	game_day = maxi(closing_day + 1, int(daily_report_data.get("next_day", closing_day + 1)))
+	game_time_minutes = 0.0
+	last_daily_report = daily_report_data.duplicate(true)
+	daily_report_data = {}
+	daily_report_pending = false
+	closeout_announced = false
+	if knock_player != null:
+		knock_player.stop()
+	_sync_simulation_pause()
+	_update_day_night_visuals()
+	_process_reeves_day_transition(closing_day)
+	_roll_daily_heat_pressure_event()
+	_roll_enforcement_raid()
+	if daily_report_panel != null:
+		daily_report_panel.visible = false
+	_update_cash_ui()
+	_set_world_controls_visible(true)
+	if last_raid_day != game_day:
+		status_label.text = "Day %d started. Dealer settlement complete%s." % [game_day, " - dealer balance still due" if dealer_balance_due > 0 else ""]
+	_save_game()
+	_check_reeves_payment_due()
+	_maybe_start_reeves_visit()
+	_schedule_next_customer(true)
+
+func _pay_dealer_balance() -> void:
+	if dealer_balance_due <= 0:
+		return
+	if cash < dealer_balance_due:
+		status_label.text = "You need $%d to clear the dealer balance." % dealer_balance_due
+		return
+	var paid: int = dealer_balance_due
+	cash -= paid
+	dealer_balance_due = 0
+	_update_cash_ui()
+	status_label.text = "Dealer balance paid: $%d. You can put the team back on duty." % paid
+	_save_game()
+	if phone_open:
+		_refresh_phone()
+
+func _heat_stage_index(value: float = heat) -> int:
+	if value >= 90.0:
+		return 4
+	if value >= 75.0:
+		return 3
+	if value >= 50.0:
+		return 2
+	if value >= 25.0:
+		return 1
+	return 0
+
+func _heat_stage_name(value: float = heat) -> String:
+	match _heat_stage_index(value):
+		1: return "NOTICED"
+		2: return "WATCHED"
+		3: return "HOT"
+		4: return "CRITICAL"
+		_: return "LOW PROFILE"
+
+func _heat_stage_color(value: float = heat) -> Color:
+	match _heat_stage_index(value):
+		1: return Color("d4bc67")
+		2: return Color("d89c54")
+		3: return Color("dc6f4d")
+		4: return Color("e25757")
+		_: return Color("75ad87")
+
+func _heat_contact_cost() -> int:
+	return HEAT_CONTACT_BASE_COST + corrupt_contact_calls * 250 + maxi(0, grower_level - 5) * 40
+
+func _log_heat_event(message: String) -> void:
+	if message.is_empty():
+		return
+	heat_event_log.push_front("Day %d  |  %s" % [game_day, message])
+	while heat_event_log.size() > 6:
+		heat_event_log.pop_back()
+
+func _add_heat(amount: float, cause: String, show_feedback: bool = false) -> void:
+	if amount <= 0.0 or not _story_chapter_two_complete():
+		return
+	if _reeves_protection_active():
+		amount *= REEVES_PROTECTION_HEAT_MULTIPLIER
+	var old_heat: float = heat
+	heat = clampf(heat + amount, 0.0, 100.0)
+	heat_peak = maxf(heat_peak, heat)
+	last_heat_cause = cause
+	var old_stage: int = _heat_stage_index(old_heat)
+	var new_stage: int = _heat_stage_index(heat)
+	if new_stage > old_stage:
+		_trigger_heat_threshold_event(new_stage)
+	elif show_feedback and status_label != null:
+		status_label.text = "%s  |  Heat +%.1f (%s)." % [cause, heat - old_heat, _heat_stage_name()]
+	if heat >= 100.0 and not critical_staff_event_active:
+		_handle_critical_heat_staff()
+	_check_reeves_trigger()
+	if phone_open and phone_current_app in ["home", "heat", "business", "bills", "employees", "upgrades", "stats"]:
+		_refresh_phone()
+
+func _reduce_heat(amount: float, reason: String, count_progress: bool = true) -> void:
+	if amount <= 0.0 or heat <= 0.0:
+		return
+	var old_heat: float = heat
+	heat = maxf(0.0, heat - amount)
+	var reduced: float = old_heat - heat
+	if count_progress and reduced > 0.0:
+		heat_reduced_total += reduced
+	last_heat_cause = reason
+	if heat < 75.0:
+		critical_staff_event_active = false
+
+func _update_heat_over_time(elapsed_game_minutes: float) -> void:
+	if elapsed_game_minutes <= 0.0 or heat <= 0.0:
+		return
+	var rate: float = HEAT_DECAY_OPEN_PER_GAME_MINUTE
+	if not business_open or lay_low_active:
+		rate = HEAT_DECAY_AWAY_PER_GAME_MINUTE
+	elif not _has_listed_stock():
+		rate = HEAT_DECAY_QUIET_PER_GAME_MINUTE
+	if dealers_active and _total_dealer_count() > 0 and business_open:
+		rate *= 0.65
+	if not main_ceiling_light_on:
+		rate *= 1.12
+	if not floor_lamp_on:
+		rate *= 1.05
+	if not grow_room_light_on:
+		rate *= 1.04
+	if not grow_lights_on:
+		rate *= 1.08
+	_reduce_heat(rate * elapsed_game_minutes, "Heat cooling down", not business_open or lay_low_active)
+
+func _trigger_heat_threshold_event(stage: int) -> void:
+	var event_key: String = "stage_%d" % stage
+	if bool(heat_events_seen.get(event_key, false)):
+		return
+	heat_events_seen[event_key] = true
+	_increment_advancement_stat("pressure_events")
+	var message: String = ""
+	match stage:
+		1:
+			message = "Foot traffic is getting noticed around the apartment."
+		2:
+			corrupt_contact_unlocked = true
+			message = "Reeves says people have been asking questions nearby."
+		3:
+			message = "Attention around the operation is heavy. Some customers are getting nervous."
+		4:
+			message = "Heat is critical. Laying low is strongly recommended before pressure escalates."
+	_log_heat_event(message)
+	if status_label != null:
+		status_label.text = "%s  HEAT: %s (%d/100)" % [message, _heat_stage_name(), int(round(heat))]
+
+func _roll_daily_heat_pressure_event() -> void:
+	if not _story_chapter_two_complete() or heat < 50.0:
+		return
+	var chance: float = clampf(0.18 + heat / 300.0, 0.18, 0.55)
+	if _reeves_protection_active():
+		chance *= 0.35
+	if rng.randf() > chance:
+		return
+	var extra_heat: float = 2.0
+	var message: String = "A neighbor mentions unfamiliar cars hanging around."
+	if heat >= 90.0:
+		extra_heat = 4.0
+		message = "Several clients mention an unmarked car circling the block."
+	elif heat >= 75.0:
+		extra_heat = 3.0
+		message = "A fictional investigator was asking questions nearby."
+	_increment_advancement_stat("pressure_events")
+	_log_heat_event(message)
+	_add_heat(extra_heat, "Daily pressure event", false)
+	if status_label != null:
+		status_label.text = "%s Heat +%d." % [message, int(extra_heat)]
+
+func _start_lay_low() -> void:
+	if neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.crew!=null and not neighborhood.location_ops.crew.applying:
+		neighborhood.location_ops.crew.shutdown()
+		return
+	lay_low_active = true
+	reeves_quiet_pause_seconds = 0.0
+	if business_open:
+		_set_business_away()
+	main_ceiling_light_on = false
+	floor_lamp_on = false
+	grow_room_light_on = false
+	grow_lights_on = false
+	_refresh_light_interaction_visuals()
+	_update_day_night_visuals()
+	status_label.text = "LAY LOW active. Storefront closed, customer/dealer traffic stopped, and lights are down. Heat will cool much faster while you hide out."
+	_save_game()
+	_refresh_phone()
+
+func _stop_lay_low_and_reopen() -> void:
+	lay_low_active = false
+	reeves_quiet_pause_seconds = 0.0
+	if not business_open:
+		_reopen_business()
+	status_label.text = "AFewBuds is active again. Keep an eye on Heat as business picks back up."
+	_save_game()
+	_refresh_phone()
+
+func _use_heat_contact() -> void:
+	if not reeves_met or not corrupt_contact_unlocked or heat < HEAT_CONTACT_MINIMUM:
+		return
+	var contact_cost: int = _heat_contact_cost()
+	if cash < contact_cost:
+		status_label.text = "You do not have enough cash to use the Reeves contact."
+		return
+	cash -= contact_cost
+	_record_daily_expense("Heat contact", contact_cost)
+	corrupt_contact_calls += 1
+	_increment_advancement_stat("contact_calls")
+	_reduce_heat(HEAT_CONTACT_REDUCTION, "Reeves reduced attention", true)
+	_log_heat_event("Reeves made some calls. Attention dropped, but the next favor will cost more.")
+	_update_cash_ui()
+	status_label.text = "Reeves made some calls. Heat -%d  |  Cost $%d." % [int(HEAT_CONTACT_REDUCTION), contact_cost]
+	_save_game()
+	_refresh_phone()
+
+func _is_customer_time() -> bool:
+	return true
+
+func _is_night_time() -> bool:
+	return game_time_minutes >= SUNSET_END_MINUTE or game_time_minutes < 5.5 * 60.0
+
+func _customer_wait_range() -> Vector2:
+	if game_time_minutes >= 7.0 * 60.0 and game_time_minutes < 12.0 * 60.0:
+		return Vector2(42.0, 78.0)
+	if game_time_minutes >= 12.0 * 60.0 and game_time_minutes < SUNSET_START_MINUTE:
+		return Vector2(32.0, 62.0)
+	if game_time_minutes >= SUNSET_START_MINUTE and game_time_minutes < 22.5 * 60.0:
+		return Vector2(24.0, 50.0)
+	if game_time_minutes >= 22.5 * 60.0 or game_time_minutes < 3.0 * 60.0:
+		return Vector2(48.0, 90.0)
+	return Vector2(58.0, 108.0)
+
+func _real_seconds_until_customer_window() -> float:
+	return 0.0
+
+func _format_game_clock() -> String:
+	var total_minutes: int = int(floor(game_time_minutes)) % 1440
+	var hour_24: int = int(total_minutes / 60)
+	var minute_value: int = total_minutes % 60
+	var suffix: String = "AM" if hour_24 < 12 else "PM"
+	var hour_12: int = hour_24 % 12
+	if hour_12 == 0:
+		hour_12 = 12
+	return "%d:%02d %s" % [hour_12, minute_value, suffix]
+
+func _day_phase_name() -> String:
+	if _is_night_time():
+		return "NIGHT"
+	if game_time_minutes >= SUNSET_START_MINUTE and game_time_minutes < SUNSET_END_MINUTE:
+		return "SUNSET"
+	if game_time_minutes >= 5.5 * 60.0 and game_time_minutes < 7.5 * 60.0:
+		return "SUNRISE"
+	return "DAY"
+
+func _update_day_night_visuals() -> void:
+	day_phase = _day_phase_name()
+	if phone_clock_label != null:
+		phone_clock_label.text = _format_game_clock()
+	if day_night_label != null:
+		day_night_label.text = "DAY %d\n%s  |  %s" % [game_day, _format_game_clock(), day_phase]
+		match day_phase:
+			"NIGHT": day_night_label.modulate = Color("9eb6df")
+			"SUNSET": day_night_label.modulate = Color("e5aa78")
+			"SUNRISE": day_night_label.modulate = Color("e6c795")
+			_: day_night_label.modulate = Color("d8d8c5")
+
+	var window_color: Color = Color("76a8cf")
+	var ambient_color: Color = Color("bdcbd3")
+	var background_color: Color = Color("253645")
+	var ambient_energy: float = 0.22
+	var sun_energy: float = 0.26
+	var sun_color: Color = Color("fff0cf")
+	var home_light_energy: float = 0.22
+	if day_phase == "SUNSET":
+		var sunset_t: float = clampf((game_time_minutes - SUNSET_START_MINUTE) / maxf(1.0, SUNSET_END_MINUTE - SUNSET_START_MINUTE), 0.0, 1.0)
+		var mid_color: Color = Color("e88d62")
+		var night_color: Color = Color("243454")
+		if sunset_t < 0.5:
+			window_color = Color("76a8cf").lerp(mid_color, sunset_t * 2.0)
+		else:
+			window_color = mid_color.lerp(night_color, (sunset_t - 0.5) * 2.0)
+		ambient_color = Color("c7c5bd").lerp(Color("69758d"), sunset_t)
+		background_color = Color("324b5c").lerp(Color("151c2d"), sunset_t)
+		ambient_energy = lerpf(0.22, 0.15, sunset_t)
+		sun_energy = lerpf(0.26, 0.04, sunset_t)
+		sun_color = Color("fff0cf").lerp(Color("ff8c63"), minf(1.0, sunset_t * 1.3))
+		home_light_energy = lerpf(0.22, 0.92, sunset_t)
+	elif day_phase == "NIGHT":
+		window_color = Color("1c2d4f")
+		ambient_color = Color("53647c")
+		background_color = Color("0e1424")
+		ambient_energy = 0.15
+		sun_energy = 0.02
+		sun_color = Color("7588ad")
+		home_light_energy = 1.02
+	elif day_phase == "SUNRISE":
+		var sunrise_start: float = 5.5 * 60.0
+		var sunrise_end: float = 7.5 * 60.0
+		var sunrise_t: float = clampf((game_time_minutes - sunrise_start) / maxf(1.0, sunrise_end - sunrise_start), 0.0, 1.0)
+		window_color = Color("343e64").lerp(Color("7eb0d2"), sunrise_t)
+		ambient_color = Color("65728b").lerp(Color("bdcbd3"), sunrise_t)
+		background_color = Color("121b2b").lerp(Color("2b4352"), sunrise_t)
+		ambient_energy = lerpf(0.15, 0.22, sunrise_t)
+		sun_energy = lerpf(0.02, 0.26, sunrise_t)
+		sun_color = Color("e99a77").lerp(Color("fff0cf"), sunrise_t)
+		home_light_energy = lerpf(0.90, 0.22, sunrise_t)
+
+	if world_environment_ref != null:
+		world_environment_ref.background_color = background_color
+		world_environment_ref.ambient_light_color = ambient_color
+		world_environment_ref.ambient_light_energy = ambient_energy
+	if sun_light != null:
+		sun_light.light_energy = sun_energy
+		sun_light.light_color = sun_color
+		var day_ratio: float = game_time_minutes / 1440.0
+		sun_light.rotation_degrees = Vector3(-58.0 + sin(day_ratio * TAU) * 34.0, -25.0 + day_ratio * 50.0, 0.0)
+	if room_light_ref != null:
+		room_light_ref.light_energy = home_light_energy if main_ceiling_light_on else 0.0
+	if fill_light_ref != null:
+		fill_light_ref.light_energy = ambient_energy * (0.18 if main_ceiling_light_on else 0.08)
+	if floor_lamp_light_ref != null:
+		var lamp_base_energy: float = 0.62 if day_phase == "DAY" else (0.82 if day_phase in ["SUNSET", "SUNRISE"] else 0.98)
+		floor_lamp_light_ref.light_energy = lamp_base_energy if floor_lamp_on else 0.0
+	if grow_light_ref != null:
+		grow_light_ref.light_energy = 1.65 if grow_lights_on else 0.0
+	if grow_fill_ref != null:
+		grow_fill_ref.light_energy = 0.72 if grow_room_light_on else 0.0
+	if window_sun_disc != null:
+		window_sun_disc.visible = day_phase != "NIGHT"
+		var sun_window_t: float = clampf((game_time_minutes - 6.0 * 60.0) / (14.5 * 60.0), 0.0, 1.0)
+		window_sun_disc.position.x = lerpf(-4.20, -3.02, sun_window_t)
+		window_sun_disc.position.y = 2.15 + sin(sun_window_t * PI) * 0.55
+		var sun_mesh: SphereMesh = window_sun_disc.mesh as SphereMesh
+		if sun_mesh != null:
+			var sun_mat: StandardMaterial3D = sun_mesh.material as StandardMaterial3D
+			if sun_mat != null:
+				var sun_window_color: Color = Color("ffd993") if day_phase == "DAY" else Color("ff9064")
+				sun_mat.albedo_color = sun_window_color
+	_update_window_material(window_color)
+
+func _update_window_material(color: Color) -> void:
+	if living_window_glass == null:
+		return
+	var box_mesh: BoxMesh = living_window_glass.mesh as BoxMesh
+	if box_mesh == null:
+		return
+	var material: StandardMaterial3D = box_mesh.material as StandardMaterial3D
+	if material == null:
+		return
+	material.albedo_color = color
+	material.emission_enabled = true
+	material.emission = color
+	material.emission_energy_multiplier = 0.22 if day_phase == "DAY" else (0.42 if day_phase in ["SUNSET", "SUNRISE"] else 0.16)
+
+
+func _build_world() -> void:
+	var world_env: WorldEnvironment = WorldEnvironment.new()
+	var env: Environment = Environment.new()
+	env.background_mode = Environment.BG_COLOR
+	env.background_color = Color("11161d")
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = Color("b9c3c8")
+	env.ambient_light_energy = 0.22
+	world_env.environment = env
+	world_environment_ref = env
+	add_child(world_env)
+
+	_add_box("MainFloor", Vector3(0, -0.10, 1.0), Vector3(10.2, 0.18, 10.0), Color("514030"), 0.90)
+	RoomSurfaces.add_main_floor(self)
+	_add_box("GrowRoomFloor", Vector3(0, -0.095, -7.10), Vector3(10.2, 0.19, 6.20), Color("353c3e"), 0.90, false, "res://assets/textures/matte_plastic.png", Vector3(4.0, 1.0, 3.0))
+	_add_box("FrontWindowLeft", Vector3(-4.81, 2.15, 6.0), Vector3(0.58, 4.3, 0.18), Color("c2beb5"), 0.94, false, "res://assets/textures/painted_wall.png")
+	_add_box("FrontWindowRight", Vector3(-1.885, 2.15, 6.0), Vector3(1.67, 4.3, 0.18), Color("c2beb5"), 0.94, false, "res://assets/textures/painted_wall.png")
+	_add_box("FrontWindowBottom", Vector3(-3.62, 0.755, 6.0), Vector3(1.8, 1.51, 0.18), Color("c2beb5"), 0.94, false, "res://assets/textures/painted_wall.png")
+	_add_box("FrontWindowTop", Vector3(-3.62, 3.545, 6.0), Vector3(1.8, 1.51, 0.18), Color("c2beb5"), 0.94, false, "res://assets/textures/painted_wall.png")
+	_add_box("FrontWallR", Vector3(3.075, 2.15, 6.0), Vector3(4.05, 4.3, 0.18), Color("c2beb5"), 0.94, false, "res://assets/textures/painted_wall.png")
+	_add_box("FrontWallHeader", Vector3(0, 3.705, 6.0), Vector3(2.1, 1.27, 0.18), Color("c2beb5"), 0.94, false, "res://assets/textures/painted_wall.png")
+	_add_box("RearWall", Vector3(0, 2.15, -10.15), Vector3(10.2, 4.3, 0.18), Color("b8bbb7"), 0.94, false, "res://assets/textures/painted_wall.png", Vector3(3.0, 2.0, 1.0))
+	_add_box("LeftWall", Vector3(-5.0, 2.15, -2.05), Vector3(0.18, 4.3, 16.35), Color("b7b5af"), 0.94, false, "res://assets/textures/painted_wall.png", Vector3(4.5, 2.0, 1.0))
+	_add_box("RightWall", Vector3(5.0, 2.15, -2.05), Vector3(0.18, 4.3, 16.35), Color("b7b5af"), 0.94, false, "res://assets/textures/painted_wall.png", Vector3(4.5, 2.0, 1.0))
+
+	_add_box("MainCeiling", Vector3(0, 4.27, 1.0), Vector3(10.2, 0.18, 10.0), Color("ffffff"), 1.0)
+	_add_box("GrowRoomCeiling", Vector3(0, 4.27, -7.10), Vector3(10.2, 0.18, 6.20), Color("ffffff"), 1.0)
+
+	_add_box("PartitionLeft", Vector3(-3.0, 2.15, -4.0), Vector3(4.0, 4.3, 0.16), Color("c7c4bc"), 0.94, false, "res://assets/textures/painted_wall.png", Vector3(2.0, 2.0, 1.0))
+	_add_box("PartitionRight", Vector3(3.0, 2.15, -4.0), Vector3(4.0, 4.3, 0.16), Color("c7c4bc"), 0.94, false, "res://assets/textures/painted_wall.png", Vector3(2.0, 2.0, 1.0))
+	_add_box("PartitionHeader", Vector3(0, 3.63, -4.0), Vector3(2.0, 1.34, 0.16), Color("c7c4bc"), 0.94, false, "res://assets/textures/painted_wall.png")
+	_add_box("GrowDoorFrameL", Vector3(-1.02, 1.48, -3.92), Vector3(0.12, 2.82, 0.18), Color("e2dbd0"), 0.70)
+	_add_box("GrowDoorFrameR", Vector3(1.02, 1.48, -3.92), Vector3(0.12, 2.82, 0.18), Color("e2dbd0"), 0.70)
+	_add_box("GrowDoorFrameTop", Vector3(0, 2.91, -3.92), Vector3(2.16, 0.12, 0.18), Color("e2dbd0"), 0.70)
+	var grow_door_label: Label3D = Label3D.new()
+	grow_door_label.text = "GROW ROOM"
+	grow_door_label.font_size = 26
+	grow_door_label.pixel_size = 0.0032
+	grow_door_label.position = Vector3(0, 3.18, -3.86)
+	grow_door_label.modulate = Color("e5e0d8")
+	add_child(grow_door_label)
+
+	_add_box("FrontBaseboardLeft", Vector3(-3.02, 0.12, 5.86), Vector3(3.82, 0.23, 0.10), Color("f2f0eb"), 0.72)
+	_add_box("FrontBaseboardRight", Vector3(3.02, 0.12, 5.86), Vector3(3.82, 0.23, 0.10), Color("f2f0eb"), 0.72)
+	_add_box("LeftBaseboardMain", Vector3(-4.86, 0.12, 1.0), Vector3(0.10, 0.23, 9.7), Color("f2f0eb"), 0.72)
+	_add_box("RightBaseboardMain", Vector3(4.86, 0.12, 1.0), Vector3(0.10, 0.23, 9.7), Color("f2f0eb"), 0.72)
+	_add_box("PartitionBaseboardLeftFront", Vector3(-3.0, 0.12, -3.90), Vector3(3.90, 0.23, 0.10), Color("f2f0eb"), 0.72)
+	_add_box("PartitionBaseboardRightFront", Vector3(3.0, 0.12, -3.90), Vector3(3.90, 0.23, 0.10), Color("f2f0eb"), 0.72)
+	_add_box("PartitionBaseboardLeftGrow", Vector3(-3.0, 0.12, -4.10), Vector3(3.90, 0.23, 0.10), Color("f2f0eb"), 0.72)
+	_add_box("PartitionBaseboardRightGrow", Vector3(3.0, 0.12, -4.10), Vector3(3.90, 0.23, 0.10), Color("f2f0eb"), 0.72)
+	_add_box("LeftBaseboardGrow", Vector3(-4.86, 0.12, -7.08), Vector3(0.10, 0.23, 5.92), Color("f2f0eb"), 0.72)
+	_add_box("RightBaseboardGrow", Vector3(4.86, 0.12, -7.08), Vector3(0.10, 0.23, 5.92), Color("f2f0eb"), 0.72)
+	_add_box("RearBaseboardGrow", Vector3(0, 0.12, -10.02), Vector3(9.72, 0.23, 0.10), Color("f2f0eb"), 0.72)
+	_add_box("EntryMat", Vector3(0, 0.03, 4.95), Vector3(1.85, 0.035, 0.85), Color("343b3e"), 0.94, false, "res://assets/textures/rug.png", Vector3(1.8, 1.0, 1.0))
+	RoomSurfaces.add_living_rug(self)
+
+	_build_grow_tent()
+	_build_grow_expansion_slots()
+	_build_grow_room_equipment()
+	_build_bagging_station()
+	_build_storage_area()
+	_build_front_door()
+	_build_living_furniture()
+	_build_apartment_details()
+	_build_light_interactions()
+	_build_production_worker_visual()
+
+	room_light_ref = OmniLight3D.new()
+	room_light_ref.position = Vector3(0.4, 3.25, 1.2)
+	room_light_ref.light_color = Color("ffd8ad")
+	room_light_ref.light_energy = 0.22
+	room_light_ref.omni_range = 10.0
+	add_child(room_light_ref)
+
+	fill_light_ref = OmniLight3D.new()
+	fill_light_ref.position = Vector3(-3.4, 2.4, 1.0)
+	fill_light_ref.light_color = Color("a9c9db")
+	fill_light_ref.light_energy = 0.075
+	fill_light_ref.omni_range = 7.5
+	add_child(fill_light_ref)
+
+	floor_lamp_light_ref = OmniLight3D.new()
+	floor_lamp_light_ref.position = Vector3(-3.78, 1.72, 3.28)
+	floor_lamp_light_ref.light_color = Color("ffd2a0")
+	floor_lamp_light_ref.light_energy = 0.0
+	floor_lamp_light_ref.omni_range = 4.6
+	add_child(floor_lamp_light_ref)
+
+	grow_light_ref = OmniLight3D.new()
+	grow_light_ref.position = Vector3(0, 2.55, -7.85)
+	grow_light_ref.light_color = Color("b17cff")
+	grow_light_ref.light_energy = 1.65
+	grow_light_ref.omni_range = 6.8
+	add_child(grow_light_ref)
+
+	grow_fill_ref = OmniLight3D.new()
+	grow_fill_ref.position = Vector3(3.5, 2.20, -6.25)
+	grow_fill_ref.light_color = Color("d7f2e6")
+	grow_fill_ref.light_energy = 0.72
+	grow_fill_ref.omni_range = 5.5
+	add_child(grow_fill_ref)
+
+	sun_light = DirectionalLight3D.new()
+	sun_light.rotation_degrees = Vector3(-32.0, -28.0, 0.0)
+	sun_light.light_color = Color("fff1cf")
+	sun_light.light_energy = 0.26
+	sun_light.shadow_enabled = true
+	add_child(sun_light)
+
+	camera = Camera3D.new()
+	camera.fov = 70.0
+	camera.current = true
+	add_child(camera)
+
+	views = {
+		"main_grow_door": {"pos": Vector3(0, 1.64, 1.20), "rot": Vector3(0, 0, 0), "label": "Main Room"},
+		"main_workbench": {"pos": Vector3(0, 1.64, 1.20), "rot": Vector3(0, -PI / 2.0, 0), "label": "Main Room"},
+		"main_door": {"pos": Vector3(0, 1.64, 1.20), "rot": Vector3(0, PI, 0), "label": "Main Room"},
+		"main_storage": {"pos": Vector3(0, 1.64, 1.20), "rot": Vector3(0, atan2(4.33, 1.50), 0), "label": "Main Room"},
+		"grow_room_tent2": {"pos": Vector3(0, 1.66, -5.82), "rot": Vector3(0, deg_to_rad(52.0), 0), "fov": 86.0, "label": "Grow Room"},
+		"grow_room_tent": {"pos": Vector3(0, 1.66, -5.82), "rot": Vector3(0, 0, 0), "fov": 86.0, "label": "Grow Room"},
+		"grow_room_tent3": {"pos": Vector3(0, 1.66, -5.82), "rot": Vector3(0, deg_to_rad(-52.0), 0), "fov": 86.0, "label": "Grow Room"},
+		"grow_room_utility": {"pos": Vector3(0, 1.66, -5.82), "rot": Vector3(0, -PI / 2.0, 0), "fov": 82.0, "label": "Grow Room"},
+		"grow_room_exit": {"pos": Vector3(0, 1.66, -5.82), "rot": Vector3(0, PI, 0), "fov": 82.0, "label": "Grow Room"},
+		"grow_room_upgrades": {"pos": Vector3(0, 1.66, -5.82), "rot": Vector3(0, PI / 2.0, 0), "fov": 82.0, "label": "Grow Room"},
+		"grow": {"pos": Vector3(0, 1.42, -6.12), "rot": Vector3(-0.015, 0, 0), "fov": 86.0, "label": "Grow Tent 1 Overview"},
+		"grow2": {"pos": Vector3(-3.20, 1.40, -6.16), "rot": Vector3(-0.015, 0, 0), "fov": 84.0, "label": "Grow Tent 2 Overview"},
+		"grow3": {"pos": Vector3(3.20, 1.40, -6.16), "rot": Vector3(-0.015, 0, 0), "fov": 84.0, "label": "Grow Tent 3 Overview"},
+		"grow_system": {"pos": Vector3(2.72, 1.92, -6.65), "rot": Vector3(0, -PI / 2.0, 0), "fov": 62.0, "label": "Grow Room System Panel"},
+		"grow_supply_shelf": {"pos": Vector3(-2.28, 1.38, -5.88), "rot": Vector3(0, PI / 2.0, 0), "fov": 68.0, "label": "Grow Supply Shelf"},
+		"workbench": {"pos": Vector3(1.15, 1.60, 1.58), "rot": Vector3(0, -PI / 2.0, 0), "label": "Bagging Station"},
+		"locker": {"pos": Vector3(1.72, 1.56, -2.30), "rot": Vector3(0, -PI / 2.0, 0), "fov": 68.0, "label": "Dealer Locker"},
+		"storage": {"pos": Vector3(-1.15, 1.60, 0.89), "rot": Vector3(-0.04, atan2(3.18, 0.95), 0), "label": "Storage"},
+		"door": {"pos": Vector3(0, 1.61, 3.75), "rot": Vector3(0, PI, 0), "label": "Front Door"}
+	}
+	current_room = "main"
+	room_ring = main_room_ring
+	room_target_yaw = 0.0
+	room_target_pitch = 0.0
+
+func _build_grow_tent() -> void:
+	var fabric: String = "res://assets/textures/tent_fabric.png"
+	var metal: String = "res://assets/textures/brushed_metal.png"
+	_add_box("TentBody", Vector3(0, 1.39, -9.66), Vector3(3.12, 2.72, 0.10), Color("17151f"), 0.92, false, fabric, Vector3(2.0, 2.0, 1.0))
+	_add_box("TentLeftWall", Vector3(-1.52, 1.39, -9.14), Vector3(0.10, 2.72, 1.10), Color("1d1a28"), 0.92, false, fabric, Vector3(1.0, 2.0, 1.0))
+	_add_box("TentRightWall", Vector3(1.52, 1.39, -9.14), Vector3(0.10, 2.72, 1.10), Color("1d1a28"), 0.92, false, fabric, Vector3(1.0, 2.0, 1.0))
+	_add_box("TentRoof", Vector3(0, 2.72, -9.14), Vector3(3.12, 0.11, 1.10), Color("201c2b"), 0.92, false, fabric, Vector3(2.0, 1.0, 1.0))
+	_add_box("TentFrameL", Vector3(-1.54, 1.39, -8.58), Vector3(0.09, 2.70, 0.10), Color("4a2476"), 0.44, false, metal)
+	_add_box("TentFrameR", Vector3(1.54, 1.39, -8.58), Vector3(0.09, 2.70, 0.10), Color("4a2476"), 0.44, false, metal)
+	_add_box("TentFrameTop", Vector3(0, 2.69, -8.58), Vector3(3.12, 0.10, 0.10), Color("5d2c8e"), 0.44, false, metal)
+	_add_box("TentFrameBottom", Vector3(0, 0.18, -8.58), Vector3(3.12, 0.10, 0.10), Color("4a2476"), 0.44, false, metal)
+	_add_box("TentFrontInset", Vector3(0, 0.23, -9.13), Vector3(2.94, 0.10, 1.00), Color("262232"), 0.76, false, fabric, Vector3(2.0, 1.0, 1.0))
+	_add_box("TentTrayLipFront", Vector3(0, 0.31, -8.66), Vector3(2.90, 0.08, 0.08), Color("4f2b72"), 0.52, false, metal)
+	_add_box("TentTrayLipBack", Vector3(0, 0.31, -9.60), Vector3(2.90, 0.08, 0.08), Color("352342"), 0.52, false, metal)
+	_add_cylinder("TentPoleL", Vector3(-1.35, 1.43, -9.49), 0.025, 0.025, 2.25, Color("3c2a55"), 0.36)
+	_add_cylinder("TentPoleR", Vector3(1.35, 1.43, -9.49), 0.025, 0.025, 2.25, Color("3c2a55"), 0.36)
+	_add_box("GrowLightFixture", Vector3(0, 2.27, -9.14), Vector3(2.15, 0.14, 0.32), Color("292632"), 0.28, false, metal)
+	_add_box("GrowLightGlow", Vector3(0, 2.19, -9.14), Vector3(1.95, 0.035, 0.24), Color("eef0ff"), 0.14, true)
+	_add_cylinder("GrowLightHangL", Vector3(-0.78, 2.48, -9.14), 0.014, 0.014, 0.34, Color("5a5366"), 0.35)
+	_add_cylinder("GrowLightHangR", Vector3(0.78, 2.48, -9.14), 0.014, 0.014, 0.34, Color("5a5366"), 0.35)
+
+	var plant_positions: Array[Vector3] = [
+		Vector3(-0.92, 0.27, -9.12),
+		Vector3(0.00, 0.27, -9.12),
+		Vector3(0.92, 0.27, -9.12)
+	]
+	for plant_pos in plant_positions:
+		var plant_root: Node3D = _create_stylized_plant(plant_pos)
+		var slot_index: int = plant_visuals.size()
+		_attach_plant_hit_area(plant_root, slot_index)
+		plant_visuals.append(plant_root)
+
+func _empty_plant_slot() -> Dictionary:
+	return {"strain": "", "stage": -1, "growth": 0.0, "water": 0.0, "health": 0.0, "fertilizer": 0.0, "dead": false}
+
+func _ensure_tent_capacity() -> void:
+	var target_slots: int = clampi(grow_tent_count, 1, 3) * 3
+	while plant_slots.size() < target_slots:
+		plant_slots.append(_empty_plant_slot())
+	while plant_slots.size() > target_slots:
+		plant_slots.pop_back()
+
+func _build_grow_expansion_slots() -> void:
+	_build_grow_slot_marker(2, Vector3(-3.20, 0.055, -8.95))
+	_build_grow_slot_marker(3, Vector3(3.20, 0.055, -8.95))
+	_sync_grow_expansion_visuals()
+
+func _sync_grow_expansion_visuals() -> void:
+	_ensure_tent_capacity()
+	for slot_number in [2, 3]:
+		var installed: bool = grow_tent_count >= slot_number
+		var prefix: String = "ExpansionTent%d" % slot_number
+		if installed:
+			_install_expansion_tent_visual(slot_number)
+		var pad: MeshInstance3D = get_node_or_null("GrowSlot%dPad" % slot_number) as MeshInstance3D
+		if pad != null:
+			pad.visible = not installed
+		var slot_label: Label3D = get_node_or_null("GrowSlot%dLabel" % slot_number) as Label3D
+		if slot_label != null:
+			slot_label.visible = not installed
+		for suffix in ["Body", "LeftWall", "RightWall", "Roof", "Inset", "FrameL", "FrameR", "FrameTop", "FrameBottom", "Light", "LightGlow", "TrayLipFront"]:
+			var tent_piece: MeshInstance3D = get_node_or_null(prefix + suffix) as MeshInstance3D
+			if tent_piece != null:
+				tent_piece.visible = installed
+
+func _build_grow_slot_marker(slot_number: int, center: Vector3) -> void:
+	var pad_name: String = "GrowSlot%dPad" % slot_number
+	_add_box(pad_name, center, Vector3(1.75, 0.045, 1.38), Color("4c5153"), 0.90, false, "res://assets/textures/rug.png", Vector3(1.3, 1.0, 1.0))
+	var label: Label3D = Label3D.new()
+	label.name = "GrowSlot%dLabel" % slot_number
+	label.text = "OPEN GROW SPACE %d\nCentral Market checkout" % slot_number
+	label.font_size = 30
+	label.pixel_size = 0.0035
+	label.position = center + Vector3(0, 0.07, 0)
+	label.rotation_degrees = Vector3(-90, 0, 0)
+	label.modulate = Color("c7cdcf")
+	add_child(label)
+
+func _install_expansion_tent_visual(slot_number: int) -> void:
+	if slot_number < 2 or slot_number > 3:
+		return
+	var prefix: String = "ExpansionTent%d" % slot_number
+	if get_node_or_null(prefix + "Body") != null:
+		return
+	var center_x: float = -3.20 if slot_number == 2 else 3.20
+	var fabric: String = "res://assets/textures/tent_fabric.png"
+	var metal: String = "res://assets/textures/brushed_metal.png"
+	var pad: MeshInstance3D = get_node_or_null("GrowSlot%dPad" % slot_number) as MeshInstance3D
+	if pad != null:
+		pad.visible = false
+	var slot_label: Label3D = get_node_or_null("GrowSlot%dLabel" % slot_number) as Label3D
+	if slot_label != null:
+		slot_label.visible = false
+	_add_box(prefix + "Body", Vector3(center_x, 1.15, -9.96), Vector3(2.48, 2.24, 0.09), Color("17151f"), 0.92, false, fabric, Vector3(1.7, 1.7, 1.0))
+	_add_box(prefix + "LeftWall", Vector3(center_x - 1.20, 1.15, -9.28), Vector3(0.08, 2.24, 1.36), Color("1d1a28"), 0.92, false, fabric, Vector3(1.0, 1.7, 1.2))
+	_add_box(prefix + "RightWall", Vector3(center_x + 1.20, 1.15, -9.28), Vector3(0.08, 2.24, 1.36), Color("1d1a28"), 0.92, false, fabric, Vector3(1.0, 1.7, 1.2))
+	_add_box(prefix + "Roof", Vector3(center_x, 2.23, -9.28), Vector3(2.48, 0.09, 1.36), Color("201c2b"), 0.92, false, fabric, Vector3(1.7, 1.0, 1.2))
+	_add_box(prefix + "Inset", Vector3(center_x, 0.22, -9.28), Vector3(2.34, 0.09, 1.24), Color("262232"), 0.76, false, fabric, Vector3(1.7, 1.0, 1.2))
+	_add_box(prefix + "FrameL", Vector3(center_x - 1.21, 1.15, -8.60), Vector3(0.07, 2.20, 0.08), Color("4a2476"), 0.44, false, metal)
+	_add_box(prefix + "FrameR", Vector3(center_x + 1.21, 1.15, -8.60), Vector3(0.07, 2.20, 0.08), Color("4a2476"), 0.44, false, metal)
+	_add_box(prefix + "FrameTop", Vector3(center_x, 2.20, -8.60), Vector3(2.48, 0.08, 0.08), Color("5d2c8e"), 0.44, false, metal)
+	_add_box(prefix + "FrameBottom", Vector3(center_x, 0.17, -8.60), Vector3(2.48, 0.08, 0.08), Color("4a2476"), 0.44, false, metal)
+	_add_box(prefix + "Light", Vector3(center_x, 1.92, -9.28), Vector3(1.78, 0.11, 0.24), Color("292632"), 0.24, false, metal)
+	_add_box(prefix + "LightGlow", Vector3(center_x, 1.86, -9.28), Vector3(1.62, 0.026, 0.17), Color("eef0ff"), 0.14, true)
+	_add_box(prefix + "TrayLipFront", Vector3(center_x, 0.30, -8.69), Vector3(2.30, 0.07, 0.07), Color("4f2b72"), 0.52, false, metal)
+	var label: Label3D = Label3D.new()
+	label.text = "GROW TENT %d" % slot_number
+	label.font_size = 26
+	label.pixel_size = 0.0032
+	label.position = Vector3(center_x, 2.33, -8.72)
+	label.modulate = Color("e6dde9")
+	add_child(label)
+	var plant_positions: Array[Vector3] = [
+		Vector3(center_x - 0.78, 0.26, -9.15),
+		Vector3(center_x, 0.26, -9.15),
+		Vector3(center_x + 0.78, 0.26, -9.15)
+	]
+	for plant_pos in plant_positions:
+		var plant_root: Node3D = _create_stylized_plant(plant_pos)
+		var slot_index: int = plant_visuals.size()
+		_attach_plant_hit_area(plant_root, slot_index, 0.62)
+		plant_visuals.append(plant_root)
+
+func _build_grow_room_equipment() -> void:
+	_add_box("GrowCeilingRailA", Vector3(0, 3.55, -7.35), Vector3(7.8, 0.08, 0.12), Color("747c80"), 0.38, false, "res://assets/textures/brushed_metal.png")
+	_add_box("GrowCeilingRailB", Vector3(0, 3.55, -9.10), Vector3(7.8, 0.08, 0.12), Color("747c80"), 0.38, false, "res://assets/textures/brushed_metal.png")
+	_add_box("RoomGrowLightA", Vector3(-2.15, 3.32, -7.72), Vector3(2.75, 0.10, 0.34), Color("c58aff"), 0.26, true)
+	_add_box("RoomGrowLightB", Vector3(2.15, 3.32, -7.72), Vector3(2.75, 0.10, 0.34), Color("c58aff"), 0.26, true)
+	_add_box("GrowRoomUtilityFixture", Vector3(0.0, 3.58, -5.55), Vector3(1.35, 0.09, 0.32), Color("eef1e7"), 0.35, false)
+	_add_box("GrowRoomUtilityGlow", Vector3(0.0, 3.52, -5.55), Vector3(1.05, 0.035, 0.22), Color("e8f4e9"), 0.20, true)
+
+	_add_cylinder("VentDuctMain", Vector3(-4.38, 3.05, -7.30), 0.18, 0.18, 4.55, Color("8d969a"), 0.33, Vector3(PI / 2.0, 0, 0))
+	_add_cylinder("CarbonFilter", Vector3(-4.35, 2.68, -9.10), 0.28, 0.28, 1.25, Color("343a3e"), 0.70, Vector3(PI / 2.0, 0, 0))
+	_add_cylinder("VentFanHousing", Vector3(-4.34, 2.50, -6.15), 0.32, 0.32, 0.20, Color("2f3539"), 0.50, Vector3(0, 0, PI / 2.0))
+	_add_sphere("VentFanHub", Vector3(-4.20, 2.50, -6.15), Vector3(0.08, 0.08, 0.08), Color("9ca4a8"), 0.32)
+
+	_add_box("ClimatePanel", Vector3(4.79, 1.95, -6.65), Vector3(0.06, 0.88, 1.38), Color("20282d"), 0.36, false, "res://assets/textures/matte_plastic.png")
+	_add_box("ClimateScreen", Vector3(4.74, 2.00, -6.65), Vector3(0.025, 0.58, 1.12), Color("72bfa4"), 0.18, true)
+	climate_status_label = Label3D.new()
+	climate_status_label.text = "ROOM  |  STARTING\nPLANTS 0/0  |  READY 0\nLIGHTS --\nAIR --"
+	climate_status_label.font_size = 20
+	climate_status_label.pixel_size = 0.00225
+	climate_status_label.outline_size = 4
+	climate_status_label.outline_modulate = Color("17342c")
+	climate_status_label.position = Vector3(4.69, 2.00, -6.65)
+	climate_status_label.rotation_degrees = Vector3(0, -90, 0)
+	climate_status_label.modulate = Color("dff5ea")
+	add_child(climate_status_label)
+
+	supply_shelf_ref = GrowSupplyShelf.new()
+	supply_shelf_ref.position = GrowSupplyShelf.ANCHOR
+	supply_shelf_ref.rotation_degrees.y = -90.0
+	add_child(supply_shelf_ref)
+
+	var room_label: Label3D = Label3D.new()
+	room_label.text = "DEDICATED GROW ROOM"
+	room_label.font_size = 31
+	room_label.pixel_size = 0.0031
+	room_label.position = Vector3(0, 3.42, -10.02)
+	room_label.modulate = Color("e7e3da")
+	add_child(room_label)
+
+
+func _total_seed_inventory() -> int:
+	var total: int = 0
+	for value_variant: Variant in seed_inventory.values():
+		total += maxi(0, int(value_variant))
+	return total
+
+func _supply_seed_capacity() -> int:
+	return SUPPLY_SEED_CAPACITY_BY_LEVEL[clampi(supply_shelf_level, 1, 3)]
+
+func _supply_fertilizer_capacity() -> int:
+	return SUPPLY_FERTILIZER_CAPACITY_BY_LEVEL[clampi(supply_shelf_level, 1, 3)]
+
+func _supply_can_add_seeds(amount: int) -> bool:
+	return _total_seed_inventory() + maxi(0, amount) <= _supply_seed_capacity()
+
+func _supply_can_add_fertilizer(amount: int) -> bool:
+	return fertilizer_units + maxi(0, amount) <= _supply_fertilizer_capacity()
+
+func _update_supply_shelf_display() -> void:
+	if supply_shelf_ref == null or not supply_shelf_ref.has_method("set_inventory_status"):
+		return
+	supply_shelf_ref.call("set_inventory_status", supply_shelf_level, _total_seed_inventory(), _supply_seed_capacity(), fertilizer_units, _supply_fertilizer_capacity())
+	if supply_inventory_panel != null and supply_inventory_panel.visible:
+		_refresh_supply_inventory_panel()
+
+func _update_room_status_panel() -> void:
+	if climate_status_label == null:
+		return
+	var active_plants: int = 0
+	var ready_plants: int = 0
+	var thirsty_plants: int = 0
+	var dead_plants: int = 0
+	for slot_variant: Variant in plant_slots:
+		if not (slot_variant is Dictionary):
+			continue
+		var slot: Dictionary = slot_variant as Dictionary
+		var stage: int = int(slot.get("stage", -1))
+		if stage < 0:
+			continue
+		active_plants += 1
+		if bool(slot.get("dead", false)):
+			dead_plants += 1
+		elif stage >= STAGES.size() - 1 or float(slot.get("growth", 0.0)) >= 100.0:
+			ready_plants += 1
+		elif float(slot.get("water", 0.0)) <= 25.0:
+			thirsty_plants += 1
+	var vent_text: String = "NOT INSTALLED" if not ventilation_installed else ("ON" if ventilation_on else "OFF")
+	var state: String = "STABLE"
+	var state_color: Color = Color("dff5ea")
+	if dead_plants > 0:
+		state = "PLANT ALERT"
+		state_color = Color("ff8f83")
+	elif thirsty_plants > 0:
+		state = "WATER NEEDED"
+		state_color = Color("f2d78a")
+	elif not grow_lights_on or not ventilation_installed or not ventilation_on:
+		state = "REDUCED GROWTH"
+		state_color = Color("f2d78a")
+	elif ready_plants > 0:
+		state = "HARVEST READY"
+		state_color = Color("a8e59f")
+	var display_state: String = state
+	if display_state == "REDUCED GROWTH":
+		display_state = "REDUCED"
+	climate_status_label.text = "ROOM  |  %s\nPLANTS %d/%d  |  READY %d\nLIGHTS %s\nAIR %s" % [display_state, active_plants, plant_slots.size(), ready_plants, "ON" if grow_lights_on else "OFF", vent_text]
+	climate_status_label.modulate = state_color
+
+
+func _build_bagging_station() -> void:
+	var packing_station_start_index: int = get_child_count()
+	_add_box("BenchTop", Vector3(3.95, 1.1, 0.3), Vector3(1.28, 0.12, 3.52), Color("9b6d42"), 0.52, false, "res://assets/textures/walnut.png", Vector3(1.0, 1.0, 2.6))
+	_add_box("BenchFrontApron", Vector3(3.37, 0.94, 0.3), Vector3(0.10, 0.20, 3.38), Color("25292d"), 0.50, false, "res://assets/textures/matte_plastic.png")
+	_add_box("BenchBackApron", Vector3(4.53, 0.94, 0.3), Vector3(0.10, 0.20, 3.38), Color("25292d"), 0.50, false, "res://assets/textures/matte_plastic.png")
+	var bench_leg_x: Array[float] = [3.42, 4.48]
+	var bench_leg_z: Array[float] = [-1.10, 1.70]
+	for x_index in range(bench_leg_x.size()):
+		for z_index in range(bench_leg_z.size()):
+			_add_box("BenchLeg_%d_%d" % [x_index, z_index], Vector3(bench_leg_x[x_index], 0.48, bench_leg_z[z_index]), Vector3(0.11, 0.92, 0.11), Color("25292d"), 0.42, false, "res://assets/textures/matte_plastic.png")
+	_add_box("BenchLowerShelf", Vector3(3.95, 0.31, 0.3), Vector3(1.12, 0.10, 3.18), Color("6f5037"), 0.62, false, "res://assets/textures/walnut.png", Vector3(1.0, 1.0, 2.2))
+
+	_add_box("BenchGreenBin", Vector3(3.92, 0.59, -0.61), Vector3(0.78, 0.48, 0.82), Color("314436"), 0.78, false, "res://assets/textures/matte_plastic.png")
+	_add_box("BenchGreenBinLid", Vector3(3.92, 0.86, -0.61), Vector3(0.82, 0.08, 0.86), Color("28382e"), 0.70, false, "res://assets/textures/matte_plastic.png")
+	_add_box("BenchClearBin", Vector3(3.92, 0.58, 0.5), Vector3(0.72, 0.46, 0.70), Color("738486"), 0.28)
+	_add_box("BenchClearBinLid", Vector3(3.92, 0.83, 0.5), Vector3(0.76, 0.06, 0.74), Color("9ba5a5"), 0.30)
+	_add_box("BenchBaggieStackUnder", Vector3(3.92, 0.55, 1.15), Vector3(0.48, 0.42, 0.40), Color("d9ddd8"), 0.72)
+	_add_box("BenchSupplyBox", Vector3(3.92, 0.6, 1.68), Vector3(0.70, 0.50, 0.62), Color("8a6f55"), 0.82)
+
+	# Compact front-facing digital packing scale.
+	# Bench faces toward -X, so the control panel/display live on the -X face.
+	var scale_center: Vector3 = Vector3(3.86, 1.29, -0.08)
+	var scale_black: Color = Color("171a1d")
+	var scale_panel: Color = Color("0c0f11")
+	var scale_button: Color = Color("34393d")
+	var scale_green: Color = Color("a3d8ad")
+	var scale_steel: Color = Color("c9cdcb")
+
+	# Four rubber feet keep the body planted on the tabletop.
+	for foot_x: float in [3.52, 4.16]:
+		for foot_z: float in [-0.42, 0.26]:
+			_add_cylinder("ScaleFoot_%s_%s" % [str(foot_x), str(foot_z)], Vector3(foot_x, 1.18, foot_z), 0.035, 0.035, 0.04, Color("111416"), 0.84)
+
+	# Matte black body with a smaller upper deck and centered brushed-steel plate.
+	_add_box("ScaleBody", scale_center, Vector3(0.86, 0.18, 0.96), scale_black, 0.46, false, "res://assets/textures/matte_plastic.png")
+	_add_box("ScaleBodyUpper", Vector3(3.93, 1.37, -0.08), Vector3(0.70, 0.08, 0.88), Color("202428"), 0.40, false, "res://assets/textures/matte_plastic.png")
+	_add_box("ScalePlatform", Vector3(3.96, 1.445, -0.08), Vector3(0.76, 0.055, 0.82), scale_steel, 0.18, false, "res://assets/textures/brushed_metal.png", Vector3(1.3, 1.0, 1.3))
+
+	# Player-facing front control panel. Thin X dimension = vertical face toward room.
+	_add_box("ScaleFrontPanel", Vector3(3.418, 1.285, -0.08), Vector3(0.026, 0.145, 0.78), scale_panel, 0.28)
+	_add_box("ScaleDisplayFrame", Vector3(3.400, 1.292, -0.08), Vector3(0.012, 0.105, 0.37), Color("080a0b"), 0.16)
+	_add_box("ScaleDisplay", Vector3(3.391, 1.292, -0.08), Vector3(0.008, 0.086, 0.33), scale_green, 0.16, true)
+
+	# Two buttons to the left of the display and four to the right, like the reference scale.
+	for button_data: Dictionary in [
+		{"name":"ScaleButtonL1","y":1.325,"z":-0.365},
+		{"name":"ScaleButtonL2","y":1.250,"z":-0.365},
+		{"name":"ScaleButtonR1","y":1.325,"z":0.205},
+		{"name":"ScaleButtonR2","y":1.325,"z":0.335},
+		{"name":"ScaleButtonR3","y":1.250,"z":0.205},
+		{"name":"ScaleButtonR4","y":1.250,"z":0.335}
+	]:
+		_add_box(str(button_data["name"]), Vector3(3.387, float(button_data["y"]), float(button_data["z"])), Vector3(0.014, 0.052, 0.095), scale_button, 0.34)
+
+	var scale_text: Label3D = Label3D.new()
+	scale_text.name = "PackingScaleText"
+	scale_text.text = "0.00 g"
+	scale_text.font_size = 42
+	scale_text.modulate = Color("d9f5bb")
+	scale_text.position = Vector3(3.378, 1.292, -0.08)
+	scale_text.rotation_degrees = Vector3(0, -90, 0)
+	scale_text.pixel_size = 0.00175
+	add_child(scale_text)
+
+	_add_box("TrimTray", Vector3(3.56, 1.19, 0.81), Vector3(0.82, 0.045, 0.70), Color("3b4144"), 0.42, false, "res://assets/textures/matte_plastic.png")
+	_add_box("TrayRimBack", Vector3(3.56, 1.235, 1.13), Vector3(0.82, 0.075, 0.04), Color("24292d"), 0.50)
+	_add_box("TrayRimFront", Vector3(3.56, 1.235, 0.49), Vector3(0.82, 0.075, 0.04), Color("24292d"), 0.50)
+	_add_box("BaggieBox", Vector3(4.22, 1.32, 1.29), Vector3(0.48, 0.38, 0.54), Color("d8d9cf"), 0.72)
+	_add_box("BaggieBoxGreenTop", Vector3(4.22, 1.54, 1.29), Vector3(0.50, 0.08, 0.56), Color("5d7d32"), 0.64)
+	_add_box("BagStack", Vector3(3.86, 1.18, 1.75), Vector3(0.34, 0.08, 0.44), Color("e7e9e4"), 0.70)
+	_add_cylinder("LabelRoll", Vector3(4.28, 1.25, 0.7), 0.13, 0.13, 0.20, Color("e3d29b"), 0.48, Vector3(PI / 2.0, 0, 0))
+	_add_cylinder("BenchJarGlass", Vector3(4.27, 1.34, -0.73), 0.15, 0.15, 0.42, Color("53725f"), 0.28)
+	_add_cylinder("BenchJarLid", Vector3(4.27, 1.57, -0.73), 0.16, 0.16, 0.065, Color("252a2d"), 0.42)
+	_add_cylinder("BenchJarGlass2", Vector3(4.27, 1.31, -0.39), 0.12, 0.12, 0.34, Color("506052"), 0.28)
+	_add_cylinder("BenchJarLid2", Vector3(4.27, 1.5, -0.39), 0.13, 0.13, 0.055, Color("252a2d"), 0.42)
+	_add_cylinder("ToolCup", Vector3(4.25, 1.32, 1.79), 0.15, 0.13, 0.38, Color("24292d"), 0.50)
+	_add_capsule("ToolPenA", Vector3(4.22, 1.58, 1.79), 0.018, 0.40, Color("c2c7c9"), 0.25, Vector3(0, 0, 0.20))
+	_add_capsule("ToolPenB", Vector3(4.3, 1.58, 1.79), 0.018, 0.42, Color("7e8589"), 0.25, Vector3(0, 0, -0.18))
+	_add_capsule("ScissorBladeA", Vector3(3.43, 1.32, 1.57), 0.026, 0.42, Color("c5cbd0"), 0.25, Vector3(0, 0, 0.72))
+	_add_capsule("ScissorBladeB", Vector3(3.55, 1.32, 1.57), 0.026, 0.42, Color("c5cbd0"), 0.25, Vector3(0, 0, -0.72))
+	_add_sphere("ScissorHandleA", Vector3(3.33, 1.32, 1.73), Vector3(0.13, 0.05, 0.13), Color("25292d"), 0.55)
+	_add_sphere("ScissorHandleB", Vector3(3.65, 1.32, 1.73), Vector3(0.13, 0.05, 0.13), Color("25292d"), 0.55)
+
+	packing_bench_loose_bud_root = Node3D.new()
+	packing_bench_loose_bud_root.name = "PackingBenchLooseBuds"
+	add_child(packing_bench_loose_bud_root)
+	packing_bench_filled_bag_root = Node3D.new()
+	packing_bench_filled_bag_root.name = "PackingBenchFilledBags"
+	add_child(packing_bench_filled_bag_root)
+
+	var station_label: Label3D = Label3D.new()
+	station_label.text = "PACKING BENCH"
+	station_label.font_size = 32
+	station_label.pixel_size = 0.0033
+	station_label.position = Vector3(4.73, 2.35, 0.30)
+	station_label.rotation_degrees = Vector3(0, -90, 0)
+	station_label.modulate = Color("e8ddd0")
+	add_child(station_label)
+	_sync_packing_bench_visuals(true)
+	for child_index: int in range(packing_station_start_index, get_child_count()):
+		var shifted_child: Node = get_child(child_index)
+		if shifted_child is Node3D:
+			(shifted_child as Node3D).position.z += 0.48
+
+func _inventory_grams(inventory: Dictionary) -> int:
+	var total: int = 0
+	for value_variant: Variant in inventory.values():
+		total += maxi(0, int(value_variant))
+	return total
+
+func _sync_packing_bench_visuals(force: bool = false) -> void:
+	if packing_bench_loose_bud_root == null or packing_bench_filled_bag_root == null:
+		return
+	var untrimmed_total: int = _inventory_grams(untrimmed_inventory)
+	var trimmed_total: int = _inventory_grams(trimmed_inventory)
+	var bagged_total: int = _inventory_grams(bagged_inventory)
+	var loose_total: int = untrimmed_total + trimmed_total
+	var signature: String = "%d:%d:%d" % [untrimmed_total, trimmed_total, bagged_total]
+	if not force and signature == packing_bench_visual_signature:
+		return
+	packing_bench_visual_signature = signature
+	for child: Node in packing_bench_loose_bud_root.get_children():
+		child.queue_free()
+	for child: Node in packing_bench_filled_bag_root.get_children():
+		child.queue_free()
+
+	var nug_count: int = 0
+	if loose_total > 0:
+		nug_count = clampi(2 + int(ceil(sqrt(float(loose_total)))), 3, 14)
+	var loose_by_strain: Dictionary = {}
+	for inventory: Dictionary in [untrimmed_inventory, trimmed_inventory]:
+		for strain_variant: Variant in inventory.keys():
+			var strain_name: String = str(strain_variant)
+			loose_by_strain[strain_name] = int(loose_by_strain.get(strain_name, 0)) + maxi(0, int(inventory.get(strain_variant, 0)))
+	var ordered_loose_strains: Array[String] = []
+	for seed_name: String in SEED_ORDER:
+		if int(loose_by_strain.get(seed_name, 0)) > 0:
+			ordered_loose_strains.append(seed_name)
+	for strain_variant: Variant in loose_by_strain.keys():
+		var extra_name: String = str(strain_variant)
+		if int(loose_by_strain.get(extra_name, 0)) > 0 and not ordered_loose_strains.has(extra_name):
+			ordered_loose_strains.append(extra_name)
+	var visual_strains: Array[String] = []
+	if nug_count > 0 and not ordered_loose_strains.is_empty():
+		for visual_index in range(nug_count):
+			var target_grams: float = (float(visual_index) + 0.5) / float(nug_count) * float(maxi(1, loose_total))
+			var running_grams: int = 0
+			var chosen_strain: String = ordered_loose_strains[0]
+			for strain_name: String in ordered_loose_strains:
+				running_grams += int(loose_by_strain.get(strain_name, 0))
+				if target_grams <= float(running_grams):
+					chosen_strain = strain_name
+					break
+			visual_strains.append(chosen_strain)
+	for index in range(nug_count):
+		var nug: MeshInstance3D = MeshInstance3D.new()
+		nug.name = "BenchBud%d" % index
+		var mesh: SphereMesh = SphereMesh.new()
+		mesh.radius = 0.5
+		mesh.height = 1.0
+		mesh.radial_segments = 10
+		mesh.rings = 6
+		var visual_strain: String = visual_strains[index] if index < visual_strains.size() else "Street Green"
+		var visual_palette: Dictionary = _strain_visual_palette(visual_strain)
+		var visual_bud_color: Color = visual_palette.get("bud", Color("829d69"))
+		mesh.material = _textured_plant_material(visual_bud_color, "res://assets/textures/bud_surface.png", 0.92)
+		nug.mesh = mesh
+		var row: int = int(index / 5)
+		var col: int = index % 5
+		var wobble: float = sin(float(index) * 2.31) * 0.025
+		nug.position = Vector3(3.47 + float(row) * 0.10, 1.255 + float(index % 3) * 0.012, 0.59 + float(col) * 0.105 + wobble)
+		nug.scale = Vector3(0.105 + float(index % 2) * 0.018, 0.070 + float(index % 3) * 0.010, 0.090 + float((index + 1) % 2) * 0.015)
+		nug.rotation = Vector3(float(index % 3) * 0.31, float(index) * 0.77, float(index % 4) * 0.19)
+		packing_bench_loose_bud_root.add_child(nug)
+
+	var visual_bags: int = clampi(int(ceil(float(bagged_total) / 7.0)), 0, 4)
+	for index in range(visual_bags):
+		var packet: MeshInstance3D = MeshInstance3D.new()
+		packet.name = "FinishedBag%d" % index
+		var packet_mesh: BoxMesh = BoxMesh.new()
+		packet_mesh.size = Vector3(0.025, 0.24, 0.18)
+		var packet_mat: StandardMaterial3D = StandardMaterial3D.new()
+		packet_mat.albedo_color = Color(0.80, 0.86, 0.82, 0.72)
+		packet_mat.roughness = 0.34
+		packet_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		packet_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		packet_mesh.material = packet_mat
+		packet.mesh = packet_mesh
+		packet.position = Vector3(3.48 + float(index) * 0.018, 1.29 + float(index) * 0.015, 1.36 + float(index) * 0.12)
+		packet.rotation = Vector3(0.05, 0.0, -0.08 + float(index) * 0.04)
+		packing_bench_filled_bag_root.add_child(packet)
+
+	var scale_text: Label3D = get_node_or_null("PackingScaleText") as Label3D
+	if scale_text != null:
+		scale_text.text = "%.2f g" % float(loose_total) if loose_total > 0 else "0.00 g"
+
+func _build_storage_area() -> void:
+	var storage_shelf_start_index: int = get_child_count()
+	_add_box("StorageBack", Vector3(-4.72, 1.38, -0.30), Vector3(0.08, 2.65, 3.35), Color("4a5054"), 0.56, false, "res://assets/textures/brushed_metal.png", Vector3(1.0, 2.0, 2.0))
+	_add_box("ShelfPostL", Vector3(-4.42, 1.35, -1.75), Vector3(0.10, 2.55, 0.10), Color("555c60"), 0.45, false, "res://assets/textures/brushed_metal.png")
+	_add_box("ShelfPostR", Vector3(-4.42, 1.35, 1.15), Vector3(0.10, 2.55, 0.10), Color("555c60"), 0.45, false, "res://assets/textures/brushed_metal.png")
+	for shelf_index in range(4):
+		var shelf_y: float = 0.34 + float(shelf_index) * 0.64
+		_add_box("Shelf%d" % shelf_index, Vector3(-4.30, shelf_y, -0.30), Vector3(0.72, 0.085, 3.05), Color("787f83"), 0.50, false, "res://assets/textures/brushed_metal.png", Vector3(1.0, 1.0, 2.0))
+	_add_box("StorageBinA", Vector3(-4.16, 0.555, -1.12), Vector3(0.58, 0.30, 0.68), Color("a27a50"), 0.82, false, "res://assets/textures/cardboard.png")
+	_add_box("StorageBinB", Vector3(-4.16, 0.555, -0.20), Vector3(0.58, 0.30, 0.68), Color("586a74"), 0.78, false, "res://assets/textures/matte_plastic.png")
+	_add_cylinder("StorageJarA", Vector3(-4.14, 1.225, 0.64), 0.13, 0.13, 0.34, Color("789281"), 0.32)
+	_add_cylinder("StorageJarB", Vector3(-4.14, 1.225, 1.05), 0.13, 0.13, 0.34, Color("8b8298"), 0.32)
+	_add_box("StorageBagA", Vector3(-4.13, 1.86, -0.86), Vector3(0.28, 0.14, 0.22), Color("d6d0be"), 0.82, false, "res://assets/textures/cardboard.png")
+	_add_box("StorageBagB", Vector3(-4.13, 1.86, -0.48), Vector3(0.28, 0.14, 0.22), Color("cfc8b7"), 0.82, false, "res://assets/textures/cardboard.png")
+	_add_box("StorageCaseC", Vector3(-4.13, 2.50, 0.76), Vector3(0.34, 0.18, 0.38), Color("79868d"), 0.70, false, "res://assets/textures/matte_plastic.png")
+	var label: Label3D = Label3D.new()
+	label.name = "StorageWorldLabel"
+	storage_world_label = label
+	label.text = "STORAGE   |   %dg CAP" % _storage_capacity()
+	label.font_size = 30
+	label.pixel_size = 0.0032
+	label.position = Vector3(-4.60, 2.82, -0.30)
+	label.rotation_degrees = Vector3(0, 90, 0)
+	label.modulate = Color("e7e3da")
+	add_child(label)
+	for child_index: int in range(storage_shelf_start_index, get_child_count()):
+		var shifted_child: Node = get_child(child_index)
+		if shifted_child is Node3D:
+			(shifted_child as Node3D).position.z += 0.24
+
+func _build_front_door() -> void:
+	_add_box("DoorFrameTop", Vector3(0, 2.93, 5.75), Vector3(2.24, 0.14, 0.20), Color("e2dbd0"), 0.70)
+	_add_box("DoorFrameL", Vector3(-1.05, 1.52, 5.75), Vector3(0.14, 2.82, 0.20), Color("e2dbd0"), 0.70)
+	_add_box("DoorFrameR", Vector3(1.05, 1.52, 5.75), Vector3(0.14, 2.82, 0.20), Color("e2dbd0"), 0.70)
+	_add_box("Door", Vector3(0, 1.48, 5.84), Vector3(1.94, 2.82, 0.12), Color("78563f"), 0.60, false, "res://assets/textures/walnut.png", Vector3(1.0, 2.0, 1.0))
+	_add_box("DoorPanelTop", Vector3(0, 2.05, 5.76), Vector3(1.44, 0.88, 0.04), Color("835f46"), 0.66, false, "res://assets/textures/walnut.png")
+	_add_box("DoorPanelBottom", Vector3(0, 0.87, 5.76), Vector3(1.44, 0.84, 0.04), Color("835f46"), 0.66, false, "res://assets/textures/walnut.png")
+	_add_cylinder("DoorKnob", Vector3(0.64, 1.34, 5.69), 0.075, 0.075, 0.16, Color("d0ae69"), 0.24, Vector3(PI / 2.0, 0, 0))
+	_add_sphere("Peephole", Vector3(0, 1.91, 5.68), Vector3(0.047, 0.047, 0.027), Color("b5bdc4"), 0.20)
+
+func _build_living_furniture() -> void:
+	var couch: Node3D = LivingCouch.new()
+	couch.position = LivingCouch.ANCHOR
+	add_child(couch)
+
+	_add_box("CoffeeTop", Vector3(-2.28, 0.48, 1.65), Vector3(1.75, 0.105, 0.94), Color("77573d"), 0.60, false, "res://assets/textures/walnut.png", Vector3(1.5, 1.0, 1.0))
+	_add_cylinder("CoffeeLegL", Vector3(-2.91, 0.23, 1.65), 0.035, 0.035, 0.48, Color("303538"), 0.44)
+	_add_cylinder("CoffeeLegR", Vector3(-1.65, 0.23, 1.65), 0.035, 0.035, 0.48, Color("303538"), 0.44)
+	_add_cylinder("CoffeeCup", Vector3(-2.47, 0.62, 1.53), 0.08, 0.07, 0.18, Color("d8d0c3"), 0.48)
+
+	_add_box("TVConsole", Vector3(-3.02, 0.45, -3.52), Vector3(2.35, 0.72, 0.54), Color("ddd7cb"), 0.75, false, "res://assets/textures/laminate.png", Vector3(2.0, 1.0, 1.0))
+	_add_box("TVScreen", Vector3(-3.02, 1.42, -3.73), Vector3(1.95, 1.08, 0.075), Color("14191d"), 0.18, false, "res://assets/textures/matte_plastic.png")
+	_add_box("TVStand", Vector3(-3.02, 0.87, -3.60), Vector3(0.48, 0.09, 0.28), Color("383d41"), 0.42, false, "res://assets/textures/brushed_metal.png")
+	_build_premium_dealer_locker_visual()
+	_sync_dealer_locker_visual()
+
+func _build_apartment_details() -> void:
+	_add_box("CurtainL", Vector3(-4.68, 2.08, 5.68), Vector3(0.32, 1.88, 0.10), Color("9f917e"), 0.94, false, "res://assets/textures/fabric_bluegray.png")
+	_add_box("CurtainR", Vector3(-2.56, 2.08, 5.68), Vector3(0.32, 1.88, 0.10), Color("9f917e"), 0.94, false, "res://assets/textures/fabric_bluegray.png")
+
+	# Modern matte-black kitchen/sink run inspired by the approved reference.
+	var kitchen_black: Color = Color("17191c")
+	var kitchen_panel: Color = Color("202226")
+	var kitchen_stone: Color = Color("252b29")
+	var kitchen_steel: Color = Color("b9c0c1")
+	var kitchen_green: Color = Color("77d996")
+
+	# Lower cabinet carcass and dark stone worktop.
+	_add_box("KitchenBase", Vector3(2.42, 0.46, -3.54), Vector3(2.48, 0.84, 0.76), kitchen_black, 0.54, false, "res://assets/textures/matte_plastic.png", Vector3(2.0, 1.0, 1.0))
+	_add_box("KitchenToeKick", Vector3(2.42, 0.11, -3.46), Vector3(2.42, 0.16, 0.56), Color("101214"), 0.62, false, "res://assets/textures/matte_plastic.png")
+	_add_box("KitchenCounter", Vector3(2.42, 0.94, -3.52), Vector3(2.62, 0.12, 0.88), kitchen_stone, 0.38, false, "res://assets/textures/matte_plastic.png", Vector3(2.2, 1.0, 1.0))
+	_add_box("KitchenCounterLip", Vector3(2.42, 0.98, -3.08), Vector3(2.62, 0.07, 0.06), Color("333936"), 0.34)
+
+	# Three lower cabinet faces with recessed brushed-metal pulls.
+	var lower_centers: Array[float] = [1.64, 2.42, 3.20]
+	for lower_index: int in range(lower_centers.size()):
+		var lower_x: float = lower_centers[lower_index]
+		_add_box("KitchenLowerDoor%d" % lower_index, Vector3(lower_x, 0.48, -3.135), Vector3(0.72, 0.68, 0.045), kitchen_panel, 0.48, false, "res://assets/textures/matte_plastic.png")
+		_add_box("KitchenLowerHandle%d" % lower_index, Vector3(lower_x, 0.77, -3.105), Vector3(0.30, 0.055, 0.035), kitchen_steel, 0.22, false, "res://assets/textures/brushed_metal.png")
+
+	# Full-height dark stone backsplash.
+	_add_box("KitchenBacksplash", Vector3(2.42, 1.49, -3.935), Vector3(2.62, 0.98, 0.055), Color("252a29"), 0.42, false, "res://assets/textures/matte_plastic.png", Vector3(2.0, 1.0, 1.0))
+
+	# Matte-black upper cabinet bank with three doors.
+	_add_box("KitchenUpper", Vector3(2.42, 2.36, -3.72), Vector3(2.56, 0.94, 0.44), kitchen_black, 0.50, false, "res://assets/textures/matte_plastic.png", Vector3(2.0, 1.0, 1.0))
+	var upper_centers: Array[float] = [1.64, 2.42, 3.20]
+	for upper_index: int in range(upper_centers.size()):
+		var upper_x: float = upper_centers[upper_index]
+		_add_box("KitchenUpperDoor%d" % upper_index, Vector3(upper_x, 2.36, -3.485), Vector3(0.72, 0.82, 0.045), kitchen_panel, 0.46, false, "res://assets/textures/matte_plastic.png")
+		_add_box("KitchenUpperHandle%d" % upper_index, Vector3(upper_x, 2.02, -3.455), Vector3(0.30, 0.05, 0.035), kitchen_steel, 0.22, false, "res://assets/textures/brushed_metal.png")
+
+	# Subtle green under-cabinet task light.
+	_add_box("KitchenUnderCabinetGlow", Vector3(2.42, 1.85, -3.47), Vector3(2.28, 0.025, 0.025), kitchen_green, 0.10, true)
+
+	# Stainless inset sink and black rim.
+	_add_box("SinkRim", Vector3(2.42, 0.995, -3.46), Vector3(0.98, 0.045, 0.56), Color("111416"), 0.26)
+	_add_box("SinkBasin", Vector3(2.42, 1.005, -3.46), Vector3(0.88, 0.055, 0.46), kitchen_steel, 0.16, false, "res://assets/textures/brushed_metal.png")
+
+	# Tall gooseneck-style faucet built from stainless segments.
+	_add_cylinder("FaucetStem", Vector3(2.42, 1.25, -3.79), 0.035, 0.035, 0.48, kitchen_steel, 0.18)
+	_add_cylinder("FaucetTop", Vector3(2.42, 1.48, -3.70), 0.035, 0.035, 0.20, kitchen_steel, 0.18, Vector3(PI / 2.0, 0, 0))
+	_add_cylinder("FaucetSpout", Vector3(2.42, 1.43, -3.60), 0.032, 0.032, 0.15, kitchen_steel, 0.18)
+	_add_cylinder("FaucetControl", Vector3(2.69, 1.15, -3.77), 0.028, 0.028, 0.18, kitchen_steel, 0.20)
+	_add_box("LockerBody", Vector3(4.52, 1.28, -2.20), Vector3(0.82, 2.56, 0.80), Color("24262c"), 0.38, false, "res://assets/textures/brushed_metal.png", Vector3(1.0, 2.0, 1.0))
+	_add_box("LockerInnerDoor", Vector3(4.13, 1.30, -2.20), Vector3(0.05, 2.28, 0.58), Color("1b1d22"), 0.42, false, "res://assets/textures/matte_plastic.png")
+	_add_box("LockerDoorFrameTop", Vector3(4.13, 2.48, -2.20), Vector3(0.05, 0.08, 0.64), Color("33363d"), 0.34)
+	_add_box("LockerDoorFrameBottom", Vector3(4.13, 0.13, -2.20), Vector3(0.05, 0.08, 0.64), Color("33363d"), 0.34)
+	_add_box("LockerDoorFrameL", Vector3(4.13, 1.30, -2.51), Vector3(0.05, 2.34, 0.05), Color("33363d"), 0.34)
+	_add_box("LockerDoorFrameR", Vector3(4.13, 1.30, -1.89), Vector3(0.05, 2.34, 0.05), Color("33363d"), 0.34)
+	for vent_offset in [0.72, 0.58, 0.44, -0.54, -0.68]:
+		_add_box("LockerVent_%s" % str(vent_offset).replace('-', 'n').replace('.', '_'), Vector3(4.08, 1.30 + vent_offset, -2.20), Vector3(0.03, 0.05, 0.26), Color("535860"), 0.26)
+	_add_box("LockerHandleInset", Vector3(4.08, 1.28, -2.32), Vector3(0.03, 0.40, 0.12), Color("111317"), 0.20)
+	_add_cylinder("LockerDialOuter", Vector3(4.06, 1.26, -2.32), 0.06, 0.06, 0.025, Color("73777d"), 0.20, Vector3(PI / 2.0, 0, 0))
+	_add_cylinder("LockerDialInner", Vector3(4.045, 1.26, -2.32), 0.028, 0.028, 0.02, Color("24282c"), 0.22, Vector3(PI / 2.0, 0, 0))
+	_add_box("LockerHingeTop", Vector3(4.10, 2.00, -1.86), Vector3(0.035, 0.20, 0.05), Color("5d6268"), 0.28)
+	_add_box("LockerHingeBottom", Vector3(4.10, 0.64, -1.86), Vector3(0.035, 0.20, 0.05), Color("5d6268"), 0.28)
+	_add_box("LockerFootFront", Vector3(4.80, 0.08, -1.93), Vector3(0.12, 0.16, 0.12), Color("363940"), 0.34)
+	_add_box("LockerFootRear", Vector3(4.80, 0.08, -2.47), Vector3(0.12, 0.16, 0.12), Color("363940"), 0.34)
+	var locker_logo: Label3D = Label3D.new()
+	locker_logo.name = "DealerBasicLogo"
+	locker_logo.text = "DEALER\nSTORAGE"
+	locker_logo.font_size = 27
+	locker_logo.pixel_size = 0.0030
+	locker_logo.position = Vector3(4.09, 1.62, -2.18)
+	locker_logo.rotation_degrees = Vector3(0, -90, 0)
+	locker_logo.modulate = Color("dbe0d4")
+	add_child(locker_logo)
+	var locker_tag: Label3D = Label3D.new()
+	locker_tag.name = "DealerBasicTag"
+	locker_tag.text = "DEALER
+STOCK
+LOCKER"
+	locker_tag.font_size = 22
+	locker_tag.pixel_size = 0.0025
+	locker_tag.position = Vector3(4.88, 1.46, -2.37)
+	locker_tag.rotation_degrees = Vector3(0, 180, 0)
+	locker_tag.modulate = Color("8572a8")
+	add_child(locker_tag)
+
+	_add_cylinder("CeilingShade", Vector3(0.10, 3.86, 0.95), 0.42, 0.28, 0.22, Color("eee5d7"), 0.72)
+	_add_box("CeilingBulbGlow", Vector3(0.10, 3.72, 0.95), Vector3(0.24, 0.06, 0.24), Color("ffd9a8"), 0.20, true)
+	_add_cylinder("FloorLampStem", Vector3(-3.78, 0.85, 3.35), 0.035, 0.035, 1.65, Color("3f4548"), 0.42)
+	_add_cylinder("FloorLampShade", Vector3(-3.78, 1.75, 3.35), 0.25, 0.38, 0.42, Color("dfd2bc"), 0.82)
+	_add_box("FloorLampGlow", Vector3(-3.78, 1.67, 3.35), Vector3(0.18, 0.06, 0.18), Color("ffd1a0"), 0.20, true)
+
+func _build_light_interactions() -> void:
+	_add_box("MainLightSwitchPlate", Vector3(1.42, 1.47, 5.84), Vector3(0.26, 0.38, 0.035), Color("f2f0eb"), 0.72)
+	_add_box("MainLightSwitchToggle", Vector3(1.42, 1.48, 5.80), Vector3(0.09, 0.19, 0.055), Color("d9d6cf"), 0.58)
+	_add_interaction_area("MainLightSwitchArea", Vector3(1.42, 1.47, 5.72), Vector3(0.90, 0.95, 0.60), "main_light_switch", "main")
+	_add_interaction_area("FloorLampInteractionArea", Vector3(-3.78, 1.35, 3.35), Vector3(1.35, 2.60, 1.35), "floor_lamp", "main")
+
+	_refresh_light_interaction_visuals()
+
+func _add_interaction_area(node_name: String, pos: Vector3, size: Vector3, action_id: String, room_id: String = "main") -> void:
+	var area: Area3D = Area3D.new()
+	area.name = node_name
+	area.position = pos
+	area.collision_layer = 16
+	area.collision_mask = 0
+	area.set_meta("interaction_id", action_id)
+	area.set_meta("room_id", room_id)
+	area.add_to_group("room_interactable")
+	var shape_node: CollisionShape3D = CollisionShape3D.new()
+	var shape: BoxShape3D = BoxShape3D.new()
+	shape.size = size
+	shape_node.shape = shape
+	area.add_child(shape_node)
+	add_child(area)
+
+func _refresh_light_interaction_visuals() -> void:
+	_set_mesh_color("MainLightSwitchToggle", Color("f0e6cf") if main_ceiling_light_on else Color("8d9397"))
+	var ceiling_glow: MeshInstance3D = get_node_or_null("CeilingBulbGlow") as MeshInstance3D
+	if ceiling_glow != null:
+		ceiling_glow.visible = main_ceiling_light_on
+	var lamp_glow: MeshInstance3D = get_node_or_null("FloorLampGlow") as MeshInstance3D
+	if lamp_glow != null:
+		lamp_glow.visible = floor_lamp_on
+	_set_mesh_color("GrowRoomLightToggle", Color("f0e6cf") if grow_room_light_on else Color("8d9397"))
+	_set_mesh_color("GrowLightToggle", Color("cda7ed") if grow_lights_on else Color("6e6674"))
+	_set_mesh_color("VentilationToggle", Color("8fd0ad") if ventilation_installed and ventilation_on else (Color("889197") if ventilation_installed else Color("555b5f")))
+	for ventilation_node_name: String in ["CarbonFilter", "VentFanHousing", "VentFanHub"]:
+		var ventilation_node: Node3D = get_node_or_null(ventilation_node_name) as Node3D
+		if ventilation_node != null:
+			ventilation_node.visible = ventilation_installed
+	_set_mesh_color("VentFanHub", Color("b8c7c0") if ventilation_on else Color("586166"))
+	var grow_room_glow: MeshInstance3D = get_node_or_null("GrowRoomUtilityGlow") as MeshInstance3D
+	if grow_room_glow != null:
+		grow_room_glow.visible = grow_room_light_on
+	_set_mesh_emission_enabled("GrowLightFixture", grow_lights_on)
+	_set_mesh_emission_enabled("RoomGrowLightA", grow_lights_on)
+	_set_mesh_emission_enabled("RoomGrowLightB", grow_lights_on)
+	_set_mesh_emission_enabled("ExpansionTent2Light", grow_lights_on)
+	_set_mesh_emission_enabled("ExpansionTent3Light", grow_lights_on)
+
+func _build_bagging_bench_level3_visual() -> void:
+	if get_node_or_null("BenchIIIBackBoard") != null:
+		return
+	var bench3_start_index: int = get_child_count()
+	var black: Color = Color("171a1d")
+	var dark: Color = Color("202428")
+	var steel: Color = Color("3a4146")
+	var green: Color = Color("46e884")
+	var wood: Color = Color("765238")
+
+	# Tall industrial back / pegboard silhouette.
+	_add_box("BenchIIIBackBoard", Vector3(4.62, 1.96, 0.54), Vector3(0.12, 1.48, 3.14), dark, 0.42, false, "res://assets/textures/brushed_metal.png", Vector3(1.0, 1.0, 2.0))
+	_add_box("BenchIIIUpperCabinet", Vector3(4.43, 2.83, 0.54), Vector3(0.48, 0.58, 3.08), black, 0.34, false, "res://assets/textures/brushed_metal.png", Vector3(1.0, 1.0, 2.0))
+	_add_box("BenchIIIUpperLip", Vector3(4.14, 2.50, 0.54), Vector3(0.54, 0.08, 3.02), steel, 0.30, false, "res://assets/textures/brushed_metal.png")
+	_add_box("BenchIIITaskLight", Vector3(4.08, 2.43, 0.54), Vector3(0.035, 0.035, 2.76), green, 0.10, true)
+
+	# Enclosed lower cabinets/drawers while retaining the existing walnut work surface.
+	_add_box("BenchIIILowerCabinetL", Vector3(3.48, 0.58, -0.34), Vector3(0.22, 0.86, 1.20), black, 0.36, false, "res://assets/textures/brushed_metal.png")
+	_add_box("BenchIIILowerCabinetR", Vector3(3.48, 0.58, 1.42), Vector3(0.22, 0.86, 1.20), black, 0.36, false, "res://assets/textures/brushed_metal.png")
+	for y_value: float in [0.34, 0.58, 0.82]:
+		_add_box("BenchIIIDrawerL_%s" % str(y_value), Vector3(3.34, y_value, -0.34), Vector3(0.035, 0.18, 1.02), steel, 0.28)
+		_add_box("BenchIIIDrawerR_%s" % str(y_value), Vector3(3.34, y_value, 1.42), Vector3(0.035, 0.18, 1.02), steel, 0.28)
+
+	# Tool rail / small shelf details.
+	_add_box("BenchIIIToolRail", Vector3(4.52, 1.90, 0.54), Vector3(0.10, 0.08, 2.70), Color("565e63"), 0.26, false, "res://assets/textures/brushed_metal.png")
+	_add_box("BenchIIISmallShelf", Vector3(4.33, 1.58, 1.54), Vector3(0.46, 0.08, 0.72), wood, 0.54, false, "res://assets/textures/walnut.png")
+	for tool_z: float in [-0.70, -0.28, 0.14, 0.56]:
+		_add_box("BenchIIITool_%s" % str(tool_z), Vector3(4.49, 1.98, tool_z), Vector3(0.08, 0.36, 0.08), Color("b7bdc1"), 0.25, false, "res://assets/textures/brushed_metal.png")
+
+	var label: Label3D = Label3D.new()
+	label.name = "BenchIIIWorldLabel"
+	label.text = "BAGGING BENCH III"
+	label.font_size = 26
+	label.pixel_size = 0.0028
+	label.position = Vector3(3.98, 2.92, 0.54)
+	label.rotation_degrees = Vector3(0, -90, 0)
+	label.modulate = Color("9af4b6")
+	add_child(label)
+	for child_index: int in range(bench3_start_index, get_child_count()):
+		var shifted_child: Node = get_child(child_index)
+		if shifted_child is Node3D:
+			(shifted_child as Node3D).position.z += 0.24
+
+func _sync_bagging_bench_level3_visibility() -> void:
+	var upgraded: bool = bagging_level >= 3
+	var legacy_lower_parts: Array[String] = [
+		"BenchFrontApron",
+		"BenchBackApron",
+		"BenchLeg_0_0",
+		"BenchLeg_0_1",
+		"BenchLeg_1_0",
+		"BenchLeg_1_1",
+		"BenchLowerShelf",
+		"BenchGreenBin",
+		"BenchGreenBinLid",
+		"BenchClearBin",
+		"BenchClearBinLid",
+		"BenchBaggieStackUnder",
+		"BenchSupplyBox"
+	]
+	for node_name: String in legacy_lower_parts:
+		var legacy_node: Node3D = get_node_or_null(node_name) as Node3D
+		if legacy_node != null:
+			legacy_node.visible = not upgraded
+
+	var bench3_names: Array[String] = [
+		"BenchIIIBackBoard",
+		"BenchIIIUpperCabinet",
+		"BenchIIIUpperLip",
+		"BenchIIITaskLight",
+		"BenchIIILowerCabinetL",
+		"BenchIIILowerCabinetR",
+		"BenchIIIToolRail",
+		"BenchIIISmallShelf",
+		"BenchIIIWorldLabel"
+	]
+	for node_name: String in bench3_names:
+		var upgraded_node: Node3D = get_node_or_null(node_name) as Node3D
+		if upgraded_node != null:
+			upgraded_node.visible = upgraded
+	for child: Node in get_children():
+		var child_name: String = str(child.name)
+		if child_name.begins_with("BenchIIIDrawer") or child_name.begins_with("BenchIIITool_"):
+			if child is Node3D:
+				(child as Node3D).visible = upgraded
+
+func _apply_visual_upgrades() -> void:
+	if tent_level >= 2:
+		_set_mesh_color("TentBody", Color("303842"))
+		var grow_fixture: MeshInstance3D = get_node_or_null("GrowLightFixture") as MeshInstance3D
+		if grow_fixture != null:
+			grow_fixture.scale = Vector3(1.18, 1.0, 1.12)
+	if bagging_level >= 2:
+		_set_mesh_color("ScaleBody", Color("16191d"))
+		_set_mesh_color("BenchTop", Color("594231"))
+	if bagging_level >= 3:
+		_build_bagging_bench_level3_visual()
+		_set_mesh_color("BenchTop", Color("332c28"))
+	_sync_bagging_bench_level3_visibility()
+	if storage_level >= 2 and storage_level < 4:
+		_set_mesh_color("Shelf0", Color("6f767c"))
+		_set_mesh_color("Shelf1", Color("6f767c"))
+		_set_mesh_color("Shelf2", Color("6f767c"))
+		_set_mesh_color("Shelf3", Color("6f767c"))
+		if get_node_or_null("StorageUpgradeBin") == null:
+			_add_box("StorageUpgradeBin", Vector3(-4.14, 2.245, 0.52), Vector3(0.54, 0.26, 0.58), Color("667881"), 0.76)
+	if storage_level == 3 and get_node_or_null("StorageShelfBank2") == null:
+		_add_box("StorageShelfBank2", Vector3(-4.72, 1.28, -2.11), Vector3(0.08, 2.48, 1.00), Color("4d5459"), 0.50, false, "res://assets/textures/brushed_metal.png")
+		for extra_index in range(4):
+			var extra_y: float = 0.34 + float(extra_index) * 0.62
+			_add_box("StorageExtraShelf%d" % extra_index, Vector3(-4.30, extra_y, -2.11), Vector3(0.72, 0.09, 1.00), Color("717980"), 0.50, false, "res://assets/textures/brushed_metal.png")
+
+	_sync_storage_furniture()
+	load("res://scripts/furniture_fit.gd").apply_apartment(self)
+
+
+func _set_mesh_color(node_name: String, color: Color) -> void:
+	var mesh_instance: MeshInstance3D = get_node_or_null(node_name) as MeshInstance3D
+	if mesh_instance == null:
+		return
+	var material: StandardMaterial3D = mesh_instance.get_active_material(0) as StandardMaterial3D
+	if material != null:
+		material.albedo_color = color
+
+func _set_mesh_emission_enabled(node_name: String, enabled: bool) -> void:
+	var mesh_instance: MeshInstance3D = get_node_or_null(node_name) as MeshInstance3D
+	if mesh_instance == null:
+		return
+	var material: StandardMaterial3D = mesh_instance.get_active_material(0) as StandardMaterial3D
+	if material != null:
+		material.emission_enabled = enabled
+
+func _add_box(label: String, pos: Vector3, size: Vector3, color: Color, roughness_value: float = 0.72, emissive: bool = false, texture_path: String = "", uv_scale: Vector3 = Vector3.ONE) -> MeshInstance3D:
+	var mesh_instance: MeshInstance3D = MeshInstance3D.new()
+	mesh_instance.name = label
+	var box: BoxMesh = BoxMesh.new()
+	box.size = size
+	var material: StandardMaterial3D = StandardMaterial3D.new()
+	material.albedo_color = color
+	material.roughness = roughness_value
+	if not texture_path.is_empty():
+		var loaded_texture: Texture2D = load(texture_path) as Texture2D
+		if loaded_texture != null:
+			material.albedo_texture = loaded_texture
+			material.uv1_scale = uv_scale
+	if emissive:
+		material.emission_enabled = true
+		material.emission = color
+		material.emission_energy_multiplier = 1.8
+	box.material = material
+	mesh_instance.mesh = box
+	mesh_instance.position = pos
+	add_child(mesh_instance)
+	return mesh_instance
+
+func _add_sphere(label: String, pos: Vector3, scale_amount: Vector3, color: Color, roughness_value: float = 0.72) -> MeshInstance3D:
+	var mesh_instance: MeshInstance3D = MeshInstance3D.new()
+	mesh_instance.name = label
+	var sphere: SphereMesh = SphereMesh.new()
+	sphere.radius = 0.5
+	sphere.height = 1.0
+	var material: StandardMaterial3D = StandardMaterial3D.new()
+	material.albedo_color = color
+	material.roughness = roughness_value
+	sphere.material = material
+	mesh_instance.mesh = sphere
+	mesh_instance.position = pos
+	mesh_instance.scale = scale_amount
+	add_child(mesh_instance)
+	return mesh_instance
+
+func _add_cylinder(label: String, pos: Vector3, top_radius: float, bottom_radius: float, height_value: float, color: Color, roughness_value: float = 0.72, rotation_value: Vector3 = Vector3.ZERO) -> MeshInstance3D:
+	var mesh_instance: MeshInstance3D = MeshInstance3D.new()
+	mesh_instance.name = label
+	var cylinder: CylinderMesh = CylinderMesh.new()
+	cylinder.top_radius = top_radius
+	cylinder.bottom_radius = bottom_radius
+	cylinder.height = height_value
+	var material: StandardMaterial3D = StandardMaterial3D.new()
+	material.albedo_color = color
+	material.roughness = roughness_value
+	cylinder.material = material
+	mesh_instance.mesh = cylinder
+	mesh_instance.position = pos
+	mesh_instance.rotation = rotation_value
+	add_child(mesh_instance)
+	return mesh_instance
+
+func _add_capsule(label: String, pos: Vector3, radius_value: float, height_value: float, color: Color, roughness_value: float = 0.72, rotation_value: Vector3 = Vector3.ZERO) -> MeshInstance3D:
+	var mesh_instance: MeshInstance3D = MeshInstance3D.new()
+	mesh_instance.name = label
+	var capsule: CapsuleMesh = CapsuleMesh.new()
+	capsule.radius = radius_value
+	capsule.height = height_value
+	var material: StandardMaterial3D = StandardMaterial3D.new()
+	material.albedo_color = color
+	material.roughness = roughness_value
+	capsule.material = material
+	mesh_instance.mesh = capsule
+	mesh_instance.position = pos
+	mesh_instance.rotation = rotation_value
+	add_child(mesh_instance)
+	return mesh_instance
+
+func _load_item_icon(icon_key: String) -> Texture2D:
+	if item_icon_cache.has(icon_key):
+		return item_icon_cache[icon_key] as Texture2D
+	var file_name: String = icon_key + ".svg"
+	var texture: Texture2D = load("res://assets/icons/" + file_name) as Texture2D
+	if texture != null:
+		item_icon_cache[icon_key] = texture
+	return texture
+
+func _make_item_icon(icon_key: String, size_value: Vector2 = Vector2(64, 64)) -> TextureRect:
+	var icon: TextureRect = TextureRect.new()
+	icon.texture = _load_item_icon(icon_key)
+	icon.custom_minimum_size = size_value
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return icon
+
+func _make_inventory_card(icon_key: String) -> Dictionary:
+	var card: PanelContainer = PanelContainer.new()
+	card.add_theme_stylebox_override("panel", _style_box(Color("182027"), Color("2c3942"), 16, 1))
+	var row: HBoxContainer = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 14)
+	card.add_child(row)
+	row.add_child(_make_item_icon(icon_key, Vector2(68, 68)))
+	var content: VBoxContainer = VBoxContainer.new()
+	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content.add_theme_constant_override("separation", 5)
+	row.add_child(content)
+	return {"card": card, "row": row, "content": content}
+
+func _create_stylized_plant(pos: Vector3) -> Node3D:
+	var root: Node3D = Node3D.new()
+	root.position = pos
+	add_child(root)
+
+	var saucer: MeshInstance3D = MeshInstance3D.new()
+	saucer.name = "Saucer"
+	var saucer_mesh: CylinderMesh = CylinderMesh.new()
+	saucer_mesh.top_radius = 0.34
+	saucer_mesh.bottom_radius = 0.36
+	saucer_mesh.height = 0.045
+	saucer_mesh.material = _textured_plant_material(Color("262a29"), "res://assets/textures/fabric_pot.png", 0.92)
+	saucer.mesh = saucer_mesh
+	saucer.position.y = 0.035
+	root.add_child(saucer)
+
+	var pot: MeshInstance3D = MeshInstance3D.new()
+	pot.name = "Pot"
+	var pot_mesh: CylinderMesh = CylinderMesh.new()
+	pot_mesh.top_radius = 0.31
+	pot_mesh.bottom_radius = 0.255
+	pot_mesh.height = 0.38
+	pot_mesh.radial_segments = 24
+	pot_mesh.material = _textured_plant_material(Color("303433"), "res://assets/textures/fabric_pot.png", 0.98)
+	pot.mesh = pot_mesh
+	pot.position.y = 0.235
+	root.add_child(pot)
+
+	var rim: MeshInstance3D = MeshInstance3D.new()
+	rim.name = "PotRim"
+	var rim_mesh: CylinderMesh = CylinderMesh.new()
+	rim_mesh.top_radius = 0.325
+	rim_mesh.bottom_radius = 0.325
+	rim_mesh.height = 0.055
+	rim_mesh.radial_segments = 24
+	rim_mesh.material = _textured_plant_material(Color("202423"), "res://assets/textures/fabric_pot.png", 0.98)
+	rim.mesh = rim_mesh
+	rim.position.y = 0.43
+	root.add_child(rim)
+
+	var soil: MeshInstance3D = MeshInstance3D.new()
+	soil.name = "Soil"
+	var soil_mesh: CylinderMesh = CylinderMesh.new()
+	soil_mesh.top_radius = 0.285
+	soil_mesh.bottom_radius = 0.285
+	soil_mesh.height = 0.025
+	soil_mesh.radial_segments = 24
+	soil_mesh.material = _textured_plant_material(Color.WHITE, "res://assets/textures/soil.png", 1.0)
+	soil.mesh = soil_mesh
+	soil.position.y = 0.465
+	root.add_child(soil)
+
+	var canopy: Node3D = Node3D.new()
+	canopy.name = "Canopy"
+	root.add_child(canopy)
+	var leaves: Node3D = Node3D.new()
+	leaves.name = "Leaves"
+	canopy.add_child(leaves)
+	var buds: Node3D = Node3D.new()
+	buds.name = "Buds"
+	canopy.add_child(buds)
+
+	var stem_mat: StandardMaterial3D = _make_flat_material(Color("426a3e"), 0.86)
+	var main_stem: MeshInstance3D = MeshInstance3D.new()
+	main_stem.name = "MainStem"
+	var main_stem_mesh: CylinderMesh = CylinderMesh.new()
+	main_stem_mesh.top_radius = 0.022
+	main_stem_mesh.bottom_radius = 0.052
+	main_stem_mesh.height = 1.20
+	main_stem_mesh.radial_segments = 10
+	main_stem_mesh.material = stem_mat
+	main_stem.mesh = main_stem_mesh
+	main_stem.position.y = 1.05
+	canopy.add_child(main_stem)
+
+	for branch_index in range(10):
+		var branch_angle: float = float(branch_index) / 10.0 * TAU + float(branch_index % 2) * 0.24
+		var tier: int = branch_index % 5
+		var branch_height: float = 0.66 + float(tier) * 0.16
+		var branch_radius: float = 0.27 - float(tier) * 0.018
+		var endpoint: Vector3 = Vector3(cos(branch_angle) * branch_radius, branch_height, sin(branch_angle) * branch_radius)
+		var branch: MeshInstance3D = MeshInstance3D.new()
+		branch.name = "Branch%d" % branch_index
+		var branch_mesh: CylinderMesh = CylinderMesh.new()
+		branch_mesh.top_radius = 0.012
+		branch_mesh.bottom_radius = 0.025
+		branch_mesh.height = 0.48
+		branch_mesh.radial_segments = 8
+		branch_mesh.material = stem_mat
+		branch.mesh = branch_mesh
+		branch.position = Vector3(endpoint.x * 0.51, branch_height - 0.07, endpoint.z * 0.51)
+		branch.rotation.z = cos(branch_angle) * 0.82
+		branch.rotation.x = -sin(branch_angle) * 0.82
+		canopy.add_child(branch)
+
+		for leaf_layer in range(2):
+			var leaf_card: MeshInstance3D = _make_leaf_card("Leaf_%d_%d" % [branch_index, leaf_layer])
+			leaf_card.position = endpoint + Vector3(0, 0.025 + float(leaf_layer) * 0.025, 0)
+			leaf_card.rotation = Vector3(deg_to_rad(-18.0 + float(leaf_layer) * 28.0), -branch_angle, deg_to_rad(float(leaf_layer) * 22.0 - 11.0))
+			leaf_card.scale = Vector3(0.42, 0.42, 0.42)
+			leaves.add_child(leaf_card)
+
+	for top_index in range(7):
+		var top_angle: float = float(top_index) / 7.0 * TAU
+		var top_leaf: MeshInstance3D = _make_leaf_card("TopLeaf%d" % top_index)
+		top_leaf.position = Vector3(cos(top_angle) * 0.13, 1.55 + float(top_index % 2) * 0.035, sin(top_angle) * 0.13)
+		top_leaf.rotation = Vector3(deg_to_rad(-24.0), -top_angle, 0.0)
+		top_leaf.scale = Vector3(0.38, 0.38, 0.38)
+		leaves.add_child(top_leaf)
+
+	for bud_index in range(9):
+		var bud_cluster: Node3D = Node3D.new()
+		bud_cluster.name = "Bud_%d" % bud_index
+		if bud_index == 0:
+			bud_cluster.position = Vector3(0, 1.54, 0)
+		else:
+			var bud_angle: float = float(bud_index - 1) / 8.0 * TAU + float((bud_index - 1) % 2) * 0.11
+			var bud_height: float = 0.94 + float((bud_index - 1) % 4) * 0.15
+			var bud_radius: float = 0.12 + float((bud_index - 1) % 3) * 0.05
+			bud_cluster.position = Vector3(cos(bud_angle) * bud_radius, bud_height, sin(bud_angle) * bud_radius)
+			bud_cluster.rotation = Vector3(deg_to_rad(-8.0 + float((bud_index % 3) * 7)), bud_angle, deg_to_rad(-12.0 + float((bud_index % 4) * 6)))
+
+		for piece_index in range(4 if bud_index == 0 else 3):
+			var bud_piece: MeshInstance3D = MeshInstance3D.new()
+			bud_piece.name = "BudPiece_%d" % piece_index
+			var bud_mesh: SphereMesh = SphereMesh.new()
+			bud_mesh.radius = 0.50
+			bud_mesh.height = 1.0
+			bud_mesh.radial_segments = 10
+			bud_mesh.rings = 6
+			bud_mesh.material = _textured_plant_material(Color("8fa573"), "res://assets/textures/bud_surface.png", 0.72)
+			bud_piece.mesh = bud_mesh
+			bud_piece.position = Vector3(float(piece_index - 1) * 0.022, 0.03 + float(piece_index) * 0.040, 0.016 if piece_index % 2 == 0 else -0.012)
+			bud_piece.scale = Vector3(0.11 - float(piece_index) * 0.010, 0.075 + float(piece_index % 2) * 0.010, 0.095 - float(piece_index) * 0.008)
+			bud_piece.rotation = Vector3(deg_to_rad(-8.0 + float(piece_index) * 9.0), float(piece_index) * 0.55, deg_to_rad(-10.0 + float(piece_index) * 11.0))
+			bud_cluster.add_child(bud_piece)
+
+		for sugar_leaf_index in range(3):
+			var sugar_leaf: MeshInstance3D = _make_leaf_card("SugarLeaf_%d_%d" % [bud_index, sugar_leaf_index])
+			sugar_leaf.position = Vector3(-0.038 + float(sugar_leaf_index) * 0.038, 0.04 + float(sugar_leaf_index) * 0.035, 0.0)
+			sugar_leaf.rotation = Vector3(deg_to_rad(-26.0 + float(sugar_leaf_index) * 18.0), 0.0, deg_to_rad(-26.0 + float(sugar_leaf_index) * 26.0))
+			sugar_leaf.scale = Vector3(0.18, 0.18, 0.18)
+			bud_cluster.add_child(sugar_leaf)
+
+		buds.add_child(bud_cluster)
+
+	return root
+
+func _textured_plant_material(color: Color, texture_path: String, roughness_value: float, alpha: bool = false) -> StandardMaterial3D:
+	var material: StandardMaterial3D = StandardMaterial3D.new()
+	material.albedo_color = color
+	material.roughness = roughness_value
+	var tex: Texture2D = load(texture_path) as Texture2D
+	if tex != null:
+		material.albedo_texture = tex
+	if alpha:
+		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		material.cull_mode = BaseMaterial3D.CULL_DISABLED
+		material.alpha_scissor_threshold = 0.22
+	return material
+
+func _make_leaf_card(node_name: String) -> MeshInstance3D:
+	var leaf: MeshInstance3D = MeshInstance3D.new()
+	leaf.name = node_name
+	var quad: QuadMesh = QuadMesh.new()
+	quad.size = Vector2(0.72, 0.72)
+	quad.orientation = PlaneMesh.FACE_Z
+	quad.material = _textured_plant_material(Color("57905a"), "res://assets/textures/plant_leaf_card.png", 0.82, true)
+	leaf.mesh = quad
+	return leaf
+
+
+func _attach_plant_hit_area(root: Node3D, slot_index: int, hit_width: float = 0.72) -> void:
+	if root == null:
+		return
+	var area: Area3D = Area3D.new()
+	area.name = "PlantHitArea%d" % slot_index
+	area.set_meta("plant_slot", slot_index)
+	area.collision_layer = 8
+	area.collision_mask = 0
+	var shape_node: CollisionShape3D = CollisionShape3D.new()
+	var shape: BoxShape3D = BoxShape3D.new()
+	shape.size = Vector3(hit_width, 1.72, hit_width)
+	shape_node.shape = shape
+	shape_node.position = Vector3(0, 0.88, 0)
+	area.add_child(shape_node)
+	root.add_child(area)
+
+func _strain_visual_palette(strain_name: String) -> Dictionary:
+	var profile: String = "budget"
+	if seed_catalog.has(strain_name):
+		var info: Dictionary = seed_catalog[strain_name]
+		profile = str(info.get("profile", "budget"))
+	match profile:
+		"purple": return {"leaf": Color("4d8958"), "leaf2": Color("628f62"), "bud": Color("805f91")}
+		"cool": return {"leaf": Color("4a8271"), "leaf2": Color("5f947d"), "bud": Color("6f9aa2")}
+		"citrus": return {"leaf": Color("71904e"), "leaf2": Color("879c55"), "bud": Color("c7a858")}
+		"smooth": return {"leaf": Color("567f57"), "leaf2": Color("6b9463"), "bud": Color("78956c")}
+		"premium": return {"leaf": Color("456f55"), "leaf2": Color("587f62"), "bud": Color("765b85")}
+		"gold": return {"leaf": Color("687d4f"), "leaf2": Color("7f8d55"), "bud": Color("b88b4d")}
+		"cherry": return {"leaf": Color("506f58"), "leaf2": Color("708061"), "bud": Color("ad5e72")}
+		"berry": return {"leaf": Color("526f62"), "leaf2": Color("667e70"), "bud": Color("935778")}
+		"dessert": return {"leaf": Color("637752"), "leaf2": Color("788663"), "bud": Color("b29a72")}
+		"luxury": return {"leaf": Color("3f624b"), "leaf2": Color("536f58"), "bud": Color("5d4f72")}
+		"darkfruit": return {"leaf": Color("425f4e"), "leaf2": Color("586d58"), "bud": Color("633d5a")}
+		"reserve": return {"leaf": Color("486f59"), "leaf2": Color("63806a"), "bud": Color("778aae")}
+		"solar": return {"leaf": Color("728858"), "leaf2": Color("8b9a67"), "bud": Color("c0c779")}
+		_: return {"leaf": Color("4f8b59"), "leaf2": Color("65a068"), "bud": Color("829d69")}
+
+func _make_flat_material(color: Color, roughness_value: float = 0.76) -> StandardMaterial3D:
+	var material: StandardMaterial3D = StandardMaterial3D.new()
+	material.albedo_color = color
+	material.roughness = roughness_value
+	return material
+
+func _tint_plant_visual(root: Node3D, strain_name: String, dead: bool) -> void:
+	if root == null:
+		return
+	var tint_key: String = "%s:%s" % [strain_name, "dead" if dead else "alive"]
+	if str(root.get_meta("plant_tint_key", "")) == tint_key:
+		return
+	root.set_meta("plant_tint_key", tint_key)
+	var canopy: Node3D = root.get_node_or_null("Canopy") as Node3D
+	if canopy == null:
+		return
+	var leaves: Node3D = canopy.get_node_or_null("Leaves") as Node3D
+	var buds: Node3D = canopy.get_node_or_null("Buds") as Node3D
+	var palette: Dictionary = _strain_visual_palette(strain_name)
+	var palette_leaf: Color = palette.get("leaf", Color("4f8b59"))
+	var palette_leaf2: Color = palette.get("leaf2", Color("65a068"))
+	var palette_bud: Color = palette.get("bud", Color("829d69"))
+	var leaf_a: Color = Color("6b5d43") if dead else palette_leaf
+	var leaf_b: Color = Color("786748") if dead else palette_leaf2
+	var bud_color: Color = Color("6d624e") if dead else palette_bud
+	if leaves != null:
+		var leaf_index: int = 0
+		for child in leaves.get_children():
+			if child is MeshInstance3D:
+				var leaf_mesh: MeshInstance3D = child as MeshInstance3D
+				leaf_mesh.material_override = _textured_plant_material(leaf_a if leaf_index % 2 == 0 else leaf_b, "res://assets/textures/plant_leaf_card.png", 0.82, true)
+				leaf_index += 1
+	if buds != null:
+		for child in buds.get_children():
+			if child is MeshInstance3D:
+				var bud_mesh: MeshInstance3D = child as MeshInstance3D
+				bud_mesh.material_override = _textured_plant_material(bud_color, "res://assets/textures/bud_surface.png", 0.74)
+			elif child is Node3D:
+				for sub_child in (child as Node3D).get_children():
+					if sub_child is MeshInstance3D:
+						var sub_mesh: MeshInstance3D = sub_child as MeshInstance3D
+						if String(sub_mesh.name).begins_with("BudPiece"):
+							sub_mesh.material_override = _textured_plant_material(bud_color, "res://assets/textures/bud_surface.png", 0.74)
+						else:
+							sub_mesh.material_override = _textured_plant_material(leaf_b, "res://assets/textures/plant_leaf_card.png", 0.82, true)
+
+func _update_all_plant_visuals() -> void:
+	for slot_index in range(plant_slots.size()):
+		_update_plant_visual(slot_index)
+
+func _update_plant_visual(slot_index: int) -> void:
+	if slot_index < 0 or slot_index >= plant_visuals.size():
+		return
+	var root: Node3D = plant_visuals[slot_index]
+	var slot: Dictionary = plant_slots[slot_index]
+	var stage: int = int(slot.get("stage", -1))
+	root.visible = true
+	root.scale = Vector3.ONE
+	var canopy: Node3D = root.get_node("Canopy") as Node3D
+	if stage < 0:
+		canopy.visible = false
+		return
+	canopy.visible = true
+	var growth: float = float(slot.get("growth", 0.0))
+	var dead: bool = bool(slot.get("dead", false))
+	var stage_scale: float = 0.30 + (clampf(growth, 0.0, 100.0) / 100.0) * 0.70
+	if dead:
+		stage_scale *= 0.82
+	canopy.scale = Vector3.ONE * stage_scale
+	var buds: Node3D = canopy.get_node("Buds") as Node3D
+	buds.visible = stage >= 2 and not dead
+	_tint_plant_visual(root, str(slot.get("strain", "")), dead)
+
+
+func _build_ui() -> void:
+	hud = Control.new()
+	hud.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	hud.position = Vector2(0, -12)
+	add_child(hud)
+
+	var top_bar: PanelContainer = PanelContainer.new()
+	world_top_bar = top_bar
+	top_bar.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	top_bar.offset_left = 18
+	top_bar.offset_top = 18
+	top_bar.offset_right = -18
+	top_bar.offset_bottom = 82
+	top_bar.add_theme_stylebox_override("panel", _style_box(Color("11171d"), Color("303a43"), 18, 2))
+	hud.add_child(top_bar)
+	var top_row: HBoxContainer = HBoxContainer.new()
+	top_row.add_theme_constant_override("separation", 12)
+	top_bar.add_child(top_row)
+
+	cash_label = Label.new()
+	cash_label.text = "$%d" % cash
+	cash_label.add_theme_font_size_override("font_size", 27)
+	top_row.add_child(cash_label)
+	var top_hint: Label = Label.new()
+	brand_label = top_hint
+	top_hint.text = "AFewBuds"
+	top_hint.add_theme_font_size_override("font_size", 21)
+	top_hint.modulate = Color("8f9ba3")
+	top_hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	top_row.add_child(top_hint)
+	day_night_label = Label.new()
+	day_night_label.text = "DAY 1  |  5:00 PM"
+	day_night_label.modulate = Color("d7caa8")
+	day_night_label.add_theme_font_size_override("font_size", 14)
+	day_night_label.custom_minimum_size = Vector2(112, 48)
+	day_night_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	day_night_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	top_row.add_child(day_night_label)
+	var phone_button: Button = Button.new()
+	phone_button.text = "PHONE"
+	phone_button.custom_minimum_size = Vector2(140, 52)
+	phone_button.add_theme_font_size_override("font_size", 18)
+	phone_button.add_theme_color_override("font_color", Color("effff3"))
+	phone_button.add_theme_color_override("font_hover_color", Color("ffffff"))
+	phone_button.add_theme_stylebox_override("normal", _style_box(Color("1b3324"), Color("78c98a"), 13, 2))
+	phone_button.add_theme_stylebox_override("hover", _style_box(Color("274b34"), Color("9be0aa"), 13, 2))
+	phone_button.add_theme_stylebox_override("pressed", _style_box(Color("13271b"), Color("5dac70"), 13, 2))
+	phone_button.tooltip_text = "Open phone"
+	phone_button.pressed.connect(_toggle_phone)
+	top_row.add_child(phone_button)
+
+	view_label = Label.new()
+	view_label.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	view_label.offset_top = 103
+	view_label.offset_bottom = 137
+	view_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	view_label.add_theme_font_size_override("font_size", 18)
+	hud.add_child(view_label)
+
+	status_label = Label.new()
+	status_label.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	status_label.offset_left = 34
+	status_label.offset_top = 128
+	status_label.offset_right = -34
+	status_label.offset_bottom = 182
+	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	status_label.modulate = Color("d7dee3")
+	status_label.text = "Grow -> harvest -> trim -> bag -> store -> sell."
+	hud.add_child(status_label)
+
+	contextual_button = Button.new()
+	contextual_button.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	contextual_button.offset_left = -170
+	contextual_button.offset_right = 170
+	contextual_button.offset_top = -78
+	contextual_button.offset_bottom = -18
+	contextual_button.custom_minimum_size = Vector2(340, 60)
+	contextual_button.add_theme_font_size_override("font_size", 18)
+	contextual_button.pressed.connect(_context_action)
+	hud.add_child(contextual_button)
+
+	left_button = _edge_turn_button("‹", true)
+	right_button = _edge_turn_button(">", false)
+	left_button.pressed.connect(_nav.bind("left"))
+	right_button.pressed.connect(_nav.bind("right"))
+
+	back_button = Button.new()
+	back_button.text = "BACK TO ROOM"
+	back_button.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	back_button.offset_left = -150
+	back_button.offset_right = 150
+	back_button.offset_top = -146
+	back_button.offset_bottom = -92
+	back_button.custom_minimum_size = Vector2(300, 54)
+	back_button.pressed.connect(_nav.bind("back"))
+	hud.add_child(back_button)
+
+	forward_button = Button.new()
+	forward_button.visible = false
+	hud.add_child(forward_button)
+
+
+
+	door_quick_button = Button.new()
+	door_quick_button.text = "TURN TO DOOR"
+	door_quick_button.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	door_quick_button.offset_left = -155
+	door_quick_button.offset_right = 155
+	door_quick_button.offset_top = -146
+	door_quick_button.offset_bottom = -92
+	door_quick_button.custom_minimum_size = Vector2(310, 54)
+	door_quick_button.pressed.connect(_quick_turn_to_door)
+	hud.add_child(door_quick_button)
+
+
+	_build_phone_panel()
+	_build_tutorial_panel()
+	_build_sale_panel()
+	_build_peephole_panel()
+	_build_grow_panel()
+	_build_direct_plant_panel()
+	_build_bagging_panel()
+	_build_storage_panel()
+	_build_dealer_storage_panel()
+	_build_supply_inventory_panel()
+	_build_system_control_panel()
+	_build_trim_minigame()
+	_build_bag_minigame()
+	_build_daily_report_panel()
+	_build_tutorial_coach()
+	_build_pause_overlay()
+	_build_door_alert()
+	_build_reset_confirmation()
+	_build_save_notification()
+
+func _populate_utility_controls(parent: VBoxContainer) -> void:
+	var hint: Label = Label.new()
+	hint.text = "Tap a large switch below. Its label shows the CURRENT state. Grow-room controls are also available at the grow-room system panel."
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint.add_theme_font_size_override("font_size", 18)
+	parent.add_child(hint)
+	var specs: Array[Dictionary] = [
+		{"id": "main_light_switch", "title": "Main room light", "note": "Ceiling lighting in the living room."},
+		{"id": "floor_lamp", "title": "Living-room lamp", "note": "The standing lamp beside the seating area."},
+		{"id": "grow_room_light_switch", "title": "Grow-room light", "note": "Room lighting; separate from the plant lights."},
+		{"id": "grow_light_switch", "title": "Plant grow lights", "note": "Turning these OFF slows plant growth, including while away."},
+		{"id": "ventilation_switch", "title": "Ventilation", "note": "Buy the system in Central Market checkout first. OFF slows growth."}
+	]
+	for spec: Dictionary in specs:
+		var card: PanelContainer = PanelContainer.new()
+		card.add_theme_stylebox_override("panel", _style_box(Color("18232b"), Color("364951"), 14, 1))
+		parent.add_child(card)
+		var row: HBoxContainer = HBoxContainer.new()
+		row.add_theme_constant_override("separation", 14)
+		card.add_child(row)
+		var text: VBoxContainer = VBoxContainer.new()
+		text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(text)
+		var title: Label = Label.new()
+		title.text = str(spec.title)
+		title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		title.add_theme_font_size_override("font_size", 22)
+		text.add_child(title)
+		var note: Label = Label.new()
+		note.text = str(spec.note)
+		note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		note.add_theme_font_size_override("font_size", 17)
+		note.modulate = Color("b4c4c9")
+		text.add_child(note)
+		var toggle: Button = Button.new()
+		toggle.name = str(spec.id)
+		toggle.set_meta("utility_id", str(spec.id))
+		toggle.custom_minimum_size = Vector2(214, 88)
+		toggle.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		toggle.add_theme_font_size_override("font_size", 19)
+		toggle.pressed.connect(_activate_room_interaction.bind(str(spec.id)))
+		row.add_child(toggle)
+		toggle.add_to_group("afb_utility_button")
+	_refresh_utility_controls()
+
+func _utility_state(action: String) -> bool:
+	match action:
+		"main_light_switch": return main_ceiling_light_on
+		"floor_lamp": return floor_lamp_on
+		"grow_room_light_switch": return grow_room_light_on
+		"grow_light_switch": return grow_lights_on
+		"ventilation_switch": return ventilation_installed and ventilation_on
+	return false
+
+func _refresh_utility_controls() -> void:
+	if not is_inside_tree():
+		return
+	for node: Node in get_tree().get_nodes_in_group("afb_utility_button"):
+		if not node is Button or node.is_queued_for_deletion():
+			continue
+		var button: Button = node as Button
+		var action: String = str(button.get_meta("utility_id", ""))
+		var locked: bool = action == "ventilation_switch" and not ventilation_installed
+		var enabled: bool = _utility_state(action)
+		button.text = "NOT INSTALLED" if locked else ("ON   |   TAP OFF" if enabled else "OFF   |   TAP ON")
+		button.disabled = locked or tutorial_active or session_paused or daily_report_pending
+		button.add_theme_stylebox_override("normal", _style_box(Color("294636") if enabled else Color("242c33"), Color("9ac8a6") if enabled else Color("9aa7b1"), 12, 2))
+
+func _edge_turn_button(label: String, on_left: bool) -> Button:
+	var button: Button = Button.new()
+	button.text = label
+	button.tooltip_text = "Tap to nudge  |  Swipe anywhere to look"
+	button.set_anchors_preset(Control.PRESET_BOTTOM_LEFT if on_left else Control.PRESET_BOTTOM_RIGHT)
+	if on_left:
+		button.offset_left = 8
+		button.offset_right = 54
+	else:
+		button.offset_left = -54
+		button.offset_right = -8
+	button.offset_top = -288
+	button.offset_bottom = -140
+	button.custom_minimum_size = Vector2(46, 148)
+	button.add_theme_font_size_override("font_size", 30)
+	button.modulate = Color(1.0, 1.0, 1.0, 0.44)
+	hud.add_child(button)
+	return button
+
+func _add_app_logo(parent: Control, edge: float = 48.0) -> TextureRect:
+	var logo: TextureRect = TextureRect.new()
+	logo.name = "AFBLogo"
+	logo.texture = APP_LOGO
+	logo.custom_minimum_size = Vector2(edge, edge)
+	logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	logo.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	logo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(logo)
+	return logo
+
+func _build_phone_panel() -> void:
+	phone_panel = PanelContainer.new()
+	phone_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	phone_panel.offset_left = 26
+	phone_panel.offset_top = 132 # Reserved alert rail; never moves content under a finger.
+	phone_panel.offset_right = -26
+	phone_panel.offset_bottom = -26
+	phone_panel.visible = false
+	hud.add_child(phone_panel)
+
+	var shell: StyleBoxFlat = StyleBoxFlat.new()
+	shell.bg_color = Color("0b0e12")
+	shell.border_color = Color("2d333b")
+	shell.set_border_width_all(6)
+	shell.set_corner_radius_all(34)
+	shell.content_margin_left = 18
+	shell.content_margin_right = 18
+	shell.content_margin_top = 14
+	shell.content_margin_bottom = 18
+	phone_panel.add_theme_stylebox_override("panel", shell)
+
+	var root: VBoxContainer = VBoxContainer.new()
+	root.add_theme_constant_override("separation", 10)
+	phone_panel.add_child(root)
+
+	var status: HBoxContainer = HBoxContainer.new()
+	root.add_child(status)
+	phone_clock_label = Label.new()
+	phone_clock_label.text = _format_game_clock()
+	phone_clock_label.add_theme_font_size_override("font_size", 15)
+	status.add_child(phone_clock_label)
+	var status_space: Control = Control.new()
+	status_space.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	status.add_child(status_space)
+	phone_status_label = Label.new()
+	phone_status_label.text = "AFEWBUDS   |   5G   |   87%"
+	phone_status_label.add_theme_font_size_override("font_size", 14)
+	status.add_child(phone_status_label)
+
+	var header: HBoxContainer = HBoxContainer.new()
+	header.add_theme_constant_override("separation", 8)
+	root.add_child(header)
+	phone_back_button = Button.new()
+	phone_back_button.text = "‹"
+	phone_back_button.custom_minimum_size = Vector2(54, 48)
+	phone_back_button.visible = false
+	phone_back_button.pressed.connect(_phone_go_back)
+	header.add_child(phone_back_button)
+	_add_app_logo(header, 48.0)
+	phone_title = Label.new()
+	phone_title.text = "AFewBuds"
+	phone_title.add_theme_font_size_override("font_size", 30)
+	phone_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(phone_title)
+	var close: Button = Button.new()
+	close.text = "X"
+	close.custom_minimum_size = Vector2(54, 48)
+	close.pressed.connect(_toggle_phone)
+	header.add_child(close)
+
+	var divider: HSeparator = HSeparator.new()
+	root.add_child(divider)
+	tutorial_phone_coach = _make_tutorial_coach(root)
+
+	phone_scroll = PhoneTouchScroll.new()
+	phone_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	phone_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	phone_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	phone_scroll.scroll_deadzone = 10
+	root.add_child(phone_scroll)
+	phone_list = VBoxContainer.new()
+	phone_list.custom_minimum_size.x = 0
+	phone_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	phone_list.add_theme_constant_override("separation", 14)
+	phone_scroll.add_child(phone_list)
+
+	var dock: HBoxContainer = HBoxContainer.new()
+	dock.alignment = BoxContainer.ALIGNMENT_CENTER
+	dock.add_theme_constant_override("separation", 12)
+	root.add_child(dock)
+	_add_phone_dock_button(dock, "HOME", "home")
+	_add_phone_dock_button(dock, "BUSINESSES", "budshop")
+	_add_phone_dock_button(dock, "TASKS", "task")
+	_add_phone_dock_button(dock, "SETTINGS", "settings")
+
+func _add_phone_dock_button(dock: HBoxContainer, label_text: String, app_name: String) -> void:
+	var dock_button: Button = Button.new()
+	dock_button.text = label_text
+	dock_button.custom_minimum_size = Vector2(0, 54)
+	dock_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	dock_button.add_theme_font_size_override("font_size", 13)
+	dock_button.pressed.connect(_open_phone_app.bind(app_name))
+	dock.add_child(dock_button)
+
+func _build_tutorial_panel() -> void:
+	tutorial_panel = PanelContainer.new()
+	tutorial_panel.set_anchors_preset(Control.PRESET_CENTER)
+	tutorial_panel.offset_left = -292
+	tutorial_panel.offset_right = 292
+	tutorial_panel.offset_top = -265
+	tutorial_panel.offset_bottom = 265
+	tutorial_panel.visible = false
+	tutorial_panel.add_theme_stylebox_override("panel", _style_box(Color("10161c"), Color("34434c"), 26, 2))
+	hud.add_child(tutorial_panel)
+	var root: VBoxContainer = VBoxContainer.new()
+	root.add_theme_constant_override("separation", 16)
+	tutorial_panel.add_child(root)
+	var brand_row: HBoxContainer = HBoxContainer.new()
+	brand_row.add_theme_constant_override("separation", 12)
+	root.add_child(brand_row)
+	_add_app_logo(brand_row, 48.0)
+	var title: Label = Label.new()
+	title.text = "YOUR FIRST DAY"
+	title.add_theme_font_size_override("font_size", 30)
+	brand_row.add_child(title)
+	var body: Label = Label.new()
+	body.text = "Learn one thing at a time: harvest, plant, water, fertilize, buy supplies, then trim, bag, store and list your product.\n\nThe clock, customers and plant timers stay PAUSED while you learn. SHOW ME takes you to the right place; you perform each action yourself.\n\nThis lesson is protected even while away. After the lesson, only existing crops grow while away; your day and visitors still wait for RESUME."
+	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.add_theme_font_size_override("font_size", 20)
+	root.add_child(body)
+	var start: Button = Button.new()
+	start.text = "START GUIDED DAY"
+	start.custom_minimum_size.y = 58
+	start.pressed.connect(_dismiss_tutorial)
+	root.add_child(start)
+	var skip: Button = Button.new()
+	skip.text = "SKIP TUTORIAL"
+	skip.custom_minimum_size.y = 50
+	skip.pressed.connect(_skip_tutorial)
+	root.add_child(skip)
+
+func _show_tutorial() -> void:
+	if tutorial_panel != null:
+		tutorial_panel.visible = true
+		_set_world_controls_visible(false)
+	_sync_simulation_pause()
+
+func _dismiss_tutorial() -> void:
+	tutorial_seen = true
+	tutorial_active = true
+	if tutorial_panel != null:
+		tutorial_panel.visible = false
+	_sync_simulation_pause()
+	_refresh_tutorial_coach()
+	_tutorial_focus_step()
+	_save_game()
+
+func _build_sale_panel() -> void:
+	sale_panel = PanelContainer.new()
+	sale_panel.set_anchors_preset(Control.PRESET_CENTER)
+	sale_panel.offset_left = -290
+	sale_panel.offset_right = 290
+	sale_panel.offset_top = -300
+	sale_panel.offset_bottom = 300
+	sale_panel.visible = false
+	sale_panel.add_theme_stylebox_override("panel", _style_box(Color("10161c"), Color("34434c"), 26, 2))
+	hud.add_child(sale_panel)
+	var root: VBoxContainer = VBoxContainer.new()
+	root.add_theme_constant_override("separation", 14)
+	sale_panel.add_child(root)
+
+	sale_title = Label.new()
+	sale_title.add_theme_font_size_override("font_size", 28)
+	root.add_child(sale_title)
+	sale_customer_art = TextureRect.new()
+	sale_customer_art.custom_minimum_size = Vector2(0, 190)
+	sale_customer_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	sale_customer_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	sale_customer_art.visible = false
+	root.add_child(sale_customer_art)
+	sale_body = Label.new()
+	sale_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	sale_body.add_theme_font_size_override("font_size", 18)
+	root.add_child(sale_body)
+	substitute_box = VBoxContainer.new()
+	substitute_box.add_theme_constant_override("separation", 8)
+	root.add_child(substitute_box)
+
+	var actions: HBoxContainer = HBoxContainer.new()
+	actions.add_theme_constant_override("separation", 8)
+	root.add_child(actions)
+	sale_primary_button = Button.new()
+	sale_primary_button.text = "SELL"
+	sale_primary_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sale_primary_button.custom_minimum_size.y = 56
+	sale_primary_button.pressed.connect(_sell_requested)
+	actions.add_child(sale_primary_button)
+	sale_secondary_button = Button.new()
+	sale_secondary_button.text = "SUBSTITUTE"
+	sale_secondary_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sale_secondary_button.custom_minimum_size.y = 56
+	sale_secondary_button.pressed.connect(_show_substitutes)
+	actions.add_child(sale_secondary_button)
+	sale_decline_button = Button.new()
+	sale_decline_button.text = "DECLINE"
+	sale_decline_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sale_decline_button.custom_minimum_size.y = 56
+	sale_decline_button.pressed.connect(_decline_sale)
+	actions.add_child(sale_decline_button)
+
+func _build_peephole_panel() -> void:
+	peephole_panel = PanelContainer.new()
+	peephole_panel.set_anchors_preset(Control.PRESET_CENTER)
+	peephole_panel.offset_left = -285
+	peephole_panel.offset_right = 285
+	peephole_panel.offset_top = -350
+	peephole_panel.offset_bottom = 350
+	peephole_panel.visible = false
+	peephole_panel.add_theme_stylebox_override("panel", _style_box(Color("090d11"), Color("303942"), 28, 2))
+	hud.add_child(peephole_panel)
+
+	var root: VBoxContainer = VBoxContainer.new()
+	root.add_theme_constant_override("separation", 16)
+	peephole_panel.add_child(root)
+
+	var title: Label = Label.new()
+	title.text = "PEEPHOLE"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 25)
+	root.add_child(title)
+
+	var lens: PanelContainer = PanelContainer.new()
+	lens.custom_minimum_size = Vector2(390, 390)
+	var lens_style: StyleBoxFlat = _style_box(Color("171b20"), Color("a0a9b1"), 190, 4)
+	lens_style.content_margin_left = 26.0
+	lens_style.content_margin_right = 26.0
+	lens_style.content_margin_top = 42.0
+	lens_style.content_margin_bottom = 42.0
+	lens.add_theme_stylebox_override("panel", lens_style)
+	lens.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	lens.clip_contents = true
+	root.add_child(lens)
+
+	var lens_box: VBoxContainer = VBoxContainer.new()
+	lens_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	lens_box.add_theme_constant_override("separation", 12)
+	lens.add_child(lens_box)
+	peephole_portrait = TextureRect.new()
+	peephole_portrait.custom_minimum_size = Vector2(250, 245)
+	peephole_portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	peephole_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	peephole_portrait.visible = false
+	lens_box.add_child(peephole_portrait)
+
+	peephole_silhouette = Label.new()
+	peephole_silhouette.text = "O"
+	peephole_silhouette.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	peephole_silhouette.add_theme_font_size_override("font_size", 118)
+	peephole_silhouette.modulate = Color("5d6870")
+	lens_box.add_child(peephole_silhouette)
+
+	peephole_identity_label = Label.new()
+	peephole_identity_label.text = "UNKNOWN BUYER"
+	peephole_identity_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	peephole_identity_label.add_theme_font_size_override("font_size", 24)
+	lens_box.add_child(peephole_identity_label)
+
+	peephole_detail_label = Label.new()
+	peephole_detail_label.text = "Someone is outside."
+	peephole_detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	peephole_detail_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	lens_box.add_child(peephole_detail_label)
+
+	var actions: HBoxContainer = HBoxContainer.new()
+	actions.alignment = BoxContainer.ALIGNMENT_CENTER
+	actions.add_theme_constant_override("separation", 12)
+	root.add_child(actions)
+	var answer: Button = Button.new()
+	answer.text = "ANSWER DOOR"
+	answer.custom_minimum_size = Vector2(220, 56)
+	answer.pressed.connect(_answer_from_peephole)
+	actions.add_child(answer)
+	var back: Button = Button.new()
+	back.text = "STEP BACK"
+	back.custom_minimum_size = Vector2(180, 56)
+	back.pressed.connect(_close_peephole)
+	actions.add_child(back)
+
+func _load_peephole_texture(path: String) -> Texture2D:
+	if path.is_empty():
+		return null
+	var lower_path: String = path.to_lower()
+	if FileAccess.file_exists(path) and lower_path.ends_with(".webp"):
+		var bytes: PackedByteArray = FileAccess.get_file_as_bytes(path)
+		var image: Image = Image.new()
+		if image.load_webp_from_buffer(bytes) == OK:
+			return ImageTexture.create_from_image(image)
+	if ResourceLoader.exists(path):
+		return load(path) as Texture2D
+	return null
+
+func _open_peephole() -> void:
+	peephole_checked = true
+	peephole_panel.visible = true
+	_set_world_controls_visible(false)
+	if peephole_portrait != null:
+		peephole_portrait.texture = null
+		peephole_portrait.visible = false
+	if peephole_silhouette != null:
+		peephole_silhouette.visible = true
+	if not customer_waiting:
+		peephole_identity_label.text = "NO ONE THERE"
+		peephole_detail_label.text = "The hallway is empty."
+		return
+
+	var avatar_path: String = str(current_customer.get("peephole_art", current_customer.get("avatar", "")))
+	if str(current_customer.get("tier", "")) != "Friend":
+		var client_name: String = str(current_customer.get("name", "")).to_lower()
+		var client_art: String = "res://assets/characters/peephole/%s.webp" % client_name
+		if FileAccess.file_exists(client_art):
+			avatar_path = client_art
+	var avatar_texture: Texture2D = _load_peephole_texture(avatar_path)
+	if avatar_texture != null and peephole_portrait != null:
+		peephole_portrait.texture = avatar_texture
+		peephole_portrait.visible = true
+		if peephole_silhouette != null:
+			peephole_silhouette.visible = false
+
+	if str(current_customer.get("special", "")) == "reeves":
+		peephole_identity_label.text = "AGENT REEVES" if reeves_met else "UNKNOWN OFFICIAL"
+		peephole_detail_label.text = "Reeves is waiting outside." if reeves_met else "Someone official-looking is standing outside. Answer the door to hear what he wants."
+		return
+	var display_name: String = _customer_display_name(current_customer)
+	peephole_identity_label.text = display_name.to_upper()
+	if _customer_is_known(current_customer):
+		peephole_detail_label.text = "You recognize %s. They are waiting outside." % display_name
+	else:
+		peephole_detail_label.text = "You can see the buyer, but you don't know them yet. Answer the door to deal with them."
+
+func _close_peephole() -> void:
+	peephole_panel.visible = false
+	_set_world_controls_visible(true)
+	_refresh_navigation_ui()
+
+func _answer_from_peephole() -> void:
+	if not customer_waiting or customer_departing:
+		_close_peephole()
+		return
+	peephole_panel.visible = false
+	_open_customer_sale()
+
+func _build_grow_panel() -> void:
+	grow_panel = _make_full_panel(34, 132, -34, -72)
+	var root: VBoxContainer = _panel_root(grow_panel, "GROW TENT", _close_grow_panel)
+	var help: Label = Label.new()
+	help.text = "Plants grow over real time. Water keeps them healthy; fertilizer gives a temporary growth boost. A plant left dry too long can die."
+	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	root.add_child(help)
+	var scroll: ScrollContainer = ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	root.add_child(scroll)
+	grow_list = VBoxContainer.new()
+	grow_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	grow_list.add_theme_constant_override("separation", 10)
+	scroll.add_child(grow_list)
+	var leave_station: Button = Button.new()
+	leave_station.text = "LEAVE GROW TENT"
+	leave_station.custom_minimum_size = Vector2(0, 58)
+	leave_station.add_theme_font_size_override("font_size", 18)
+	leave_station.pressed.connect(_close_grow_panel)
+	root.add_child(leave_station)
+
+
+func _build_direct_plant_panel() -> void:
+	plant_direct_panel = PanelContainer.new()
+	plant_direct_panel.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	plant_direct_panel.offset_left = 22
+	plant_direct_panel.offset_right = -22
+	plant_direct_panel.offset_top = -450
+	plant_direct_panel.offset_bottom = -82
+	plant_direct_panel.visible = false
+	plant_direct_panel.add_theme_stylebox_override("panel", _style_box(Color("11191f"), Color("40515b"), 18, 2))
+	hud.add_child(plant_direct_panel)
+
+	plant_direct_scroll = PhoneTouchScroll.new()
+	plant_direct_scroll.name = "plant_direct_scroll"
+	plant_direct_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	plant_direct_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	plant_direct_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	plant_direct_scroll.scroll_deadzone = 10
+	plant_direct_panel.add_child(plant_direct_scroll)
+
+	plant_direct_box = VBoxContainer.new()
+	plant_direct_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	plant_direct_box.add_theme_constant_override("separation", 8)
+	plant_direct_scroll.add_child(plant_direct_box)
+
+func _open_direct_plant(slot_index: int) -> void:
+	if slot_index < 0 or slot_index >= plant_slots.size():
+		return
+	selected_plant_slot = slot_index
+	if plant_direct_scroll != null:
+		plant_direct_scroll.cancel_touch()
+		plant_direct_scroll.scroll_vertical = 0
+	plant_direct_panel.visible = true
+	_set_world_controls_visible(false)
+	_refresh_direct_plant_panel()
+
+func _close_direct_plant() -> void:
+	plant_direct_panel.visible = false
+	if plant_direct_scroll != null:
+		plant_direct_scroll.cancel_touch()
+	selected_plant_slot = -1
+	_set_world_controls_visible(true)
+	status_label.text = "Tent overview. Tap a plant or empty pot directly to interact."
+
+func _refresh_direct_plant_panel() -> void:
+	if plant_direct_box == null or selected_plant_slot < 0 or selected_plant_slot >= plant_slots.size():
+		return
+	_clear_children(plant_direct_box)
+	var slot: Dictionary = plant_slots[selected_plant_slot]
+	var stage: int = int(slot.get("stage", -1))
+	var header: HBoxContainer = HBoxContainer.new()
+	plant_direct_box.add_child(header)
+	var title: Label = Label.new()
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.add_theme_font_size_override("font_size", 21)
+	header.add_child(title)
+	var close_button: Button = Button.new()
+	close_button.text = "BACK"
+	close_button.custom_minimum_size = Vector2(92, 44)
+	close_button.pressed.connect(_close_direct_plant)
+	header.add_child(close_button)
+
+	if stage < 0:
+		title.text = "Pot %d  |  Empty" % (selected_plant_slot + 1)
+		var hint: Label = Label.new()
+		hint.text = "Choose an owned seed. Planting happens here in the world instead of from the full grow menu."
+		hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		plant_direct_box.add_child(hint)
+		var seed_row: GridContainer = GridContainer.new()
+		seed_row.columns = 2
+		seed_row.add_theme_constant_override("h_separation", 7)
+		seed_row.add_theme_constant_override("v_separation", 7)
+		plant_direct_box.add_child(seed_row)
+		var owned_seed_names: Array[String] = []
+		for seed_name: String in SEED_ORDER:
+			if int(seed_inventory.get(seed_name, 0)) > 0:
+				owned_seed_names.append(seed_name)
+		for seed_variant: Variant in seed_inventory.keys():
+			var extra_seed_name: String = str(seed_variant)
+			if int(seed_inventory.get(extra_seed_name, 0)) > 0 and not owned_seed_names.has(extra_seed_name):
+				owned_seed_names.append(extra_seed_name)
+
+		var shown: int = 0
+		for seed_name: String in owned_seed_names:
+			var seed_count: int = int(seed_inventory.get(seed_name, 0))
+			if seed_count <= 0:
+				continue
+			var seed_button: Button = Button.new()
+			seed_button.text = "%s (%d)" % [seed_name, seed_count]
+			seed_button.custom_minimum_size.y = 48
+			seed_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			seed_button.pressed.connect(_direct_plant_seed.bind(seed_name))
+			seed_row.add_child(seed_button)
+			shown += 1
+		if shown == 0:
+			var none: Label = Label.new()
+			none.text = "No seeds owned. Buy unlocked seeds from the phone."
+			plant_direct_box.add_child(none)
+		return
+
+	var strain_name: String = str(slot.get("strain", "Unknown"))
+	var dead: bool = bool(slot.get("dead", false))
+	var growth: float = float(slot.get("growth", 0.0))
+	var water: float = float(slot.get("water", 0.0))
+	var health: float = float(slot.get("health", 0.0))
+	var fertilizer: float = float(slot.get("fertilizer", 0.0))
+	var stage_name: String = STAGES[clampi(stage, 0, STAGES.size() - 1)]
+	title.text = "%s  |  Pot %d" % [strain_name, selected_plant_slot + 1]
+	var stats: Label = Label.new()
+	stats.text = "Stage %s   |   Growth %.0f%%\nWater %.0f%%   |   Health %.0f%%   |   Boost %.0f%%\nFertilizer stock: %d uses" % [stage_name, growth, water, health, fertilizer, fertilizer_units]
+	stats.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	plant_direct_box.add_child(stats)
+
+	if dead:
+		var dead_label: Label = Label.new()
+		dead_label.text = "This plant died after being neglected. Clear the pot before replanting."
+		dead_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		plant_direct_box.add_child(dead_label)
+		var clear_button: Button = Button.new()
+		clear_button.text = "CLEAR DEAD PLANT"
+		clear_button.custom_minimum_size.y = 50
+		clear_button.pressed.connect(_direct_clear_dead)
+		plant_direct_box.add_child(clear_button)
+		return
+
+	var actions: HBoxContainer = HBoxContainer.new()
+	actions.add_theme_constant_override("separation", 8)
+	plant_direct_box.add_child(actions)
+	var water_button: Button = Button.new()
+	water_button.text = "WATER"
+	water_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	water_button.custom_minimum_size.y = 50
+	water_button.disabled = water >= 95.0 or stage >= STAGES.size() - 1
+	water_button.pressed.connect(_direct_water_selected)
+	actions.add_child(water_button)
+	var feed_button: Button = Button.new()
+	feed_button.text = "FERTILIZE (%d)" % fertilizer_units
+	feed_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	feed_button.custom_minimum_size.y = 50
+	feed_button.disabled = fertilizer_units <= 0 or fertilizer >= 80.0 or stage >= STAGES.size() - 1
+	feed_button.pressed.connect(_direct_fertilize_selected)
+	actions.add_child(feed_button)
+	if fertilizer_units <= 2 and not tutorial_active:
+		var restock: Button = Button.new()
+		restock.text = "BUY FERTILIZER  |  5 USES / $45"
+		restock.custom_minimum_size.y = 48
+		restock.pressed.connect(_open_fertilizer_shop)
+		plant_direct_box.add_child(restock)
+	if stage >= STAGES.size() - 1:
+		var harvest_button: Button = Button.new()
+		harvest_button.text = "HARVEST"
+		harvest_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		harvest_button.custom_minimum_size.y = 50
+		harvest_button.pressed.connect(_direct_harvest_selected)
+		actions.add_child(harvest_button)
+	else:
+		var condition: Label = Label.new()
+		condition.text = _plant_condition_text(slot)
+		condition.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		plant_direct_box.add_child(condition)
+
+func _direct_plant_seed(seed_name: String) -> void:
+	if selected_plant_slot < 0:
+		return
+	_plant_seed(selected_plant_slot, seed_name)
+	_show_first_person_tool("seed")
+	_refresh_direct_plant_panel()
+
+func _direct_water_selected() -> void:
+	if selected_plant_slot < 0:
+		return
+	_water_plant(selected_plant_slot)
+	_show_first_person_tool("water")
+	_refresh_direct_plant_panel()
+
+func _direct_fertilize_selected() -> void:
+	if selected_plant_slot < 0:
+		return
+	_fertilize_plant(selected_plant_slot)
+	_show_first_person_tool("fertilizer")
+	_refresh_direct_plant_panel()
+
+func _direct_harvest_selected() -> void:
+	if selected_plant_slot < 0:
+		return
+	_show_first_person_tool("scissors")
+	_harvest_plant(selected_plant_slot)
+	_close_direct_plant()
+
+func _direct_clear_dead() -> void:
+	if selected_plant_slot < 0:
+		return
+	_clear_dead_plant(selected_plant_slot)
+	_refresh_direct_plant_panel()
+
+func _show_first_person_tool(tool_type: String) -> void:
+	if camera == null:
+		return
+	if active_tool_prop != null and is_instance_valid(active_tool_prop):
+		active_tool_prop.queue_free()
+	active_tool_prop = Node3D.new()
+	active_tool_prop.name = "FirstPersonTool"
+	camera.add_child(active_tool_prop)
+	active_tool_prop.position = Vector3(0.34, -0.30, -0.75)
+	var tool_color: Color = Color("5b7382")
+	match tool_type:
+		"water": tool_color = Color("5d7fa3")
+		"fertilizer": tool_color = Color("8c7650")
+		"scissors": tool_color = Color("9aa2a7")
+		"seed": tool_color = Color("80654c")
+	var body: MeshInstance3D = MeshInstance3D.new()
+	var body_mesh: BoxMesh = BoxMesh.new()
+	body_mesh.size = Vector3(0.18, 0.26, 0.12)
+	body_mesh.material = _make_flat_material(tool_color, 0.48)
+	body.mesh = body_mesh
+	active_tool_prop.add_child(body)
+	if tool_type == "scissors":
+		body.scale = Vector3(0.55, 1.45, 0.38)
+		var blade: MeshInstance3D = MeshInstance3D.new()
+		var blade_mesh: BoxMesh = BoxMesh.new()
+		blade_mesh.size = Vector3(0.04, 0.30, 0.025)
+		blade_mesh.material = _make_flat_material(Color("c5cbce"), 0.25)
+		blade.mesh = blade_mesh
+		blade.position = Vector3(0.06, 0.18, 0)
+		blade.rotation.z = 0.32
+		active_tool_prop.add_child(blade)
+	var tween: Tween = create_tween()
+	tween.tween_property(active_tool_prop, "rotation:z", -0.38, 0.16)
+	tween.tween_property(active_tool_prop, "rotation:z", 0.18, 0.20)
+	tween.tween_interval(0.22)
+	tween.tween_callback(_clear_first_person_tool)
+
+func _clear_first_person_tool() -> void:
+	if active_tool_prop != null and is_instance_valid(active_tool_prop):
+		active_tool_prop.queue_free()
+	active_tool_prop = null
+
+func _build_bagging_panel() -> void:
+	bagging_panel = _make_full_panel(34, 132, -34, -72)
+	var root: VBoxContainer = _panel_root(bagging_panel, "PACKING BENCH", _close_bagging_panel)
+	var help: Label = Label.new()
+	help.text = "Harvested product must be trimmed, bagged, then moved into storage before customers can buy it. Staff can be hired later from the phone to physically help run production."
+	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	root.add_child(help)
+	bagging_scroll = PhoneTouchScroll.new()
+	bagging_scroll.name = "bagging_scroll"
+	bagging_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	root.add_child(bagging_scroll)
+	bagging_list = VBoxContainer.new()
+	bagging_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bagging_list.add_theme_constant_override("separation", 10)
+	bagging_scroll.add_child(bagging_list)
+	var leave_station: Button = Button.new()
+	leave_station.text = "LEAVE BAGGING STATION"
+	leave_station.custom_minimum_size = Vector2(0, 58)
+	leave_station.add_theme_font_size_override("font_size", 18)
+	leave_station.pressed.connect(_close_bagging_panel)
+	root.add_child(leave_station)
+
+func _build_storage_panel() -> void:
+	storage_panel = _make_full_panel(34, 132, -34, -72)
+	var root: VBoxContainer = _panel_root(storage_panel, "STORAGE", _close_storage_panel)
+	var help: Label = Label.new()
+	help.text = "This is your sellable inventory. The phone storefront pulls directly from here. The 1000g Hidden Wall Stash replaces the vault and protects stored product during raids."
+	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	root.add_child(help)
+	storage_scroll = PhoneTouchScroll.new()
+	storage_scroll.name = "storage_scroll"
+	storage_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	root.add_child(storage_scroll)
+	storage_list = VBoxContainer.new()
+	storage_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	storage_list.add_theme_constant_override("separation", 10)
+	storage_scroll.add_child(storage_list)
+	var leave_station: Button = Button.new()
+	leave_station.text = "LEAVE STORAGE"
+	leave_station.custom_minimum_size = Vector2(0, 58)
+	leave_station.add_theme_font_size_override("font_size", 18)
+	leave_station.pressed.connect(_close_storage_panel)
+	root.add_child(leave_station)
+
+func _build_dealer_storage_panel() -> void:
+	dealer_storage_panel = _make_full_panel(34, 132, -34, -72)
+	var root: VBoxContainer = _panel_root(dealer_storage_panel, "DEALER STORAGE", _close_dealer_storage_panel)
+	var help: Label = Label.new()
+	help.text = "Dealers sell only product stored here. You stock it manually from normal storage. Production can overflow here only when normal storage is completely full."
+	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	root.add_child(help)
+	dealer_storage_scroll = PhoneTouchScroll.new()
+	dealer_storage_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	root.add_child(dealer_storage_scroll)
+	dealer_storage_list = VBoxContainer.new()
+	dealer_storage_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	dealer_storage_list.add_theme_constant_override("separation", 10)
+	dealer_storage_scroll.add_child(dealer_storage_list)
+	var leave: Button = Button.new()
+	leave.text = "CLOSE DEALER STORAGE"
+	leave.custom_minimum_size = Vector2(0, 58)
+	leave.pressed.connect(_close_dealer_storage_panel)
+	root.add_child(leave)
+
+func _build_supply_inventory_panel() -> void:
+	supply_inventory_panel = _make_full_panel(34, 132, -34, -72)
+	var root: VBoxContainer = _panel_root(supply_inventory_panel, "GROW SUPPLY SHELF", _close_supply_inventory_panel)
+	var help: Label = Label.new()
+	help.text = "Collect seed orders and fertilizer at Central Market, then deposit them at your apartment computer. Order capacity upgrades at market checkout and install them at the computer."
+	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	root.add_child(help)
+	supply_inventory_scroll = PhoneTouchScroll.new()
+	supply_inventory_scroll.name = "supply_inventory_scroll"
+	supply_inventory_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	root.add_child(supply_inventory_scroll)
+	supply_inventory_list = VBoxContainer.new()
+	supply_inventory_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	supply_inventory_list.add_theme_constant_override("separation", 10)
+	supply_inventory_scroll.add_child(supply_inventory_list)
+	var leave_station: Button = Button.new()
+	leave_station.text = "STEP BACK FROM SHELF"
+	leave_station.custom_minimum_size = Vector2(0, 58)
+	leave_station.add_theme_font_size_override("font_size", 18)
+	leave_station.pressed.connect(_close_supply_inventory_panel)
+	root.add_child(leave_station)
+
+
+
+func _build_system_control_panel() -> void:
+	system_control_panel = _make_full_panel(34, 118, -34, -64)
+	var root: VBoxContainer = _panel_root(system_control_panel, "GROW ROOM SYSTEM", _close_system_control_panel)
+	var intro: Label = Label.new()
+	intro.text = "Live grow-room status and environmental controls. Changes apply immediately."
+	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	intro.add_theme_font_size_override("font_size", 17)
+	intro.modulate = Color("b9c7cc")
+	root.add_child(intro)
+
+	system_control_scroll = PhoneTouchScroll.new()
+	system_control_scroll.name = "system_control_scroll"
+	system_control_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	root.add_child(system_control_scroll)
+	system_control_list = VBoxContainer.new()
+	system_control_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	system_control_list.add_theme_constant_override("separation", 10)
+	system_control_scroll.add_child(system_control_list)
+
+	var status_card: PanelContainer = PanelContainer.new()
+	status_card.add_theme_stylebox_override("panel", _style_box(Color("14231f"), Color("527c6c"), 16, 2))
+	system_control_list.add_child(status_card)
+	system_control_status = Label.new()
+	system_control_status.text = "ROOM STATUS\nChecking grow room..."
+	system_control_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	system_control_status.add_theme_font_size_override("font_size", 19)
+	system_control_status.custom_minimum_size = Vector2(0, 118)
+	status_card.add_child(system_control_status)
+
+	var control_specs: Array[Dictionary] = [
+		{"id": "grow_room_light_switch", "title": "ROOM LIGHT", "note": "General grow-room lighting."},
+		{"id": "grow_light_switch", "title": "GROW LIGHTS", "note": "Plant lighting. OFF greatly slows crop growth."},
+		{"id": "ventilation_switch", "title": "VENTILATION", "note": "Air system. Requires the ventilation upgrade."}
+	]
+	for spec: Dictionary in control_specs:
+		var card: PanelContainer = PanelContainer.new()
+		card.add_theme_stylebox_override("panel", _style_box(Color("18232b"), Color("364951"), 14, 1))
+		system_control_list.add_child(card)
+		var row: HBoxContainer = HBoxContainer.new()
+		row.add_theme_constant_override("separation", 12)
+		card.add_child(row)
+		var text_box: VBoxContainer = VBoxContainer.new()
+		text_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		text_box.size_flags_stretch_ratio = 1.0
+		row.add_child(text_box)
+		var title: Label = Label.new()
+		title.text = str(spec.title)
+		title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		title.add_theme_font_size_override("font_size", 20)
+		text_box.add_child(title)
+		var note: Label = Label.new()
+		note.text = str(spec.note)
+		note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		note.add_theme_font_size_override("font_size", 15)
+		note.modulate = Color("aebbc1")
+		text_box.add_child(note)
+		var toggle: Button = Button.new()
+		toggle.name = "System_" + str(spec.id)
+		toggle.set_meta("utility_id", str(spec.id))
+		toggle.custom_minimum_size = Vector2(184, 72)
+		toggle.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		toggle.add_theme_font_size_override("font_size", 17)
+		toggle.pressed.connect(_activate_room_interaction.bind(str(spec.id)))
+		row.add_child(toggle)
+		toggle.add_to_group("afb_utility_button")
+
+	var step_back: Button = Button.new()
+	step_back.text = "STEP BACK FROM SYSTEM PANEL"
+	step_back.custom_minimum_size = Vector2(0, 58)
+	step_back.add_theme_font_size_override("font_size", 17)
+	step_back.pressed.connect(_close_system_control_panel)
+	root.add_child(step_back)
+	_refresh_system_control_panel()
+
+func _open_system_control_panel() -> void:
+	if system_control_panel == null:
+		return
+	system_control_panel.visible = true
+	_set_world_controls_visible(false)
+	_refresh_system_control_panel()
+
+func _close_system_control_panel() -> void:
+	_cancel_phone_gesture()
+	if system_control_panel != null:
+		system_control_panel.visible = false
+	_go_to_view("grow_room_utility")
+	_set_world_controls_visible(true)
+	status_label.text = "You step back from the grow-room system panel."
+
+func _refresh_system_control_panel() -> void:
+	if system_control_status == null:
+		return
+	var active_plants: int = 0
+	var ready_plants: int = 0
+	var thirsty_plants: int = 0
+	var dead_plants: int = 0
+	for slot_variant: Variant in plant_slots:
+		if not (slot_variant is Dictionary):
+			continue
+		var slot: Dictionary = slot_variant as Dictionary
+		var stage: int = int(slot.get("stage", -1))
+		if stage < 0:
+			continue
+		active_plants += 1
+		if bool(slot.get("dead", false)):
+			dead_plants += 1
+		elif stage >= STAGES.size() - 1 or float(slot.get("growth", 0.0)) >= 100.0:
+			ready_plants += 1
+		elif float(slot.get("water", 0.0)) <= 25.0:
+			thirsty_plants += 1
+	var state: String = "STABLE"
+	if dead_plants > 0:
+		state = "PLANT ALERT"
+	elif thirsty_plants > 0:
+		state = "WATER NEEDED"
+	elif not grow_lights_on or not ventilation_installed or not ventilation_on:
+		state = "REDUCED GROWTH"
+	elif ready_plants > 0:
+		state = "HARVEST READY"
+	var vent_text: String = "NOT INSTALLED" if not ventilation_installed else ("ON" if ventilation_on else "OFF")
+	system_control_status.text = "ROOM STATUS  |  %s\nPlants: %d active   |   %d ready   |   %d need water   |   %d dead\nRoom light: %s   |   Grow lights: %s   |   Ventilation: %s" % [state, active_plants, ready_plants, thirsty_plants, dead_plants, "ON" if grow_room_light_on else "OFF", "ON" if grow_lights_on else "OFF", vent_text]
+	_refresh_utility_controls()
+
+
+
+func _build_trim_minigame() -> void:
+	trim_panel = _make_full_panel(34, 132, -34, -72)
+	var root: VBoxContainer = _panel_root(trim_panel, "HAND TRIM", _close_trim_minigame)
+	trim_instruction = Label.new()
+	trim_instruction.text = "Pick up the scissors, then drag them across each highlighted bud target."
+	trim_instruction.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	root.add_child(trim_instruction)
+	trim_progress_label = Label.new()
+	trim_progress_label.text = "0 / 0 trimmed"
+	trim_progress_label.add_theme_font_size_override("font_size", 18)
+	root.add_child(trim_progress_label)
+
+	trim_play_area = Control.new()
+	trim_play_area.custom_minimum_size = Vector2(0, 430)
+	trim_play_area.clip_contents = true
+	root.add_child(trim_play_area)
+
+	var tray: PanelContainer = PanelContainer.new()
+	tray.position = Vector2(24, 34)
+	tray.size = Vector2(550, 268)
+	tray.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tray.add_theme_stylebox_override("panel", _style_box(Color("0c1115"), Color("39444c"), 22, 2))
+	trim_play_area.add_child(tray)
+
+	var tray_label: Label = Label.new()
+	tray_label.text = "TRIM TRAY"
+	tray_label.position = Vector2(20, 15)
+	tray_label.modulate = Color("7f8b92")
+	tray_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tray.add_child(tray_label)
+
+	trim_scissors = _make_item_icon("hand_scissors", Vector2(112, 112))
+	trim_scissors.position = Vector2(36, 306)
+	trim_scissors.mouse_filter = Control.MOUSE_FILTER_STOP
+	trim_play_area.add_child(trim_scissors)
+
+	var pick_hint: Label = Label.new()
+	pick_hint.text = "Drag scissors onto the buds"
+	pick_hint.position = Vector2(166, 340)
+	pick_hint.modulate = Color("aeb9c0")
+	pick_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	trim_play_area.add_child(pick_hint)
+
+	trim_continue_button = Button.new()
+	trim_continue_button.text = "CONTINUE TO BAGGING"
+	trim_continue_button.custom_minimum_size.y = 56
+	trim_continue_button.visible = false
+	trim_continue_button.pressed.connect(_close_trim_minigame)
+	root.add_child(trim_continue_button)
+
+func _build_bag_minigame() -> void:
+	bag_minigame_panel = _make_full_panel(34, 132, -34, -72)
+	var root: VBoxContainer = _panel_root(bag_minigame_panel, "BAGGING", _close_bag_minigame)
+	bag_instruction = Label.new()
+	bag_instruction.text = "Drag buds from the tray into the open bag. Fill the target amount, then seal it."
+	bag_instruction.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	root.add_child(bag_instruction)
+	bag_weight_label = Label.new()
+	bag_weight_label.text = "Scale  0.0g / 0.0g"
+	bag_weight_label.add_theme_font_size_override("font_size", 21)
+	root.add_child(bag_weight_label)
+
+	bag_play_area = Control.new()
+	bag_play_area.custom_minimum_size = Vector2(0, 390)
+	bag_play_area.clip_contents = true
+	root.add_child(bag_play_area)
+
+	var scale_card: PanelContainer = PanelContainer.new()
+	scale_card.position = Vector2(302, 48)
+	scale_card.size = Vector2(270, 260)
+	scale_card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	scale_card.add_theme_stylebox_override("panel", _style_box(Color("161d22"), Color("414d54"), 24, 2))
+	bag_play_area.add_child(scale_card)
+
+	var scale_icon: TextureRect = _make_item_icon("scale", Vector2(74, 74))
+	scale_icon.position = Vector2(18, 18)
+	scale_card.add_child(scale_icon)
+
+	bag_target_panel = PanelContainer.new()
+	bag_target_panel.position = Vector2(368, 132)
+	bag_target_panel.size = Vector2(136, 154)
+	bag_target_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bag_target_panel.add_theme_stylebox_override("panel", _style_box(Color("222a2f"), Color("6ba779"), 24, 3))
+	bag_play_area.add_child(bag_target_panel)
+	var bag_icon: TextureRect = _make_item_icon("bag", Vector2(110, 126))
+	bag_icon.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	bag_target_panel.add_child(bag_icon)
+
+	var tray_card: PanelContainer = PanelContainer.new()
+	tray_card.position = Vector2(20, 62)
+	tray_card.size = Vector2(244, 222)
+	tray_card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tray_card.add_theme_stylebox_override("panel", _style_box(Color("0d1216"), Color("39444c"), 22, 2))
+	bag_play_area.add_child(tray_card)
+	var tray_text: Label = Label.new()
+	tray_text.text = "TRIMMED BUD"
+	tray_text.position = Vector2(20, 16)
+	tray_text.modulate = Color("9ba7ae")
+	tray_card.add_child(tray_text)
+
+	bag_bud_token = _make_item_icon("bud", Vector2(92, 92))
+	bag_bud_token.position = Vector2(88, 132)
+	bag_bud_token.mouse_filter = Control.MOUSE_FILTER_STOP
+	bag_play_area.add_child(bag_bud_token)
+	bag_token_home = bag_bud_token.position
+
+	bag_seal_button = Button.new()
+	bag_seal_button.text = "SEAL BAG"
+	bag_seal_button.custom_minimum_size = Vector2(0, 56)
+	bag_seal_button.disabled = true
+	bag_seal_button.pressed.connect(_seal_current_bag)
+	root.add_child(bag_seal_button)
+
+func _start_trim_minigame(strain_name: String) -> void:
+	_cancel_phone_gesture()
+	if tutorial_active and strain_name != tutorial_harvest_strain:
+		status_label.text = "For the guide, use your harvested %s first." % tutorial_harvest_strain
+		return
+	if not _tutorial_can_do("trim"):
+		return
+	var amount: int = int(untrimmed_inventory.get(strain_name, 0))
+	if amount <= 0:
+		return
+	trim_active_strain = strain_name
+	trim_harvest_amount = amount
+	trim_total_units = mini(amount, 10)
+	trim_cut_units = 0
+	trim_continue_button.visible = false
+	trim_scissors_picked = false
+	for target in trim_targets:
+		if is_instance_valid(target):
+			target.queue_free()
+	trim_targets.clear()
+
+	var target_positions: Array[Vector2] = [
+		Vector2(90, 94), Vector2(205, 82), Vector2(330, 100), Vector2(448, 88), Vector2(150, 176),
+		Vector2(276, 188), Vector2(404, 178), Vector2(106, 238), Vector2(248, 244), Vector2(428, 236)
+	]
+	for index in range(trim_total_units):
+		var target: TextureButton = TextureButton.new()
+		target.texture_normal = _load_item_icon("bud")
+		target.ignore_texture_size = true
+		target.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
+		target.position = target_positions[index]
+		target.size = Vector2(62, 62)
+		target.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		trim_play_area.add_child(target)
+		trim_targets.append(target)
+
+	trim_scissors.position = Vector2(36, 306)
+	trim_scissors.visible = true
+	trim_instruction.text = "Drag the scissors from the bottom of the station across every bud target."
+	_refresh_trim_progress()
+	bagging_panel.visible = false
+	trim_panel.visible = true
+	_set_world_controls_visible(false)
+
+func _on_trim_scissors_gui_input(_event: InputEvent) -> void:
+	pass
+
+func _check_trim_collisions() -> void:
+	if trim_scissors == null:
+		return
+	var scissors_rect: Rect2 = trim_scissors.get_global_rect()
+	for target in trim_targets:
+		if not is_instance_valid(target) or not target.visible:
+			continue
+		if scissors_rect.intersects(target.get_global_rect()):
+			target.visible = false
+			trim_cut_units += 1
+			_refresh_trim_progress()
+			if trim_cut_units >= trim_total_units:
+				_complete_trim_minigame()
+			return
+
+func _refresh_trim_progress() -> void:
+	trim_progress_label.text = "%s   |   %d / %d trim points" % [trim_active_strain, trim_cut_units, trim_total_units]
+
+func _complete_trim_minigame() -> void:
+	if trim_active_strain.is_empty() or trim_harvest_amount <= 0:
+		return
+	var available: int = int(untrimmed_inventory.get(trim_active_strain, 0))
+	var moved: int = mini(available, trim_harvest_amount)
+	untrimmed_inventory[trim_active_strain] = available - moved
+	_add_inventory(trimmed_inventory, trim_active_strain, moved)
+	_increment_advancement_stat("grams_trimmed", moved)
+	_tutorial_record("trim", -1, trim_active_strain)
+	trim_instruction.text = "Trim complete. %dg of %s is ready. Tap CONTINUE TO BAGGING below." % [moved, trim_active_strain]
+	trim_continue_button.visible = true
+	status_label.text = "Hand-trimmed %dg of %s." % [moved, trim_active_strain]
+	trim_scissors_picked = false
+	trim_harvest_amount = 0
+	_cancel_station_drag()
+	_save_game()
+
+func _close_trim_minigame() -> void:
+	_cancel_station_drag()
+	trim_panel.visible = false
+	trim_continue_button.visible = false
+	trim_active_strain = ""
+	trim_harvest_amount = 0
+	trim_scissors_picked = false
+	bagging_panel.visible = true
+	_refresh_bagging_panel()
+	_set_world_controls_visible(false)
+
+func _start_bag_minigame(strain_name: String) -> void:
+	_cancel_phone_gesture()
+	if tutorial_active and strain_name != tutorial_harvest_strain:
+		status_label.text = "For the guide, use your harvested %s first." % tutorial_harvest_strain
+		return
+	if not _tutorial_can_do("bag"):
+		return
+	var amount: int = int(trimmed_inventory.get(strain_name, 0))
+	if amount <= 0:
+		return
+	bag_active_strain = strain_name
+	bag_available_units = amount
+	bag_current_units = 0
+	if bagging_level >= 3 and not tutorial_active:
+		bag_target_units = rng.randi_range(1, mini(4, amount))
+	else:
+		bag_target_units = mini(3, amount)
+	bag_dragging = false
+	bag_bud_token.position = bag_token_home
+	bag_bud_token.visible = true
+	bag_seal_button.disabled = true
+	bagging_panel.visible = false
+	bag_minigame_panel.visible = true
+	_refresh_bag_weight()
+	_set_world_controls_visible(false)
+
+func _on_bag_bud_gui_input(_event: InputEvent) -> void:
+	pass
+
+func _finish_bud_drag() -> void:
+	if bag_bud_token == null or bag_target_panel == null:
+		return
+	if bag_bud_token.get_global_rect().intersects(bag_target_panel.get_global_rect()):
+		bag_current_units += 1
+		bag_current_units = mini(bag_current_units, bag_target_units)
+		_refresh_bag_weight()
+		if bag_current_units >= bag_target_units:
+			bag_bud_token.visible = false
+			bag_seal_button.disabled = false
+			bag_instruction.text = "Target weight reached. Seal the bag to create stored-ready inventory."
+		else:
+			bag_bud_token.position = bag_token_home
+	else:
+		bag_bud_token.position = bag_token_home
+
+func _refresh_bag_weight() -> void:
+	bag_weight_label.text = "%s   |   Scale  %.1fg / %.1fg" % [bag_active_strain, float(bag_current_units), float(bag_target_units)]
+	bag_instruction.text = "Drag buds into the open bag. Each drop adds one game unit to the scale." if bag_current_units < bag_target_units else "Target weight reached. Seal the bag."
+
+func _seal_current_bag() -> void:
+	if bag_active_strain.is_empty() or bag_current_units < bag_target_units:
+		return
+	var available: int = int(trimmed_inventory.get(bag_active_strain, 0))
+	var moved: int = mini(available, bag_target_units)
+	if moved <= 0:
+		return
+
+	trimmed_inventory[bag_active_strain] = available - moved
+	_add_inventory(bagged_inventory, bag_active_strain, moved)
+	_increment_advancement_stat("bags_sealed")
+	_tutorial_record("bag", -1, bag_active_strain)
+	_save_game()
+
+	var remaining: int = int(trimmed_inventory.get(bag_active_strain, 0))
+	if bagging_level >= 3 and not tutorial_active and remaining > 0:
+		bag_available_units = remaining
+		bag_current_units = 0
+		bag_target_units = rng.randi_range(1, mini(4, remaining))
+		bag_dragging = false
+		bag_bud_token.position = bag_token_home
+		bag_bud_token.visible = true
+		bag_seal_button.disabled = true
+		status_label.text = "Sealed %dg of %s. %dg remains - keep bagging." % [moved, bag_active_strain, remaining]
+		_refresh_bag_weight()
+		_sync_packing_bench_visuals(true)
+		return
+
+	status_label.text = "Sealed %dg of %s. All selected product is packaged." % [moved, bag_active_strain]
+	_close_bag_minigame()
+
+func _close_bag_minigame() -> void:
+	_cancel_station_drag()
+	bag_minigame_panel.visible = false
+	bag_active_strain = ""
+	bag_dragging = false
+	bagging_panel.visible = true
+	_refresh_bagging_panel()
+	_set_world_controls_visible(false)
+
+func _clamp_control_to_parent(control: Control, parent_control: Control) -> void:
+	var max_x: float = maxf(0.0, parent_control.size.x - control.size.x)
+	var max_y: float = maxf(0.0, parent_control.size.y - control.size.y)
+	control.position = Vector2(clampf(control.position.x, 0.0, max_x), clampf(control.position.y, 0.0, max_y))
+
+func _make_full_panel(left: float, top: float, right: float, bottom: float) -> PanelContainer:
+	var panel: PanelContainer = PanelContainer.new()
+	panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	panel.offset_left = left
+	panel.offset_top = top
+	panel.offset_right = right
+	panel.offset_bottom = bottom
+	panel.visible = false
+	panel.add_theme_stylebox_override("panel", _style_box(Color("11171d"), Color("313b44"), 26, 2))
+	hud.add_child(panel)
+	return panel
+
+func _panel_root(panel: PanelContainer, title_text: String, close_callable: Callable) -> VBoxContainer:
+	var root: VBoxContainer = VBoxContainer.new()
+	root.add_theme_constant_override("separation", 12)
+	panel.add_child(root)
+	var grab: HSeparator = HSeparator.new()
+	root.add_child(grab)
+	var header: HBoxContainer = HBoxContainer.new()
+	root.add_child(header)
+	var title: Label = Label.new()
+	title.text = title_text
+	title.add_theme_font_size_override("font_size", 27)
+	header.add_child(title)
+	var spacer: Control = Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(spacer)
+	var close: Button = Button.new()
+	close.text = "X"
+	close.custom_minimum_size = Vector2(54, 48)
+	close.pressed.connect(close_callable)
+	header.add_child(close)
+	return root
+
+func _style_box(background: Color, border: Color, radius: int = 18, border_width: int = 1) -> StyleBoxFlat:
+	var style: StyleBoxFlat = StyleBoxFlat.new()
+	style.bg_color = background
+	style.border_color = border
+	style.set_border_width_all(border_width)
+	style.set_corner_radius_all(radius)
+	style.content_margin_left = 18.0
+	style.content_margin_right = 18.0
+	style.content_margin_top = 16.0
+	style.content_margin_bottom = 16.0
+	return style
+
+func _set_world_controls_visible(visible_state: bool) -> void:
+	_reset_world_pointer()
+	contextual_button.visible = visible_state
+	if not visible_state:
+		left_button.visible = false
+		right_button.visible = false
+		forward_button.visible = false
+		back_button.visible = false
+		if door_quick_button != null:
+			door_quick_button.visible = false
+	else:
+		_refresh_navigation_ui()
+
+
+func _apply_room_look_delta(delta: Vector2) -> void:
+	if _any_modal_open():
+		return
+	if current_view in ["grow", "grow2", "grow3"]:
+		room_target_yaw = clampf(room_target_yaw - delta.x * room_look_sensitivity, -0.55, 0.55)
+		room_target_pitch = clampf(room_target_pitch - delta.y * room_look_sensitivity * 0.62, -0.30, 0.16)
+		return
+	if not room_ring.has(current_view):
+		return
+	room_target_yaw = wrapf(room_target_yaw - delta.x * room_look_sensitivity, -PI, PI)
+	room_target_pitch = clampf(room_target_pitch - delta.y * room_look_sensitivity * 0.62, room_pitch_min, room_pitch_max)
+	var previous_yaw: float = camera.rotation.y
+	camera.rotation.y = room_target_yaw
+	_sync_room_view_from_yaw()
+	camera.rotation.y = previous_yaw
+	_refresh_navigation_ui()
+
+func _station_heading(view_name: String) -> float:
+	match view_name:
+		"main_grow_door", "grow_room_tent":
+			return 0.0
+		"grow_room_tent2":
+			return deg_to_rad(52.0)
+		"grow_room_tent3":
+			return deg_to_rad(-52.0)
+		"main_workbench", "grow_room_utility":
+			return -PI / 2.0
+		"main_door", "grow_room_exit":
+			return PI
+		"main_storage":
+			return atan2(4.33, 1.50)
+		"grow_room_upgrades":
+			return PI / 2.0
+		_:
+			return 0.0
+
+func _nearest_room_view() -> String:
+	if room_ring.is_empty():
+		return current_view
+	var nearest_view: String = room_ring[0]
+	var nearest_delta: float = TAU
+	for room_view in room_ring:
+		var heading: float = _station_heading(room_view)
+		var delta: float = absf(wrapf(heading - camera.rotation.y, -PI, PI))
+		if delta < nearest_delta:
+			nearest_delta = delta
+			nearest_view = room_view
+	return nearest_view
+
+func _facing_station_threshold() -> bool:
+	if not room_ring.has(current_view):
+		return false
+	var heading: float = _station_heading(current_view)
+	var delta: float = absf(wrapf(heading - camera.rotation.y, -PI, PI))
+	return delta <= deg_to_rad(40.0)
+
+func _sync_room_view_from_yaw() -> void:
+	if not room_ring.has(current_view):
+		return
+	current_view = _nearest_room_view()
+
+func _nav(direction: String) -> void:
+	if _any_modal_open():
+		return
+	if room_ring.has(current_view):
+		var turn_amount: float = deg_to_rad(18.0)
+		if direction == "right":
+			room_target_yaw = wrapf(room_target_yaw - turn_amount, -PI, PI)
+		elif direction == "left":
+			room_target_yaw = wrapf(room_target_yaw + turn_amount, -PI, PI)
+		else:
+			return
+		_refresh_navigation_ui()
+		return
+
+	if direction != "back":
+		return
+	match current_view:
+		"grow": _go_to_view("grow_room_tent")
+		"grow2": _go_to_view("grow_room_tent2")
+		"grow3": _go_to_view("grow_room_tent3")
+		"grow_system": _go_to_view("grow_room_utility")
+		"grow_supply_shelf": _go_to_view("grow_room_upgrades")
+		"workbench": _go_to_view("main_workbench")
+		"locker": _go_to_view("main_workbench")
+		"storage": _go_to_view("main_storage")
+		"door": _go_to_view("main_door")
+
+func _quick_turn_to_door() -> void:
+	if _any_modal_open():
+		return
+	if current_room != "main":
+		status_label.text = "The knock is in the main room. Turn to the doorway and return first."
+		return
+	current_view = "main_door"
+	room_target_yaw = PI
+	room_target_pitch = 0.0
+	if customer_waiting:
+		status_label.text = "You turn toward the knock. Approach the door, then check the peephole."
+	var center_pos: Vector3 = views["main_door"].get("pos", Vector3.ZERO)
+	_cancel_camera_view_tween()
+	camera_view_tween = create_tween()
+	var tween: Tween = camera_view_tween
+	tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+	tween.tween_property(camera, "position", center_pos, 0.28)
+	_refresh_navigation_ui()
+
+func _normalize_camera_rotation() -> void:
+	camera.rotation.y = wrapf(camera.rotation.y, -PI, PI)
+	room_target_yaw = camera.rotation.y
+	room_target_pitch = camera.rotation.x
+
+func _cancel_camera_view_tween() -> void:
+	if camera_view_tween != null and camera_view_tween.is_valid():
+		camera_view_tween.kill()
+	camera_view_tween = null
+
+func _go_to_view(view_name: String, animate: bool = true) -> void:
+	if neighborhood != null and neighborhood.handle_view_request(view_name):
+		return
+	if not views.has(view_name):
+		return
+	_cancel_camera_view_tween()
+	_reset_world_pointer()
+	current_view = view_name
+	var data: Dictionary = views[view_name]
+	var target_pos: Vector3 = data.get("pos", Vector3.ZERO)
+	var target_rot: Vector3 = data.get("rot", Vector3.ZERO)
+	var yaw_delta: float = wrapf(target_rot.y - camera.rotation.y, -PI, PI)
+	var short_target_rot: Vector3 = Vector3(target_rot.x, camera.rotation.y + yaw_delta, target_rot.z)
+	var default_fov: float = 74.0 if view_name in ["workbench", "storage"] else 70.0
+	var target_fov: float = float(data.get("fov", default_fov))
+	if animate:
+		camera_view_tween = create_tween().set_parallel(true)
+		var tween: Tween = camera_view_tween
+		tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+		tween.tween_property(camera, "position", target_pos, 0.34)
+		tween.tween_property(camera, "rotation", short_target_rot, 0.34)
+		tween.tween_property(camera, "fov", target_fov, 0.34)
+		tween.finished.connect(_normalize_camera_rotation)
+	else:
+		camera.position = target_pos
+		camera.rotation = Vector3(target_rot.x, wrapf(target_rot.y, -PI, PI), target_rot.z)
+		camera.fov = target_fov
+		_normalize_camera_rotation()
+	_refresh_navigation_ui()
+
+func _enter_grow_room() -> void:
+	if current_room != "main" or _any_modal_open():
+		return
+	current_view = "room_transition"
+	room_look_drag_active = false
+	status_label.text = "You step through the doorway into the grow room."
+	_cancel_camera_view_tween()
+	camera_view_tween = create_tween()
+	var tween: Tween = camera_view_tween
+	tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+	tween.tween_property(camera, "position", Vector3(0, 1.64, -3.45), 0.24)
+	tween.tween_property(camera, "position", Vector3(0, 1.64, -6.45), 0.36)
+	tween.finished.connect(_finish_enter_grow_room)
+	_refresh_navigation_ui()
+
+func _finish_enter_grow_room() -> void:
+	current_room = "grow"
+	room_ring = grow_room_ring
+	current_view = "grow_room_tent"
+	camera.rotation = Vector3(0, 0, 0)
+	room_target_yaw = 0.0
+	room_target_pitch = 0.0
+	camera.fov = 70.0
+	_refresh_navigation_ui()
+
+func _leave_grow_room() -> void:
+	if current_room != "grow" or _any_modal_open():
+		return
+	current_view = "room_transition"
+	room_look_drag_active = false
+	status_label.text = "You step back into the main room."
+	_cancel_camera_view_tween()
+	camera_view_tween = create_tween()
+	var tween: Tween = camera_view_tween
+	tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+	tween.tween_property(camera, "position", Vector3(0, 1.64, -3.45), 0.24)
+	tween.tween_property(camera, "position", Vector3(0, 1.64, 1.20), 0.38)
+	tween.finished.connect(_finish_leave_grow_room)
+	_refresh_navigation_ui()
+
+func _finish_leave_grow_room() -> void:
+	current_room = "main"
+	room_ring = main_room_ring
+	current_view = "main_door"
+	camera.rotation = Vector3(0, PI, 0)
+	room_target_yaw = PI
+	room_target_pitch = 0.0
+	camera.fov = 70.0
+	_refresh_navigation_ui()
+
+func _grow_room_status_text() -> String:
+	var installed_tents: int = clampi(grow_tent_count, 1, 3)
+	var total_slots: int = installed_tents * 3
+	return "Room systems are stable. %d tent(s) installed  |  %d plant slots  |  ventilation and lighting online." % [installed_tents, total_slots]
+
+func _grow_room_upgrade_text() -> String:
+	if grow_tent_count >= 3:
+		return "Both expansion bays are installed. Upgrade tent capacity and automation from Central Market checkout."
+	var remaining: int = 3 - grow_tent_count
+	return "%d grow-room expansion bay(s) still open. Buy the next tent from Central Market checkout." % remaining
+
+func _refresh_navigation_ui() -> void:
+	if neighborhood != null and neighborhood.active:
+		neighborhood.refresh_controls()
+		return
+	var data: Dictionary = views.get(current_view, {})
+	if room_ring.has(current_view):
+		view_label.text = "%s   |   SWIPE / DRAG TO LOOK" % str(data.get("label", current_view.capitalize()))
+	elif current_view == "room_transition":
+		view_label.text = "Moving between rooms..."
+	else:
+		view_label.text = str(data.get("label", current_view.capitalize()))
+
+	var in_room_ring: bool = room_ring.has(current_view)
+	left_button.visible = in_room_ring
+	right_button.visible = in_room_ring
+	forward_button.visible = false
+	back_button.visible = not in_room_ring and current_view != "room_transition"
+	back_button.disabled = false
+	contextual_button.visible = current_view != "room_transition"
+
+	if door_quick_button != null:
+		var centered_on_door: bool = current_room == "main" and current_view == "main_door" and _facing_station_threshold()
+		door_quick_button.visible = current_room == "main" and current_view != "door" and not centered_on_door and current_view != "room_transition"
+		door_quick_button.text = "KNOCK  |  TURN TO DOOR" if customer_waiting else "TURN TO DOOR"
+
+	match current_view:
+		"main_grow_door":
+			contextual_button.text = "ENTER GROW ROOM" if _facing_station_threshold() else "LOOK AT GROW ROOM DOOR"
+			contextual_button.disabled = not _facing_station_threshold()
+		"main_workbench":
+			contextual_button.text = "APPROACH BAGGING STATION" if _facing_station_threshold() else "LOOK TOWARD BAGGING"
+			contextual_button.disabled = not _facing_station_threshold()
+		"main_storage":
+			contextual_button.text = ("APPROACH HIDDEN STASH" if storage_level >= 5 else ("APPROACH VAULT" if storage_level >= 4 else "APPROACH STORAGE")) if _facing_station_threshold() else "LOOK TOWARD STORAGE"
+			contextual_button.disabled = not _facing_station_threshold()
+		"main_door":
+			if _facing_station_threshold():
+				contextual_button.text = "APPROACH DOOR" if customer_waiting else "APPROACH FRONT DOOR"
+				contextual_button.disabled = false
+			else:
+				contextual_button.text = "LOOK TOWARD FRONT DOOR"
+				contextual_button.disabled = true
+		"grow_room_tent2":
+			if grow_tent_count >= 2:
+				contextual_button.text = "APPROACH GROW TENT 2" if _facing_station_threshold() else "LOOK TOWARD GROW TENT 2"
+				contextual_button.disabled = not _facing_station_threshold()
+			else:
+				contextual_button.text = "GROW TENT 2  |  LOCKED"
+				contextual_button.disabled = true
+		"grow_room_tent":
+			contextual_button.text = "APPROACH GROW TENT 1" if _facing_station_threshold() else "LOOK TOWARD GROW TENT 1"
+			contextual_button.disabled = not _facing_station_threshold()
+		"grow_room_tent3":
+			if grow_tent_count >= 3:
+				contextual_button.text = "APPROACH GROW TENT 3" if _facing_station_threshold() else "LOOK TOWARD GROW TENT 3"
+				contextual_button.disabled = not _facing_station_threshold()
+			else:
+				contextual_button.text = "GROW TENT 3  |  LOCKED"
+				contextual_button.disabled = true
+		"grow_room_utility":
+			contextual_button.text = "APPROACH SYSTEM PANEL" if _facing_station_threshold() else "LOOK TOWARD SYSTEM PANEL"
+			contextual_button.disabled = not _facing_station_threshold()
+		"grow_room_exit":
+			contextual_button.text = "RETURN TO MAIN ROOM" if _facing_station_threshold() else "LOOK TOWARD MAIN ROOM DOOR"
+			contextual_button.disabled = not _facing_station_threshold()
+		"grow_room_upgrades":
+			contextual_button.text = "APPROACH SUPPLY SHELF" if _facing_station_threshold() else "LOOK TOWARD SUPPLY SHELF"
+			contextual_button.disabled = not _facing_station_threshold()
+		"grow", "grow2", "grow3":
+			contextual_button.text = "TAP A PLANT OR POT TO TEND"
+			contextual_button.disabled = true
+		"grow_system":
+			contextual_button.text = "OPEN SYSTEM CONTROLS"
+			contextual_button.disabled = false
+		"grow_supply_shelf":
+			contextual_button.text = "VIEW SUPPLY INVENTORY"
+			contextual_button.disabled = false
+		"workbench":
+			contextual_button.text = "USE BAGGING STATION"
+			contextual_button.disabled = false
+		"storage":
+			contextual_button.text = "OPEN HIDDEN STASH  |  1000g" if storage_level >= 5 else ("OPEN VAULT  |  400g" if storage_level >= 4 else "OPEN STORAGE")
+			contextual_button.disabled = false
+		"door":
+			if customer_waiting:
+				contextual_button.text = "ANSWER DOOR" if peephole_checked else "LOOK THROUGH PEEPHOLE"
+			else:
+				contextual_button.text = "OPEN APARTMENT DOOR"
+			contextual_button.disabled = false
+
+
+func _context_action() -> void:
+	if current_view == "door" and not customer_waiting and neighborhood != null:
+		neighborhood.leave_apartment()
+		return
+	if room_ring.has(current_view) and not _facing_station_threshold():
+		status_label.text = "Swipe until the interaction is centered, then use the action button."
+		return
+	match current_view:
+		"main_grow_door": _enter_grow_room()
+		"main_workbench": _go_to_view("workbench")
+		"main_storage": _go_to_view("storage")
+		"main_door": _go_to_view("door")
+		"grow_room_tent2":
+			if grow_tent_count >= 2:
+				_go_to_view("grow2")
+			else:
+				status_label.text = "Grow Tent 2 is still an empty expansion bay. Unlock it in Central Market checkout."
+		"grow_room_tent": _go_to_view("grow")
+		"grow_room_tent3":
+			if grow_tent_count >= 3:
+				_go_to_view("grow3")
+			else:
+				status_label.text = "Grow Tent 3 is still an empty expansion bay. Unlock it in Central Market checkout."
+		"grow_room_utility":
+			_go_to_view("grow_system")
+			_open_system_control_panel()
+			status_label.text = "Grow-room system controls opened."
+		"grow_system":
+			_open_system_control_panel()
+		"grow_room_exit": _leave_grow_room()
+		"grow_room_upgrades":
+			_go_to_view("grow_supply_shelf")
+			status_label.text = "Grow Supply Shelf Lv %d  |  Seeds %d/%d  |  Fertilizer %d/%d." % [supply_shelf_level, _total_seed_inventory(), _supply_seed_capacity(), fertilizer_units, _supply_fertilizer_capacity()]
+		"grow_supply_shelf": _open_supply_inventory_panel()
+		"grow", "grow2", "grow3":
+			if not tent_open:
+				tent_open = true
+			status_label.text = "Tap a plant or empty pot directly in this tent to tend it."
+		"workbench": _open_bagging_panel()
+		"storage": _open_storage_panel()
+		"door":
+			if customer_waiting:
+				if peephole_checked:
+					_open_customer_sale()
+				else:
+					_open_peephole()
+			else:
+				_open_peephole()
+
+func _any_modal_open() -> bool:
+	if neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.is_open():return true
+	if neighborhood!=null and neighborhood.property_opportunity!=null and neighborhood.property_opportunity.is_open(): return true
+	return reset_confirmation_open or reset_in_progress or session_paused or phone_open or sale_panel.visible or grow_panel.visible or (plant_direct_panel != null and plant_direct_panel.visible) or bagging_panel.visible or storage_panel.visible or (dealer_storage_panel != null and dealer_storage_panel.visible) or (supply_inventory_panel != null and supply_inventory_panel.visible) or (system_control_panel != null and system_control_panel.visible) or trim_panel.visible or bag_minigame_panel.visible or (peephole_panel != null and peephole_panel.visible) or (tutorial_panel != null and tutorial_panel.visible) or (daily_report_panel != null and daily_report_panel.visible)
+
+func _open_grow_panel() -> void:
+	grow_panel.visible = true
+	_set_world_controls_visible(false)
+	_refresh_grow_panel()
+
+func _close_grow_panel() -> void:
+	grow_panel.visible = false
+	_go_to_view("grow_room_tent")
+	_set_world_controls_visible(true)
+	status_label.text = "You step back to the grow-room overview."
+
+func _refresh_grow_panel() -> void:
+	_clear_children(grow_list)
+	var supply: Label = Label.new()
+	supply.text = "Fertilizer supply: %d" % fertilizer_units
+	supply.add_theme_font_size_override("font_size", 18)
+	grow_list.add_child(supply)
+	for slot_index in range(plant_slots.size()):
+		var slot: Dictionary = plant_slots[slot_index]
+		var stage: int = int(slot.get("stage", -1))
+		var card: PanelContainer = PanelContainer.new()
+		grow_list.add_child(card)
+		var row: VBoxContainer = VBoxContainer.new()
+		row.add_theme_constant_override("separation", 7)
+		card.add_child(row)
+		var title: Label = Label.new()
+		title.add_theme_font_size_override("font_size", 21)
+		row.add_child(title)
+
+		if stage < 0:
+			title.text = "Pot %d   |   Empty" % (slot_index + 1)
+			var seed_label: Label = Label.new()
+			seed_label.text = "Choose a seed to plant:"
+			row.add_child(seed_label)
+			for seed_name in SEED_ORDER:
+				var seed_count: int = int(seed_inventory.get(seed_name, 0))
+				if seed_count <= 0:
+					continue
+				var seed_button: Button = Button.new()
+				seed_button.text = "%s   |   %d seeds" % [seed_name, seed_count]
+				seed_button.custom_minimum_size.y = 48
+				seed_button.pressed.connect(_plant_seed.bind(slot_index, seed_name))
+				row.add_child(seed_button)
+		else:
+			var strain_name: String = str(slot.get("strain", "Unknown"))
+			var dead: bool = bool(slot.get("dead", false))
+			var growth: float = float(slot.get("growth", 0.0))
+			var water: float = float(slot.get("water", 0.0))
+			var health: float = float(slot.get("health", 0.0))
+			var fertilizer: float = float(slot.get("fertilizer", 0.0))
+			var stage_name: String = STAGES[clampi(stage, 0, STAGES.size() - 1)]
+			title.text = "Pot %d   |   %s" % [slot_index + 1, strain_name]
+			var stats: Label = Label.new()
+			stats.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			if dead:
+				stats.text = "DEAD   |   Growth %.0f%%   |   Water %.0f%%   |   Health 0%%" % [growth, water]
+			else:
+				stats.text = "Stage: %s\nGrowth %.0f%%   |   Water %.0f%%   |   Health %.0f%%   |   Fertilizer %.0f%%" % [stage_name, growth, water, health, fertilizer]
+			row.add_child(stats)
+
+			if dead:
+				var clear_dead: Button = Button.new()
+				clear_dead.text = "CLEAR DEAD PLANT"
+				clear_dead.custom_minimum_size.y = 48
+				clear_dead.pressed.connect(_clear_dead_plant.bind(slot_index))
+				row.add_child(clear_dead)
+				continue
+
+			var actions: HBoxContainer = HBoxContainer.new()
+			actions.add_theme_constant_override("separation", 8)
+			row.add_child(actions)
+			var water_button: Button = Button.new()
+			water_button.text = "WATER"
+			water_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			water_button.custom_minimum_size.y = 48
+			water_button.disabled = water >= 95.0 or stage >= STAGES.size() - 1
+			water_button.pressed.connect(_water_plant.bind(slot_index))
+			actions.add_child(water_button)
+			var feed_button: Button = Button.new()
+			feed_button.text = "FERTILIZE"
+			feed_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			feed_button.custom_minimum_size.y = 48
+			feed_button.disabled = fertilizer_units <= 0 or fertilizer >= 80.0 or stage >= STAGES.size() - 1
+			feed_button.pressed.connect(_fertilize_plant.bind(slot_index))
+			actions.add_child(feed_button)
+
+			if stage >= STAGES.size() - 1:
+				var harvest: Button = Button.new()
+				harvest.text = "HARVEST"
+				harvest.custom_minimum_size.y = 48
+				harvest.pressed.connect(_harvest_plant.bind(slot_index))
+				row.add_child(harvest)
+			else:
+				var hint: Label = Label.new()
+				hint.text = _plant_condition_text(slot)
+				hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+				row.add_child(hint)
+
+func _plant_seed(slot_index: int, strain_name: String) -> void:
+	if not _tutorial_can_do("plant"):
+		return
+	if slot_index >= 0 and slot_index < plant_slots.size() and int(plant_slots[slot_index].get("stage", -1)) >= 0:
+		return
+	if slot_index < 0 or slot_index >= plant_slots.size():
+		return
+	var count: int = int(seed_inventory.get(strain_name, 0))
+	if count <= 0:
+		return
+	seed_inventory[strain_name] = count - 1
+	plant_slots[slot_index] = {"strain": strain_name, "stage": 0, "growth": 0.0, "water": 72.0, "health": 100.0, "fertilizer": 0.0, "dead": false}
+	_increment_advancement_stat("plants_planted")
+	_tutorial_record("plant", slot_index)
+	_update_plant_visual(slot_index)
+	_save_game()
+	status_label.text = "Planted %s in Pot %d. Keep an eye on its water while it grows." % [strain_name, slot_index + 1]
+	_refresh_grow_panel()
+
+func _water_plant(slot_index: int) -> void:
+	if tutorial_active and slot_index != tutorial_slot:
+		status_label.text = "Use the plant you just planted. SHOW ME selects the right pot."
+		return
+	if not _tutorial_can_do("water"):
+		return
+	if slot_index < 0 or slot_index >= plant_slots.size():
+		return
+	var slot: Dictionary = plant_slots[slot_index]
+	if int(slot.get("stage", -1)) < 0 or int(slot.get("stage", -1)) >= 3 or bool(slot.get("dead", false)) or float(slot.get("water", 0.0)) >= 95.0:
+		return
+	var water: float = float(slot.get("water", 0.0))
+	water = clampf(water + 42.0, 0.0, 100.0)
+	slot["water"] = water
+	plant_slots[slot_index] = slot
+	_charge_water_use(1)
+	_increment_advancement_stat("waters")
+	_tutorial_record("water", slot_index)
+	_save_game()
+	status_label.text = "%s was watered. Water usage was added to Utilities." % str(slot.get("strain", "Plant"))
+	_refresh_grow_panel()
+
+func _fertilize_plant(slot_index: int) -> void:
+	if tutorial_active and slot_index != tutorial_slot:
+		status_label.text = "Use the plant you just planted. SHOW ME selects the right pot."
+		return
+	if not _tutorial_can_do("fertilize"):
+		return
+	if slot_index < 0 or slot_index >= plant_slots.size() or fertilizer_units <= 0:
+		return
+	var slot: Dictionary = plant_slots[slot_index]
+	if int(slot.get("stage", -1)) < 0 or int(slot.get("stage", -1)) >= 3 or bool(slot.get("dead", false)) or float(slot.get("fertilizer", 0.0)) >= 80.0:
+		return
+	var fertilizer: float = float(slot.get("fertilizer", 0.0))
+	fertilizer = clampf(fertilizer + 45.0, 0.0, 100.0)
+	slot["fertilizer"] = fertilizer
+	plant_slots[slot_index] = slot
+	fertilizer_units -= 1
+	_increment_advancement_stat("fertilizes")
+	_update_cash_ui()
+	_tutorial_record("fertilize", slot_index)
+	_save_game()
+	status_label.text = "%s received a temporary growth boost." % str(slot.get("strain", "Plant"))
+	_refresh_grow_panel()
+
+func _clear_dead_plant(slot_index: int) -> void:
+	if slot_index < 0 or slot_index >= plant_slots.size():
+		return
+	plant_slots[slot_index] = {"strain": "", "stage": -1, "growth": 0.0, "water": 0.0, "health": 0.0, "fertilizer": 0.0, "dead": false}
+	_update_plant_visual(slot_index)
+	_save_game()
+	status_label.text = "Pot %d was cleared and can be replanted." % (slot_index + 1)
+	_refresh_grow_panel()
+
+func _plant_condition_text(slot: Dictionary) -> String:
+	var water: float = float(slot.get("water", 0.0))
+	if not grow_lights_on:
+		return "Grow lights are OFF: growth is continuing very slowly."
+	var health: float = float(slot.get("health", 100.0))
+	var fertilizer: float = float(slot.get("fertilizer", 0.0))
+	if water <= 0.0:
+		return "Dry: growth is stopped and health is falling. Water it before it dies."
+	if water < 25.0:
+		return "Thirsty: growth is slowed."
+	if health < 45.0:
+		return "Stressed: keep it watered so health can recover."
+	if fertilizer > 0.0:
+		return "Healthy + boosted: fertilizer is increasing growth speed."
+	return "Healthy: growing normally over time."
+
+func _stage_from_growth(growth: float) -> int:
+	if growth >= 100.0:
+		return 3
+	if growth >= 62.0:
+		return 2
+	if growth >= 25.0:
+		return 1
+	return 0
+
+func _plant_growth_settings(offline: bool) -> Dictionary:
+	return {
+		"growth_seconds": GROWTH_SECONDS_TO_READY,
+		"water_decay": WATER_DECAY_PER_SECOND,
+		"health_loss": DRY_HEALTH_LOSS_PER_SECOND,
+		"health_recovery": HEALTH_RECOVERY_PER_SECOND,
+		"fertilizer_decay": FERTILIZER_DECAY_PER_SECOND,
+		"fertilizer_bonus": FERTILIZER_GROWTH_BONUS,
+		"light_factor": 1.0 if grow_lights_on else GROW_LIGHTS_OFF_GROWTH_MULTIPLIER,
+		"ventilation_factor": 1.0 if ventilation_installed and ventilation_on else VENTILATION_INACTIVE_GROWTH_MULTIPLIER,
+		"auto_water": auto_water_unlocked and not offline
+	}
+
+func _update_plant_over_time(slot_index: int, elapsed_seconds: float) -> void:
+	if _simulation_blocked() or slot_index < 0 or slot_index >= plant_slots.size():
+		return
+	var before_water: float = float(plant_slots[slot_index].get("water", 0.0))
+	var before_stage: int = int(plant_slots[slot_index].get("stage", -1))
+	var before_dead: bool = bool(plant_slots[slot_index].get("dead", false))
+	plant_slots[slot_index] = PlantGrowth.advance(plant_slots[slot_index], elapsed_seconds, _plant_growth_settings(false))
+	var after_water: float = float(plant_slots[slot_index].get("water", 0.0))
+	if auto_water_unlocked and before_stage >= 0 and before_stage < 3 and not before_dead and after_water > before_water + 0.01:
+		_charge_water_use(1)
+	_update_plant_visual(slot_index)
+
+func _offline_crops_enabled() -> bool:
+	return not tutorial_active and (tutorial_panel == null or not tutorial_panel.visible)
+
+func _offline_worker_care_enabled() -> bool:
+	return packing_employee_hired and packing_employee_active and game_day >= raid_lockdown_until_day and _offline_crops_enabled()
+
+func _simulate_offline_plants(elapsed_seconds: float, worker_care: bool = false) -> void:
+	if elapsed_seconds <= 0.0 or not is_finite(elapsed_seconds) or not _offline_crops_enabled():
+		return
+	var before: Array[Dictionary] = plant_slots.duplicate(true)
+	var care_allowed: bool = worker_care and _offline_worker_care_enabled()
+	var result: Dictionary = OfflinePlantCare.advance(plant_slots, elapsed_seconds, _plant_growth_settings(true), fertilizer_units, care_allowed, away_worker_next_service)
+	var updated: Array = result["plants"]
+	for i: int in range(plant_slots.size()):
+		plant_slots[i] = updated[i]
+	fertilizer_units = int(result["fertilizer_units"])
+	away_worker_next_service = float(result["service_in"])
+	var offline_waterings: int = maxi(0, int(result["waterings"]))
+	if offline_waterings > 0:
+		_charge_water_use(offline_waterings)
+	var matured: int = 0
+	var died: int = 0
+	var growing: int = 0
+	for i: int in range(plant_slots.size()):
+		if int(before[i].get("stage", -1)) < 0 or int(before[i].get("stage", -1)) >= 3 or bool(before[i].get("dead", false)):
+			continue
+		var after: Dictionary = plant_slots[i]
+		if bool(after.get("dead", false)):
+			died += 1
+		elif int(after.get("stage", -1)) == 3:
+			matured += 1
+		else:
+			growing += 1
+	offline_plant_report["seconds"] = float(offline_plant_report.get("seconds", 0.0)) + elapsed_seconds
+	offline_plant_report["matured"] = int(offline_plant_report.get("matured", 0)) + matured
+	offline_plant_report["died"] = int(offline_plant_report.get("died", 0)) + died
+	offline_plant_report["growing"] = growing
+	offline_plant_report["worker_care"] = bool(offline_plant_report.get("worker_care", false)) or care_allowed
+	offline_plant_report["waterings"] = int(offline_plant_report.get("waterings", 0)) + offline_waterings
+	offline_plant_report["fertilizes"] = int(offline_plant_report.get("fertilizes", 0)) + int(result["fertilizes"])
+	if care_allowed:
+		production_worker_pending_action = ""
+		production_worker_pending_slot = -1
+		production_worker_pending_strain = ""
+		production_worker_action_dwell = 0.0
+		production_worker_task = "Checking plants after away care"
+		production_worker_last_action = production_worker_task
+		_reset_production_worker_navigation()
+
+func _apply_paused_heat_and_quiet_time(elapsed_seconds: float) -> void:
+	if elapsed_seconds <= 0.0:
+		return
+	var paused_heat_rate: float = 100.0 / (72.0 * 60.0)
+	_reduce_heat(paused_heat_rate * elapsed_seconds, "Heat cooled while paused", true)
+	if reeves_arrangement_active and lay_low_active and not business_open:
+		reeves_quiet_pause_seconds += elapsed_seconds
+		var quiet_day_seconds: float = 24.0 * 60.0
+		var earned_days: int = int(floor(reeves_quiet_pause_seconds / quiet_day_seconds))
+		if earned_days > 0:
+			reeves_quiet_days = mini(REEVES_QUIET_EXIT_DAYS, reeves_quiet_days + earned_days)
+			reeves_quiet_pause_seconds -= float(earned_days) * quiet_day_seconds
+
+func _plant_clock_snapshot() -> Dictionary:
+	var away: bool = away_started_unix > 0.0
+	return {
+		"policy": 2,
+		"snapshot_unix": away_started_unix if away else Time.get_unix_time_from_system(),
+		"enabled": away_growth_allowed if away else _offline_crops_enabled(),
+		"worker_care": away_worker_care_allowed if away else _offline_worker_care_enabled(),
+		"worker_service_in": away_worker_next_service if away else OfflinePlantCare.CARE_INTERVAL
+	}
+
+func _restore_plant_clock(data: Dictionary, now_unix: float = -1.0) -> void:
+	var now: float = Time.get_unix_time_from_system() if now_unix < 0.0 else now_unix
+	offline_plant_report.clear()
+	away_worker_next_service = OfflinePlantCare.CARE_INTERVAL
+	var clock_value: Variant = data.get("plant_clock", {})
+	if clock_value is Dictionary:
+		var clock: Dictionary = clock_value as Dictionary
+		var policy: int = int(clock.get("policy", 0))
+		var stamp: float = float(clock.get("snapshot_unix", now))
+		if is_finite(stamp) and stamp > 0.0:
+			_apply_paused_heat_and_quiet_time(maxf(0.0, now - stamp))
+		if policy in [1, 2] and bool(clock.get("enabled", false)) and _offline_crops_enabled() and is_finite(stamp) and stamp > 0.0:
+			var service: float = float(clock.get("worker_service_in", OfflinePlantCare.CARE_INTERVAL))
+			away_worker_next_service = OfflinePlantCare._next_service(service)
+			_simulate_offline_plants(maxf(0.0, now - stamp), policy == 2 and bool(clock.get("worker_care", false)))
+	away_started_unix = now
+	away_growth_allowed = _offline_crops_enabled()
+	away_worker_care_allowed = _offline_worker_care_enabled()
+
+func _settle_away_plants(now_unix: float = -1.0) -> void:
+	if away_started_unix <= 0.0:
+		return
+	var now: float = Time.get_unix_time_from_system() if now_unix < 0.0 else now_unix
+	var elapsed: float = maxf(0.0, now - away_started_unix)
+	if away_growth_allowed and _offline_crops_enabled():
+		_simulate_offline_plants(elapsed, away_worker_care_allowed)
+	away_started_unix = 0.0
+	away_growth_allowed = false
+	away_worker_care_allowed = false
+	away_worker_next_service = OfflinePlantCare.CARE_INTERVAL
+
+func _offline_plant_summary() -> String:
+	if offline_plant_report.is_empty():
+		return ""
+	var summary: String = "While away: %d newly ready, %d lost, %d still growing." % [int(offline_plant_report.get("matured", 0)), int(offline_plant_report.get("died", 0)), int(offline_plant_report.get("growing", 0))]
+	if bool(offline_plant_report.get("worker_care", false)):
+		summary += "\nWorker: %d waterings, %d fertilizer uses. Fertilizer left: %d." % [int(offline_plant_report.get("waterings", 0)), int(offline_plant_report.get("fertilizes", 0)), fertilizer_units]
+	return summary
+
+func _build_grow_timer() -> void:
+	grow_timer = Timer.new()
+	grow_timer.wait_time = 1.0
+	grow_timer.one_shot = false
+	grow_timer.timeout.connect(_on_grow_tick)
+	add_child(grow_timer)
+	grow_timer.start()
+
+func _on_grow_tick() -> void:
+	if _simulation_blocked():
+		return
+	for slot_index in range(plant_slots.size()):
+		_update_plant_over_time(slot_index, 1.0)
+	grow_save_accumulator += 1.0
+	if grow_panel.visible:
+		_refresh_grow_panel()
+	if plant_direct_panel != null and plant_direct_panel.visible:
+		_refresh_direct_plant_panel()
+	if grow_save_accumulator >= 5.0:
+		grow_save_accumulator = 0.0
+		_save_game()
+
+func _build_automation_timer() -> void:
+	automation_timer = Timer.new()
+	automation_timer.wait_time = AUTO_TICK_SECONDS
+	automation_timer.one_shot = false
+	automation_timer.timeout.connect(_on_automation_tick)
+	add_child(automation_timer)
+	automation_timer.start()
+
+func _on_automation_tick() -> void:
+	if _simulation_blocked():
+		return
+	if packing_employee_hired and packing_employee_active:
+		_assign_production_worker_task()
+	elif production_worker_node != null:
+		production_worker_node.visible = false
+	if _total_dealer_count() > 0 and dealers_active:
+		auto_sale_accumulator += AUTO_TICK_SECONDS
+		if auto_sale_accumulator >= AUTO_SALE_SECONDS:
+			auto_sale_accumulator = 0.0
+			var dealer_roster: Array[String] = _active_dealer_roster()
+			for dealer_name: String in dealer_roster:
+				_dealer_sell_one(true, dealer_name)
+	_save_game()
+
+func _build_production_worker_visual() -> void:
+	production_worker_node = Node3D.new()
+	production_worker_node.name = "ProductionWorker"
+	production_worker_node.position = Vector3(0.75, 0.0, 2.55)
+	production_worker_node.visible = packing_employee_hired and packing_employee_active
+	add_child(production_worker_node)
+
+	var pants_mat: StandardMaterial3D = _make_flat_material(Color("24282d"), 0.86)
+	var shirt_mat: StandardMaterial3D = _make_flat_material(Color("405c4d"), 0.82)
+	var skin_mat: StandardMaterial3D = _make_flat_material(Color("9a6e53"), 0.78)
+	var shoe_mat: StandardMaterial3D = _make_flat_material(Color("171a1d"), 0.88)
+
+	var torso: MeshInstance3D = MeshInstance3D.new()
+	torso.name = "Torso"
+	var torso_mesh: CapsuleMesh = CapsuleMesh.new()
+	torso_mesh.radius = 0.23
+	torso_mesh.height = 0.78
+	torso_mesh.material = shirt_mat
+	torso.mesh = torso_mesh
+	torso.position = Vector3(0, 1.19, 0)
+	production_worker_node.add_child(torso)
+
+	production_worker_head = MeshInstance3D.new()
+	production_worker_head.name = "Head"
+	var head_mesh: SphereMesh = SphereMesh.new()
+	head_mesh.radius = 0.19
+	head_mesh.height = 0.38
+	head_mesh.material = skin_mat
+	production_worker_head.mesh = head_mesh
+	production_worker_head.position = Vector3(0, 1.72, 0)
+	production_worker_node.add_child(production_worker_head)
+
+	production_worker_face_shell = MeshInstance3D.new()
+	production_worker_face_shell.name = "FriendFaceWrap"
+	production_worker_face_shell.mesh = _build_worker_face_wrap_mesh()
+	production_worker_face_shell.position = Vector3(0, 1.72, 0)
+	production_worker_face_shell.visible = false
+	production_worker_node.add_child(production_worker_face_shell)
+
+	for side_index in range(2):
+		var side: float = -1.0 if side_index == 0 else 1.0
+		var arm: MeshInstance3D = MeshInstance3D.new()
+		arm.name = "ArmL" if side_index == 0 else "ArmR"
+		var arm_mesh: CapsuleMesh = CapsuleMesh.new()
+		arm_mesh.radius = 0.065
+		arm_mesh.height = 0.58
+		arm_mesh.material = shirt_mat
+		arm.mesh = arm_mesh
+		arm.position = Vector3(0.28 * side, 1.18, 0)
+		arm.rotation.z = deg_to_rad(4.0 * side)
+		production_worker_node.add_child(arm)
+
+		var leg: MeshInstance3D = MeshInstance3D.new()
+		leg.name = "LegL" if side_index == 0 else "LegR"
+		var leg_mesh: CapsuleMesh = CapsuleMesh.new()
+		leg_mesh.radius = 0.09
+		leg_mesh.height = 0.72
+		leg_mesh.material = pants_mat
+		leg.mesh = leg_mesh
+		leg.position = Vector3(0.11 * side, 0.53, 0)
+		production_worker_node.add_child(leg)
+
+		var shoe: MeshInstance3D = MeshInstance3D.new()
+		shoe.name = "ShoeL" if side_index == 0 else "ShoeR"
+		var shoe_mesh: BoxMesh = BoxMesh.new()
+		shoe_mesh.size = Vector3(0.18, 0.10, 0.32)
+		shoe_mesh.material = shoe_mat
+		shoe.mesh = shoe_mesh
+		shoe.position = Vector3(0.11 * side, 0.13, -0.07)
+		production_worker_node.add_child(shoe)
+
+	production_worker_task_label = Label3D.new()
+	production_worker_task_label.text = "PRODUCTION WORKER"
+	production_worker_task_label.font_size = 22
+	production_worker_task_label.pixel_size = 0.0028
+	production_worker_task_label.position = Vector3(0, 2.10, 0)
+	production_worker_task_label.modulate = Color("e5f0e8")
+	production_worker_node.add_child(production_worker_task_label)
+
+	_refresh_production_worker_friend_face()
+
+
+
+
+
+
+
+func _worker_face_texture_path(friend_name: String) -> String:
+	match friend_name:
+		"Rod": return "res://assets/characters/worker_faces/rod.png"
+		"Jeremias": return "res://assets/characters/worker_faces/jeremias.png"
+		"Diddy": return "res://assets/characters/worker_faces/diddy.png"
+		"Malik": return "res://assets/characters/worker_faces/malik.png"
+		"Marcuss": return "res://assets/characters/worker_faces/marcuss.png"
+		"Kobi": return "res://assets/characters/worker_faces/kobi.png"
+		"Tyler": return "res://assets/characters/worker_faces/tyler.png"
+		"Mahto": return "res://assets/characters/worker_faces/mahto.png"
+		"Mike": return "res://assets/characters/worker_faces/mike.png"
+		_: return ""
+
+func _worker_skin_color(friend_name: String) -> Color:
+	match friend_name:
+		"Diddy": return Color("6f432e")
+		"Jeremias": return Color("b8734f")
+		"Malik": return Color("b57955")
+		"Marcuss": return Color("c98b65")
+		"Tyler": return Color("d9ac8c")
+		"Mahto": return Color("d0a07f")
+		"Kobi": return Color("b77a58")
+		"Mike": return Color("c78f6f")
+		_: return Color("b47b59")
+
+func _build_worker_face_wrap_mesh() -> ArrayMesh:
+	var mesh: ArrayMesh = ArrayMesh.new()
+	var vertices: PackedVector3Array = PackedVector3Array()
+	var normals: PackedVector3Array = PackedVector3Array()
+	var uvs: PackedVector2Array = PackedVector2Array()
+	var indices: PackedInt32Array = PackedInt32Array()
+	var cols: int = 14
+	var rows: int = 12
+	var theta_min: float = deg_to_rad(-74.0)
+	var theta_max: float = deg_to_rad(74.0)
+	var phi_min: float = deg_to_rad(-62.0)
+	var phi_max: float = deg_to_rad(68.0)
+	for row in range(rows + 1):
+		var v: float = float(row) / float(rows)
+		var phi: float = lerpf(phi_min, phi_max, v)
+		for col in range(cols + 1):
+			var u: float = float(col) / float(cols)
+			var theta: float = lerpf(theta_min, theta_max, u)
+			var cos_phi: float = cos(phi)
+			var vertex: Vector3 = Vector3(sin(theta) * cos_phi * 0.194, sin(phi) * 0.188, -cos(theta) * cos_phi * 0.196)
+			vertices.append(vertex)
+			normals.append(Vector3(vertex.x / 0.194, vertex.y / 0.188, vertex.z / 0.196).normalized())
+			uvs.append(Vector2(u, 1.0 - v))
+	for row in range(rows):
+		for col in range(cols):
+			var a: int = row * (cols + 1) + col
+			var b: int = a + 1
+			var c: int = (row + 1) * (cols + 1) + col
+			var d: int = c + 1
+			indices.append_array(PackedInt32Array([a, c, b, b, c, d]))
+	var arrays: Array = []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = vertices
+	arrays[Mesh.ARRAY_NORMAL] = normals
+	arrays[Mesh.ARRAY_TEX_UV] = uvs
+	arrays[Mesh.ARRAY_INDEX] = indices
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	return mesh
+
+func _refresh_production_worker_friend_face() -> void:
+	if production_worker_face_shell == null or production_worker_head == null:
+		return
+	var assigned_name: String = production_worker_friend_name
+	var previous_name: String = str(production_worker_face_shell.get_meta("friend_name", "__uninitialized__"))
+	if previous_name == assigned_name:
+		return
+	production_worker_face_shell.visible = false
+	production_worker_face_shell.material_override = null
+	var head_material: StandardMaterial3D = _make_flat_material(_worker_skin_color(assigned_name), 0.78)
+	production_worker_head.material_override = head_material
+	if assigned_name.is_empty():
+		production_worker_face_shell.set_meta("friend_name", "")
+		return
+	var face_path: String = _worker_face_texture_path(assigned_name)
+	if face_path.is_empty() or not ResourceLoader.exists(face_path):
+		return
+	var face_texture: Texture2D = load(face_path) as Texture2D
+	if face_texture == null:
+		return
+	var face_material: StandardMaterial3D = StandardMaterial3D.new()
+	face_material.albedo_texture = face_texture
+	face_material.albedo_color = Color.WHITE
+	face_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	face_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	face_material.roughness = 0.74
+	face_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	production_worker_face_shell.material_override = face_material
+	production_worker_face_shell.visible = true
+	production_worker_face_shell.set_meta("friend_name", assigned_name)
+
+func _production_worker_station_position(station_name: String) -> Vector3:
+	match station_name:
+		"grow": return Vector3(0.70, 0.0, -6.45)
+		"workbench": return Vector3(2.85, 0.0, 0.30)
+		"storage": return Vector3(-3.25, 0.0, -0.15) # Clear the vault handle and worker radius.
+		"entry": return Vector3(0.65, 0.0, 3.85)
+		_: return Vector3(-2.775, 0.0, 2.1)
+
+
+func _reset_production_worker_navigation() -> void:
+	production_worker_route_points.clear()
+	production_worker_route_index = 0
+	production_worker_route_valid = false
+	production_worker_stall_seconds = 0.0
+
+
+func _production_worker_navigation_target() -> Vector3:
+	if production_worker_node == null:
+		return production_worker_target_position
+	var worker_pos: Vector3 = production_worker_node.position
+	var target: Vector3 = production_worker_target_position
+	if not production_worker_route_valid or production_worker_route_destination.distance_to(target) > 0.01:
+		production_worker_route_points.clear()
+		production_worker_route_index = 0
+		production_worker_route_destination = target
+		production_worker_route_valid = true
+		var main_side: Vector3 = Vector3(0.0, 0.0, -3.15)
+		var grow_side: Vector3 = Vector3(0.0, 0.0, -5.05)
+		if target.z < -4.30 and worker_pos.z > -4.30:
+			if worker_pos.z > main_side.z:
+				production_worker_route_points.append(main_side)
+			production_worker_route_points.append(grow_side)
+		elif target.z > -3.70 and worker_pos.z < -3.70:
+			if worker_pos.z < grow_side.z:
+				production_worker_route_points.append(grow_side)
+			production_worker_route_points.append(main_side)
+		production_worker_route_points.append(target)
+	while production_worker_route_index < production_worker_route_points.size():
+		var waypoint: Vector3 = production_worker_route_points[production_worker_route_index]
+		if worker_pos.distance_to(waypoint) > 0.08:
+			return waypoint
+		production_worker_route_index += 1
+	return target
+
+func _update_production_worker_visual(delta: float) -> void:
+	if _simulation_blocked():
+		return
+	if production_worker_node == null:
+		return
+	var on_duty: bool = packing_employee_hired and packing_employee_active
+	production_worker_node.visible = packing_employee_hired and not production_worker_arrested
+	if not on_duty:
+		if production_worker_node.visible:production_worker_node.position=production_worker_node.position.move_toward(_production_worker_station_position("idle"),PRODUCTION_WORKER_MOVE_SPEED*delta)
+		return
+	var move_target: Vector3 = _production_worker_navigation_target()
+	var before: Vector3 = production_worker_node.position
+	production_worker_node.position = before.move_toward(move_target, PRODUCTION_WORKER_MOVE_SPEED * delta)
+	var movement: Vector3 = production_worker_node.position - before
+	var remaining_before: float = before.distance_to(move_target)
+	var remaining_after: float = production_worker_node.position.distance_to(move_target)
+	if remaining_before > 0.08 and remaining_before - remaining_after <= 0.000001:
+		production_worker_stall_seconds += delta
+	else:
+		production_worker_stall_seconds = 0.0
+	if production_worker_stall_seconds > 0.75:
+		_reset_production_worker_navigation()
+	var moving: bool = movement.length() > 0.002
+	if moving:
+		production_worker_node.rotation.y = lerp_angle(production_worker_node.rotation.y, atan2(-movement.x, -movement.z), minf(1.0, delta * 8.0))
+		production_worker_walk_phase += movement.length() * 4.5
+	else:
+		production_worker_walk_phase = lerpf(production_worker_walk_phase, 0.0, minf(1.0, delta * 5.0))
+	var walk_swing: float = sin(production_worker_walk_phase) * 0.42 if moving else 0.0
+	var arm_l: MeshInstance3D = production_worker_node.get_node_or_null("ArmL") as MeshInstance3D
+	var arm_r: MeshInstance3D = production_worker_node.get_node_or_null("ArmR") as MeshInstance3D
+	var leg_l: MeshInstance3D = production_worker_node.get_node_or_null("LegL") as MeshInstance3D
+	var leg_r: MeshInstance3D = production_worker_node.get_node_or_null("LegR") as MeshInstance3D
+	if arm_l != null:
+		arm_l.rotation.x = lerpf(arm_l.rotation.x, walk_swing, minf(1.0, delta * 12.0))
+	if arm_r != null:
+		arm_r.rotation.x = lerpf(arm_r.rotation.x, -walk_swing, minf(1.0, delta * 12.0))
+	if leg_l != null:
+		leg_l.rotation.x = lerpf(leg_l.rotation.x, -walk_swing * 0.75, minf(1.0, delta * 12.0))
+	if leg_r != null:
+		leg_r.rotation.x = lerpf(leg_r.rotation.x, walk_swing * 0.75, minf(1.0, delta * 12.0))
+	if production_worker_task_label != null:
+		var worker_name: String = production_worker_friend_name if not production_worker_friend_name.is_empty() else "PRODUCTION WORKER"
+		production_worker_task_label.text = "%s  |  %s" % [worker_name.to_upper(), production_worker_task.to_upper()]
+	_refresh_production_worker_friend_face()
+
+	if production_worker_pending_action.is_empty():
+		production_worker_action_dwell = 0.0
+		return
+	if production_worker_node.position.distance_to(production_worker_target_position) > 0.16:
+		production_worker_action_dwell = 0.0
+		return
+	production_worker_action_dwell += delta
+	if production_worker_action_dwell >= PRODUCTION_WORKER_DWELL_SECONDS:
+		production_worker_action_dwell = 0.0
+		_execute_production_worker_action()
+
+func _set_production_worker_task(action_id: String, station_name: String, slot_index: int = -1, strain_name: String = "", task_text: String = "Working") -> void:
+	production_worker_pending_action = action_id
+	production_worker_pending_slot = slot_index
+	production_worker_pending_strain = strain_name
+	production_worker_target_position = _production_worker_station_position(station_name)
+	production_worker_task = task_text
+	production_worker_last_action = task_text
+	production_worker_action_dwell = 0.0
+	_reset_production_worker_navigation()
+
+func _production_worker_find_seed() -> String:
+	for seed_name: String in SEED_ORDER:
+		if not seed_catalog.has(seed_name):
+			continue
+		var seed_info: Dictionary = seed_catalog[seed_name]
+		if grower_level >= int(seed_info.get("unlock", 999)) and int(seed_inventory.get(seed_name, 0)) > 0:
+			return seed_name
+	return ""
+
+
+func _assign_production_worker_task() -> void:
+	if not packing_employee_hired or not packing_employee_active:
+		return
+	if not production_worker_pending_action.is_empty():
+		return
+	for slot_index in range(plant_slots.size()):
+		var slot: Dictionary = plant_slots[slot_index]
+		var stage: int = int(slot.get("stage", -1))
+		if stage < 0 or bool(slot.get("dead", false)):
+			continue
+		if float(slot.get("water", 0.0)) < 38.0:
+			_set_production_worker_task("water", "grow", slot_index, "", "Watering pot %d" % (slot_index + 1))
+			return
+		if fertilizer_units > 0 and float(slot.get("fertilizer", 0.0)) < 15.0 and stage >= 1:
+			_set_production_worker_task("fertilize", "grow", slot_index, "", "Feeding pot %d" % (slot_index + 1))
+			return
+		if stage == STAGES.size() - 1:
+			_set_production_worker_task("harvest", "grow", slot_index, str(slot.get("strain", "")), "Harvesting %s" % str(slot.get("strain", "plant")))
+			return
+
+	for name_variant in bagged_inventory.keys():
+		var bagged_name: String = str(name_variant)
+		var normal_has_space: bool = _total_stored_stock() < _storage_capacity()
+		var dealer_overflow_available: bool = not normal_has_space and _dealer_locker_free_capacity() > 0
+		if int(bagged_inventory.get(bagged_name, 0)) > 0 and (normal_has_space or dealer_overflow_available):
+			var stock_task: String = "Stocking %s" % bagged_name if normal_has_space else "Overflow stocking Dealer Locker"
+			_set_production_worker_task("store", "storage", -1, bagged_name, stock_task)
+			return
+	for name_variant in trimmed_inventory.keys():
+		var trimmed_name: String = str(name_variant)
+		if int(trimmed_inventory.get(trimmed_name, 0)) > 0:
+			_set_production_worker_task("bag", "workbench", -1, trimmed_name, "Bagging %s" % trimmed_name)
+			return
+	for name_variant in untrimmed_inventory.keys():
+		var untrimmed_name: String = str(name_variant)
+		if int(untrimmed_inventory.get(untrimmed_name, 0)) > 0:
+			_set_production_worker_task("trim", "workbench", -1, untrimmed_name, "Trimming %s" % untrimmed_name)
+			return
+
+	if production_worker_auto_plant:
+		var auto_seed: String = _production_worker_find_seed()
+		if not auto_seed.is_empty():
+			for slot_index in range(plant_slots.size()):
+				if int(plant_slots[slot_index].get("stage", -1)) < 0:
+					_set_production_worker_task("plant", "grow", slot_index, auto_seed, "Planting %s" % auto_seed)
+					return
+
+	production_worker_task = "Waiting for work"
+	production_worker_last_action = "Waiting for work"
+	production_worker_target_position = _production_worker_station_position("idle")
+
+
+func _execute_production_worker_action() -> void:
+	if _simulation_blocked():
+		return
+	var action_id: String = production_worker_pending_action
+	var slot_index: int = production_worker_pending_slot
+	var strain_name: String = production_worker_pending_strain
+	production_worker_pending_action = ""
+	production_worker_pending_slot = -1
+	production_worker_pending_strain = ""
+	production_worker_action_dwell = 0.0
+	if action_id.is_empty():
+		return
+
+	match action_id:
+		"water":
+			if slot_index >= 0 and slot_index < plant_slots.size():
+				var slot: Dictionary = plant_slots[slot_index]
+				slot["water"] = 100.0
+				slot["health"] = minf(100.0, float(slot.get("health", 100.0)) + 2.0)
+				plant_slots[slot_index] = slot
+				_charge_water_use(1)
+				_update_plant_visual(slot_index)
+		"fertilize":
+			if fertilizer_units > 0 and slot_index >= 0 and slot_index < plant_slots.size():
+				var slot: Dictionary = plant_slots[slot_index]
+				fertilizer_units -= 1
+				slot["fertilizer"] = 100.0
+				plant_slots[slot_index] = slot
+				_update_plant_visual(slot_index)
+		"harvest":
+			_harvest_plant(slot_index)
+		"plant":
+			if not strain_name.is_empty():
+				_plant_seed(slot_index, strain_name)
+		"trim":
+			var available_trim: int = int(untrimmed_inventory.get(strain_name, 0))
+			var trim_amount: int = mini(PRODUCTION_WORKER_BATCH_SIZE, available_trim)
+			if trim_amount > 0:
+				untrimmed_inventory[strain_name] = available_trim - trim_amount
+				_add_inventory(trimmed_inventory, strain_name, trim_amount)
+		"bag":
+			var available_bag: int = int(trimmed_inventory.get(strain_name, 0))
+			var bag_amount: int = mini(PRODUCTION_WORKER_BATCH_SIZE, available_bag)
+			if bag_amount > 0:
+				trimmed_inventory[strain_name] = available_bag - bag_amount
+				_add_inventory(bagged_inventory, strain_name, bag_amount)
+		"store":
+			var available_store: int = int(bagged_inventory.get(strain_name, 0))
+			var free_capacity: int = maxi(0, _storage_capacity() - _total_stored_stock())
+			var store_amount: int = mini(PRODUCTION_WORKER_BATCH_SIZE, mini(available_store, free_capacity))
+			if store_amount > 0:
+				bagged_inventory[strain_name] = available_store - store_amount
+				_ensure_product_exists(strain_name)
+				var data: Dictionary = products[strain_name]
+				data["stock"] = int(data.get("stock", 0)) + store_amount
+				products[strain_name] = data
+			elif free_capacity <= 0 and _dealer_locker_free_capacity() > 0:
+				var overflow_amount: int = mini(PRODUCTION_WORKER_BATCH_SIZE, mini(available_store, _dealer_locker_free_capacity()))
+				if overflow_amount > 0:
+					bagged_inventory[strain_name] = available_store - overflow_amount
+					locker_weed[strain_name] = int(locker_weed.get(strain_name, 0)) + overflow_amount
+					production_worker_last_action = "Overflow stocked %dg %s in Dealer Locker" % [overflow_amount, strain_name]
+
+	production_worker_tasks_today += 1
+	_increment_advancement_stat("worker_tasks")
+	production_worker_task = "Checking next task"
+	production_worker_last_action = production_worker_task
+	if bagging_panel != null and bagging_panel.visible:
+		_refresh_bagging_panel()
+	if storage_panel != null and storage_panel.visible:
+		_refresh_storage_panel()
+	if grow_panel != null and grow_panel.visible:
+		_refresh_grow_panel()
+	if phone_open:
+		_refresh_phone()
+	_save_game()
+
+
+func _run_auto_packer() -> void:
+	for name_variant in untrimmed_inventory.keys():
+		var strain_name: String = str(name_variant)
+		var amount: int = int(untrimmed_inventory.get(strain_name, 0))
+		if amount > 0:
+			untrimmed_inventory[strain_name] = 0
+			_add_inventory(trimmed_inventory, strain_name, amount)
+	for name_variant in trimmed_inventory.keys():
+		var strain_name: String = str(name_variant)
+		var amount: int = int(trimmed_inventory.get(strain_name, 0))
+		if amount > 0:
+			trimmed_inventory[strain_name] = 0
+			_add_inventory(bagged_inventory, strain_name, amount)
+	for name_variant in bagged_inventory.keys():
+		var strain_name: String = str(name_variant)
+		var amount: int = int(bagged_inventory.get(strain_name, 0))
+		if amount <= 0:
+			continue
+		var free_capacity: int = maxi(0, _storage_capacity() - _total_stored_stock())
+		var moved: int = mini(amount, free_capacity)
+		if moved <= 0:
+			break
+		bagged_inventory[strain_name] = amount - moved
+		_ensure_product_exists(strain_name)
+		var data: Dictionary = products[strain_name]
+		data["stock"] = int(data.get("stock", 0)) + moved
+		products[strain_name] = data
+	if bagging_panel != null and bagging_panel.visible:
+		_refresh_bagging_panel()
+	if storage_panel != null and storage_panel.visible:
+		_refresh_storage_panel()
+	if phone_open:
+		_refresh_phone()
+
+func _run_auto_packer_limited() -> void:
+	for name_variant in bagged_inventory.keys():
+		var strain_name: String = str(name_variant)
+		var amount: int = int(bagged_inventory.get(strain_name, 0))
+		if amount > 0:
+			var free_capacity: int = maxi(0, _storage_capacity() - _total_stored_stock())
+			var moved: int = mini(PRODUCTION_WORKER_BATCH_SIZE, mini(amount, free_capacity))
+			if moved > 0:
+				bagged_inventory[strain_name] = amount - moved
+				_ensure_product_exists(strain_name)
+				var data: Dictionary = products[strain_name]
+				data["stock"] = int(data.get("stock", 0)) + moved
+				products[strain_name] = data
+			return
+	for name_variant in trimmed_inventory.keys():
+		var strain_name: String = str(name_variant)
+		var amount: int = int(trimmed_inventory.get(strain_name, 0))
+		if amount > 0:
+			var moved: int = mini(PRODUCTION_WORKER_BATCH_SIZE, amount)
+			trimmed_inventory[strain_name] = amount - moved
+			_add_inventory(bagged_inventory, strain_name, moved)
+			return
+	for name_variant in untrimmed_inventory.keys():
+		var strain_name: String = str(name_variant)
+		var amount: int = int(untrimmed_inventory.get(strain_name, 0))
+		if amount > 0:
+			var moved: int = mini(PRODUCTION_WORKER_BATCH_SIZE, amount)
+			untrimmed_inventory[strain_name] = amount - moved
+			_add_inventory(trimmed_inventory, strain_name, moved)
+			return
+
+
+func _customer_by_name(customer_name: String) -> Dictionary:
+	for customer: Dictionary in customers:
+		if str(customer.get("name", "")) == customer_name:
+			return customer
+	return {}
+
+func _ensure_friend_dealer_stats(customer_name: String) -> Dictionary:
+	var stats: Dictionary = {}
+	if friend_dealer_stats.has(customer_name) and friend_dealer_stats[customer_name] is Dictionary:
+		stats = (friend_dealer_stats[customer_name] as Dictionary).duplicate(true)
+	for key: String in ["sales", "grams", "gross", "commission_earned", "wages_earned", "today_sales", "today_grams", "today_gross", "today_commission"]:
+		if not stats.has(key):
+			stats[key] = 0
+	friend_dealer_stats[customer_name] = stats
+	return stats
+
+func _active_dealer_roster() -> Array[String]:
+	var roster: Array[String] = []
+	for friend_name: String in _friend_staff_names("dealer"):
+		roster.append(friend_name)
+	for index: int in range(dealer_count):
+		roster.append("Hired Dealer %d" % (index + 1))
+	return roster
+
+func _record_friend_dealer_sale(customer_name: String, grams: int, gross: int, commission: int) -> void:
+	if customer_name.is_empty() or _friend_staff_role(customer_name) != "dealer":
+		return
+	var stats: Dictionary = _ensure_friend_dealer_stats(customer_name)
+	stats["sales"] = int(stats.get("sales", 0)) + 1
+	stats["grams"] = int(stats.get("grams", 0)) + grams
+	stats["gross"] = int(stats.get("gross", 0)) + gross
+	stats["commission_earned"] = int(stats.get("commission_earned", 0)) + commission
+	stats["today_sales"] = int(stats.get("today_sales", 0)) + 1
+	stats["today_grams"] = int(stats.get("today_grams", 0)) + grams
+	stats["today_gross"] = int(stats.get("today_gross", 0)) + gross
+	stats["today_commission"] = int(stats.get("today_commission", 0)) + commission
+	friend_dealer_stats[customer_name] = stats
+
+func _friend_dealer_daily_report(_pay_wages: bool) -> Array[Dictionary]:
+	var rows: Array[Dictionary] = []
+	for friend_name: String in _friend_staff_names("dealer"):
+		var stats: Dictionary = _ensure_friend_dealer_stats(friend_name)
+		rows.append({
+			"name": friend_name,
+			"sales": int(stats.get("today_sales", 0)),
+			"grams": int(stats.get("today_grams", 0)),
+			"gross": int(stats.get("today_gross", 0)),
+			"commission": int(stats.get("today_commission", 0)),
+			"wage": 0,
+			"total_pay": int(stats.get("today_commission", 0))
+		})
+	return rows
+
+func _reset_friend_dealer_daily_stats() -> void:
+	for name_variant: Variant in friend_dealer_stats.keys():
+		var friend_name: String = str(name_variant)
+		var stats: Dictionary = _ensure_friend_dealer_stats(friend_name)
+		stats["today_sales"] = 0
+		stats["today_grams"] = 0
+		stats["today_gross"] = 0
+		stats["today_commission"] = 0
+		friend_dealer_stats[friend_name] = stats
+
+func _daily_report_friend_dealers_text(report: Dictionary) -> String:
+	var rows_variant: Variant = report.get("friend_dealers", [])
+	if not (rows_variant is Array) or (rows_variant as Array).is_empty():
+		return ""
+	var lines: Array[String] = []
+	for row_variant: Variant in rows_variant as Array:
+		if not (row_variant is Dictionary):
+			continue
+		var row: Dictionary = row_variant as Dictionary
+		lines.append("%s  |  %d sale(s), %dg, $%d gross  |  10%% commission: $%d" % [str(row.get("name", "Friend")), int(row.get("sales", 0)), int(row.get("grams", 0)), int(row.get("gross", 0)), int(row.get("commission", 0))])
+	return "\n".join(PackedStringArray(lines))
+
+func _friend_staff_role(customer_name: String) -> String:
+	return str(friend_staff_roles.get(customer_name, ""))
+
+func _friend_staff_dealer_count() -> int:
+	var total: int = 0
+	for role_variant in friend_staff_roles.values():
+		if str(role_variant) == "dealer":
+			total += 1
+	return total
+
+func _total_dealer_count() -> int:
+	return dealer_count + _friend_staff_dealer_count()
+
+func _customer_loyalty(customer_name: String) -> int:
+	if not customer_relationships.has(customer_name):
+		return 0
+	var relationship: Dictionary = customer_relationships[customer_name] as Dictionary
+	return clampi(int(relationship.get("loyalty", 0)), 0, 100)
+
+func _friend_is_recruitable(customer: Dictionary) -> bool:
+	if str(customer.get("tier", "")) != "Friend":
+		return false
+	var customer_name: String = str(customer.get("name", ""))
+	if customer_name.is_empty() or not _customer_is_known(customer):
+		return false
+	if not _friend_staff_role(customer_name).is_empty():
+		return false
+	var relationship: Dictionary = customer_relationships.get(customer_name, {}) as Dictionary
+	return int(relationship.get("player_sales", 0)) >= FRIEND_RECRUIT_PLAYER_SALES and _customer_loyalty(customer_name) >= FRIEND_RECRUIT_LOYALTY
+
+func _friend_staff_names(role_filter: String = "") -> Array[String]:
+	var names: Array[String] = []
+	for name_variant in friend_staff_roles.keys():
+		var customer_name: String = str(name_variant)
+		var role: String = str(friend_staff_roles[customer_name])
+		if role_filter.is_empty() or role == role_filter:
+			names.append(customer_name)
+	return names
+
+func _dealer_capacity() -> int:
+	if grower_level < 6:
+		return 0
+	if grower_level < 9:
+		return 1
+	if grower_level < 12:
+		return 2
+	return 3
+
+func _dealer_hire_cost() -> int:
+	return DEALER_BASE_HIRE_COST + _total_dealer_count() * 300
+
+func _staff_count() -> int:
+	return (1 if packing_employee_hired else 0) + _total_dealer_count()
+
+func _current_power_rate_per_game_minute() -> float:
+	var rate: float = 0.0 if lay_low_active else POWER_BASE_COST_PER_GAME_MINUTE
+	if main_ceiling_light_on:
+		rate += POWER_MAIN_LIGHT_COST_PER_GAME_MINUTE
+	if floor_lamp_on:
+		rate += POWER_LAMP_COST_PER_GAME_MINUTE
+	if grow_room_light_on:
+		rate += POWER_GROW_ROOM_LIGHT_COST_PER_GAME_MINUTE
+	if grow_lights_on:
+		rate += POWER_GROW_LIGHT_COST_PER_TENT_PER_GAME_MINUTE * float(clampi(grow_tent_count, 1, 3))
+	if ventilation_installed and ventilation_on:
+		rate += POWER_VENTILATION_COST_PER_GAME_MINUTE
+	return rate
+
+func _track_power_usage(elapsed_game_minutes: float) -> void:
+	if elapsed_game_minutes <= 0.0:
+		return
+	current_day_power_cost += _current_power_rate_per_game_minute() * elapsed_game_minutes
+
+func _finalize_daily_power_bill(show_feedback: bool) -> void:
+	var bill: int = maxi(0, int(ceil(current_day_power_cost)))
+	last_power_bill = bill
+	power_bill_due = mini(POWER_BILL_MAX_BALANCE, power_bill_due + bill)
+	lifetime_power_cost += bill
+	current_day_power_cost = 0.0
+	if show_feedback and status_label != null:
+		status_label.text = "Utility bill posted: $%d  |  Total power balance due: $%d." % [bill, power_bill_due]
+	if phone_open and phone_current_app in ["home", "business", "bills", "employees", "stats"]:
+		_refresh_phone()
+
+func _charge_water_use(count: int = 1) -> void:
+	if count <= 0:
+		return
+	current_day_water_uses += count
+	current_day_water_cost += WATER_COST_PER_WATERING * float(count)
+
+func _finalize_daily_water_bill(show_feedback: bool) -> void:
+	var bill: int = maxi(0, int(ceil(current_day_water_cost)))
+	last_water_bill = bill
+	if bill > 0:
+		water_bill_due = mini(WATER_BILL_MAX_BALANCE, water_bill_due + bill)
+		lifetime_water_cost += bill
+	current_day_water_cost = 0.0
+	current_day_water_uses = 0
+	if show_feedback and status_label != null and bill > 0:
+		status_label.text = "Water bill posted: $%d  |  Total water balance due: $%d." % [bill, water_bill_due]
+	if phone_open and phone_current_app in ["home", "business", "bills", "employees", "stats"]:
+		_refresh_phone()
+
+func _pay_water_bill() -> void:
+	if water_bill_due <= 0:
+		return
+	if cash < water_bill_due:
+		status_label.text = "You need $%d to pay the outstanding water bill." % water_bill_due
+		return
+	var paid: int = water_bill_due
+	cash -= paid
+	water_bill_due = 0
+	_increment_advancement_stat("water_bills_paid")
+	_update_cash_ui()
+	status_label.text = "Water bill paid: $%d." % paid
+	_save_game()
+	if phone_open:
+		_refresh_phone()
+
+func _pay_power_bill() -> void:
+	if power_bill_due <= 0:
+		return
+	if cash < power_bill_due:
+		status_label.text = "You need $%d to pay the outstanding power bill." % power_bill_due
+		return
+	var paid: int = power_bill_due
+	cash -= paid
+	power_bill_due = 0
+	_increment_advancement_stat("power_bills_paid")
+	_update_cash_ui()
+	status_label.text = "Power bill paid: $%d." % paid
+	_save_game()
+	if phone_open:
+		_refresh_phone()
+
+func _staff_daily_payroll() -> int:
+	var total: int = 0
+	if packing_employee_hired and packing_employee_active:
+		total += PACKER_DAILY_WAGE
+	return total
+
+func _roman(value: int) -> String:
+	match value:
+		1: return "I"
+		2: return "II"
+		3: return "III"
+		4: return "IV"
+		_: return str(value)
+
+func _dealer_locker_capacity() -> int:
+	var level: int = clampi(dealer_locker_level, 0, DEALER_LOCKER_CAPACITY_BY_LEVEL.size() - 1)
+	return DEALER_LOCKER_CAPACITY_BY_LEVEL[level]
+
+func _dealer_locker_total() -> int:
+	var total: int = 0
+	for value_variant: Variant in locker_weed.values():
+		total += maxi(0, int(value_variant))
+	return total
+
+func _dealer_locker_free_capacity() -> int:
+	return maxi(0, _dealer_locker_capacity() - _dealer_locker_total())
+
+func _dealer_locker_next_cost() -> int:
+	var next_level: int = dealer_locker_level + 1
+	if next_level <= 0 or next_level >= DEALER_LOCKER_COST_BY_LEVEL.size():
+		return 0
+	return DEALER_LOCKER_COST_BY_LEVEL[next_level]
+
+func _buy_dealer_locker_upgrade() -> void:
+	if neighborhood!=null and neighborhood.location_ops!=null and not neighborhood.location_ops.installing:
+		status_label.text="Order dealer storage at Central Market, then install it at your computer."
+		return
+	if dealer_locker_level >= 4:
+		return
+	var next_level: int = dealer_locker_level + 1
+	var cost: int = 0 if neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.installing else DEALER_LOCKER_COST_BY_LEVEL[next_level]
+	if cash < cost:
+		status_label.text = "You need $%d for Dealer Locker %s." % [cost, _roman(next_level)]
+		return
+	cash -= cost
+	_record_daily_expense("Dealer Locker upgrade", cost)
+	dealer_locker_level = next_level
+	_sync_dealer_locker_visual()
+	_update_cash_ui()
+	status_label.text = "Dealer Locker %s installed. Capacity: %dg." % [_roman(dealer_locker_level), _dealer_locker_capacity()]
+	_save_game()
+	if phone_open:
+		_refresh_phone()
+
+func _dealer_locker_add_from_storage(strain_name: String, requested_amount: int) -> int:
+	if dealer_locker_level <= 0 or not products.has(strain_name):
+		return 0
+	var available: int = maxi(0, _available_amount(strain_name))
+	var free_capacity: int = _dealer_locker_free_capacity()
+	var requested: int = available if requested_amount >= 999999 else maxi(0, requested_amount)
+	var moved: int = mini(available, mini(free_capacity, requested))
+	if moved <= 0:
+		status_label.text = "Dealer Locker is full or that strain has no unreserved stock."
+		return 0
+	var data: Dictionary = products[strain_name]
+	data["stock"] = maxi(0, int(data.get("stock", 0)) - moved)
+	products[strain_name] = data
+	locker_weed[strain_name] = int(locker_weed.get(strain_name, 0)) + moved
+	status_label.text = "Stocked %dg %s in Dealer Locker. Dealers can now sell it." % [moved, strain_name]
+	_save_game()
+	if storage_panel != null and storage_panel.visible:
+		_refresh_storage_panel()
+	return moved
+
+func _dealer_locker_remove_to_storage(strain_name: String, requested_amount: int) -> int:
+	var have: int = maxi(0, int(locker_weed.get(strain_name, 0)))
+	if have <= 0:
+		return 0
+	var free_capacity: int = maxi(0, _storage_capacity() - _total_stored_stock())
+	if free_capacity <= 0:
+		status_label.text = "Normal storage is full. Make space before removing dealer stock."
+		return 0
+	var requested: int = have if requested_amount >= 999999 else maxi(0, requested_amount)
+	var moved: int = mini(have, mini(free_capacity, requested))
+	if moved <= 0:
+		return 0
+	locker_weed[strain_name] = have - moved
+	if int(locker_weed.get(strain_name, 0)) <= 0:
+		locker_weed.erase(strain_name)
+	_ensure_product_exists(strain_name)
+	var data: Dictionary = products[strain_name]
+	data["stock"] = int(data.get("stock", 0)) + moved
+	products[strain_name] = data
+	status_label.text = "Returned %dg %s from Dealer Locker to normal storage." % [moved, strain_name]
+	_save_game()
+	if storage_panel != null and storage_panel.visible:
+		_refresh_storage_panel()
+	return moved
+
+func _dealer_customer_served_today(customer_name: String) -> bool:
+	return dealer_customers_served_today.has(customer_name)
+
+func _dealer_eligible_customers() -> Array[Dictionary]:
+	var eligible: Array[Dictionary] = []
+	for customer: Dictionary in customers:
+		if str(customer.get("tier", "")) == "Friend":
+			continue
+		if grower_level < int(customer.get("unlock_level", 1)):
+			continue
+		if not _customer_is_known(customer):
+			continue
+		var customer_name: String = str(customer.get("name", ""))
+		if not customer_relationships.has(customer_name):
+			continue
+		var relationship: Dictionary = customer_relationships[customer_name] as Dictionary
+		if int(relationship.get("player_sales", 0)) < 1:
+			continue
+		eligible.append(customer)
+	return eligible
+
+func _dealer_sell_one(show_feedback: bool, assigned_dealer_name: String = "", door_customer: Dictionary = {}, door_order: Dictionary = {}) -> bool:
+	if dealer_arrested:return false
+	if door_customer.is_empty() and neighborhood!=null and assigned_dealer_name==neighborhood.location_ops.crew.manager() and not assigned_dealer_name.is_empty():return false
+	if _simulation_blocked():
+		return false
+	if dealer_balance_due > 0:
+		return false
+	if not business_open or not dealers_active or _total_dealer_count() <= 0:
+		return false
+	if door_customer.is_empty() and (dealer_locker_level <= 0 or _dealer_locker_total() <= 0):
+		return false
+	var eligible: Array[Dictionary] = _dealer_eligible_customers()
+	if not door_customer.is_empty():eligible=[door_customer]
+	if eligible.is_empty():
+		return false
+	var available_customers: Array[Dictionary] = []
+	for customer: Dictionary in eligible:
+		var customer_name: String = str(customer.get("name", ""))
+		if customer_name.is_empty() or (door_customer.is_empty() and _dealer_customer_served_today(customer_name)):
+			continue
+		available_customers.append(customer)
+	if available_customers.is_empty():
+		return false
+	var chosen_customer: Dictionary = available_customers[rng.randi_range(0, available_customers.size() - 1)]
+	if not door_customer.is_empty():
+		var matches: bool=false
+		for candidate in available_customers:
+			if candidate.get("name","")==door_customer.get("name",""):matches=true
+		if not matches:return false
+		chosen_customer=door_customer
+	var favorite: String = str(door_order.get("product",chosen_customer.get("favorite", "")))
+	if not door_customer.is_empty() and int(bagged_inventory.get(favorite,0))>0:_ensure_product_exists(favorite)
+	var product_name: String = ""
+	if products.has(favorite) and (int(locker_weed.get(favorite, 0))+(_available_amount(favorite)+int(bagged_inventory.get(favorite,0)) if not door_customer.is_empty() else 0)) > 0:
+		product_name = favorite
+	if product_name.is_empty():
+		if not door_customer.is_empty():return false
+		var alternatives: Array[String] = []
+		for name_variant: Variant in locker_weed.keys():
+			var candidate: String = str(name_variant)
+			if int(locker_weed.get(candidate, 0)) > 0 and products.has(candidate):
+				alternatives.append(candidate)
+		if alternatives.is_empty():
+			return false
+		if rng.randf() > float(chosen_customer.get("flexibility", 0.0)):
+			return false
+		product_name = alternatives[rng.randi_range(0, alternatives.size() - 1)]
+	var available: int = maxi(0, int(locker_weed.get(product_name, 0)))
+	if not door_customer.is_empty():available+=_available_amount(product_name)+maxi(0,int(bagged_inventory.get(product_name,0)))
+	if available <= 0:
+		return false
+	var max_qty: int = mini(available, int(chosen_customer.get("max_qty", 2)))
+	var min_qty: int = mini(max_qty, maxi(1, int(chosen_customer.get("min_qty", 1))))
+	if max_qty <= 0:
+		return false
+	var qty: int = rng.randi_range(min_qty, max_qty)
+	if not door_customer.is_empty():
+		qty=int(door_order.get("qty",0))
+		if qty<=0 or available<qty:return false
+	if door_customer.is_empty():
+		locker_weed[product_name]=available-qty
+	else:
+		var from_locker: int=mini(qty,maxi(0,int(locker_weed.get(product_name,0))))
+		locker_weed[product_name]=maxi(0,int(locker_weed.get(product_name,0)))-from_locker
+		var from_storage: int=mini(qty-from_locker,_available_amount(product_name))
+		products[product_name]["stock"]=int(products[product_name].get("stock",0))-from_storage
+		var from_bench: int=qty-from_locker-from_storage
+		bagged_inventory[product_name]=maxi(0,int(bagged_inventory.get(product_name,0)))-from_bench
+	if int(locker_weed.get(product_name,0))<=0:locker_weed.erase(product_name)
+	var gross_revenue: int = qty * _effective_price(product_name)
+	var commission: int = int(ceil(float(gross_revenue) * DEALER_COMMISSION_RATE))
+	var dealer_roster: Array[String] = _active_dealer_roster()
+	var sale_dealer_name: String = assigned_dealer_name
+	if sale_dealer_name.is_empty() and not dealer_roster.is_empty():
+		sale_dealer_name = dealer_roster[dealer_sales_today % dealer_roster.size()]
+	dealer_cash_held += gross_revenue
+	dealer_commission_held += commission
+	lifetime_revenue += gross_revenue
+	_record_daily_sale(product_name, qty, gross_revenue, "dealer")
+	dealer_sales_today += 1
+	_record_friend_dealer_sale(sale_dealer_name, qty, gross_revenue, commission)
+	last_dealer_customer_name = str(chosen_customer.get("name", ""))
+	dealer_customers_served_today[last_dealer_customer_name] = sale_dealer_name
+	_increment_advancement_stat("dealer_sales")
+	_increment_advancement_stat("sales")
+	_add_heat(1.8 + float(qty) * 0.45, "Dealer activity", false)
+	var relationship: Dictionary = (customer_relationships.get(last_dealer_customer_name,{}) as Dictionary).duplicate(true)
+	relationship["sales"] = int(relationship.get("sales", 0)) + 1
+	relationship["dealer_sales"] = int(relationship.get("dealer_sales", 0)) + 1
+	customer_relationships[last_dealer_customer_name] = relationship
+	_add_progress(qty * 4, 0)
+	_update_cash_ui()
+	if show_feedback:
+		status_label.text = "%s served %s: %dg %s  |  $%d gross, $%d commission  |  Locker %dg/%dg." % [sale_dealer_name if not sale_dealer_name.is_empty() else "Dealer", last_dealer_customer_name, qty, product_name, gross_revenue, commission, _dealer_locker_total(), _dealer_locker_capacity()]
+	if phone_open:
+		_refresh_phone()
+	return true
+
+func _process_daily_payroll(show_feedback: bool) -> void:
+	if last_payroll_day >= game_day + 1:
+		return
+	var paid_parts: Array[String] = []
+	var missed_parts: Array[String] = []
+	last_production_payroll_cost = 0
+	if packing_employee_hired and packing_employee_active:
+		if cash >= PACKER_DAILY_WAGE:
+			cash -= PACKER_DAILY_WAGE
+			last_production_payroll_cost = PACKER_DAILY_WAGE
+			_record_daily_expense("Production worker wage", PACKER_DAILY_WAGE)
+			paid_parts.append("production worker $%d" % PACKER_DAILY_WAGE)
+		else:
+			packing_employee_active = false
+			missed_parts.append("production worker")
+	var staff_purchase_revenue: int = _process_friend_staff_purchases()
+	if staff_purchase_revenue > 0:
+		paid_parts.append("staff personal purchases +$%d" % staff_purchase_revenue)
+	last_payroll_day = game_day + 1
+	_update_cash_ui()
+	if show_feedback and status_label != null:
+		if not missed_parts.is_empty():
+			status_label.text = "Payroll missed for %s. They are OFF DUTY until reactivated." % ", ".join(PackedStringArray(missed_parts))
+		elif not paid_parts.is_empty():
+			status_label.text = "Daily payroll: %s. Dealer pay waits for tonight's drop-off." % ", ".join(PackedStringArray(paid_parts))
+
+func _simulate_offline_business(_elapsed_seconds: float) -> void:
+	return
+
+func _harvest_plant(slot_index: int) -> void:
+	if not _tutorial_can_do("harvest"):
+		return
+	if slot_index < 0 or slot_index >= plant_slots.size():
+		return
+	var slot: Dictionary = plant_slots[slot_index]
+	var stage: int = int(slot.get("stage", -1))
+	if stage != STAGES.size() - 1 or bool(slot.get("dead", false)):
+		return
+	var strain_name: String = str(slot.get("strain", "Unknown"))
+	var health: float = float(slot.get("health", 100.0))
+	var harvest_amount: int = _fictional_harvest_amount(strain_name)
+	if tent_level >= 2:
+		harvest_amount = maxi(1, int(round(float(harvest_amount) * 1.25)))
+	if health < 60.0:
+		harvest_amount = maxi(1, int(round(float(harvest_amount) * 0.75)))
+	_add_inventory(untrimmed_inventory, strain_name, harvest_amount)
+	_increment_advancement_stat("harvests")
+	_tutorial_record("harvest", slot_index, strain_name)
+	plant_slots[slot_index] = {"strain": "", "stage": -1, "growth": 0.0, "water": 0.0, "health": 0.0, "fertilizer": 0.0, "dead": false}
+	_update_plant_visual(slot_index)
+	_add_progress(15, 2)
+	_save_game()
+	status_label.text = "Harvested %dg of %s. Take it to the bagging station to trim it." % [harvest_amount, strain_name]
+	_refresh_grow_panel()
+
+func _fictional_harvest_amount(strain_name: String) -> int:
+	if seed_catalog.has(strain_name):
+		var info: Dictionary = seed_catalog[strain_name]
+		return maxi(1, int(info.get("harvest", 8)))
+	return 8
+
+
+func _open_bagging_panel() -> void:
+	bagging_panel.visible = true
+	_set_world_controls_visible(false)
+	_refresh_bagging_panel()
+
+func _close_bagging_panel() -> void:
+	_cancel_phone_gesture()
+	bagging_panel.visible = false
+	_go_to_view("main_workbench")
+	_set_world_controls_visible(true)
+	status_label.text = "You step back from the bagging station."
+
+func _refresh_bagging_panel() -> void:
+	_sync_packing_bench_visuals()
+	if bagging_scroll != null and bagging_scroll.is_gesture_busy():
+		bagging_refresh_pending = true
+		return
+	bagging_refresh_pending = false
+	bagging_refresh_revision += 1
+	var restore_y: int = bagging_scroll.scroll_vertical if bagging_scroll != null else 0
+	_clear_station_list(bagging_list)
+	_restore_station_list_scroll.call_deferred("bagging", restore_y, bagging_refresh_revision)
+	_add_pipeline_section("UNTRIMMED HARVEST", untrimmed_inventory, "TRIM BY HAND", _start_trim_minigame, "bud")
+	_add_pipeline_section("TRIMMED / READY TO BAG", trimmed_inventory, "BAG BY HAND", _start_bag_minigame, "bud")
+	_add_pipeline_section("BAGGED / READY FOR STORAGE", bagged_inventory, "PUT IN STORAGE", _store_product, "bag")
+
+func _add_pipeline_section(title_text: String, inventory: Dictionary, action_text: String, action_callable: Callable, icon_key: String) -> void:
+	var title: Label = Label.new()
+	title.text = title_text
+	title.add_theme_font_size_override("font_size", 19)
+	title.modulate = Color("aeb9c0")
+	bagging_list.add_child(title)
+	var found_any: bool = false
+	for name_variant in inventory.keys():
+		var strain_name: String = str(name_variant)
+		var amount: int = int(inventory.get(strain_name, 0))
+		if amount <= 0:
+			continue
+		found_any = true
+		var parts: Dictionary = _make_inventory_card(icon_key)
+		var card: PanelContainer = parts["card"] as PanelContainer
+		var content: VBoxContainer = parts["content"] as VBoxContainer
+		bagging_list.add_child(card)
+		var label: Label = Label.new()
+		label.text = strain_name
+		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		label.add_theme_font_size_override("font_size", 20)
+		content.add_child(label)
+		var amount_label: Label = Label.new()
+		amount_label.text = "%dg ready at this step" % amount
+		amount_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		amount_label.modulate = Color("aeb9c0")
+		content.add_child(amount_label)
+		var action: Button = Button.new()
+		action.text = action_text
+		if tutorial_active and tutorial_step < TUTORIAL_ACTIONS.size():
+			var action_id: String = "trim" if action_text == "TRIM BY HAND" else ("bag" if action_text == "BAG BY HAND" else "store")
+			action.disabled = strain_name != tutorial_harvest_strain or TUTORIAL_ACTIONS[tutorial_step] != action_id
+		action.custom_minimum_size = Vector2(174, 48)
+		action.pressed.connect(action_callable.bind(strain_name))
+		var row: HBoxContainer = parts["row"] as HBoxContainer
+		row.add_child(action)
+	if not found_any:
+		var empty: Label = Label.new()
+		empty.text = "Nothing waiting here."
+		empty.modulate = Color(1.0, 1.0, 1.0, 0.52)
+		bagging_list.add_child(empty)
+
+func _trim_product(strain_name: String) -> void:
+	var amount: int = int(untrimmed_inventory.get(strain_name, 0))
+	if amount <= 0:
+		return
+	untrimmed_inventory[strain_name] = 0
+	_add_inventory(trimmed_inventory, strain_name, amount)
+	status_label.text = "Trimmed %dg of %s." % [amount, strain_name]
+	_refresh_bagging_panel()
+
+func _bag_product(strain_name: String) -> void:
+	var amount: int = int(trimmed_inventory.get(strain_name, 0))
+	if amount <= 0:
+		return
+	trimmed_inventory[strain_name] = 0
+	_add_inventory(bagged_inventory, strain_name, amount)
+	status_label.text = "Bagged %dg of %s. It still needs to be placed in storage." % [amount, strain_name]
+	_refresh_bagging_panel()
+
+func _store_product(strain_name: String) -> void:
+	if tutorial_active and strain_name != tutorial_harvest_strain:
+		status_label.text = "For the guide, use your harvested %s first." % tutorial_harvest_strain
+		return
+	if not _tutorial_can_do("store"):
+		return
+	var amount: int = int(bagged_inventory.get(strain_name, 0))
+	if amount <= 0:
+		return
+	var free_capacity: int = maxi(0, _storage_capacity() - _total_stored_stock())
+	var moved: int = mini(amount, free_capacity)
+	if moved <= 0:
+		status_label.text = "Storage is full. Upgrade in Central Market checkout (up to the 400g AFB vault)."
+		return
+	bagged_inventory[strain_name] = amount - moved
+	_ensure_product_exists(strain_name)
+	var data: Dictionary = products[strain_name]
+	var old_stock: int = int(data.get("stock", 0))
+	data["stock"] = old_stock + moved
+	if tutorial_active and tutorial_step == 8 and strain_name == tutorial_harvest_strain:
+		data["listed"] = false
+	products[strain_name] = data
+	_increment_advancement_stat("grams_stored", moved)
+	_tutorial_record("store", -1, strain_name)
+	status_label.text = "Placed %dg of %s in storage. It can now be listed on the phone." % [moved, strain_name]
+	_save_game()
+	_refresh_bagging_panel()
+	_refresh_phone()
+	_schedule_next_customer(true)
+
+func _open_storage_panel() -> void:
+	if storage_level >= 5:
+		_set_hidden_stash_open(true)
+		await get_tree().create_timer(0.28).timeout
+	elif storage_vault != null and storage_level >= 4:
+		storage_vault.turn_handle()
+	storage_panel.visible = true
+	_set_world_controls_visible(false)
+	_refresh_storage_panel()
+
+func _close_storage_panel() -> void:
+	_cancel_phone_gesture()
+	storage_panel.visible = false
+	if storage_level >= 5:
+		_set_hidden_stash_open(false)
+	_go_to_view("main_storage")
+	_set_world_controls_visible(true)
+	status_label.text = "You close the hidden stash." if storage_level >= 5 else "You step back from storage."
+
+func _open_dealer_storage_panel() -> void:
+	if dealer_storage_panel == null:
+		status_label.text = "Dealer Storage panel failed to initialize."
+		return
+	dealer_storage_panel.visible = true
+	dealer_storage_panel.move_to_front()
+	_set_world_controls_visible(false)
+	_refresh_dealer_storage_panel()
+	status_label.text = "Dealer Storage opened."
+
+func _close_dealer_storage_panel() -> void:
+	dealer_storage_reopen_after_pause = false
+	if dealer_storage_scroll != null:
+		dealer_storage_scroll.cancel_touch()
+	if dealer_locker_level >= 3:
+		_set_premium_dealer_locker_open(false)
+	dealer_storage_panel.visible = false
+	_go_to_view("main_workbench")
+	_set_world_controls_visible(true)
+
+func _dealer_storage_transfer(strain: String, amount: int, moving_in: bool) -> void:
+	if moving_in:
+		_dealer_locker_add_from_storage(strain, amount)
+	else:
+		_dealer_locker_remove_to_storage(strain, amount)
+	_refresh_dealer_storage_panel()
+
+func _dealer_storage_row(parent: VBoxContainer, strain: String, storage_amount: int, dealer_amount: int) -> void:
+	var parts: Dictionary = _make_inventory_card("bag")
+	var card: PanelContainer = parts["card"] as PanelContainer
+	var content: VBoxContainer = parts["content"] as VBoxContainer
+	parent.add_child(card)
+
+	var title: Label = Label.new()
+	title.text = strain
+	title.add_theme_font_size_override("font_size", 20)
+	content.add_child(title)
+
+	var detail: Label = Label.new()
+	detail.text = "Storage %dg   |   Dealer %dg" % [storage_amount, dealer_amount]
+	detail.modulate = Color("b8c3c9")
+	content.add_child(detail)
+
+	var controls: HBoxContainer = HBoxContainer.new()
+	controls.add_theme_constant_override("separation", 5)
+	content.add_child(controls)
+
+	for qty: int in [1, 5]:
+		var add_button: Button = Button.new()
+		add_button.text = "+%d" % qty
+		add_button.custom_minimum_size = Vector2(72, 42)
+		add_button.disabled = storage_amount <= 0 or _dealer_locker_free_capacity() <= 0
+		add_button.pressed.connect(_dealer_storage_transfer.bind(strain, qty, true))
+		controls.add_child(add_button)
+
+	var max_button: Button = Button.new()
+	max_button.text = "MAX"
+	max_button.custom_minimum_size = Vector2(76, 42)
+	max_button.disabled = storage_amount <= 0 or _dealer_locker_free_capacity() <= 0
+	max_button.pressed.connect(_dealer_storage_transfer.bind(strain, 999999, true))
+	controls.add_child(max_button)
+
+	for qty: int in [1, 5]:
+		var remove_button: Button = Button.new()
+		remove_button.text = "-%d" % qty
+		remove_button.custom_minimum_size = Vector2(72, 42)
+		remove_button.disabled = dealer_amount <= 0
+		remove_button.pressed.connect(_dealer_storage_transfer.bind(strain, qty, false))
+		controls.add_child(remove_button)
+
+	var all_button: Button = Button.new()
+	all_button.text = "ALL"
+	all_button.custom_minimum_size = Vector2(76, 42)
+	all_button.disabled = dealer_amount <= 0
+	all_button.pressed.connect(_dealer_storage_transfer.bind(strain, 999999, false))
+	controls.add_child(all_button)
+
+func _refresh_dealer_storage_panel() -> void:
+	if dealer_storage_list == null:
+		return
+	if dealer_storage_scroll != null and dealer_storage_scroll.is_gesture_busy():
+		return
+	_clear_children(dealer_storage_list)
+
+	var summary: Label = Label.new()
+	summary.text = "DEALER STORAGE %s   |   %dg / %dg
++ moves product into Dealer Storage. - moves it back to normal Storage." % ["LOCKED" if dealer_locker_level <= 0 else _roman(dealer_locker_level), _dealer_locker_total(), _dealer_locker_capacity()]
+	summary.add_theme_font_size_override("font_size", 20)
+	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	dealer_storage_list.add_child(summary)
+
+	if dealer_locker_level <= 0:
+		var locked: Label = Label.new()
+		locked.text = "Unlock Dealer Locker I in Central Market checkout."
+		dealer_storage_list.add_child(locked)
+		return
+
+	var strains: Array[String] = []
+	for key_variant: Variant in products.keys():
+		var strain: String = str(key_variant)
+		if _available_amount(strain) > 0 and not strains.has(strain):
+			strains.append(strain)
+	for key_variant: Variant in locker_weed.keys():
+		var strain: String = str(key_variant)
+		if int(locker_weed.get(strain, 0)) > 0 and not strains.has(strain):
+			strains.append(strain)
+	strains.sort()
+
+	if strains.is_empty():
+		var empty: Label = Label.new()
+		empty.text = "No packaged product is available in normal Storage or Dealer Storage."
+		empty.modulate = Color(1.0, 1.0, 1.0, 0.58)
+		dealer_storage_list.add_child(empty)
+		return
+
+	for strain: String in strains:
+		_dealer_storage_row(dealer_storage_list, strain, _available_amount(strain), maxi(0, int(locker_weed.get(strain, 0))))
+
+func _open_supply_inventory_panel() -> void:
+	if supply_inventory_panel == null:
+		return
+	supply_inventory_panel.visible = true
+	_set_world_controls_visible(false)
+	_refresh_supply_inventory_panel()
+
+func _close_supply_inventory_panel() -> void:
+	_cancel_phone_gesture()
+	if supply_inventory_panel != null:
+		supply_inventory_panel.visible = false
+	_go_to_view("grow_supply_shelf")
+	_set_world_controls_visible(true)
+	status_label.text = "You step back from the grow supply shelf."
+
+func _refresh_supply_inventory_panel() -> void:
+	if supply_inventory_list == null:
+		return
+	_clear_children(supply_inventory_list)
+	var summary: Label = Label.new()
+	summary.text = "SUPPLY SHELF LV %d\nSeeds %d / %d    |    Fertilizer %d / %d uses" % [supply_shelf_level, _total_seed_inventory(), _supply_seed_capacity(), fertilizer_units, _supply_fertilizer_capacity()]
+	summary.add_theme_font_size_override("font_size", 21)
+	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	supply_inventory_list.add_child(summary)
+
+	var fertilizer_parts: Dictionary = _make_inventory_card("fertilizer")
+	var fertilizer_card: PanelContainer = fertilizer_parts["card"] as PanelContainer
+	var fertilizer_content: VBoxContainer = fertilizer_parts["content"] as VBoxContainer
+	supply_inventory_list.add_child(fertilizer_card)
+	var fertilizer_title: Label = Label.new()
+	fertilizer_title.text = "Fertilizer"
+	fertilizer_title.add_theme_font_size_override("font_size", 20)
+	fertilizer_content.add_child(fertilizer_title)
+	var fertilizer_detail: Label = Label.new()
+	fertilizer_detail.text = "%d uses stored  |  %d free" % [fertilizer_units, maxi(0, _supply_fertilizer_capacity() - fertilizer_units)]
+	fertilizer_detail.modulate = Color("aeb9c0")
+	fertilizer_content.add_child(fertilizer_detail)
+
+	var seed_heading: Label = Label.new()
+	seed_heading.text = "SEEDS"
+	seed_heading.add_theme_font_size_override("font_size", 19)
+	seed_heading.modulate = Color("aeb9c0")
+	supply_inventory_list.add_child(seed_heading)
+	var any_seed: bool = false
+	for seed_name: String in SEED_ORDER:
+		var count: int = maxi(0, int(seed_inventory.get(seed_name, 0)))
+		if count <= 0:
+			continue
+		any_seed = true
+		var seed_parts: Dictionary = _make_inventory_card("seed")
+		var card: PanelContainer = seed_parts["card"] as PanelContainer
+		var content: VBoxContainer = seed_parts["content"] as VBoxContainer
+		supply_inventory_list.add_child(card)
+		var title: Label = Label.new()
+		title.text = seed_name
+		title.add_theme_font_size_override("font_size", 20)
+		content.add_child(title)
+		var detail: Label = Label.new()
+		detail.text = "%d seed%s on shelf" % [count, "" if count == 1 else "s"]
+		detail.modulate = Color("aeb9c0")
+		content.add_child(detail)
+	if not any_seed:
+		var empty: Label = Label.new()
+		empty.text = "No seeds stored. Buy them in Phone -> Shop -> Seeds."
+		empty.modulate = Color(1.0, 1.0, 1.0, 0.58)
+		empty.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		supply_inventory_list.add_child(empty)
+
+	var upgrade: Label = Label.new()
+	if supply_shelf_level >= 3:
+		upgrade.text = "Shelf fully upgraded."
+	else:
+		upgrade.text = "More capacity available in Central Market checkout."
+	upgrade.modulate = Color("91c59d")
+	upgrade.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	supply_inventory_list.add_child(upgrade)
+
+func _refresh_storage_panel() -> void:
+	if storage_scroll != null and storage_scroll.is_gesture_busy():
+		storage_refresh_pending = true
+		return
+	storage_refresh_pending = false
+	storage_refresh_revision += 1
+	var restore_y: int = storage_scroll.scroll_vertical if storage_scroll != null else 0
+	_clear_station_list(storage_list)
+	_restore_station_list_scroll.call_deferred("storage", restore_y, storage_refresh_revision)
+	var capacity_header: Label = Label.new()
+	capacity_header.text = "%s   |   %dg / %dg stored\n%dg free" % ["HIDDEN WALL STASH" if storage_level >= 5 else ("AFB VAULT" if storage_level >= 4 else "STORAGE LEVEL %d" % storage_level), _total_stored_stock(), _storage_capacity(), maxi(0, _storage_capacity() - _total_stored_stock())]
+	capacity_header.add_theme_font_size_override("font_size", 19)
+	capacity_header.modulate = Color("aeb9c0")
+	storage_list.add_child(capacity_header)
+	var total: int = 0
+	for name_variant in products.keys():
+		var strain_name: String = str(name_variant)
+		var data: Dictionary = products[strain_name]
+		var stock: int = int(data.get("stock", 0))
+		if stock <= 0:
+			continue
+		total += stock
+		var parts: Dictionary = _make_inventory_card("bag")
+		var card: PanelContainer = parts["card"] as PanelContainer
+		var content: VBoxContainer = parts["content"] as VBoxContainer
+		storage_list.add_child(card)
+		var title: Label = Label.new()
+		title.text = strain_name
+		title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		title.add_theme_font_size_override("font_size", 21)
+		content.add_child(title)
+		var details: Label = Label.new()
+		details.text = "%dg bagged   |   %s Grade   |   $%d/g" % [stock, str(data.get("grade", "B")), _effective_price(strain_name)]
+		details.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		details.modulate = Color("b3bec5")
+		content.add_child(details)
+		var state: Label = Label.new()
+		state.text = "LISTED ON PHONE" if bool(data.get("listed", false)) else "HIDDEN FROM STOREFRONT"
+		state.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		state.modulate = Color("8ed6a3") if bool(data.get("listed", false)) else Color("8f9aa1")
+		content.add_child(state)
+	if total <= 0:
+		var empty: Label = Label.new()
+		empty.text = "Storage is empty. Trim and bag product at the workbench, then place the finished bags here."
+		empty.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		storage_list.add_child(empty)
+	else:
+		var total_label: Label = Label.new()
+		total_label.text = "Currently stored: %dg / %dg" % [total, _storage_capacity()]
+		total_label.add_theme_font_size_override("font_size", 18)
+		storage_list.add_child(total_label)
+
+func _add_inventory(inventory: Dictionary, strain_name: String, amount: int) -> void:
+	var old_amount: int = int(inventory.get(strain_name, 0))
+	inventory[strain_name] = old_amount + amount
+
+func _ensure_product_exists(strain_name: String) -> void:
+	if products.has(strain_name):
+		return
+	if seed_catalog.has(strain_name):
+		var info: Dictionary = seed_catalog[strain_name]
+		products[strain_name] = {
+			"grade": str(info.get("grade", "B")),
+			"stock": 0,
+			"price": int(info.get("price", 14)),
+			"listed": false,
+			"reserved": 0,
+			"profile": str(info.get("profile", "custom"))
+		}
+		return
+	products[strain_name] = {"grade": "B", "stock": 0, "price": 14, "listed": false, "reserved": 0, "profile": "custom"}
+
+
+func _toggle_phone() -> void:
+	if session_paused or daily_report_pending:
+		return
+	if sale_panel.visible or grow_panel.visible or (plant_direct_panel != null and plant_direct_panel.visible) or bagging_panel.visible or storage_panel.visible or (supply_inventory_panel != null and supply_inventory_panel.visible) or (system_control_panel != null and system_control_panel.visible) or trim_panel.visible or bag_minigame_panel.visible or (tutorial_panel != null and tutorial_panel.visible):
+		return
+	_cancel_phone_gesture()
+	phone_open = not phone_open
+	phone_panel.visible = phone_open
+	_set_world_controls_visible(not phone_open)
+	if phone_open:
+		phone_current_app = "home"
+		_refresh_phone()
+	_refresh_tutorial_coach()
+
+func _phone_go_home() -> void:
+	_open_phone_app("home")
+
+func _phone_parent_app(app_name: String) -> String:
+	if app_name in ["bills","stats","heat","business"]:return "budshop"
+	if app_name in ["seeds", "supplies"]:
+		return "shop"
+	if app_name in ["bills", "employees", "upgrades"]:
+		return "business"
+	if app_name == "account":
+		return "settings"
+	return "home"
+
+func _phone_go_back() -> void:
+	if neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.crew!=null and phone_current_app=="texts" and not neighborhood.location_ops.crew.thread.is_empty():
+		neighborhood.location_ops.crew.back()
+		return
+	_open_phone_app(_phone_parent_app(phone_current_app))
+
+func _open_phone_app(app_name: String) -> void:
+	if neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.crew!=null and app_name=="texts":neighborhood.location_ops.crew.thread=""
+	if neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.redirect(app_name):return
+	if app_name in ["lights","business"]:app_name="budshop"
+	_cancel_phone_gesture()
+	phone_scroll.scroll_vertical = 0
+	phone_current_app = app_name
+	if app_name == "supplies":
+		_tutorial_record("supplies")
+	_refresh_phone()
+	if app_name == "leaderboard":
+		call_deferred("_open_web_leaderboard")
+	phone_scroll.scroll_vertical = 0
+	_refresh_tutorial_coach()
+
+func _refresh_phone() -> void:
+	if neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.refresh_management():return
+	if phone_list == null:
+		return
+	if phone_current_app in ["lights","business"]:phone_current_app="budshop"
+	var chapter_four_changed: bool = _sync_chapter_four_story()
+	if chapter_four_changed:
+		_save_game()
+	if phone_scroll.is_gesture_busy():
+		phone_refresh_pending = true
+		return
+	phone_refresh_pending = false
+	var restore_y: int = phone_scroll.scroll_vertical
+	phone_refresh_revision += 1
+	for old_child: Node in phone_list.get_children():
+		phone_list.remove_child(old_child)
+		old_child.queue_free()
+	phone_back_button.visible = phone_current_app != "home"
+	phone_back_button.tooltip_text = "Back to " + _phone_parent_app(phone_current_app).capitalize()
+	phone_status_label.text = "LV %d   |   $%d   |   REP %d   |   HEAT %d" % [grower_level, cash, reputation, int(round(heat))]
+	if phone_clock_label != null:
+		phone_clock_label.text = _format_game_clock()
+	match phone_current_app:
+		"budshop":
+			phone_title.text = "Illegal Businesses"
+			_build_budshop_app()
+		"texts":
+			phone_title.text = "Texts"
+			_build_texts_app()
+		"task":
+			phone_title.text = "Tasks & Rewards"
+			_build_task_app()
+		"leaderboard":
+			phone_title.text = "Leaderboard"
+			_build_leaderboard_app()
+		"settings":
+			phone_title.text = "Settings"
+			_build_settings_app()
+		"account":
+			phone_title.text = "Account"
+			_build_account_app()
+		"shop":
+			phone_title.text = "Store"
+			_build_shop_app()
+		"bills":
+			phone_title.text = "Bills"
+			_build_bills_app()
+		"employees":
+			phone_title.text = "Apartment · Employees"
+			_build_employees_app()
+		"upgrades":
+			phone_title.text = "Apartment · Equipment"
+			_build_upgrades_app()
+		"products":
+			phone_title.text = "Apartment · Inventory"
+			_build_products_app()
+		"seeds":
+			phone_title.text = "Seeds"
+			_build_seed_shop_app()
+		"supplies":
+			phone_title.text = "Supplies"
+			_build_supplies_app()
+		"business":
+			phone_title.text = "Business"
+			_build_business_app()
+		"clients":
+			phone_title.text = "Clients"
+			_build_clients_app()
+		"stats":
+			phone_title.text = "Stats"
+			_build_stats_app()
+		"genetics":
+			phone_title.text = "Apartment · Genetics"
+			_build_genetics_app()
+		"advancements":
+			phone_title.text = "Rewards"
+			_build_advancements_app()
+		"lights":
+			phone_title.text = "Lights & Power"
+			_populate_utility_controls(phone_list)
+		"help":
+			phone_title.text = "How to Play"
+			_build_help_app()
+		"heat":
+			phone_title.text = "Heat"
+			_build_heat_app()
+		"system":
+			phone_title.text = "System"
+			_build_system_app()
+		_:
+			phone_title.text = "AFewBuds"
+			_build_phone_home()
+	_restore_phone_scroll.call_deferred(restore_y, phone_current_app, phone_refresh_revision)
+
+func _build_leaderboard_app() -> void:
+	var intro: Label = Label.new()
+	intro.text = "GLOBAL LEADERBOARD"
+	intro.add_theme_font_size_override("font_size", 22)
+	phone_list.add_child(intro)
+	var detail: Label = Label.new()
+	detail.text = "Compare AFewBuds players by Lifetime or Weekly stats. Rankings are shown highest to lowest. Tap a player in the leaderboard to view their public career stats."
+	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	detail.modulate = Color("b8c5ca")
+	phone_list.add_child(detail)
+	var open_button: Button = Button.new()
+	open_button.text = "OPEN LEADERBOARD"
+	open_button.custom_minimum_size.y = 62
+	open_button.add_theme_font_size_override("font_size", 19)
+	open_button.pressed.connect(_open_web_leaderboard)
+	phone_list.add_child(open_button)
+
+func _open_web_leaderboard() -> void:
+	if not OS.has_feature("web"):
+		status_label.text = "Global leaderboard is available in the AFewBuds web/cloud build."
+		return
+	JavaScriptBridge.eval("window.AFB_LEADERBOARD && window.AFB_LEADERBOARD.open();", true)
+
+func _restore_phone_scroll(restore_y: int, app_name: String, revision: int) -> void:
+	await get_tree().process_frame
+	if revision != phone_refresh_revision or app_name != phone_current_app or phone_scroll.is_gesture_busy():
+		return
+	phone_scroll.scroll_vertical = restore_y
+
+func _cancel_phone_gesture() -> void:
+	for scroll: PhoneTouchScroll in [phone_scroll, bagging_scroll, storage_scroll, dealer_storage_scroll, supply_inventory_scroll]:
+		if scroll != null:
+			scroll.cancel_touch()
+
+func _build_budshop_app() -> void:
+	var card := PanelContainer.new()
+	card.add_theme_stylebox_override("panel",_style_box(Color("152029"),Color("33434f"),16,1))
+	phone_list.add_child(card)
+	var box := VBoxContainer.new()
+	card.add_child(box)
+	var status := Label.new()
+	status.text="APARTMENT\nStorefront: %s" % ("LAYING LOW" if lay_low_active else ("OPEN" if business_open else "AWAY"))
+	status.add_theme_font_size_override("font_size",20)
+	status.modulate=Color("8ed6a3") if business_open and not lay_low_active else Color("e1b07a")
+	box.add_child(status)
+	var note := Label.new()
+	note.text="Manage this operation at its apartment computer. Text assigned crew through Contacts for remote commands."
+	note.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(note)
+	var house := Label.new()
+	house.text="House: not acquired."
+	phone_list.add_child(house)
+	var grid: GridContainer=_phone_category_grid()
+	_add_phone_app_tile(grid,"","Bills","Rent, utilities & balances","bills")
+	_add_phone_app_tile(grid,"","Heat","%s | %d/100" % [_heat_stage_name(),int(round(heat))],"heat")
+	_add_phone_app_tile(grid,"","Stats","Progress & revenue","stats")
+
+func _build_settings_app() -> void:
+	var intro: Label = Label.new()
+	intro.text = "Help, account, saves and system controls."
+	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	phone_list.add_child(intro)
+	var grid: GridContainer = _phone_category_grid()
+	_add_phone_app_tile(grid, "", "Help", "Basics & controls", "help")
+	_add_phone_app_tile(grid, "", "Account", "Username, password, email & updates", "account")
+	_add_phone_app_tile(grid, "", "System", "Save game & safe quit", "system")
+
+func _build_task_app() -> void:
+	_build_story_progress_section()
+	var grid: GridContainer = _phone_category_grid()
+	_add_phone_app_tile(grid, "", "Advancements", "Roadmap + %d reward%s ready" % [_advancement_ready_count(), "" if _advancement_ready_count() == 1 else "s"], "advancements")
+
+	# Task uses the same fixed-width containment as the Advancements page.
+	# Long chapter/objective copy must wrap inside the phone instead of
+	# increasing the minimum width of the phone/game viewport.
+	_constrain_advancement_phone_width(phone_list)
+	phone_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	phone_list.custom_minimum_size.x = 0.0
+	phone_list.queue_sort()
+	phone_scroll.queue_sort()
+
+func _build_phone_home() -> void:
+	var summary: Label = Label.new()
+	summary.text = "DAY %d  |  %s\n$%d cash   |   Level %d   |   Storefront %s" % [game_day, _format_game_clock(), cash, grower_level, "LAYING LOW" if lay_low_active else ("OPEN" if business_open else "AWAY")]
+	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	summary.add_theme_font_size_override("font_size", 21)
+	phone_list.add_child(summary)
+	var grid: GridContainer = _phone_category_grid()
+	_add_phone_app_tile(grid, "", "Illegal Businesses", "Storefront status, bills & stats", "budshop")
+	_add_phone_app_tile(grid, "", "Store", "Seed orders & market info", "shop")
+	_add_phone_app_tile(grid, "", "Contacts", "Clients, crew & messages", "clients")
+	_add_phone_app_tile(grid, "", "Messages", ("%d unread" % phone_text_unread) if phone_text_unread > 0 else "Crew & story messages", "texts")
+	_add_phone_app_tile(grid, "", "Tasks & Rewards", "Chapters, goals & rewards", "task")
+	_add_phone_app_tile(grid, "", "Leaderboard", "Weekly & lifetime rankings", "leaderboard")
+	_add_phone_app_tile(grid, "", "Settings", "Help & system controls", "settings")
+
+func _build_account_app() -> void:
+	var title: Label = Label.new()
+	title.text = "AFewBuds Account"
+	title.add_theme_font_size_override("font_size", 22)
+	phone_list.add_child(title)
+	var detail: Label = Label.new()
+	detail.text = "Change your username to an available name, update your email and update-email preference, or change your password. Your career stays attached to the same account."
+	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	detail.modulate = Color("b8c5ca")
+	phone_list.add_child(detail)
+	var recovery: Label = Label.new()
+	recovery.text = "IMPORTANT: Add an email to your account so you can recover your password if you forget it."
+	recovery.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	recovery.modulate = Color("d8c99e")
+	phone_list.add_child(recovery)
+	var open_button: Button = Button.new()
+	open_button.text = "OPEN ACCOUNT SETTINGS"
+	open_button.custom_minimum_size.y = 62
+	open_button.add_theme_font_size_override("font_size", 19)
+	open_button.pressed.connect(_open_web_account_settings)
+	phone_list.add_child(open_button)
+
+func _open_web_account_settings() -> void:
+	if not OS.has_feature("web"):
+		status_label.text = "Account settings are available in the AFewBuds web/cloud build."
+		return
+	JavaScriptBridge.eval("window.AFB_ACCOUNT_SETTINGS && window.AFB_ACCOUNT_SETTINGS.open();", true)
+
+func _build_system_app() -> void:
+	var intro: Label = Label.new()
+	intro.text = "SAVE & SESSION"
+	intro.add_theme_font_size_override("font_size", 22)
+	phone_list.add_child(intro)
+
+	var detail: Label = Label.new()
+	detail.text = "AFewBuds saves automatically during play. Use SAVE GAME whenever you want an extra manual save before switching devices or closing the game. Signed-in web players are backed up to the same AFewBuds account automatically."
+	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	detail.add_theme_font_size_override("font_size", 17)
+	detail.modulate = Color("b8c5ca")
+	phone_list.add_child(detail)
+
+	var save_card: PanelContainer = PanelContainer.new()
+	save_card.add_theme_stylebox_override("panel", _style_box(Color("14201a"), Color("3f7654"), 16, 1))
+	phone_list.add_child(save_card)
+	var save_box: VBoxContainer = VBoxContainer.new()
+	save_box.add_theme_constant_override("separation", 10)
+	save_card.add_child(save_box)
+	var save_title: Label = Label.new()
+	save_title.text = "Manual save"
+	save_title.add_theme_font_size_override("font_size", 20)
+	save_box.add_child(save_title)
+	var save_note: Label = Label.new()
+	save_note.text = "Writes your current career to this device immediately. If you are signed in on the web build, that save is then synced to your cloud account in the background."
+	save_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	save_note.modulate = Color("b6c4bc")
+	save_box.add_child(save_note)
+	var save_button: Button = Button.new()
+	save_button.text = "SAVE GAME"
+	save_button.custom_minimum_size.y = 62
+	save_button.add_theme_font_size_override("font_size", 19)
+	save_button.pressed.connect(_phone_manual_save)
+	save_box.add_child(save_button)
+
+	var quit_card: PanelContainer = PanelContainer.new()
+	quit_card.add_theme_stylebox_override("panel", _style_box(Color("201b17"), Color("775f43"), 16, 1))
+	phone_list.add_child(quit_card)
+	var quit_box: VBoxContainer = VBoxContainer.new()
+	quit_box.add_theme_constant_override("separation", 10)
+	quit_card.add_child(quit_box)
+	var quit_title: Label = Label.new()
+	quit_title.text = "Sleep / safe quit"
+	quit_title.add_theme_font_size_override("font_size", 20)
+	quit_box.add_child(quit_title)
+	var quit_note: Label = Label.new()
+	quit_note.text = "Saves first, pauses the day and visitors, and prepares your session to close safely. Existing crops follow the normal away-time rules. Nothing is deleted, and RESUME GAME brings you straight back."
+	quit_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	quit_note.modulate = Color("c9bdad")
+	quit_box.add_child(quit_note)
+	var quit_button: Button = Button.new()
+	quit_button.text = "SAVE & SLEEP / QUIT"
+	quit_button.custom_minimum_size.y = 62
+	quit_button.add_theme_font_size_override("font_size", 19)
+	quit_button.pressed.connect(_phone_safe_quit)
+	quit_box.add_child(quit_button)
+
+func _phone_manual_save() -> void:
+	_save_game()
+	_show_save_notification("GAME SAVED", "Saved locally. Cloud backup updates automatically while signed in.")
+	_refresh_phone()
+
+func _phone_safe_quit() -> void:
+	_save_game()
+	_show_save_notification("GAME SAVED", "Career saved. AFewBuds is safe to close.")
+	phone_open = false
+	phone_panel.visible = false
+	_set_world_controls_visible(true)
+	_pause_gameplay("Game saved. It is safe to close AFewBuds now. Resume whenever you return.")
+
+func _phone_category_grid() -> GridContainer:
+	var grid: GridContainer = GridContainer.new()
+	grid.columns = 2
+	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	grid.add_theme_constant_override("h_separation", 10)
+	grid.add_theme_constant_override("v_separation", 10)
+	phone_list.add_child(grid)
+	return grid
+
+func _build_shop_app() -> void:
+	if neighborhood!=null and neighborhood.location_ops!=null:neighborhood.location_ops.order_summary(phone_list)
+	var intro: Label = Label.new()
+	intro.text = "Order seeds and fertilizer here for Central Market pickup. Equipment is sold at its checkout. Detailed operation management is at your property computer."
+	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	phone_list.add_child(intro)
+	var grid: GridContainer = _phone_category_grid()
+	_add_phone_app_tile(grid, "", "Supplies", "Fertilizer orders & pickup", "supplies")
+	_add_phone_app_tile(grid, "", "Seed Orders", "Order for Central Market pickup", "seeds")
+
+func _add_phone_app_tile(parent: GridContainer, icon_text: String, title_text: String, detail_text: String, app_name: String) -> void:
+	var tile: Button = Button.new()
+	tile.set_meta("phone_app", app_name)
+	tile.text = "%s   %s\n%s" % [icon_text, title_text.to_upper(), detail_text]
+	tile.custom_minimum_size = Vector2(0, 116)
+	tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tile.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	tile.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tile.add_theme_font_size_override("font_size", 17)
+	tile.add_theme_color_override("font_color", Color("edf2f4"))
+	tile.add_theme_color_override("font_hover_color", Color("ffffff"))
+	tile.add_theme_stylebox_override("normal", _style_box(Color("151d24"), Color("354550"), 18, 2))
+	tile.add_theme_stylebox_override("hover", _style_box(Color("1b2831"), Color("5c7685"), 18, 2))
+	tile.add_theme_stylebox_override("pressed", _style_box(Color("22333d"), Color("88a3b1"), 18, 2))
+	tile.add_theme_stylebox_override("focus", _style_box(Color("18232b"), Color("88a3b1"), 18, 2))
+	tile.pressed.connect(_open_phone_app.bind(app_name))
+	parent.add_child(tile)
+
+func _build_products_app() -> void:
+	var intro: Label = Label.new()
+	intro.text = "Manage bagged inventory, storefront listings, prices and reserved stock here."
+	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	phone_list.add_child(intro)
+
+	for name_variant in products.keys():
+		var product_name: String = str(name_variant)
+		var data: Dictionary = products[product_name]
+		var stock: int = int(data.get("stock", 0))
+		var reserved: int = int(data.get("reserved", 0))
+		var sellable: int = maxi(0, stock - reserved)
+		var card: PanelContainer = PanelContainer.new()
+		phone_list.add_child(card)
+		var row: VBoxContainer = VBoxContainer.new()
+		row.add_theme_constant_override("separation", 7)
+		card.add_child(row)
+		var head: HBoxContainer = HBoxContainer.new()
+		row.add_child(head)
+		var name_label: Label = Label.new()
+		name_label.text = product_name
+		name_label.add_theme_font_size_override("font_size", 21)
+		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		head.add_child(name_label)
+		var is_listed: bool = bool(data.get("listed", false))
+		var toggle: Button = Button.new()
+		toggle.text = "UNLIST" if is_listed else "LIST"
+		toggle.tooltip_text = "Remove from storefront" if is_listed else "Make available to customers"
+		toggle.custom_minimum_size = Vector2(132, 52)
+		toggle.disabled = stock <= 0 or not business_open
+		toggle.pressed.connect(_toggle_product_listing.bind(product_name))
+		head.add_child(toggle)
+		var effective_price: int = _effective_price(product_name)
+		var details: Label = Label.new()
+		details.text = "%s Grade   |   %dg stored   |   $%d/g   |   %dg available" % [str(data.get("grade", "B")), stock, effective_price, sellable]
+		row.add_child(details)
+		if stock > 0:
+			var reserve_row: HBoxContainer = HBoxContainer.new()
+			row.add_child(reserve_row)
+			var reserve_label: Label = Label.new()
+			reserve_label.text = "Reserve stock"
+			reserve_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			reserve_row.add_child(reserve_label)
+			var reserve: SpinBox = SpinBox.new()
+			reserve.min_value = 0
+			reserve.max_value = stock
+			reserve.step = 1
+			reserve.value = reserved
+			reserve.custom_minimum_size.x = 120
+			reserve.value_changed.connect(_on_reserved_changed.bind(product_name))
+			reserve_row.add_child(reserve)
+		else:
+			var empty: Label = Label.new()
+			empty.text = "OUT OF STOCK - harvest -> trim -> bag -> storage"
+			row.add_child(empty)
+
+func _build_seed_shop_app() -> void:
+	var intro: Label = Label.new()
+	intro.text = "Order seeds for pickup at Central Market. Shelf Lv %d: %d / %d seeds. Collect orders at checkout, then deposit carried seeds at your computer." % [supply_shelf_level, _total_seed_inventory(), _supply_seed_capacity()]
+	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	phone_list.add_child(intro)
+
+	var next_seed: String = _next_locked_seed_name()
+	if not next_seed.is_empty():
+		var next_info: Dictionary = seed_catalog[next_seed]
+		var next_unlock: Label = Label.new()
+		next_unlock.text = "NEXT GENETIC   |   %s at Grower Level %d" % [next_seed, int(next_info.get("unlock", 1))]
+		next_unlock.modulate = Color("d7c28a")
+		phone_list.add_child(next_unlock)
+
+	for seed_name in SEED_ORDER:
+		if not seed_catalog.has(seed_name):
+			continue
+		var info: Dictionary = seed_catalog[seed_name]
+		if bool(info.get("recipe_only", false)):
+			continue
+		var unlock_level: int = int(info.get("unlock", 1))
+		var cost: int = int(info.get("cost", 10))
+		var owned: int = int(seed_inventory.get(seed_name, 0))
+		var unlocked: bool = grower_level >= unlock_level
+		var card: PanelContainer = PanelContainer.new()
+		phone_list.add_child(card)
+		var row: VBoxContainer = VBoxContainer.new()
+		card.add_child(row)
+		var title: Label = Label.new()
+		title.text = "%s   |   %d owned" % [seed_name, owned]
+		title.add_theme_font_size_override("font_size", 20)
+		row.add_child(title)
+		var unlock_text: Label = Label.new()
+		unlock_text.text = "UNLOCKED   |   Grower Lv %d" % unlock_level if unlocked else "LOCKED   |   Reach Grower Lv %d" % unlock_level
+		unlock_text.modulate = Color("8ed6a3") if unlocked else Color("9ba3aa")
+		row.add_child(unlock_text)
+		var detail: Label = Label.new()
+		detail.text = "%s\nFinished base value: $%d/g   |   Grade %s" % [str(info.get("description", "Fictional game genetics.")), int(info.get("price", 14)), str(info.get("grade", "B"))]
+		detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		row.add_child(detail)
+		var buy: Button = Button.new()
+		if unlocked and not neighborhood.location_ops.total(location_state.pickup_seeds)<50:
+			buy.text = "ORDER LIMIT REACHED"
+		else:
+			buy.text = "ORDER 1 SEED   |   $%d" % cost if unlocked else "LOCKED UNTIL LEVEL %d" % unlock_level
+		buy.disabled = not unlocked or cash < cost or not neighborhood.location_ops.total(location_state.pickup_seeds)<50
+		buy.custom_minimum_size.y = 48
+		buy.pressed.connect(_buy_seed.bind(seed_name))
+		row.add_child(buy)
+
+func _next_locked_seed_name() -> String:
+	for seed_name in SEED_ORDER:
+		if not seed_catalog.has(seed_name):
+			continue
+		var info: Dictionary = seed_catalog[seed_name]
+		if bool(info.get("recipe_only", false)):
+			continue
+		if grower_level < int(info.get("unlock", 1)):
+			return seed_name
+	return ""
+
+func _build_supplies_app() -> void:
+	if not tutorial_active and neighborhood!=null and neighborhood.location_ops!=null:
+		neighborhood.location_ops.phone_supplies()
+		return
+	_add_fertilizer_stock_card()
+	var intro: Label = Label.new()
+	intro.text = "Fertilizer purchases are delivered to your grow-room supply shelf. Shelf upgrades are in Central Market checkout."
+	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	phone_list.add_child(intro)
+
+func _add_upgrade_family_card(parent: VBoxContainer, title_text: String, detail_text: String, next_supply: String) -> void:
+	var card: PanelContainer = PanelContainer.new()
+	card.add_theme_stylebox_override("panel", _style_box(Color("151b20"), Color("37434c"), 14, 1))
+	parent.add_child(card)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 7)
+	card.add_child(box)
+	var title: Label = Label.new()
+	title.text = title_text
+	title.add_theme_font_size_override("font_size", 21)
+	box.add_child(title)
+	var detail: Label = Label.new()
+	detail.text = detail_text
+	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	detail.modulate = Color("b8c3c9")
+	box.add_child(detail)
+	if next_supply.is_empty():
+		var maxed: Label = Label.new()
+		maxed.text = "MAX FOR CURRENT BUILD"
+		maxed.add_theme_font_size_override("font_size", 17)
+		maxed.modulate = Color("91c59d")
+		box.add_child(maxed)
+		return
+	var info: Dictionary = supply_catalog[next_supply]
+	var unlock_level: int = int(info.get("unlock", 1))
+	var cost: int = int(info.get("cost", 0))
+	var next_label: Label = Label.new()
+	next_label.text = "NEXT: %s
+%s" % [next_supply, str(info.get("description", ""))]
+	next_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	next_label.modulate = Color("d8e1e5")
+	box.add_child(next_label)
+	var buy: Button = Button.new()
+	buy.custom_minimum_size.y = 48
+	if grower_level < unlock_level:
+		buy.text = "LOCKED   |   LEVEL %d" % unlock_level
+		buy.disabled = true
+	else:
+		buy.text = "BUY NEXT   |   $%d" % cost
+		buy.disabled = cash < cost
+	buy.pressed.connect(_buy_supply.bind(next_supply))
+	box.add_child(buy)
+
+func _add_dealer_locker_family_card(parent: VBoxContainer) -> void:
+	var card: PanelContainer = PanelContainer.new()
+	card.add_theme_stylebox_override("panel", _style_box(Color("151b20"), Color("37434c"), 14, 1))
+	parent.add_child(card)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 7)
+	card.add_child(box)
+	var title: Label = Label.new()
+	title.text = "DEALER STORAGE"
+	title.add_theme_font_size_override("font_size", 21)
+	box.add_child(title)
+	var detail: Label = Label.new()
+	var tier_text: String = "NOT INSTALLED" if dealer_locker_level <= 0 else "Locker %s" % _roman(dealer_locker_level)
+	detail.text = "Current: %s
+Capacity: %dg   |   Stored: %dg" % [tier_text, _dealer_locker_capacity(), _dealer_locker_total()]
+	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	detail.modulate = Color("b8c3c9")
+	box.add_child(detail)
+	if dealer_locker_level >= 4:
+		var maxed: Label = Label.new()
+		maxed.text = "MAX FOR CURRENT BUILD"
+		maxed.add_theme_font_size_override("font_size", 17)
+		maxed.modulate = Color("91c59d")
+		box.add_child(maxed)
+		return
+	var next_level: int = dealer_locker_level + 1
+	var next_cost: int = DEALER_LOCKER_COST_BY_LEVEL[next_level]
+	var next_capacity: int = DEALER_LOCKER_CAPACITY_BY_LEVEL[next_level]
+	var next_label: Label = Label.new()
+	next_label.text = "NEXT: Dealer Locker %s   |   %dg" % [_roman(next_level), next_capacity]
+	next_label.modulate = Color("d8e1e5")
+	box.add_child(next_label)
+	var buy: Button = Button.new()
+	buy.text = "BUY NEXT   |   $%d" % next_cost
+	buy.disabled = cash < next_cost
+	buy.custom_minimum_size.y = 48
+	buy.pressed.connect(_buy_dealer_locker_upgrade)
+	box.add_child(buy)
+
+func _build_upgrades_app() -> void:
+	if not tutorial_active:
+		neighborhood.location_ops.equipment_ui(phone_list)
+		return
+	var intro: Label = Label.new()
+	intro.text = "Upgrade your operation one step at a time. Expandable systems stay visible even when maxed so future tiers can be added without the category disappearing."
+	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	phone_list.add_child(intro)
+
+	var equipment: Label = Label.new()
+	equipment.text = "CURRENT EQUIPMENT
+Grow tents %d / 3   |   Tent Lv %d   |   Plant slots %d
+Bagging Lv %d   |   Storage Lv %d (%dg)
+Supply Shelf Lv %d   |   Seeds %d/%d   |   Fertilizer %d/%d" % [grow_tent_count, tent_level, plant_slots.size(), bagging_level, storage_level, _storage_capacity(), supply_shelf_level, _total_seed_inventory(), _supply_seed_capacity(), fertilizer_units, _supply_fertilizer_capacity()]
+	equipment.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	phone_list.add_child(equipment)
+
+	var systems_heading: Label = Label.new()
+	systems_heading.text = "EXPANDABLE SYSTEMS"
+	systems_heading.add_theme_font_size_override("font_size", 19)
+	systems_heading.modulate = Color("aeb9c0")
+	phone_list.add_child(systems_heading)
+
+	var storage_name: String = "Storage I"
+	var storage_next: String = ""
+	match storage_level:
+		1: storage_next = "Storage Shelving II"
+		2:
+			storage_name = "Storage Shelving II"
+			storage_next = "Storage Shelving III"
+		3:
+			storage_name = "Storage Shelving III"
+			storage_next = VAULT_SUPPLY
+		4:
+			storage_name = "AFB Storage Vault"
+			storage_next = HIDDEN_STASH_SUPPLY
+		_:
+			storage_name = "Hidden Wall Stash"
+	_add_upgrade_family_card(phone_list, "STORAGE", "Current: %s
+Capacity: %dg   |   Stored: %dg" % [storage_name, _storage_capacity(), _total_stored_stock()], storage_next)
+
+	var shelf_next: String = ""
+	if supply_shelf_level == 1: shelf_next = "Grow Supply Shelf II"
+	elif supply_shelf_level == 2: shelf_next = "Grow Supply Shelf III"
+	_add_upgrade_family_card(phone_list, "GROW SUPPLY SHELF", "Current: Shelf %s
+Seeds: %d/%d   |   Fertilizer: %d/%d" % [_roman(supply_shelf_level), _total_seed_inventory(), _supply_seed_capacity(), fertilizer_units, _supply_fertilizer_capacity()], shelf_next)
+
+	var tent_next: String = ""
+	if grow_tent_count == 1: tent_next = "Grow Tent Slot 2"
+	elif grow_tent_count == 2: tent_next = "Grow Tent Slot 3"
+	_add_upgrade_family_card(phone_list, "GROW TENT SLOTS", "Installed: %d / 3
+Plant slots: %d   |   Tent equipment level: %d" % [grow_tent_count, plant_slots.size(), tent_level], tent_next)
+
+	var bagging_next: String = ""
+	if bagging_level <= 1: bagging_next = "Bagging Bench II"
+	elif bagging_level == 2: bagging_next = "Bagging Bench III"
+	var bagging_detail: String = "Current: Bench %s\nLevel III perk: continuous 1-4g manual bagging until the selected strain is fully packaged." % _roman(bagging_level)
+	_add_upgrade_family_card(phone_list, "BAGGING BENCH", bagging_detail, bagging_next)
+
+	_add_dealer_locker_family_card(phone_list)
+
+	var chain_names: Array[String] = ["Grow Supply Shelf II", "Grow Supply Shelf III", "Storage Shelving II", "Storage Shelving III", VAULT_SUPPLY, HIDDEN_STASH_SUPPLY, "Grow Tent Slot 2", "Grow Tent Slot 3", "Bagging Bench II", "Bagging Bench III"]
+	var installed: Array[String] = []
+	var available: Array[String] = []
+	for supply_variant: Variant in supply_catalog.keys():
+		var supply_name: String = str(supply_variant)
+		if supply_name == "Fertilizer Pack" or chain_names.has(supply_name):
+			continue
+		if _supply_is_purchased(supply_name):
+			installed.append(supply_name)
+		else:
+			available.append(supply_name)
+	installed.sort()
+	available.sort()
+
+	var installed_heading: Label = Label.new()
+	installed_heading.text = "INSTALLED EQUIPMENT"
+	installed_heading.add_theme_font_size_override("font_size", 19)
+	installed_heading.modulate = Color("aeb9c0")
+	phone_list.add_child(installed_heading)
+
+	var installed_card: PanelContainer = PanelContainer.new()
+	installed_card.add_theme_stylebox_override("panel", _style_box(Color("151b20"), Color("37434c"), 14, 1))
+	phone_list.add_child(installed_card)
+	var installed_box: VBoxContainer = VBoxContainer.new()
+	installed_box.add_theme_constant_override("separation", 5)
+	installed_card.add_child(installed_box)
+	if installed.is_empty():
+		var none: Label = Label.new()
+		none.text = "No standalone equipment installed yet."
+		installed_box.add_child(none)
+	else:
+		for item_name: String in installed:
+			var installed_row: Label = Label.new()
+			installed_row.text = "✓  %s" % item_name
+			installed_row.modulate = Color("91c59d")
+			installed_box.add_child(installed_row)
+
+	if available.is_empty():
+		return
+
+	var available_heading: Label = Label.new()
+	available_heading.text = "AVAILABLE EQUIPMENT"
+	available_heading.add_theme_font_size_override("font_size", 19)
+	available_heading.modulate = Color("aeb9c0")
+	phone_list.add_child(available_heading)
+
+	for supply_name: String in available:
+		var info: Dictionary = supply_catalog[supply_name]
+		var unlock_level: int = int(info.get("unlock", 1))
+		var cost: int = int(info.get("cost", 0))
+		var card: PanelContainer = PanelContainer.new()
+		card.add_theme_stylebox_override("panel", _style_box(Color("151b20"), Color("37434c"), 14, 1))
+		phone_list.add_child(card)
+		var box: VBoxContainer = VBoxContainer.new()
+		box.add_theme_constant_override("separation", 6)
+		card.add_child(box)
+		var title: Label = Label.new()
+		title.text = supply_name
+		title.add_theme_font_size_override("font_size", 20)
+		box.add_child(title)
+		var detail: Label = Label.new()
+		detail.text = str(info.get("description", "Operation upgrade."))
+		detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		box.add_child(detail)
+		var buy: Button = Button.new()
+		buy.custom_minimum_size.y = 48
+		if grower_level < unlock_level:
+			buy.text = "LOCKED   |   LEVEL %d" % unlock_level
+			buy.disabled = true
+		else:
+			buy.text = "BUY   |   $%d" % cost
+			buy.disabled = cash < cost
+		buy.pressed.connect(_buy_supply.bind(supply_name))
+		box.add_child(buy)
+
+func _build_business_app() -> void:
+	var property_note := Label.new()
+	property_note.text="APARTMENT · Active operation\nUse Bills here or open the complete apartment Business interface at its computer.\nHOUSE · Property opportunity; not yet acquired."
+	property_note.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	phone_list.add_child(property_note)
+	var summary: Label = Label.new()
+	summary.text = "GROWER LEVEL %d   |   XP %d / %d\nBrand Level %d   |   Reputation %d\nStorefront: %s" % [grower_level, grower_xp, _xp_needed_for_next_level(), brand_level, reputation, "OPEN" if business_open else "AWAY"]
+	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	summary.add_theme_font_size_override("font_size", 19)
+	phone_list.add_child(summary)
+	var grid: GridContainer = _phone_category_grid()
+	_add_phone_app_tile(grid, "", "Bills", "$%d outstanding" % (power_bill_due + water_bill_due + dealer_balance_due + (neighborhood.location_ops.balance() if neighborhood!=null and neighborhood.location_ops!=null else 0)), "bills")
+	if neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.rendering_management:neighborhood.location_ops.business_extras()
+
+func _build_bills_app() -> void:
+	if neighborhood!=null and neighborhood.location_ops!=null:neighborhood.location_ops.rent_ui(phone_list)
+	var intro: Label = Label.new()
+	intro.text = "Outstanding bills: $%d\nElectricity and water are property utilities. Today's wages and dealer cash are settled at daily closeout." % (power_bill_due + water_bill_due + dealer_balance_due + (neighborhood.location_ops.balance() if neighborhood!=null and neighborhood.location_ops!=null else 0))
+	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	phone_list.add_child(intro)
+
+	var electric_card: PanelContainer = PanelContainer.new()
+	phone_list.add_child(electric_card)
+	var electric_box: VBoxContainer = VBoxContainer.new()
+	electric_card.add_child(electric_box)
+	var electric_title: Label = Label.new()
+	electric_title.text = "ELECTRICITY"
+	electric_title.add_theme_font_size_override("font_size", 20)
+	electric_box.add_child(electric_title)
+	var electric_detail: Label = Label.new()
+	var ventilation_status: String = "NOT INSTALLED" if not ventilation_installed else ("ON" if ventilation_on else "OFF")
+	electric_detail.text = "Estimated today: $%d  |  Last bill: $%d  |  Balance due: $%d\nHome lights: %s  |  Lamp: %s\nGrow-room light: %s  |  Grow lights: %s  |  Ventilation: %s\n%d tent(s) powered\nGrow lights OFF = about %d%% normal growth. Ventilation unavailable/OFF = about %d%% normal growth." % [int(ceil(current_day_power_cost)), last_power_bill, power_bill_due, _on_off(main_ceiling_light_on), _on_off(floor_lamp_on), _on_off(grow_room_light_on), _on_off(grow_lights_on), ventilation_status, grow_tent_count, int(round(GROW_LIGHTS_OFF_GROWTH_MULTIPLIER * 100.0)), int(round(VENTILATION_INACTIVE_GROWTH_MULTIPLIER * 100.0))]
+	electric_detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	electric_box.add_child(electric_detail)
+	if power_bill_due > 0:
+		var pay_power: Button = Button.new()
+		pay_power.text = "PAY ELECTRIC BILL  |  $%d" % power_bill_due
+		pay_power.disabled = cash < power_bill_due
+		pay_power.custom_minimum_size.y = 50
+		pay_power.pressed.connect(_pay_power_bill)
+		electric_box.add_child(pay_power)
+
+	var water_card: PanelContainer = PanelContainer.new()
+	phone_list.add_child(water_card)
+	var water_box: VBoxContainer = VBoxContainer.new()
+	water_card.add_child(water_box)
+	var water_title: Label = Label.new()
+	water_title.text = "WATER / PLUMBING"
+	water_title.add_theme_font_size_override("font_size", 20)
+	water_box.add_child(water_title)
+	var water_detail: Label = Label.new()
+	water_detail.text = "Estimated today: $%d  |  Waterings today: %d\nLast bill: $%d  |  Balance due: $%d\nWater comes from the property plumbing automatically. Manual watering, Auto Water Kit and production-worker care each add $%d per watering." % [int(ceil(current_day_water_cost)), current_day_water_uses, last_water_bill, water_bill_due, int(WATER_COST_PER_WATERING)]
+	water_detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	water_box.add_child(water_detail)
+	if water_bill_due > 0:
+		var pay_water: Button = Button.new()
+		pay_water.text = "PAY WATER BILL  |  $%d" % water_bill_due
+		pay_water.disabled = cash < water_bill_due
+		pay_water.custom_minimum_size.y = 50
+		pay_water.pressed.connect(_pay_water_bill)
+		water_box.add_child(pay_water)
+
+	var dealer_card: PanelContainer = PanelContainer.new()
+	phone_list.add_child(dealer_card)
+	var dealer_box: VBoxContainer = VBoxContainer.new()
+	dealer_card.add_child(dealer_box)
+	var dealer_detail: Label = Label.new()
+	dealer_detail.text = "DEALER BALANCE\nOutstanding: $%d\nCash held for nightly drop-off: $%d" % [dealer_balance_due, dealer_cash_held]
+	dealer_detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	dealer_box.add_child(dealer_detail)
+	if dealer_balance_due > 0:
+		var pay_dealers: Button = Button.new()
+		pay_dealers.text = "PAY DEALER BALANCE  |  $%d" % dealer_balance_due
+		pay_dealers.disabled = cash < dealer_balance_due
+		pay_dealers.custom_minimum_size.y = 50
+		pay_dealers.pressed.connect(_pay_dealer_balance)
+		dealer_box.add_child(pay_dealers)
+	else:
+		var clear: Label = Label.new()
+		clear.text = "No outstanding dealer balance."
+		dealer_box.add_child(clear)
+
+func _build_employees_app() -> void:
+	var staff_header: Label = Label.new()
+	staff_header.text = "STAFF / DEALERS\nDaily payroll if active: $%d\nAuto Water equipment: %s" % [_staff_daily_payroll(), _on_off(auto_water_unlocked)]
+	staff_header.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	staff_header.add_theme_font_size_override("font_size", 18)
+	phone_list.add_child(staff_header)
+
+	var packer_card: PanelContainer = PanelContainer.new()
+	phone_list.add_child(packer_card)
+	var packer_box: VBoxContainer = VBoxContainer.new()
+	packer_card.add_child(packer_box)
+	var packer_title: Label = Label.new()
+	packer_title.text = production_worker_friend_name.to_upper() if not production_worker_friend_name.is_empty() else "PRODUCTION WORKER"
+	packer_title.add_theme_font_size_override("font_size", 20)
+	packer_box.add_child(packer_title)
+	var packer_detail: Label = Label.new()
+	packer_detail.text = "While playing: tends, harvests, trims, bags and stocks storage.\nWhile paused/away: an ON-DUTY worker only waters and fertilizes existing plants. Uses your stored fertilizer; no buying, new planting, harvesting or packing. Watering uses property water and adds to your Water Bill; it continues without fertilizer.\nHire: $%d  |  Daily wage: $%d\nStatus: %s  |  Today: %d tasks\nCurrent task: %s" % [PACKER_HIRE_COST, PACKER_DAILY_WAGE, "WORKING" if packing_employee_active else ("OFF DUTY" if packing_employee_hired else "NOT HIRED"), production_worker_tasks_today, production_worker_last_action]
+	packer_detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	packer_box.add_child(packer_detail)
+	var packer_button: Button = Button.new()
+	if not packing_employee_hired:
+		packer_button.text = "HIRE PRODUCTION WORKER  |  $%d" % PACKER_HIRE_COST
+		packer_button.disabled = grower_level < 5 or cash < PACKER_HIRE_COST
+		packer_button.pressed.connect(_hire_packing_employee)
+	else:
+		packer_button.text = "SEND WORKER HOME" if packing_employee_active else "PUT WORKER ON DUTY"
+		packer_button.pressed.connect(_toggle_packing_employee)
+	packer_button.custom_minimum_size.y = 52
+	packer_box.add_child(packer_button)
+	if packing_employee_hired:
+		var auto_plant_button: Button = Button.new()
+		auto_plant_button.text = "AUTO-PLANT (WHILE PLAYING): %s" % ("ON" if production_worker_auto_plant else "OFF")
+		auto_plant_button.custom_minimum_size.y = 48
+		auto_plant_button.pressed.connect(_toggle_production_worker_auto_plant)
+		packer_box.add_child(auto_plant_button)
+		var remove_worker_button: Button = Button.new()
+		if production_worker_friend_name.is_empty():
+			remove_worker_button.text = "FIRE PRODUCTION WORKER"
+			remove_worker_button.pressed.connect(_fire_packing_employee)
+		else:
+			remove_worker_button.text = "END %s'S PRODUCTION ROLE" % production_worker_friend_name.to_upper()
+			remove_worker_button.pressed.connect(_release_friend_staff.bind(production_worker_friend_name))
+		remove_worker_button.custom_minimum_size.y = 48
+		packer_box.add_child(remove_worker_button)
+
+	var dealer_card: PanelContainer = PanelContainer.new()
+	phone_list.add_child(dealer_card)
+	var dealer_box: VBoxContainer = VBoxContainer.new()
+	dealer_card.add_child(dealer_box)
+	var dealer_title: Label = Label.new()
+	dealer_title.text = "DEALER TEAM"
+	dealer_title.add_theme_font_size_override("font_size", 20)
+	dealer_box.add_child(dealer_title)
+	var eligible_clients: Array[Dictionary] = _dealer_eligible_customers()
+	var eligible_names: Array[String] = []
+	for eligible_customer: Dictionary in eligible_clients:
+		eligible_names.append(str(eligible_customer.get("name", "")))
+	var dealer_detail: Label = Label.new()
+	var friend_dealers: Array[String] = _friend_staff_names("dealer")
+	var dealer_staff_names: String = ", ".join(PackedStringArray(friend_dealers)) if not friend_dealers.is_empty() else "No friend dealers"
+	var dealer_locker_cap: int = _dealer_locker_capacity()
+	var dealer_locker_used: int = _dealer_locker_total()
+	dealer_detail.text = "Dealers: %d / %d  |  Status: %s
+Pay: %d%% commission only  |  No daily wage
+Sales today: %d  |  Unique clients served: %d / %d
+Dealer Locker: %dg / %dg%s
+Cash held for nightly drop-off: $%d
+Outstanding dealer balance: $%d
+Friend dealers: %s
+Eligible known clients: %s
+No daily sales cap. Every dealer shares one daily customer pool, so nobody can be sold to twice by the dealer team in the same day. Dealers sell only stock you put in the Dealer Locker." % [_total_dealer_count(), _dealer_capacity(), "WORKING" if dealers_active and _total_dealer_count() > 0 else "OFF DUTY", int(DEALER_COMMISSION_RATE * 100.0), dealer_sales_today, dealer_customers_served_today.size(), eligible_clients.size(), dealer_locker_used, dealer_locker_cap, "  |  LOCKED" if dealer_locker_cap <= 0 else "", dealer_cash_held, dealer_balance_due, dealer_staff_names, ", ".join(PackedStringArray(eligible_names)) if not eligible_names.is_empty() else "None yet"]
+	dealer_detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	dealer_box.add_child(dealer_detail)
+	for friend_dealer_name: String in friend_dealers:
+		var friend_stats: Dictionary = _ensure_friend_dealer_stats(friend_dealer_name)
+		var friend_line: Label = Label.new()
+		friend_line.text = "%s  |  Today: %d sales / %dg / $%d gross  |  Career: %d sales / %dg / $%d gross  |  Commission earned: $%d" % [friend_dealer_name, int(friend_stats.get("today_sales", 0)), int(friend_stats.get("today_grams", 0)), int(friend_stats.get("today_gross", 0)), int(friend_stats.get("sales", 0)), int(friend_stats.get("grams", 0)), int(friend_stats.get("gross", 0)), int(friend_stats.get("commission_earned", 0))]
+		friend_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		friend_line.modulate = Color("a8d389")
+		dealer_box.add_child(friend_line)
+
+	var hire_dealer: Button = Button.new()
+	hire_dealer.text = "HIRE DEALER  |  $%d" % _dealer_hire_cost()
+	hire_dealer.disabled = _total_dealer_count() >= _dealer_capacity() or cash < _dealer_hire_cost() or _dealer_capacity() <= 0
+	hire_dealer.custom_minimum_size.y = 52
+	hire_dealer.pressed.connect(_hire_dealer)
+	dealer_box.add_child(hire_dealer)
+	if _total_dealer_count() > 0:
+		var dealer_toggle: Button = Button.new()
+		dealer_toggle.text = "SEND DEALERS HOME" if dealers_active else "PUT DEALERS ON DUTY"
+		dealer_toggle.custom_minimum_size.y = 52
+		dealer_toggle.pressed.connect(_toggle_dealers)
+		dealer_box.add_child(dealer_toggle)
+
+	if dealer_count > 0:
+		var fire_dealer_button: Button = Button.new()
+		fire_dealer_button.text = "FIRE ONE HIRED DEALER  |  %d EMPLOYED" % dealer_count
+		fire_dealer_button.custom_minimum_size.y = 48
+		fire_dealer_button.pressed.connect(_fire_generic_dealer)
+		dealer_box.add_child(fire_dealer_button)
+
+	for friend_dealer_name: String in friend_dealers:
+		var release_friend_dealer_button: Button = Button.new()
+		release_friend_dealer_button.text = "END %s'S DEALER ROLE" % friend_dealer_name.to_upper()
+		release_friend_dealer_button.custom_minimum_size.y = 48
+		release_friend_dealer_button.pressed.connect(_release_friend_staff.bind(friend_dealer_name))
+		dealer_box.add_child(release_friend_dealer_button)
+
+	var bills: Button = Button.new()
+	bills.text = "VIEW BILLS & OUTSTANDING BALANCES"
+	bills.custom_minimum_size.y = 52
+	bills.pressed.connect(_open_phone_app.bind("bills"))
+	phone_list.add_child(bills)
+
+func _hire_packing_employee() -> void:
+	if _staff_heat_locked():
+		status_label.text = "Nobody wants to start work while Heat is 75 or higher."
+		return
+	if packing_employee_hired or grower_level < 5 or cash < PACKER_HIRE_COST:
+		return
+	cash -= PACKER_HIRE_COST
+	_record_daily_expense("Production worker hire", PACKER_HIRE_COST)
+	packing_employee_hired = true
+	packing_employee_active = true
+	production_worker_task = "Clocking in"
+	production_worker_last_action = "Clocking in"
+	production_worker_target_position = _production_worker_station_position("entry")
+	_reset_production_worker_navigation()
+	auto_bagger_unlocked = true
+	_increment_advancement_stat("staff_hired")
+	_update_cash_ui()
+	status_label.text = "Production worker hired. They will physically move between the grow room, packing bench and storage. Daily wage: $%d." % PACKER_DAILY_WAGE
+	_save_game()
+	_refresh_phone()
+
+func _toggle_packing_employee() -> void:
+	if not packing_employee_hired:
+		return
+	if not packing_employee_active and production_worker_arrested:
+		status_label.text = "Your worker is still being held. Pay the bail from Texts first."
+		return
+	if not packing_employee_active and _staff_heat_locked():
+		status_label.text = "Your worker refuses to come back while Heat is 75 or higher."
+		return
+	packing_employee_active = not packing_employee_active
+	if not packing_employee_active:
+		production_worker_pending_action = ""
+		production_worker_task = "Off duty"
+		production_worker_last_action = "Off duty"
+	else:
+		production_worker_task = "Clocking in"
+		production_worker_last_action = "Clocking in"
+		production_worker_target_position = _production_worker_station_position("entry")
+	_reset_production_worker_navigation()
+	status_label.text = "Production worker is now %s." % ("WORKING" if packing_employee_active else "OFF DUTY")
+	_save_game()
+	_refresh_phone()
+
+func _toggle_production_worker_auto_plant() -> void:
+	if not packing_employee_hired:
+		return
+	production_worker_auto_plant = not production_worker_auto_plant
+	status_label.text = "Production worker auto-planting is %s. When enabled they use the first available unlocked seed in your seed inventory." % ("ON" if production_worker_auto_plant else "OFF")
+	_save_game()
+	_refresh_phone()
+
+func _fire_packing_employee() -> void:
+	if production_worker_arrested:
+		status_label.text = "Resolve the worker bail first."
+		return
+	if not packing_employee_hired:
+		return
+	if not production_worker_friend_name.is_empty():
+		_release_friend_staff(production_worker_friend_name)
+		return
+	packing_employee_hired = false
+	packing_employee_active = false
+	production_worker_auto_plant = false
+	production_worker_pending_action = ""
+	_reset_production_worker_navigation()
+	production_worker_task = "Position vacant"
+	production_worker_last_action = "Position vacant"
+	auto_bagger_unlocked = false
+	if production_worker_node != null:
+		production_worker_node.visible = false
+	status_label.text = "Production worker fired. The position is now vacant and an eligible loyal friend can be offered Production Work."
+	_save_game()
+	_refresh_phone()
+
+func _hire_dealer() -> void:
+	if _staff_heat_locked():
+		status_label.text = "Nobody wants to start work while Heat is 75 or higher."
+		return
+	var capacity: int = _dealer_capacity()
+	var hire_cost: int = _dealer_hire_cost()
+	if capacity <= 0 or _total_dealer_count() >= capacity or cash < hire_cost:
+		return
+	cash -= hire_cost
+	_record_daily_expense("Dealer hiring", hire_cost)
+	dealer_count += 1
+	dealers_active = true
+	auto_sales_unlocked = true
+	_increment_advancement_stat("staff_hired")
+	_update_cash_ui()
+	status_label.text = "Dealer hired. Team size: %d. They can only serve known non-friend clients you have personally sold to." % _total_dealer_count()
+	_save_game()
+	_refresh_phone()
+
+func _toggle_dealers() -> void:
+	if _total_dealer_count() <= 0:
+		return
+	if not dealers_active and dealer_arrested:
+		status_label.text = "One of your dealers is still being held. Pay the bail from Texts first."
+		return
+	if not dealers_active and _staff_heat_locked():
+		status_label.text = "Your dealers refuse to go back out while Heat is 75 or higher."
+		return
+	if dealer_balance_due > 0 and not dealers_active:
+		status_label.text = "Clear the $%d dealer balance before putting the team back on duty." % dealer_balance_due
+		return
+	dealers_active = not dealers_active
+	status_label.text = "Dealer team is now %s." % ("WORKING" if dealers_active else "OFF DUTY")
+	_save_game()
+	_refresh_phone()
+
+func _fire_generic_dealer() -> void:
+	if dealer_arrested:
+		status_label.text = "Resolve the dealer bail first."
+		return
+	if dealer_count <= 0:
+		return
+	dealer_count -= 1
+	dealer_count = maxi(0, dealer_count)
+	auto_sales_unlocked = _total_dealer_count() > 0
+	if _total_dealer_count() <= 0:
+		dealers_active = false
+	status_label.text = "Dealer fired. %d dealer(s) remain and the open staff slot can be filled again." % _total_dealer_count()
+	_save_game()
+	_refresh_phone()
+
+
+func _customer_art_path(customer: Dictionary, art_key: String) -> String:
+	if art_key == "face_art":
+		return _worker_face_texture_path(str(customer.get("name", "")))
+	var preferred: String = str(customer.get(art_key, ""))
+	if not preferred.is_empty():
+		return preferred
+	return str(customer.get("avatar", ""))
+
+func _apply_customer_art(target: TextureRect, customer: Dictionary, art_key: String) -> void:
+	if target == null:
+		return
+	target.texture = null
+	target.visible = false
+	var art_path: String = _customer_art_path(customer, art_key)
+	if art_path.is_empty() or not ResourceLoader.exists(art_path):
+		return
+	var art_resource: Resource = load(art_path)
+	var art_texture: Texture2D = art_resource as Texture2D
+	if art_texture == null:
+		return
+	target.texture = art_texture
+	target.visible = true
+
+func _build_clients_app() -> void:
+	if neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.crew!=null:
+		neighborhood.location_ops.crew.contacts()
+		return
+	var intro: Label = Label.new()
+	intro.text = "Customers become identifiable through repeat encounters. Recognized contacts can have their own character portrait; unknown buyers keep their name and preferences hidden until you know them."
+	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	phone_list.add_child(intro)
+	for customer: Dictionary in customers:
+		if grower_level < int(customer.get("unlock_level", 1)):
+			continue
+		var known: bool = _customer_is_known(customer)
+		var card: PanelContainer = PanelContainer.new()
+		phone_list.add_child(card)
+		var box: VBoxContainer = VBoxContainer.new()
+		card.add_child(box)
+		if known:
+			var avatar: TextureRect = TextureRect.new()
+			avatar.custom_minimum_size = Vector2(0, 170)
+			avatar.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			avatar.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			box.add_child(avatar)
+			_apply_customer_art(avatar, customer, "avatar")
+		var name_label: Label = Label.new()
+		name_label.text = "%s   |   %s" % [_customer_display_name(customer), str(customer.get("tier", "Local")) if known else "Unidentified"]
+		name_label.add_theme_font_size_override("font_size", 20)
+		box.add_child(name_label)
+		var detail: Label = Label.new()
+		if known:
+			var personality: String = str(customer.get("personality", "Regular customer with their own buying habits."))
+			var smoke_style: String = str(customer.get("smoke_style", "Varies"))
+			var client_name: String = str(customer.get("name", ""))
+			var client_relationship: Dictionary = customer_relationships.get(client_name, {}) as Dictionary
+			var staff_role: String = _friend_staff_role(client_name)
+			var staff_line: String = ""
+			if not staff_role.is_empty():
+				staff_line = "\nSTAFF ROLE: %s  |  No longer visits as a customer while employed." % staff_role.to_upper()
+			elif str(customer.get("tier", "")) == "Friend":
+				staff_line = "\nLOYAL FRIEND  |  Recruit at %d loyalty + %d personal sales." % [FRIEND_RECRUIT_LOYALTY, FRIEND_RECRUIT_PLAYER_SALES]
+			detail.text = "Prefers: %s\nStyle: %s\n%s\nSubstitution flexibility: %d%%\nEncounters: %d  |  Personal sales: %d  |  Dealer sales: %d\nLoyalty: %d / 100%s" % [str(customer.get("favorite", "Any")), smoke_style, personality, int(round(float(customer.get("flexibility", 0.0)) * 100.0)), _customer_relationship_visits(client_name), int(client_relationship.get("player_sales", 0)), int(client_relationship.get("dealer_sales", 0)), _customer_loyalty(client_name), staff_line]
+		else:
+			detail.text = "Preference: ???\nKeep dealing with this buyer to learn who they are."
+		detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		box.add_child(detail)
+		if known and str(customer.get("tier", "")) == "Friend":
+			var client_name_for_staff: String = str(customer.get("name", ""))
+			var current_staff_role: String = _friend_staff_role(client_name_for_staff)
+			if not current_staff_role.is_empty():
+				var release_button: Button = Button.new()
+				release_button.text = "END %s ROLE" % current_staff_role.to_upper()
+				release_button.custom_minimum_size.y = 46
+				release_button.pressed.connect(_release_friend_staff.bind(client_name_for_staff))
+				box.add_child(release_button)
+			elif _friend_is_recruitable(customer):
+				var dealer_offer: Button = Button.new()
+				dealer_offer.text = "OFFER DEALER WORK"
+				dealer_offer.custom_minimum_size.y = 46
+				dealer_offer.disabled = _dealer_capacity() <= 0 or _total_dealer_count() >= _dealer_capacity()
+				dealer_offer.pressed.connect(_recruit_friend_staff.bind(client_name_for_staff, "dealer"))
+				box.add_child(dealer_offer)
+				var production_offer: Button = Button.new()
+				production_offer.text = "OFFER PRODUCTION WORK"
+				production_offer.custom_minimum_size.y = 46
+				production_offer.disabled = grower_level < 5 or packing_employee_hired
+				production_offer.pressed.connect(_recruit_friend_staff.bind(client_name_for_staff, "production"))
+				box.add_child(production_offer)
+
+		if known and _story_first_regular_complete() and _friend_staff_role(str(customer.get("name", ""))).is_empty():
+			var text_button: Button = Button.new()
+			text_button.text = "TEXT  |  I'M OPEN"
+			text_button.custom_minimum_size.y = 48
+			text_button.pressed.connect(_text_known_customer.bind(str(customer.get("name", ""))))
+			box.add_child(text_button)
+
+func _staff_heat_locked() -> bool:
+	return heat >= 75.0
+
+func _push_phone_text(sender: String, body: String) -> void:
+	if sender.is_empty() or body.is_empty():
+		return
+	phone_text_messages.append({
+		"sender": sender,
+		"body": body,
+		"day": game_day,
+		"time": _format_game_clock(),
+		"read": false
+	})
+	while phone_text_messages.size() > 120:
+		phone_text_messages.pop_front()
+	phone_text_unread += 1
+	if neighborhood != null:
+		neighborhood.play_text()
+	if phone_open and phone_current_app in ["home", "texts"]:
+		_refresh_phone()
+
+func _critical_dealer_sender() -> String:
+	var friend_dealers: Array[String] = _friend_staff_names("dealer")
+	if not friend_dealers.is_empty():
+		return friend_dealers[0]
+	return "Dealer Team"
+
+func _critical_production_sender() -> String:
+	return production_worker_friend_name if not production_worker_friend_name.is_empty() else "Production Worker"
+
+func _handle_critical_heat_staff() -> void:
+	if critical_staff_event_active or heat < 100.0:
+		return
+	critical_staff_event_active = true
+	var had_dealers: bool = dealers_active and _total_dealer_count() > 0
+	var had_production: bool = packing_employee_hired and packing_employee_active
+	if not had_dealers and not had_production:
+		return
+	var arrest_target: String = ""
+	if had_dealers and had_production:
+		arrest_target = "dealer" if rng.randf() < 0.5 else "production"
+	elif had_dealers:
+		arrest_target = "dealer"
+	else:
+		arrest_target = "production"
+	if had_dealers:
+		dealers_active = false
+		var dealer_sender: String = _critical_dealer_sender()
+		if arrest_target == "dealer":
+			dealer_arrested = true
+			dealer_bail_due = 750
+			_push_phone_text(dealer_sender, "I got picked up. Bail is $%d. I cannot go back to work until you send it, and I am staying home until the heat cools down." % dealer_bail_due)
+		else:
+			_push_phone_text(dealer_sender, "The heat is way too hot. We are heading home. Do not put us back out until things cool down.")
+	if had_production:
+		packing_employee_active = false
+		production_worker_pending_action = ""
+		production_worker_task = "Off duty"
+		production_worker_last_action = "Went home - Heat too high"
+		_reset_production_worker_navigation()
+		var worker_sender: String = _critical_production_sender()
+		if arrest_target == "production":
+			production_worker_arrested = true
+			production_worker_bail_due = 600
+			_push_phone_text(worker_sender, "I got picked up. Bail is $%d. I cannot come back to work until you send it, and I am staying off duty until the heat cools down." % production_worker_bail_due)
+		else:
+			_push_phone_text(worker_sender, "There is too much heat around the place. I am heading home. Call me back in when things cool down.")
+	status_label.text = "Heat hit 100. Your crew shut down. Check Texts."
+	_save_game()
+
+func _pay_dealer_bail() -> void:
+	if not dealer_arrested or dealer_bail_due <= 0:
+		return
+	if cash < dealer_bail_due:
+		status_label.text = "You need $%d for dealer bail." % dealer_bail_due
+		return
+	var amount: int = dealer_bail_due
+	cash -= amount
+	_record_daily_expense("Dealer bail", amount)
+	dealer_bail_due = 0
+	dealer_arrested = false
+	_push_phone_text(_critical_dealer_sender(), "I am out. Appreciate the bail. I am still staying home until the heat drops below 75.")
+	_update_cash_ui()
+	_save_game()
+	_refresh_phone()
+
+func _pay_production_bail() -> void:
+	if not production_worker_arrested or production_worker_bail_due <= 0:
+		return
+	if cash < production_worker_bail_due:
+		status_label.text = "You need $%d for production-worker bail." % production_worker_bail_due
+		return
+	var amount: int = production_worker_bail_due
+	cash -= amount
+	_record_daily_expense("Production worker bail", amount)
+	production_worker_bail_due = 0
+	production_worker_arrested = false
+	_push_phone_text(_critical_production_sender(), "I am out. Thanks for handling bail. I will come back once the heat drops below 75.")
+	_update_cash_ui()
+	_save_game()
+	_refresh_phone()
+
+func _build_texts_app() -> void:
+	if neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.crew!=null:
+		neighborhood.location_ops.crew.threads()
+		return
+	if dealer_arrested and dealer_bail_due > 0:
+		var dealer_bail: Button = Button.new()
+		dealer_bail.text = "SEND DEALER BAIL  |  $%d" % dealer_bail_due
+		dealer_bail.disabled = cash < dealer_bail_due
+		dealer_bail.custom_minimum_size.y = 54
+		dealer_bail.pressed.connect(_pay_dealer_bail)
+		phone_list.add_child(dealer_bail)
+	if production_worker_arrested and production_worker_bail_due > 0:
+		var worker_bail: Button = Button.new()
+		worker_bail.text = "SEND WORKER BAIL  |  $%d" % production_worker_bail_due
+		worker_bail.disabled = cash < production_worker_bail_due
+		worker_bail.custom_minimum_size.y = 54
+		worker_bail.pressed.connect(_pay_production_bail)
+		phone_list.add_child(worker_bail)
+	if phone_text_messages.is_empty():
+		var empty: Label = Label.new()
+		empty.text = "No messages yet."
+		empty.modulate = Color("aeb9bf")
+		phone_list.add_child(empty)
+	else:
+		for index: int in range(phone_text_messages.size() - 1, -1, -1):
+			var msg: Dictionary = phone_text_messages[index]
+			var card: PanelContainer = PanelContainer.new()
+			card.add_theme_stylebox_override("panel", _style_box(Color("171d24"), Color("33434f"), 16, 1))
+			phone_list.add_child(card)
+			var box: VBoxContainer = VBoxContainer.new()
+			box.add_theme_constant_override("separation", 5)
+			card.add_child(box)
+			var header: Label = Label.new()
+			header.text = "%s   •   DAY %d  %s" % [str(msg.get("sender", "Unknown")), int(msg.get("day", game_day)), str(msg.get("time", ""))]
+			header.add_theme_font_size_override("font_size", 18)
+			header.modulate = Color("8ed6a3")
+			box.add_child(header)
+			var message: Label = Label.new()
+			message.text = str(msg.get("body", ""))
+			message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			box.add_child(message)
+			if neighborhood != null:
+				neighborhood.client_visits.append_replies(box,msg,index)
+	for i: int in range(phone_text_messages.size()):
+		phone_text_messages[i]["read"] = true
+	phone_text_unread = 0
+
+func _text_known_customer(customer_name: String) -> void:
+	if customer_name.is_empty() or not _story_first_regular_complete():
+		return
+	preferred_customer_name = customer_name
+	status_label.text = "You texted %s that AFewBuds is open. If they can buy something you listed, they may stop by soon." % customer_name
+	if business_open and _has_listed_stock() and visit_timer != null and not customer_waiting:
+		visit_timer.stop()
+		visit_timer.wait_time = rng.randf_range(8.0, 18.0)
+		visit_timer.start()
+	_save_game()
+
+func _recruit_friend_staff(customer_name: String, role: String) -> void:
+	if _staff_heat_locked():
+		status_label.text = "Nobody wants to start work while Heat is 75 or higher."
+		return
+	var customer: Dictionary = _customer_by_name(customer_name)
+	if customer.is_empty() or not _friend_is_recruitable(customer):
+		return
+	if role == "dealer":
+		if _dealer_capacity() <= 0 or _total_dealer_count() >= _dealer_capacity():
+			return
+		friend_staff_roles[customer_name] = "dealer"
+		_ensure_friend_dealer_stats(customer_name)
+		dealers_active = true
+	elif role == "production":
+		if grower_level < 5 or packing_employee_hired:
+			return
+		friend_staff_roles[customer_name] = "production"
+		production_worker_friend_name = customer_name
+		_refresh_production_worker_friend_face()
+		packing_employee_hired = true
+		packing_employee_active = true
+		production_worker_task = "Clocking in"
+		production_worker_last_action = "Clocking in"
+		production_worker_target_position = _production_worker_station_position("entry")
+		_reset_production_worker_navigation()
+	else:
+		return
+	if preferred_customer_name == customer_name:
+		preferred_customer_name = ""
+	_increment_advancement_stat("staff_hired")
+	_increment_advancement_stat("friend_recruits")
+	status_label.text = "%s joined your crew as %s. They will no longer appear as a customer while employed." % [customer_name, role]
+	_refresh_phone()
+	_save_game()
+
+func _release_friend_staff(customer_name: String) -> void:
+	var held_role: String = _friend_staff_role(customer_name)
+	if (held_role == "production" and production_worker_arrested) or (held_role == "dealer" and dealer_arrested):
+		status_label.text = "Resolve the bail before ending this staff role."
+		return
+	var role: String = _friend_staff_role(customer_name)
+	if role.is_empty():
+		return
+	friend_staff_roles.erase(customer_name)
+	if role == "production" and production_worker_friend_name == customer_name:
+		production_worker_friend_name = ""
+		_refresh_production_worker_friend_face()
+		packing_employee_hired = false
+		packing_employee_active = false
+		production_worker_pending_action = ""
+		_reset_production_worker_navigation()
+		production_worker_task = "Off duty"
+	if role == "dealer" and _total_dealer_count() <= 0:
+		dealers_active = false
+	status_label.text = "%s is no longer working as %s and can visit again as a customer." % [customer_name, role]
+	_refresh_phone()
+	_save_game()
+
+func _process_friend_staff_purchases() -> int:
+	var total_revenue: int = 0
+	for customer_name in _friend_staff_names():
+		var role: String = _friend_staff_role(customer_name)
+		if role == "dealer" and not dealers_active:
+			continue
+		if role == "production" and not packing_employee_active:
+			continue
+		if rng.randf() > FRIEND_STAFF_PURCHASE_CHANCE:
+			continue
+		var customer: Dictionary = _customer_by_name(customer_name)
+		if customer.is_empty():
+			continue
+		var favorite: String = str(customer.get("favorite", ""))
+		if not products.has(favorite):
+			continue
+		var product: Dictionary = products[favorite]
+		var stock: int = int(product.get("stock", 0))
+		if stock <= 0 or _available_amount(favorite) <= 0:
+			continue
+		product["stock"] = stock - 1
+		products[favorite] = product
+		var paid: int = maxi(1, int(round(float(_effective_price(favorite)) * FRIEND_STAFF_PURCHASE_RATE)))
+		cash += paid
+		lifetime_revenue += paid
+		_record_daily_sale(favorite, 1, paid, "staff")
+		total_revenue += paid
+		var relationship: Dictionary = customer_relationships.get(customer_name, {}) as Dictionary
+		relationship["staff_purchases"] = int(relationship.get("staff_purchases", 0)) + 1
+		customer_relationships[customer_name] = relationship
+		_increment_advancement_stat("staff_purchases")
+	return total_revenue
+
+func _genetics_recipe_catalog() -> Array[Dictionary]:
+	return [
+		{"id": "frozen_purple", "title": "FROZEN PURPLE", "parent_a": "Purple Dream", "parent_b": "Blue Frost", "output": "Frozen Purple", "count": 2, "min_level": 5, "unlock_task": "", "unlock_label": "Grower Level 5"},
+		{"id": "citrus_velvet", "title": "CITRUS VELVET", "parent_a": "Citrus Rush", "parent_b": "Velvet Haze", "output": "Citrus Velvet", "count": 2, "min_level": 5, "unlock_task": "recipe_citrus_velvet", "unlock_label": "Flavor Notes reward"},
+		{"id": "cherry_frost", "title": "CHERRY FROST", "parent_a": "Cherry Glow", "parent_b": "Blue Frost", "output": "Cherry Frost", "count": 2, "min_level": 7, "unlock_task": "recipe_cherry_frost", "unlock_label": "Cold & Sweet reward"},
+		{"id": "ember_berry", "title": "EMBER BERRY", "parent_a": "Golden Ember", "parent_b": "Neon Berry", "output": "Ember Berry", "count": 2, "min_level": 9, "unlock_task": "recipe_ember_berry", "unlock_label": "Color Theory reward"},
+		{"id": "crown_cake", "title": "CROWN CAKE", "parent_a": "Midnight Crown", "parent_b": "Moon Cake", "output": "Crown Cake", "count": 2, "min_level": 11, "unlock_task": "recipe_crown_cake", "unlock_label": "Crown Lab reward"}
+	]
+
+func _genetics_recipe_unlocked(recipe: Dictionary) -> bool:
+	var unlock_task: String = str(recipe.get("unlock_task", ""))
+	return unlock_task.is_empty() or bool(advancement_claimed.get(unlock_task, false))
+
+func _build_genetics_app() -> void:
+	var intro: Label = Label.new()
+	intro.text = "GENETICS LAB - combine two parent seeds to create fictional hybrid seeds. Reward recipes unlock here after you claim the matching Story / Rewards task; they are never sold in Shop > Seeds."
+	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	phone_list.add_child(intro)
+	for recipe: Dictionary in _genetics_recipe_catalog():
+		var parent_a: String = str(recipe.get("parent_a", ""))
+		var parent_b: String = str(recipe.get("parent_b", ""))
+		var output_name: String = str(recipe.get("output", ""))
+		var min_level: int = int(recipe.get("min_level", 1))
+		var unlocked: bool = _genetics_recipe_unlocked(recipe)
+		var a_owned: int = int(seed_inventory.get(parent_a, 0))
+		var b_owned: int = int(seed_inventory.get(parent_b, 0))
+		var card: PanelContainer = PanelContainer.new()
+		card.add_theme_stylebox_override("panel", _style_box(Color("171d1a"), Color("496b55") if unlocked else Color("3e4541"), 14, 1))
+		phone_list.add_child(card)
+		var box: VBoxContainer = VBoxContainer.new()
+		box.add_theme_constant_override("separation", 7)
+		card.add_child(box)
+		var title: Label = Label.new()
+		title.text = str(recipe.get("title", output_name))
+		title.add_theme_font_size_override("font_size", 20)
+		box.add_child(title)
+		var detail: Label = Label.new()
+		detail.text = "%s + %s
+Owned: %s %d | %s %d
+Produces: %dx %s seed" % [parent_a, parent_b, parent_a, a_owned, parent_b, b_owned, int(recipe.get("count", 2)), output_name]
+		detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		box.add_child(detail)
+		var action: Button = Button.new()
+		action.custom_minimum_size.y = 50
+		if not unlocked:
+			action.text = "LOCKED - CLAIM %s" % str(recipe.get("unlock_label", "STORY REWARD")).to_upper()
+			action.disabled = true
+		elif grower_level < min_level:
+			action.text = "REQUIRES GROWER LEVEL %d" % min_level
+			action.disabled = true
+		elif a_owned < 1 or b_owned < 1:
+			action.text = "NEED BOTH PARENT SEEDS"
+			action.disabled = true
+		else:
+			action.text = "CREATE %s" % output_name.to_upper()
+			action.pressed.connect(_create_genetics_cross.bind(str(recipe.get("id", ""))))
+		box.add_child(action)
+
+func _create_genetics_cross(recipe_id: String) -> void:
+	var selected: Dictionary = {}
+	for recipe: Dictionary in _genetics_recipe_catalog():
+		if str(recipe.get("id", "")) == recipe_id:
+			selected = recipe
+			break
+	if selected.is_empty() or not _genetics_recipe_unlocked(selected):
+		return
+	var min_level: int = int(selected.get("min_level", 1))
+	if grower_level < min_level:
+		return
+	var parent_a: String = str(selected.get("parent_a", ""))
+	var parent_b: String = str(selected.get("parent_b", ""))
+	var a_owned: int = int(seed_inventory.get(parent_a, 0))
+	var b_owned: int = int(seed_inventory.get(parent_b, 0))
+	if a_owned < 1 or b_owned < 1:
+		return
+	var output_name: String = str(selected.get("output", ""))
+	var output_count: int = maxi(1, int(selected.get("count", 2)))
+	seed_inventory[parent_a] = a_owned - 1
+	seed_inventory[parent_b] = b_owned - 1
+	seed_inventory[output_name] = int(seed_inventory.get(output_name, 0)) + output_count
+	_increment_advancement_stat("hybrids_created")
+	_add_progress(30, 5)
+	status_label.text = "Genetics discovery: %s. %d hybrid seeds were added to your grow shelf." % [output_name, output_count]
+	_save_game()
+	_refresh_phone()
+
+func _max_friend_loyalty() -> int:
+	var highest: int = 0
+	for customer: Dictionary in customers:
+		if str(customer.get("tier", "")) != "Friend":
+			continue
+		highest = maxi(highest, _customer_loyalty(str(customer.get("name", ""))))
+	return highest
+
+func _loyal_friend_count() -> int:
+	var count: int = 0
+	for customer: Dictionary in customers:
+		if str(customer.get("tier", "")) != "Friend":
+			continue
+		if _customer_loyalty(str(customer.get("name", ""))) >= FRIEND_RECRUIT_LOYALTY:
+			count += 1
+	return count
+
+func _friend_staff_count() -> int:
+	return friend_staff_roles.size()
+
+func _advancement_value(entry: Dictionary) -> int:
+	var metric_name: String = str(entry.get("metric", ""))
+	if not metric_name.is_empty():
+		return int(advancement_stats.get(metric_name, 0))
+	var state_name: String = str(entry.get("state", ""))
+	if state_name == "grower_level":
+		return grower_level
+	if state_name == "grow_tent_count":
+		return grow_tent_count
+	if state_name == "brand_level":
+		return brand_level
+	if state_name == "lifetime_revenue":
+		return lifetime_revenue
+	if state_name == "storage_level":
+		return storage_level
+	if state_name == "bagging_level":
+		return bagging_level
+	if state_name == "dealer_locker_level":
+		return dealer_locker_level
+	if state_name == "tent_level":
+		return tent_level
+	if state_name == "reputation":
+		return reputation
+	if state_name == "game_day":
+		return game_day
+	if state_name == "automation_count":
+		return (1 if auto_water_unlocked else 0) + _staff_count()
+	if state_name == "staff_count":
+		return _staff_count()
+	if state_name == "production_worker_hired":
+		return 1 if packing_employee_hired else 0
+	if state_name == "seed_varieties":
+		var variety_count: int = 0
+		for seed_name: String in SEED_ORDER:
+			if int(seed_inventory.get(seed_name, 0)) > 0:
+				variety_count += 1
+		return variety_count
+	if state_name == "max_friend_loyalty":
+		return _max_friend_loyalty()
+	if state_name == "loyal_friend_count":
+		return _loyal_friend_count()
+	if state_name == "friend_staff_count":
+		return _friend_staff_count()
+	if state_name == "heat_peak":
+		return int(floor(heat_peak))
+	if state_name == "heat_reduced":
+		return int(floor(heat_reduced_total))
+	if state_name == "ventilation_installed":
+		return 1 if ventilation_installed else 0
+	if state_name == "chapter_four_apartment_ready":
+		return 1 if _story_chapter_four_apartment_complete() else 0
+	if state_name == "chapter_four_distribution_ready":
+		return 1 if _story_chapter_four_distribution_complete() else 0
+	if state_name == "chapter_four_crew_ready":
+		return 1 if _story_chapter_four_crew_complete() else 0
+	if state_name == "chapter_four_demand_ready":
+		return 1 if _story_chapter_four_demand_complete() else 0
+	if state_name == "chapter_four_complete":
+		return 1 if _story_chapter_four_complete() else 0
+	return 0
+
+func _bootstrap_advancement_stats_from_state() -> void:
+	var has_live_plant: bool = false
+	for slot: Dictionary in plant_slots:
+		if not str(slot.get("strain", "")).is_empty():
+			has_live_plant = true
+			break
+	var stored_total: int = _total_stored_stock()
+	var pipeline_total: int = 0
+	for value_variant: Variant in untrimmed_inventory.values():
+		pipeline_total += int(value_variant)
+	for value_variant: Variant in trimmed_inventory.values():
+		pipeline_total += int(value_variant)
+	for value_variant: Variant in bagged_inventory.values():
+		pipeline_total += int(value_variant)
+	if has_live_plant or pipeline_total > 0 or stored_total > 0 or lifetime_revenue > 0:
+		advancement_stats["plants_planted"] = maxi(1, int(advancement_stats.get("plants_planted", 0)))
+	if pipeline_total > 0 or stored_total > 0 or lifetime_revenue > 0:
+		advancement_stats["harvests"] = maxi(1, int(advancement_stats.get("harvests", 0)))
+	if int(trimmed_inventory.size()) > 0 or int(bagged_inventory.size()) > 0 or stored_total > 0 or lifetime_revenue > 0:
+		advancement_stats["grams_trimmed"] = maxi(5, int(advancement_stats.get("grams_trimmed", 0)))
+	if int(bagged_inventory.size()) > 0 or stored_total > 0 or lifetime_revenue > 0:
+		advancement_stats["bags_sealed"] = maxi(1, int(advancement_stats.get("bags_sealed", 0)))
+	advancement_stats["grams_stored"] = maxi(stored_total, int(advancement_stats.get("grams_stored", 0)))
+	var listed_count: int = 0
+	for product_variant: Variant in products.values():
+		if product_variant is Dictionary:
+			var product_data: Dictionary = product_variant as Dictionary
+			if bool(product_data.get("listed", false)):
+				listed_count += 1
+	advancement_stats["products_listed"] = maxi(listed_count, int(advancement_stats.get("products_listed", 0)))
+	if lifetime_revenue > 0:
+		advancement_stats["sales"] = maxi(1, int(advancement_stats.get("sales", 0)))
+	var known_count: int = 0
+	for customer: Dictionary in customers:
+		if _customer_is_known(customer):
+			known_count += 1
+	advancement_stats["customers_known"] = maxi(known_count, int(advancement_stats.get("customers_known", 0)))
+	advancement_stats["friend_recruits"] = maxi(friend_staff_roles.size(), int(advancement_stats.get("friend_recruits", 0)))
+	var prior_staff_purchases: int = 0
+	for relationship_variant: Variant in customer_relationships.values():
+		if relationship_variant is Dictionary:
+			prior_staff_purchases += int((relationship_variant as Dictionary).get("staff_purchases", 0))
+	advancement_stats["staff_purchases"] = maxi(prior_staff_purchases, int(advancement_stats.get("staff_purchases", 0)))
+
+func _advancement_ready_count() -> int:
+	var ready_count: int = 0
+	for entry: Dictionary in advancement_catalog:
+		var advancement_id: String = str(entry.get("id", ""))
+		if bool(advancement_claimed.get(advancement_id, false)):
+			continue
+		if _advancement_is_ready(entry):
+			ready_count += 1
+	return ready_count
+
+func _advancement_claimed_count() -> int:
+	var count: int = 0
+	for entry: Dictionary in advancement_catalog:
+		if bool(advancement_claimed.get(str(entry.get("id", "")), false)):
+			count += 1
+	return count
+
+func _advancement_career_rank() -> String:
+	var claimed_count: int = _advancement_claimed_count()
+	if claimed_count >= 50:
+		return "Underground Operator"
+	if claimed_count >= 40:
+		return "Crew Boss"
+	if claimed_count >= 28:
+		return "Established"
+	if claimed_count >= 16:
+		return "Building a Name"
+	if claimed_count >= 7:
+		return "Up-and-Coming"
+	return "Starting Out"
+
+func _advancement_reward_text(entry: Dictionary) -> String:
+	var parts: Array[String] = []
+	var reward_cash: int = int(entry.get("reward_cash", 0))
+	var reward_xp: int = int(entry.get("reward_xp", 0))
+	var reward_rep: int = int(entry.get("reward_rep", 0))
+	var reward_fertilizer: int = int(entry.get("reward_fertilizer", 0))
+	var reward_seed: String = str(entry.get("reward_seed", ""))
+	var reward_seed_count: int = int(entry.get("reward_seed_count", 0))
+	var reward_recipe: String = str(entry.get("reward_recipe", ""))
+	var reward_unlock: String = str(entry.get("reward_unlock", ""))
+	if reward_cash > 0:
+		parts.append("$%d" % reward_cash)
+	if reward_xp > 0:
+		parts.append("%d XP" % reward_xp)
+	if reward_rep > 0:
+		parts.append("%d REP" % reward_rep)
+	if reward_fertilizer > 0:
+		parts.append("+%d fertilizer" % reward_fertilizer)
+	if not reward_seed.is_empty() and reward_seed_count > 0:
+		parts.append("%dx %s seed" % [reward_seed_count, reward_seed])
+	if not reward_recipe.is_empty():
+		parts.append("GENETICS RECIPE: %s" % reward_recipe)
+	if not reward_unlock.is_empty():
+		parts.append("UNLOCK: %s" % reward_unlock)
+	return "   |   ".join(parts)
+
+func _max_customer_sales() -> int:
+	var max_sales: int = 0
+	for relationship_variant: Variant in customer_relationships.values():
+		if relationship_variant is Dictionary:
+			var relationship: Dictionary = relationship_variant as Dictionary
+			max_sales = maxi(max_sales, int(relationship.get("sales", 0)))
+	return max_sales
+
+func _launched_product_count() -> int:
+	var count: int = 0
+	for launched_variant: Variant in product_launch_seen.values():
+		if bool(launched_variant):
+			count += 1
+	return count
+
+func _story_chapter_one_complete() -> bool:
+	return int(advancement_stats.get("plants_planted", 0)) >= 1 \
+		and int(advancement_stats.get("harvests", 0)) >= 1 \
+		and int(advancement_stats.get("grams_trimmed", 0)) >= 5 \
+		and int(advancement_stats.get("bags_sealed", 0)) >= 1 \
+		and int(advancement_stats.get("grams_stored", 0)) >= 10 \
+		and int(advancement_stats.get("products_listed", 0)) >= 1 \
+		and int(advancement_stats.get("sales", 0)) >= 1
+
+func _story_first_regular_complete() -> bool:
+	return _max_customer_sales() >= 3
+
+func _story_chapter_two_complete() -> bool:
+	return _story_first_regular_complete() \
+		and int(advancement_stats.get("customers_known", 0)) >= 4 \
+		and reputation >= 50 \
+		and _launched_product_count() >= 2 \
+		and grow_tent_count >= 2 \
+		and grower_level >= 5 \
+		and brand_level >= 3 \
+		and lifetime_revenue >= 2000
+
+func _story_chapter_three_complete() -> bool:
+	return _story_chapter_two_complete() \
+		and _max_friend_loyalty() >= FRIEND_RECRUIT_LOYALTY \
+		and _friend_staff_count() >= 1 \
+		and int(advancement_stats.get("dealer_sales", 0)) >= 5 \
+		and int(advancement_stats.get("customers_known", 0)) >= 8 \
+		and reputation >= 100 \
+		and grower_level >= 8 \
+		and lifetime_revenue >= 5000 \
+		and heat_peak >= 25.0 \
+		and heat_reduced_total >= 10.0 \
+		and reeves_met
+
+func _story_chapter_four_apartment_complete() -> bool:
+	return _story_chapter_three_complete() \
+		and grow_tent_count >= 3 \
+		and bagging_level >= 3
+
+func _story_chapter_four_distribution_complete() -> bool:
+	return _story_chapter_four_apartment_complete() \
+		and dealer_locker_level >= 4 \
+		and int(advancement_stats.get("dealer_sales", 0)) >= 20
+
+func _story_chapter_four_crew_complete() -> bool:
+	return _story_chapter_four_distribution_complete() \
+		and _staff_count() >= 3 \
+		and int(advancement_stats.get("worker_tasks", 0)) >= 50
+
+func _story_chapter_four_demand_complete() -> bool:
+	return _story_chapter_four_crew_complete() \
+		and lifetime_revenue >= 15000 \
+		and reputation >= 175 \
+		and int(advancement_stats.get("customers_known", 0)) >= 12
+
+func _story_chapter_four_operation_complete() -> bool:
+	return _story_chapter_four_demand_complete() \
+		and grower_level >= 10 \
+		and int(advancement_stats.get("hybrids_created", 0)) >= 3 \
+		and int(advancement_stats.get("grams_stored", 0)) >= 250
+
+func _story_chapter_four_complete() -> bool:
+	return _story_chapter_four_operation_complete()
+
+func _chapter_four_target_story_stage() -> int:
+	if not _story_chapter_three_complete():
+		return 0
+	var target: int = 1
+	if _story_chapter_four_apartment_complete():
+		target = 2
+	if _story_chapter_four_distribution_complete():
+		target = 3
+	if _story_chapter_four_crew_complete():
+		target = 4
+	if _story_chapter_four_demand_complete():
+		target = 5
+	if _story_chapter_four_complete():
+		target = 6
+	return target
+
+func _chapter_four_append_story_text(body: String) -> void:
+	if body.is_empty():
+		return
+	phone_text_messages.append({
+		"sender": "Rod",
+		"body": body,
+		"day": game_day,
+		"time": _format_game_clock(),
+		"read": false
+	})
+	while phone_text_messages.size() > 120:
+		phone_text_messages.pop_front()
+	phone_text_unread += 1
+	if neighborhood != null:
+		neighborhood.play_text()
+
+func _sync_chapter_four_story() -> bool:
+	var target_stage: int = _chapter_four_target_story_stage()
+	if target_stage <= chapter_four_story_stage:
+		if _story_chapter_four_complete() and not property_offer_unlocked:
+			property_offer_unlocked = true
+			return true
+		return false
+
+	var changed: bool = false
+	while chapter_four_story_stage < target_stage:
+		chapter_four_story_stage += 1
+		changed = true
+		match chapter_four_story_stage:
+			1:
+				_chapter_four_append_story_text("You made it through all that pressure and this apartment is starting to feel real small. Keep building the operation, but start thinking bigger.")
+			2:
+				_chapter_four_append_story_text("Three tents and that new bench? Every wall in that place has a job now. You are officially out of room.")
+			3:
+				_chapter_four_append_story_text("Dealer Storage is maxed and the crew is moving product. This is bigger than people coming to your door now.")
+			4:
+				_chapter_four_append_story_text("You are running a crew now, not just doing everything yourself. The apartment is becoming the bottleneck.")
+			5:
+				_chapter_four_append_story_text("The numbers do not lie. Too many customers, too much product, too much traffic for one apartment. Finish proving the operation can handle a real move.")
+			6:
+				property_offer_unlocked = true
+				_chapter_four_append_story_text("I got a line on a house that can actually fit this operation. You can rent it, lease it to own, or buy it outright. This is the next move.")
+	return changed
+
+func _story_checkmark(done: bool, text_value: String) -> String:
+	return "%s %s" % ["[x]" if done else "[ ]", text_value]
+
+func _build_story_progress_section() -> void:
+	var story_card: PanelContainer = PanelContainer.new()
+	story_card.custom_minimum_size.x = 0.0
+	story_card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	story_card.add_theme_stylebox_override("panel", _style_box(Color("171d25"), Color("776b3f"), 18, 2))
+	phone_list.add_child(story_card)
+
+	var story_box: VBoxContainer = VBoxContainer.new()
+	story_box.custom_minimum_size.x = 0.0
+	story_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	story_box.add_theme_constant_override("separation", 7)
+	story_card.add_child(story_box)
+
+	var chapter_one_done: bool = _story_chapter_one_complete()
+	var chapter_two_done: bool = _story_chapter_two_complete()
+	var chapter_three_done: bool = _story_chapter_three_complete()
+	var chapter_four_done: bool = _story_chapter_four_complete()
+
+	var chapter_title: Label = Label.new()
+	if not chapter_one_done:
+		chapter_title.text = "STORY\nCHAPTER 1 - STARTING SMALL"
+	elif not chapter_two_done:
+		chapter_title.text = "STORY\nCHAPTER 2 - BUILDING A NAME"
+	elif not chapter_three_done:
+		chapter_title.text = "STORY\nCHAPTER 3 - GETTING NOTICED"
+	elif not chapter_four_done:
+		chapter_title.text = "STORY\nCHAPTER 4 - OUTGROWING THE APARTMENT"
+	else:
+		chapter_title.text = "STORY\nCHAPTER 4 COMPLETE\nEXPANSION OPPORTUNITY UNLOCKED"
+	chapter_title.custom_minimum_size.x = 0.0
+	chapter_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	chapter_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	chapter_title.add_theme_font_size_override("font_size", 22)
+	chapter_title.modulate = Color("e4cf83")
+	story_box.add_child(chapter_title)
+
+	var objectives: Label = Label.new()
+	if not chapter_one_done:
+		objectives.text = "\n".join([
+			_story_checkmark(int(advancement_stats.get("plants_planted", 0)) >= 1, "Plant your first seed"),
+			_story_checkmark(int(advancement_stats.get("harvests", 0)) >= 1, "Complete your first harvest"),
+			_story_checkmark(int(advancement_stats.get("grams_trimmed", 0)) >= 5, "Hand-trim 5g"),
+			_story_checkmark(int(advancement_stats.get("bags_sealed", 0)) >= 1, "Seal your first bag"),
+			_story_checkmark(int(advancement_stats.get("grams_stored", 0)) >= 10, "Put 10g into storage"),
+			_story_checkmark(int(advancement_stats.get("products_listed", 0)) >= 1, "List your first product"),
+			_story_checkmark(int(advancement_stats.get("sales", 0)) >= 1, "Complete your first sale")
+		])
+		objectives.text += "\n\nUNLOCK: Chapter 2 + Fresh Drop customer rushes"
+	elif not chapter_two_done:
+		objectives.text = "\n".join([
+			_story_checkmark(_story_first_regular_complete(), "First Regular - complete 3 sales with one customer"),
+			_story_checkmark(int(advancement_stats.get("customers_known", 0)) >= 4, "Know Your People - recognize 4 customers"),
+			_story_checkmark(reputation >= 50, "Word Gets Around - reach 50 reputation"),
+			_story_checkmark(_launched_product_count() >= 2, "Fresh Drop - launch 2 different products"),
+			_story_checkmark(grow_tent_count >= 2, "Room to Grow - install Tent 2"),
+			_story_checkmark(grower_level >= 5 and brand_level >= 3 and lifetime_revenue >= 2000, "Established - Grower 5, Brand 3, $2,000 revenue")
+		])
+		objectives.text += "\n\nUNLOCK: Customer texting after First Regular.\nNEXT: Getting Noticed."
+	elif not chapter_three_done:
+		objectives.text = "\n".join([
+			_story_checkmark(_max_friend_loyalty() >= FRIEND_RECRUIT_LOYALTY, "Real Loyalty - build one friend to 70 loyalty"),
+			_story_checkmark(_friend_staff_count() >= 1, "Put Your People On - recruit a loyal friend"),
+			_story_checkmark(int(advancement_stats.get("dealer_sales", 0)) >= 5, "Delegating - complete 5 dealer sales"),
+			_story_checkmark(int(advancement_stats.get("customers_known", 0)) >= 8, "Growing Network - recognize 8 customers"),
+			_story_checkmark(reputation >= 100, "People Are Talking - reach 100 reputation"),
+			_story_checkmark(grower_level >= 8 and lifetime_revenue >= 5000, "Too Big to Ignore - Grower 8 and $5,000 revenue"),
+			_story_checkmark(heat_peak >= 25.0, "On the Radar - reach 25 Heat"),
+			_story_checkmark(heat_reduced_total >= 10.0, "Cool Things Down - reduce 10 total Heat"),
+			_story_checkmark(reeves_met, "Federal Pressure - meet Agent Reeves at the door")
+		])
+		objectives.text += "\n\nUNLOCK: Chapter 4 - Outgrowing the Apartment."
+	elif not chapter_four_done:
+		objectives.text = "\n".join([
+			_story_checkmark(_story_chapter_four_apartment_complete(), "Apartment at Capacity - 3 grow tents + Bagging Bench III"),
+			_story_checkmark(_story_chapter_four_distribution_complete(), "Distribution Network - Dealer Storage IV + 20 dealer sales"),
+			_story_checkmark(_story_chapter_four_crew_complete(), "Crew Operations - 3 staff + 50 production-worker tasks"),
+			_story_checkmark(_story_chapter_four_demand_complete(), "Demand Outgrows the Space - $15,000 revenue + 175 reputation + 12 known customers"),
+			_story_checkmark(_story_chapter_four_operation_complete(), "Proven Operation - Grower 10 + 3 hybrid batches + 250g moved into storage")
+		])
+		objectives.text += "\n\nFINALE: prove the apartment can no longer support the operation and unlock your first house opportunity."
+	else:
+		objectives.text = "✓ Apartment operation maxed\n✓ Distribution proven\n✓ Crew proven\n✓ Demand proven\n✓ Operation proven\n\nEXPANSION OPPORTUNITY UNLOCKED\nRod found a residential operation property with RENT, LEASE-TO-OWN and PURCHASE options.\n\nThe property becomes the next major AFewBuds progression step."
+
+	objectives.custom_minimum_size.x = 0.0
+	objectives.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	objectives.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	story_box.add_child(objectives)
+
+func _advancement_lane_name(entry: Dictionary) -> String:
+	var advancement_id: String = str(entry.get("id", ""))
+	if advancement_id in ["first_dealer_sale", "dealer_five", "dealer_twentyfive"]:
+		return "Dealers"
+	var category_name: String = str(entry.get("category", ""))
+	match category_name:
+		"Processing":
+			return "Production"
+		"Customers":
+			return "Sales"
+		"Heat":
+			return "Heat / Street"
+		_:
+			return category_name
+
+func _advancement_lane_order() -> Array[String]:
+	return ["Growing", "Production", "Sales", "Dealers", "Business", "Genetics", "Heat / Street", "Expansion", "Property"]
+
+func _advancement_lane_current_tier(lane_name: String) -> int:
+	var current_tier: int = 999
+	for entry: Dictionary in advancement_catalog:
+		if _advancement_lane_name(entry) != lane_name:
+			continue
+		var advancement_id: String = str(entry.get("id", ""))
+		if bool(advancement_claimed.get(advancement_id, false)):
+			continue
+		current_tier = mini(current_tier, int(entry.get("tier", 1)))
+	return -1 if current_tier == 999 else current_tier
+
+func _advancement_lane_next_tier(lane_name: String, current_tier: int) -> int:
+	var next_tier: int = 999
+	for entry: Dictionary in advancement_catalog:
+		if _advancement_lane_name(entry) != lane_name:
+			continue
+		var advancement_id: String = str(entry.get("id", ""))
+		if bool(advancement_claimed.get(advancement_id, false)):
+			continue
+		var entry_tier: int = int(entry.get("tier", 1))
+		if entry_tier > current_tier:
+			next_tier = mini(next_tier, entry_tier)
+	return -1 if next_tier == 999 else next_tier
+
+func _advancement_story_label() -> String:
+	if not _story_chapter_one_complete():
+		return "CHAPTER 1 - STARTING SMALL"
+	if not _story_chapter_two_complete():
+		return "CHAPTER 2 - BUILDING A NAME"
+	if not _story_chapter_three_complete():
+		return "CHAPTER 3 - GETTING NOTICED"
+	if not _story_chapter_four_complete():
+		return "CHAPTER 4 - OUTGROWING THE APARTMENT"
+	return "CHAPTER 4 COMPLETE  |  EXPANSION OPPORTUNITY UNLOCKED"
+
+func _add_advancement_roadmap_milestone(parent: VBoxContainer, entry: Dictionary, current_tier: int) -> void:
+	var advancement_id: String = str(entry.get("id", ""))
+	var target: int = maxi(1, int(entry.get("target", 1)))
+	var current_value: int = mini(_advancement_value(entry), target)
+	var complete: bool = _advancement_is_ready(entry)
+	var tier: int = int(entry.get("tier", 1))
+
+	var card: PanelContainer = PanelContainer.new()
+	card.set_meta("advancement_id", advancement_id)
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var border_color: Color = Color("7bb88a") if complete else (Color("776b3f") if tier == current_tier else Color("42515a"))
+	card.add_theme_stylebox_override("panel", _style_box(Color("151d24"), border_color, 14, 1))
+	parent.add_child(card)
+
+	var box: VBoxContainer = VBoxContainer.new()
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	box.add_theme_constant_override("separation", 6)
+	card.add_child(box)
+
+	var title: Label = Label.new()
+	var state_text: String = "READY" if complete else ("CURRENT" if tier == current_tier else "READY AHEAD")
+	title.text = "%s  |  TIER %d\n%s" % [state_text, tier, str(entry.get("title", "Milestone"))]
+	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.add_theme_font_size_override("font_size", 19)
+	box.add_child(title)
+
+	var detail: Label = Label.new()
+	detail.text = str(entry.get("description", ""))
+	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	detail.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	box.add_child(detail)
+
+	var progress: ProgressBar = ProgressBar.new()
+	progress.min_value = 0
+	progress.max_value = target
+	progress.value = current_value
+	progress.show_percentage = false
+	progress.custom_minimum_size = Vector2(0, 14)
+	progress.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	box.add_child(progress)
+
+	var progress_text: Label = Label.new()
+	progress_text.text = "%d / %d" % [current_value, target]
+	progress_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	progress_text.modulate = Color("9fb0ba")
+	box.add_child(progress_text)
+
+	for requirement_variant: Variant in entry.get("requires", []):
+		if not (requirement_variant is Dictionary):
+			continue
+		var requirement: Dictionary = requirement_variant as Dictionary
+		var needed: int = int(requirement.get("target", 1))
+		var progress_value: int = mini(needed, _advancement_value(requirement))
+		var requirement_label: Label = Label.new()
+		requirement_label.text = "%s %s: %d / %d" % ["[x]" if progress_value >= needed else "[ ]", str(requirement.get("label", "Extra goal")), progress_value, needed]
+		requirement_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		requirement_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		box.add_child(requirement_label)
+
+	var reward: Label = Label.new()
+	reward.text = "REWARD  |  %s" % _advancement_reward_text(entry)
+	reward.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	reward.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	reward.modulate = Color("8ed6a3") if complete else Color("7f8d96")
+	box.add_child(reward)
+
+	var claim: Button = Button.new()
+	claim.custom_minimum_size = Vector2(0, 48)
+	claim.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	claim.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	if complete:
+		claim.text = "CLAIM REWARD"
+		claim.pressed.connect(_claim_advancement.bind(advancement_id))
+	else:
+		claim.text = "IN PROGRESS"
+		claim.disabled = true
+	box.add_child(claim)
+
+func _constrain_advancement_phone_width(node: Node) -> void:
+	for child: Node in node.get_children():
+		if child is Control:
+			var control: Control = child as Control
+			control.custom_minimum_size.x = 0.0
+			control.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			if control is Label:
+				var label: Label = control as Label
+				label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			elif control is Button:
+				var button: Button = control as Button
+				button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_constrain_advancement_phone_width(child)
+
+func _build_advancements_app() -> void:
+	var claimed_count: int = _advancement_claimed_count()
+	var ready_count: int = _advancement_ready_count()
+
+	var summary_card: PanelContainer = PanelContainer.new()
+	summary_card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	summary_card.add_theme_stylebox_override("panel", _style_box(Color("111920"), Color("776b3f"), 16, 2))
+	phone_list.add_child(summary_card)
+	var summary_box: VBoxContainer = VBoxContainer.new()
+	summary_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	summary_box.add_theme_constant_override("separation", 6)
+	summary_card.add_child(summary_box)
+
+	var rank: Label = Label.new()
+	rank.text = "CAREER ROADMAP\n%s" % _advancement_career_rank()
+	rank.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	rank.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	rank.add_theme_font_size_override("font_size", 22)
+	rank.modulate = Color("e4cf83")
+	summary_box.add_child(rank)
+
+	var story: Label = Label.new()
+	story.text = "STORY  |  %s" % _advancement_story_label()
+	story.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	story.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	story.modulate = Color("c6d4da")
+	summary_box.add_child(story)
+
+	var summary: Label = Label.new()
+	summary.text = "%d / %d milestones claimed   |   %d reward%s ready" % [claimed_count, advancement_catalog.size(), ready_count, "" if ready_count == 1 else "s"]
+	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	summary.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	summary.modulate = Color("d7c28a") if ready_count > 0 else Color("9fb0ba")
+	summary_box.add_child(summary)
+
+	var overall: ProgressBar = ProgressBar.new()
+	overall.min_value = 0
+	overall.max_value = maxi(1, advancement_catalog.size())
+	overall.value = claimed_count
+	overall.show_percentage = false
+	overall.custom_minimum_size = Vector2(0, 16)
+	overall.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	summary_box.add_child(overall)
+
+	if ready_count > 0:
+		var claim_all: Button = Button.new()
+		claim_all.text = "CLAIM ALL (%d)" % ready_count
+		claim_all.custom_minimum_size = Vector2(0, 54)
+		claim_all.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		claim_all.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		claim_all.add_theme_font_size_override("font_size", 17)
+		claim_all.add_theme_stylebox_override("normal", _style_box(Color("1b3324"), Color("78c98a"), 12, 2))
+		claim_all.pressed.connect(_claim_all_advancements)
+		summary_box.add_child(claim_all)
+
+	var roadmap_hint: Label = Label.new()
+	roadmap_hint.text = "Each lane shows your current tier and the next tier ahead. Claimed milestones stay saved but are removed from the active list. If you already completed a future goal, it appears as READY AHEAD instead of being hidden."
+	roadmap_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	roadmap_hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	roadmap_hint.modulate = Color("9fb0ba")
+	phone_list.add_child(roadmap_hint)
+
+	for lane_name: String in _advancement_lane_order():
+		if lane_name == "Expansion" and not _story_chapter_three_complete():
+			continue
+		var lane_total: int = 0
+		var lane_claimed: int = 0
+		for lane_entry: Dictionary in advancement_catalog:
+			if _advancement_lane_name(lane_entry) != lane_name:
+				continue
+			lane_total += 1
+			if bool(advancement_claimed.get(str(lane_entry.get("id", "")), false)):
+				lane_claimed += 1
+		if lane_total <= 0:
+			continue
+
+		var lane_card: PanelContainer = PanelContainer.new()
+		lane_card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		lane_card.add_theme_stylebox_override("panel", _style_box(Color("131b21"), Color("37454e"), 16, 1))
+		phone_list.add_child(lane_card)
+		var lane_box: VBoxContainer = VBoxContainer.new()
+		lane_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		lane_box.add_theme_constant_override("separation", 7)
+		lane_card.add_child(lane_box)
+
+		var lane_title: Label = Label.new()
+		lane_title.text = "%s   |   %d/%d" % [lane_name.to_upper(), lane_claimed, lane_total]
+		lane_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		lane_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		lane_title.add_theme_font_size_override("font_size", 21)
+		lane_title.modulate = Color("d7c28a")
+		lane_box.add_child(lane_title)
+
+		var lane_progress: ProgressBar = ProgressBar.new()
+		lane_progress.min_value = 0
+		lane_progress.max_value = maxi(1, lane_total)
+		lane_progress.value = lane_claimed
+		lane_progress.show_percentage = false
+		lane_progress.custom_minimum_size = Vector2(0, 12)
+		lane_progress.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		lane_box.add_child(lane_progress)
+
+		var current_tier: int = _advancement_lane_current_tier(lane_name)
+		if current_tier < 0:
+			var mastered: Label = Label.new()
+			mastered.text = "MASTERED  |  All current milestones claimed."
+			mastered.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			mastered.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			mastered.modulate = Color("8ed6a3")
+			lane_box.add_child(mastered)
+			continue
+
+		var focus: Label = Label.new()
+		focus.text = "CURRENT FOCUS  |  TIER %d" % current_tier
+		focus.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		focus.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		focus.modulate = Color("c6d4da")
+		lane_box.add_child(focus)
+
+		for entry: Dictionary in advancement_catalog:
+			if _advancement_lane_name(entry) != lane_name:
+				continue
+			var advancement_id: String = str(entry.get("id", ""))
+			if bool(advancement_claimed.get(advancement_id, false)):
+				continue
+			var entry_tier: int = int(entry.get("tier", 1))
+			if entry_tier == current_tier or _advancement_is_ready(entry):
+				_add_advancement_roadmap_milestone(lane_box, entry, current_tier)
+
+		var next_tier: int = _advancement_lane_next_tier(lane_name, current_tier)
+		if next_tier > 0:
+			var next_titles: Array[String] = []
+			for next_entry: Dictionary in advancement_catalog:
+				if _advancement_lane_name(next_entry) != lane_name:
+					continue
+				if int(next_entry.get("tier", 1)) != next_tier:
+					continue
+				var next_id: String = str(next_entry.get("id", ""))
+				if bool(advancement_claimed.get(next_id, false)):
+					continue
+				if _advancement_is_ready(next_entry):
+					continue
+				next_titles.append(str(next_entry.get("title", "Milestone")))
+			if not next_titles.is_empty():
+				var preview: Label = Label.new()
+				preview.text = "LOCKED NEXT  |  TIER %d\n%s" % [next_tier, "  •  ".join(next_titles)]
+				preview.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+				preview.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+				preview.modulate = Color("687781")
+				lane_box.add_child(preview)
+
+	_constrain_advancement_phone_width(phone_list)
+	phone_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	phone_list.custom_minimum_size.x = 0.0
+	phone_list.queue_sort()
+	phone_scroll.queue_sort()
+
+func _find_advancement(advancement_id: String) -> Dictionary:
+	for entry: Dictionary in advancement_catalog:
+		if str(entry.get("id", "")) == advancement_id:
+			return entry
+	return {}
+
+func _claim_advancement(advancement_id: String) -> void:
+	if bool(advancement_claimed.get(advancement_id, false)):
+		return
+	var entry: Dictionary = _find_advancement(advancement_id)
+	if entry.is_empty():
+		return
+	if not _advancement_is_ready(entry):
+		return
+	advancement_claimed[advancement_id] = true
+	var reward_cash: int = int(entry.get("reward_cash", 0))
+	var reward_xp: int = int(entry.get("reward_xp", 0))
+	var reward_rep: int = int(entry.get("reward_rep", 0))
+	var reward_fertilizer: int = int(entry.get("reward_fertilizer", 0))
+	var reward_seed: String = str(entry.get("reward_seed", ""))
+	var reward_seed_count: int = int(entry.get("reward_seed_count", 0))
+	cash += reward_cash
+	fertilizer_units += reward_fertilizer
+	if not reward_seed.is_empty() and reward_seed_count > 0:
+		seed_inventory[reward_seed] = int(seed_inventory.get(reward_seed, 0)) + reward_seed_count
+	_add_progress(reward_xp, reward_rep)
+	_update_cash_ui()
+	status_label.text = "Advancement complete: %s. Reward claimed." % str(entry.get("title", "Milestone"))
+	_save_game()
+	_refresh_phone()
+
+func _claim_all_advancements() -> void:
+	var ready_entries: Array[Dictionary] = []
+	for entry: Dictionary in advancement_catalog:
+		var advancement_id: String = str(entry.get("id", ""))
+		if advancement_id.is_empty():
+			continue
+		if bool(advancement_claimed.get(advancement_id, false)):
+			continue
+		if _advancement_is_ready(entry):
+			ready_entries.append(entry)
+	if ready_entries.is_empty():
+		return
+
+	var total_cash: int = 0
+	var total_xp: int = 0
+	var total_rep: int = 0
+	var total_fertilizer: int = 0
+	var seed_totals: Dictionary = {}
+	for entry: Dictionary in ready_entries:
+		var advancement_id: String = str(entry.get("id", ""))
+		advancement_claimed[advancement_id] = true
+		total_cash += int(entry.get("reward_cash", 0))
+		total_xp += int(entry.get("reward_xp", 0))
+		total_rep += int(entry.get("reward_rep", 0))
+		total_fertilizer += int(entry.get("reward_fertilizer", 0))
+		var reward_seed: String = str(entry.get("reward_seed", ""))
+		var reward_seed_count: int = int(entry.get("reward_seed_count", 0))
+		if not reward_seed.is_empty() and reward_seed_count > 0:
+			seed_totals[reward_seed] = int(seed_totals.get(reward_seed, 0)) + reward_seed_count
+
+	cash += total_cash
+	fertilizer_units += total_fertilizer
+	for seed_name: String in seed_totals.keys():
+		seed_inventory[seed_name] = int(seed_inventory.get(seed_name, 0)) + int(seed_totals[seed_name])
+	_add_progress(total_xp, total_rep)
+	_update_cash_ui()
+	status_label.text = "Claimed %d completed rewards." % ready_entries.size()
+	_save_game()
+	_refresh_phone()
+
+func _increment_advancement_stat(metric_name: String, amount: int = 1) -> void:
+	if metric_name.is_empty() or amount <= 0:
+		return
+	advancement_stats[metric_name] = int(advancement_stats.get(metric_name, 0)) + amount
+
+func _debug_trigger_reeves() -> void:
+	heat = maxf(heat, REEVES_TRIGGER_HEAT)
+	heat_peak = maxf(heat_peak, heat)
+	reeves_visit_pending = true
+	reeves_visit_reason = "first_offer"
+	phone_open = false
+	if phone_panel != null:
+		phone_panel.visible = false
+	_set_world_controls_visible(true)
+	_maybe_start_reeves_visit()
+	_save_game()
+
+func _build_heat_app() -> void:
+	var intro: Label = Label.new()
+	intro.text = "Heat measures how much attention your operation is drawing. Fast sales, dealers, customer traffic and complaints raise it. Quiet time lowers it."
+	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	phone_list.add_child(intro)
+
+	var card: PanelContainer = PanelContainer.new()
+	card.add_theme_stylebox_override("panel", _style_box(Color("171d24"), _heat_stage_color(), 18, 2))
+	phone_list.add_child(card)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 8)
+	card.add_child(box)
+	var title: Label = Label.new()
+	title.text = "%s   |   %d / 100" % [_heat_stage_name(), int(round(heat))]
+	title.add_theme_font_size_override("font_size", 24)
+	title.modulate = _heat_stage_color()
+	box.add_child(title)
+	var bar: ProgressBar = ProgressBar.new()
+	bar.min_value = 0
+	bar.max_value = 100
+	bar.value = heat
+	bar.custom_minimum_size.y = 28
+	box.add_child(bar)
+	var detail: Label = Label.new()
+	detail.text = "Peak Heat: %d   |   Managed away: %d
+Last change: %s" % [int(round(heat_peak)), int(floor(heat_reduced_total)), last_heat_cause]
+	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(detail)
+
+	var guide: Label = Label.new()
+	guide.text = "0-24 LOW PROFILE
+25-49 NOTICED
+50-74 WATCHED
+75-89 HOT
+90-100 CRITICAL"
+	guide.modulate = Color("aeb9bf")
+	phone_list.add_child(guide)
+
+	var shutdown_note := Label.new()
+	shutdown_note.text="Lay low at the property computer or text assigned crew through Contacts."
+	shutdown_note.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	phone_list.add_child(shutdown_note)
+
+	if reeves_met and (corrupt_contact_unlocked or heat_peak >= 50.0) and not reeves_arrangement_active:
+		corrupt_contact_unlocked = true
+		var contact_card: PanelContainer = PanelContainer.new()
+		contact_card.add_theme_stylebox_override("panel", _style_box(Color("1a1718"), Color("78584f"), 16, 1))
+		phone_list.add_child(contact_card)
+		var contact_box: VBoxContainer = VBoxContainer.new()
+		contact_box.add_theme_constant_override("separation", 7)
+		contact_card.add_child(contact_box)
+		var contact_title: Label = Label.new()
+		contact_title.text = "CONTACT  |  REEVES"
+		contact_title.add_theme_font_size_override("font_size", 20)
+		contact_box.add_child(contact_title)
+		var contact_copy: Label = Label.new()
+		contact_copy.text = "Before or between formal arrangements, Reeves can sometimes reduce attention for a one-off favor. The recurring arrangement begins through an in-person visit."
+		contact_copy.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		contact_box.add_child(contact_copy)
+		var call_button: Button = Button.new()
+		call_button.text = "PAY REEVES  |  $%d  |  HEAT -%d" % [_heat_contact_cost(), int(HEAT_CONTACT_REDUCTION)]
+		call_button.disabled = heat < HEAT_CONTACT_MINIMUM or cash < _heat_contact_cost()
+		call_button.custom_minimum_size.y = 52
+		call_button.pressed.connect(_use_heat_contact)
+		contact_box.add_child(call_button)
+
+	if reeves_met or reeves_arrangement_active:
+		var reeves_card: PanelContainer = PanelContainer.new()
+		reeves_card.add_theme_stylebox_override("panel", _style_box(Color("17191d"), Color("8d6e56"), 16, 1))
+		phone_list.add_child(reeves_card)
+		var reeves_box: VBoxContainer = VBoxContainer.new()
+		reeves_box.add_theme_constant_override("separation", 7)
+		reeves_card.add_child(reeves_box)
+		var reeves_title: Label = Label.new()
+		reeves_title.text = "AGENT REEVES - %s" % ("ACTIVE BALANCE" if reeves_arrangement_active else ("SETTLED" if reeves_arrangement_ended else "NO ARRANGEMENT"))
+		reeves_title.add_theme_font_size_override("font_size", 20)
+		reeves_box.add_child(reeves_title)
+		var remaining: int = _reeves_remaining_balance()
+		var half_now: int = _reeves_half_payment_amount()
+		var reeves_info: Label = Label.new()
+		reeves_info.text = "Relationship: %d / 100
+Enforcement risk: %d%%
+Missed/refused payments: %d
+Protection paid: $%d / $%d
+Remaining balance: $%d%s" % [reeves_relationship, int(round(enforcement_risk)), reeves_missed_payments, mini(reeves_total_paid, REEVES_TOTAL_OBLIGATION), REEVES_TOTAL_OBLIGATION, remaining, ("
+Next Reeves visit: Day %d" % reeves_next_payment_day) if reeves_arrangement_active and remaining > 0 else ""]
+		reeves_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		reeves_box.add_child(reeves_info)
+		if reeves_arrangement_active and remaining > 0:
+			var pay_half: Button = Button.new()
+			pay_half.text = "PAY HALF EARLY - $%d" % half_now
+			pay_half.disabled = half_now <= 0
+			pay_half.custom_minimum_size.y = 50
+			pay_half.pressed.connect(_reeves_pay_half.bind(true))
+			reeves_box.add_child(pay_half)
+			var pay_full: Button = Button.new()
+			pay_full.text = "PAY FULL BALANCE - $%d" % remaining
+			pay_full.disabled = cash < remaining
+			pay_full.custom_minimum_size.y = 50
+			pay_full.pressed.connect(_reeves_pay_full.bind(true))
+			reeves_box.add_child(pay_full)
+			var quiet_exit: Button = Button.new()
+			quiet_exit.text = "END ARRANGEMENT - GO QUIET (%d/%d DAYS)" % [reeves_quiet_days, REEVES_QUIET_EXIT_DAYS]
+			quiet_exit.disabled = business_open or heat > 10.0 or reeves_quiet_days < REEVES_QUIET_EXIT_DAYS
+			quiet_exit.custom_minimum_size.y = 50
+			quiet_exit.pressed.connect(_reeves_quiet_exit)
+			reeves_box.add_child(quiet_exit)
+		var legal_note: Label = Label.new()
+		legal_note.text = "REFUSE at the door if you want to keep your cash. Then use LAY LOW above to close the operation and cool pressure. Paying the full $8,000 balance settles Reeves completely."
+		legal_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		legal_note.modulate = Color("aeb9bf")
+		reeves_box.add_child(legal_note)
+
+	if enforcement_report_pending and not last_enforcement_report.is_empty():
+		var report_card: PanelContainer = PanelContainer.new()
+		report_card.add_theme_stylebox_override("panel", _style_box(Color("281b1b"), Color("c26a5d"), 16, 2))
+		phone_list.add_child(report_card)
+		var report_box: VBoxContainer = VBoxContainer.new()
+		report_box.add_theme_constant_override("separation", 7)
+		report_card.add_child(report_box)
+		var report_title: Label = Label.new()
+		report_title.text = "ENFORCEMENT EVENT REPORT"
+		report_title.add_theme_font_size_override("font_size", 20)
+		report_box.add_child(report_title)
+		var report_text: Label = Label.new()
+		report_text.text = last_enforcement_report
+		report_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		report_box.add_child(report_text)
+		var acknowledge: Button = Button.new()
+		acknowledge.text = "ACKNOWLEDGE REPORT"
+		acknowledge.custom_minimum_size.y = 48
+		acknowledge.pressed.connect(_acknowledge_enforcement_report)
+		report_box.add_child(acknowledge)
+
+	var events_header: Label = Label.new()
+	events_header.text = "RECENT PRESSURE"
+	events_header.add_theme_font_size_override("font_size", 20)
+	phone_list.add_child(events_header)
+	if heat_event_log.is_empty():
+		var empty: Label = Label.new()
+		empty.text = "Nothing unusual yet."
+		phone_list.add_child(empty)
+	else:
+		for event_text: String in heat_event_log:
+			var event_label: Label = Label.new()
+			event_label.text = " |  %s" % event_text
+			event_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			phone_list.add_child(event_label)
+
+func _acknowledge_enforcement_report() -> void:
+	enforcement_report_pending = false
+	_save_game()
+	_refresh_phone()
+
+func _build_stats_app() -> void:
+	var stored: int = _total_stored_stock()
+	var stats: Label = Label.new()
+	stats.text = "CAREER\nRank: %s\nMilestones: %d / %d\nLifetime revenue: $%d\nCurrent cash: $%d\nReputation: %d\nBrand Level: %d\nHeat: %d / 100  |  %s\nPeak Heat: %d\nStored sellable inventory: %dg\nGrow Shelf Lv %d  |  Seeds %d/%d  |  Fertilizer %d/%d\nLifetime utilities: $%d electric  |  $%d water\nAdvancement rewards ready: %d" % [_advancement_career_rank(), _advancement_claimed_count(), advancement_catalog.size(), lifetime_revenue, cash, reputation, brand_level, int(round(heat)), _heat_stage_name(), int(round(heat_peak)), stored, supply_shelf_level, _total_seed_inventory(), _supply_seed_capacity(), fertilizer_units, _supply_fertilizer_capacity(), lifetime_power_cost, lifetime_water_cost, _advancement_ready_count()]
+	stats.add_theme_font_size_override("font_size", 19)
+	stats.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	phone_list.add_child(stats)
+	var reset: Button = Button.new()
+	reset.text = "RESET CAREER DATA..."
+	reset.name = "ResetCareerButton"
+	reset.custom_minimum_size.y = 50
+	reset.pressed.connect(_reset_beta_save)
+	phone_list.add_child(reset)
+
+func _toggle_product_listing(product_name: String) -> void:
+	if not products.has(product_name):
+		return
+	var data: Dictionary = products[product_name]
+	var next_state: bool = not bool(data.get("listed", false))
+	_set_product_listed(product_name, next_state)
+	_refresh_phone()
+
+func _on_product_toggled(listed: bool, product_name: String) -> void:
+	_set_product_listed(product_name, listed)
+
+func _on_reserved_changed(value: float, product_name: String) -> void:
+	_set_reserved(product_name, int(value))
+
+func _set_product_listed(product_name: String, listed: bool) -> void:
+	if tutorial_active and listed and product_name != tutorial_harvest_strain:
+		status_label.text = "List your harvested %s to finish the guide." % tutorial_harvest_strain
+		return
+	if listed and not _tutorial_can_do("list"):
+		return
+	if not products.has(product_name):
+		return
+	var data: Dictionary = products[product_name]
+	var stock: int = int(data.get("stock", 0))
+	if stock <= 0 and listed:
+		return
+	var was_listed: bool = bool(data.get("listed", false))
+	data["listed"] = listed
+	products[product_name] = data
+	if listed and not was_listed and business_open:
+		_increment_advancement_stat("products_listed")
+		_tutorial_record("list", -1, product_name)
+		var already_launched: bool = bool(product_launch_seen.get(product_name, false))
+		if not already_launched:
+			product_launch_seen[product_name] = true
+			if _story_chapter_one_complete():
+				hype_visits_remaining = mini(4, hype_visits_remaining + 3)
+				hype_product_name = product_name
+				status_label.text = "%s is live for the first time. Fresh Drop interest is building; a short rush may show up soon." % product_name
+			else:
+				status_label.text = "%s is live. Fresh Drop rushes unlock after Chapter 1: Starting Small." % product_name
+		else:
+			status_label.text = "%s is now listed for customers." % product_name
+	else:
+		status_label.text = "%s is now %s." % [product_name, "listed for customers" if listed else "hidden from the storefront"]
+	_save_game()
+	_schedule_next_customer(true)
+
+func _unlist_all_products() -> void:
+	for name_variant in products.keys():
+		var product_name: String = str(name_variant)
+		var data: Dictionary = products[product_name]
+		data["listed"] = false
+		products[product_name] = data
+	status_label.text = "All products were unlisted. No new customers will be generated from the storefront."
+	if visit_timer != null:
+		visit_timer.stop()
+	_save_game()
+	_refresh_phone()
+
+func _set_business_away() -> void:
+	if not business_open:
+		return
+	paused_listing_snapshot.clear()
+	for name_variant in products.keys():
+		var product_name: String = str(name_variant)
+		var data: Dictionary = products[product_name]
+		if bool(data.get("listed", false)):
+			paused_listing_snapshot[product_name] = true
+		data["listed"] = false
+		products[product_name] = data
+	business_open = false
+	last_customer_broadcast = away_message
+	if customer_waiting and not customer_answered:
+		if customer_patience_timer != null:
+			customer_patience_timer.stop()
+		knock_banner.visible = false
+		customer_waiting = false
+		customer_departing = false
+		peephole_checked = false
+		current_customer = {}
+		active_request = {}
+	var known_count: int = 0
+	for customer: Dictionary in customers:
+		if _customer_is_known(customer):
+			known_count += 1
+	if visit_timer != null:
+		visit_timer.stop()
+	status_label.text = "Sales paused. Text sent to %d known customers: %s" % [known_count, away_message]
+	_save_game()
+	_refresh_phone()
+
+func _broadcast_away_message() -> void:
+	var known_count: int = 0
+	for customer: Dictionary in customers:
+		if _customer_is_known(customer):
+			known_count += 1
+	last_customer_broadcast = away_message
+	status_label.text = "Text sent to %d known customers: %s" % [known_count, away_message]
+	_save_game()
+	_refresh_phone()
+
+func _reopen_business() -> void:
+	if business_open:
+		return
+	if game_day < raid_lockdown_until_day:
+		status_label.text = "The operation is still shut down after the enforcement event. You can reopen on Day %d." % raid_lockdown_until_day
+		return
+	lay_low_active = false
+	business_open = true
+	for name_variant in paused_listing_snapshot.keys():
+		var product_name: String = str(name_variant)
+		if not products.has(product_name):
+			continue
+		var data: Dictionary = products[product_name]
+		if int(data.get("stock", 0)) > 0:
+			data["listed"] = true
+			products[product_name] = data
+	paused_listing_snapshot.clear()
+	last_customer_broadcast = "Back home - storefront reopened."
+	status_label.text = "Storefront reopened. Listed stock was restored; customer traffic can resume immediately."
+	_save_game()
+	_refresh_phone()
+	_schedule_next_customer(true)
+
+func _set_reserved(product_name: String, amount: int) -> void:
+	if not products.has(product_name):
+		return
+	var data: Dictionary = products[product_name]
+	var stock: int = int(data.get("stock", 0))
+	var reserved: int = clampi(amount, 0, stock)
+	data["reserved"] = reserved
+	products[product_name] = data
+	status_label.text = "%dg of %s reserved." % [reserved, product_name]
+	_save_game()
+
+func _buy_seed(seed_name: String) -> void:
+	if neighborhood!=null and neighborhood.location_ops!=null and not tutorial_active:
+		neighborhood.location_ops.order_seed(seed_name)
+		return
+	if seed_catalog.has(seed_name):
+		var purchase_info: Dictionary = seed_catalog[seed_name]
+		if bool(purchase_info.get("recipe_only", false)):
+			status_label.text = "%s is genetics-only. Create it in Phone -> Genetics." % seed_name
+			return
+	if tutorial_active:
+		status_label.text = "Use your starter seed first. Extra purchases unlock after the guided basics."
+		return
+	if not seed_catalog.has(seed_name):
+		return
+	var info: Dictionary = seed_catalog[seed_name]
+	var unlock_level: int = int(info.get("unlock", 1))
+	var cost: int = int(info.get("cost", 10))
+	if grower_level < unlock_level or cash < cost:
+		return
+	if not _supply_can_add_seeds(1):
+		status_label.text = "Grow Supply Shelf is full. Use a seed or buy a shelf upgrade first."
+		return
+	cash -= cost
+	_record_daily_expense("Seeds", cost)
+	seed_inventory[seed_name] = int(seed_inventory.get(seed_name, 0)) + 1
+	_increment_advancement_stat("seeds_bought")
+	_update_cash_ui()
+	status_label.text = "Bought 1 %s seed. Grow shelf: %d/%d seeds." % [seed_name, _total_seed_inventory(), _supply_seed_capacity()]
+	_save_game()
+	_refresh_phone()
+
+func _buy_supply(supply_name: String) -> void:
+	if neighborhood!=null and neighborhood.location_ops!=null and neighborhood.location_ops.supply_intercept(supply_name):return
+	if tutorial_active and (supply_name != "Fertilizer Pack" or not _tutorial_can_do("buy_fertilizer")):
+		return
+	if not supply_catalog.has(supply_name):
+		return
+	var info: Dictionary = supply_catalog[supply_name]
+	var unlock_level: int = int(info.get("unlock", 1))
+	var cost: int = int(info.get("cost", 10))
+	if grower_level < unlock_level or cash < cost:
+		return
+	if supply_name == "Fertilizer Pack" and not _supply_can_add_fertilizer(5):
+		status_label.text = "Grow Supply Shelf is full. Use fertilizer or upgrade the shelf first."
+		return
+	if supply_name == "Grow Supply Shelf III" and supply_shelf_level < 2:
+		status_label.text = "Install Grow Supply Shelf II first."
+		return
+	if supply_name == VAULT_SUPPLY and storage_level < 3:
+		status_label.text = "Install Storage Shelving III before buying the vault."
+		return
+	if supply_name == HIDDEN_STASH_SUPPLY and storage_level < 4:
+		status_label.text = "Install the AFB Storage Vault before buying the Hidden Wall Stash."
+		return
+	if supply_name == "Bagging Bench III" and bagging_level < 2:
+		status_label.text = "Install Bagging Bench II first."
+		return
+	if _supply_is_purchased(supply_name) and supply_name != "Fertilizer Pack":
+		return
+	cash -= cost
+	_record_daily_expense("Supplies / upgrades", cost)
+	match supply_name:
+		"Fertilizer Pack":
+			fertilizer_units += 5
+			_tutorial_record("buy_fertilizer")
+		"Grow Supply Shelf II":
+			supply_shelf_level = maxi(supply_shelf_level, 2)
+		"Grow Supply Shelf III":
+			supply_shelf_level = maxi(supply_shelf_level, 3)
+		"Storage Shelving II":
+			storage_level = maxi(storage_level, 2)
+		"Storage Shelving III":
+			storage_level = maxi(storage_level, 3)
+		"AFB Storage Vault":
+			storage_level = 4
+		"Hidden Wall Stash":
+			storage_level = 5
+		"Grow Tent Slot 2":
+			grow_tent_count = maxi(grow_tent_count, 2)
+			_sync_grow_expansion_visuals()
+		"Grow Room Ventilation":
+			ventilation_installed = true
+			ventilation_on = true
+			_refresh_light_interaction_visuals()
+		"Grow Tent Slot 3":
+			grow_tent_count = maxi(grow_tent_count, 3)
+			_sync_grow_expansion_visuals()
+		"Bagging Bench II":
+			bagging_level = maxi(bagging_level, 2)
+		"Bagging Bench III":
+			bagging_level = maxi(bagging_level, 3)
+		"Tent Upgrade II":
+			tent_level = maxi(tent_level, 2)
+		"Auto Water Kit":
+			auto_water_unlocked = true
+	_increment_advancement_stat("supplies_bought")
+	_update_cash_ui()
+	_apply_visual_upgrades()
+	_update_all_plant_visuals()
+	status_label.text = "%s purchased." % supply_name
+	_save_game()
+	_refresh_phone()
+
+func _supply_is_purchased(supply_name: String) -> bool:
+	match supply_name:
+		"Grow Supply Shelf II": return supply_shelf_level >= 2
+		"Grow Supply Shelf III": return supply_shelf_level >= 3
+		"Storage Shelving II": return storage_level >= 2
+		"Storage Shelving III": return storage_level >= 3
+		"AFB Storage Vault": return storage_level >= 4
+		"Hidden Wall Stash": return storage_level >= 5
+		"Grow Tent Slot 2": return grow_tent_count >= 2
+		"Grow Room Ventilation": return ventilation_installed
+		"Grow Tent Slot 3": return grow_tent_count >= 3
+		"Bagging Bench II": return bagging_level >= 2
+		"Bagging Bench III": return bagging_level >= 3
+		"Tent Upgrade II": return tent_level >= 2
+		"Auto Water Kit": return auto_water_unlocked
+	return false
+
+func _effective_price(product_name: String) -> int:
+	if not products.has(product_name):
+		return 0
+	var data: Dictionary = products[product_name]
+	var base_price: int = int(data.get("price", 10))
+	var equipment_bonus: int = maxi(0, bagging_level - 1)
+	var brand_bonus: int = maxi(0, brand_level - 1)
+	return base_price + equipment_bonus + brand_bonus
+
+func _storage_capacity() -> int:
+	if storage_level >= 5:
+		return 1000
+	if storage_level >= 4:
+		return StorageVault.CAPACITY_GRAMS
+	if storage_level <= 1:
+		return 40
+	if storage_level == 2:
+		return 90
+	return 160
+
+func _total_stored_stock() -> int:
+	var total: int = 0
+	for name_variant in products.keys():
+		var product_name: String = str(name_variant)
+		var data: Dictionary = products[product_name]
+		total += int(data.get("stock", 0))
+	return total
+
+func _on_off(value: bool) -> String:
+	return "ACTIVE" if value else "LOCKED / OFF"
+
+func _xp_needed_for_next_level() -> int:
+	return 40 + grower_level * 20
+
+func _add_progress(xp_amount: int, reputation_amount: int) -> void:
+	grower_xp += maxi(0, xp_amount)
+	reputation += maxi(0, reputation_amount)
+	var needed: int = _xp_needed_for_next_level()
+	while grower_xp >= needed:
+		grower_xp -= needed
+		grower_level += 1
+		needed = _xp_needed_for_next_level()
+		var unlocked_names: Array[String] = []
+		for seed_name in SEED_ORDER:
+			if seed_catalog.has(seed_name):
+				var seed_info: Dictionary = seed_catalog[seed_name]
+				if bool(seed_info.get("recipe_only", false)):
+					continue
+				if int(seed_info.get("unlock", 1)) == grower_level:
+					unlocked_names.append(seed_name)
+		if status_label != null:
+			if unlocked_names.is_empty():
+				status_label.text = "Grower Level %d reached. New upgrades may be available in Central Market checkout." % grower_level
+			else:
+				status_label.text = "Grower Level %d reached. New seed unlocked: %s. Buy it in Phone -> Shop -> Seeds." % [grower_level, ", ".join(PackedStringArray(unlocked_names))]
+	brand_level = maxi(1, 1 + int(reputation / 75))
+
+func _update_cash_ui() -> void:
+	if cash_label != null:
+		cash_label.text = "$%d" % cash
+	if brand_label != null:
+		brand_label.text = "AFewBuds"
+
+func _reset_beta_save() -> void:
+	if session_paused or daily_report_pending or reset_in_progress or reset_confirmation_open:
+		return
+	_cancel_phone_gesture()
+	_cancel_station_drag()
+	reset_confirmation_open = true
+	reset_message.text = "Reset this career?\n\nThis permanently deletes this career's money, plants, inventory, upgrades and progress on this device. It cannot be undone.\n\nChoose CANCEL to keep playing."
+	reset_overlay.visible = true
+	reset_confirm_button.disabled = false
+	reset_cancel_button.disabled = false
+	_sync_simulation_pause()
+	_refresh_door_alert()
+	reset_cancel_button.grab_focus()
+
+func _cancel_beta_reset() -> void:
+	if reset_in_progress:
+		return
+	reset_confirmation_open = false
+	if reset_overlay != null:
+		reset_overlay.visible = false
+	_cancel_phone_gesture()
+	_sync_simulation_pause()
+	_refresh_door_alert()
+
+func _confirm_beta_reset() -> void:
+	if not reset_confirmation_open or reset_in_progress or not reset_overlay.visible or session_paused:
+		return
+	reset_in_progress = true
+	reset_confirm_button.disabled = true
+	reset_cancel_button.disabled = true
+	_sync_simulation_pause()
+	var previous_save: PackedByteArray = PackedByteArray()
+	var had_save: bool = FileAccess.file_exists(SAVE_PATH)
+	if had_save:
+		previous_save = FileAccess.get_file_as_bytes(SAVE_PATH)
+		var remove_error: Error = DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
+		if remove_error != OK:
+			_reset_failed("The save could not be removed. Your career has not been reset.")
+			return
+	var reload_error: Error = get_tree().reload_current_scene()
+	if reload_error != OK:
+		if had_save:
+			var backup: FileAccess = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+			if backup != null:
+				backup.store_buffer(previous_save)
+				backup.close()
+		_reset_failed("The new career could not start. Cancel to return to your current game.")
+
+func _reset_failed(message: String) -> void:
+	reset_in_progress = false
+	reset_message.text = message
+	reset_confirm_button.disabled = true
+	reset_cancel_button.disabled = false
+	reset_cancel_button.grab_focus()
+
+
+func _save_game() -> void:
+	if reset_in_progress:
+		return # Do not recreate a deleted save during the scene reload.
+	var data: Dictionary = {
+		"saved_unix": Time.get_unix_time_from_system(),
+		"save_schema": SAVE_SCHEMA_VERSION,
+		"plant_clock": _plant_clock_snapshot(),
+		"build_version": BUILD_VERSION,
+		"runtime": _capture_runtime_state(),
+		"tutorial_active": tutorial_active,
+		"tutorial_step": tutorial_step,
+		"tutorial_slot": tutorial_slot,
+		"tutorial_harvest_strain": tutorial_harvest_strain,
+		"cash": cash,
+		"fertilizer_units": fertilizer_units,
+		"grower_level": grower_level,
+		"grower_xp": grower_xp,
+		"reputation": reputation,
+		"brand_level": brand_level,
+		"lifetime_revenue": lifetime_revenue,
+		"bagging_level": bagging_level,
+		"storage_level": storage_level,
+		"supply_shelf_level": supply_shelf_level,
+		"tent_level": tent_level,
+		"grow_tent_count": grow_tent_count,
+		"auto_water_unlocked": auto_water_unlocked,
+		"auto_bagger_unlocked": auto_bagger_unlocked,
+		"auto_sales_unlocked": auto_sales_unlocked,
+		"packing_employee_hired": packing_employee_hired,
+		"packing_employee_active": packing_employee_active,
+		"production_worker_auto_plant": production_worker_auto_plant,
+		"production_worker_tasks_today": production_worker_tasks_today,
+		"production_worker_last_action": production_worker_last_action,
+		"production_worker_friend_name": production_worker_friend_name,
+		"friend_staff_roles": friend_staff_roles,
+		"friend_dealer_stats": friend_dealer_stats,
+		"dealer_count": dealer_count,
+		"dealers_active": dealers_active,
+		"dealer_sales_today": dealer_sales_today,
+		"dealer_cash_held": dealer_cash_held,
+		"dealer_commission_held": dealer_commission_held,
+		"dealer_balance_due": dealer_balance_due,
+		"dealer_locker_level": dealer_locker_level,
+		"dealer_customers_served_today": dealer_customers_served_today,
+		"daily_sales_by_product": daily_sales_by_product,
+		"daily_expenses_by_category": daily_expenses_by_category,
+		"daily_report_pending": daily_report_pending,
+		"daily_report_data": daily_report_data,
+		"last_daily_report": last_daily_report,
+		"last_production_payroll_cost": last_production_payroll_cost,
+		"last_payroll_day": last_payroll_day,
+		"last_customer_name": last_customer_name,
+		"last_dealer_customer_name": last_dealer_customer_name,
+		"tutorial_seen": tutorial_seen,
+		"main_ceiling_light_on": main_ceiling_light_on,
+		"floor_lamp_on": floor_lamp_on,
+		"grow_room_light_on": grow_room_light_on,
+		"grow_lights_on": grow_lights_on,
+		"ventilation_installed": ventilation_installed,
+		"ventilation_on": ventilation_on,
+		"current_day_power_cost": current_day_power_cost,
+		"power_bill_due": power_bill_due,
+		"last_power_bill": last_power_bill,
+		"lifetime_power_cost": lifetime_power_cost,
+		"current_day_water_cost": current_day_water_cost,
+		"current_day_water_uses": current_day_water_uses,
+		"water_bill_due": water_bill_due,
+		"last_water_bill": last_water_bill,
+		"lifetime_water_cost": lifetime_water_cost,
+		"game_time_minutes": game_time_minutes,
+		"game_day": game_day,
+		"business_open": business_open,
+		"away_message": away_message,
+		"paused_listing_snapshot": paused_listing_snapshot,
+		"last_customer_broadcast": last_customer_broadcast,
+		"house_control_state": house_control_state,
+		"phone_text_messages": phone_text_messages,
+		"phone_text_unread": phone_text_unread,
+		"critical_staff_event_active": critical_staff_event_active,
+		"dealer_arrested": dealer_arrested,
+		"dealer_bail_due": dealer_bail_due,
+		"production_worker_arrested": production_worker_arrested,
+		"production_worker_bail_due": production_worker_bail_due,
+		"product_launch_seen": product_launch_seen,
+		"hype_visits_remaining": hype_visits_remaining,
+		"hype_product_name": hype_product_name,
+		"plant_slots": plant_slots,
+		"seed_inventory": seed_inventory,
+		"untrimmed_inventory": untrimmed_inventory,
+		"trimmed_inventory": trimmed_inventory,
+		"bagged_inventory": bagged_inventory,
+		"locker_weed": locker_weed,
+		"products": products,
+		"customer_relationships": customer_relationships,
+		"preferred_customer_name": preferred_customer_name,
+		"heat": heat,
+		"heat_peak": heat_peak,
+		"heat_reduced_total": heat_reduced_total,
+		"heat_events_seen": heat_events_seen,
+		"heat_event_log": heat_event_log,
+		"corrupt_contact_unlocked": corrupt_contact_unlocked,
+		"corrupt_contact_calls": corrupt_contact_calls,
+		"lay_low_active": lay_low_active,
+		"last_heat_cause": last_heat_cause,
+		"reeves_met": reeves_met,
+		"reeves_arrangement_active": reeves_arrangement_active,
+		"reeves_arrangement_ended": reeves_arrangement_ended,
+		"reeves_next_payment_day": reeves_next_payment_day,
+		"reeves_missed_payments": reeves_missed_payments,
+		"reeves_payment_level": reeves_payment_level,
+		"reeves_relationship": reeves_relationship,
+		"reeves_total_paid": reeves_total_paid,
+		"reeves_quiet_days": reeves_quiet_days,
+		"reeves_quiet_pause_seconds": reeves_quiet_pause_seconds,
+		"reeves_visit_pending": reeves_visit_pending,
+		"reeves_visit_reason": reeves_visit_reason,
+		"enforcement_risk": enforcement_risk,
+		"raid_warning_day": raid_warning_day,
+		"raids_survived": raids_survived,
+		"last_raid_day": last_raid_day,
+		"raid_lockdown_until_day": raid_lockdown_until_day,
+		"reeves_last_payment_day": reeves_last_payment_day,
+		"reeves_last_missed_day": reeves_last_missed_day,
+		"enforcement_report_pending": enforcement_report_pending,
+		"last_enforcement_report": last_enforcement_report,
+		"advancement_stats": advancement_stats,
+		"advancement_claimed": advancement_claimed,
+		"chapter_four_story_stage": chapter_four_story_stage,
+		"property_offer_unlocked": property_offer_unlocked,
+		"property_opportunity_state": property_opportunity_state,
+		"location_state": location_state,
+		"apartment_rent_state": apartment_rent_state
+	}
+	var file: FileAccess = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	if file == null:
+		return
+	file.store_string(JSON.stringify(data))
+	file.close()
+
+func _apply_cloud_boot_save() -> void:
+	if not OS.has_feature("web"):
+		return
+	var raw_variant: Variant = JavaScriptBridge.eval("window.AFB_CLOUD_BOOT_SAVE || ''", true)
+	if not (raw_variant is String):
+		return
+	var raw: String = str(raw_variant)
+	if raw.is_empty():
+		return
+	var parsed: Variant = JSON.parse_string(raw)
+	if not (parsed is Dictionary):
+		return
+	var file: FileAccess = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	if file == null:
+		return
+	file.store_string(raw)
+	file.close()
+	JavaScriptBridge.eval("window.AFB_CLOUD_BOOT_SAVE = '';", true)
+
+func _load_game() -> void:
+	if not FileAccess.file_exists(SAVE_PATH):
+		return
+	var file: FileAccess = FileAccess.open(SAVE_PATH, FileAccess.READ)
+	if file == null:
+		return
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	if not (parsed is Dictionary):
+		return
+	var data: Dictionary = parsed as Dictionary
+	loaded_existing_game = true
+	var runtime_variant: Variant = data.get("runtime", {})
+	if runtime_variant is Dictionary:
+		restored_runtime = runtime_variant as Dictionary
+	cash = int(data.get("cash", cash))
+	fertilizer_units = int(data.get("fertilizer_units", fertilizer_units))
+	grower_level = int(data.get("grower_level", grower_level))
+	grower_xp = int(data.get("grower_xp", grower_xp))
+	reputation = int(data.get("reputation", reputation))
+	brand_level = int(data.get("brand_level", brand_level))
+	lifetime_revenue = int(data.get("lifetime_revenue", lifetime_revenue))
+	bagging_level = int(data.get("bagging_level", bagging_level))
+	storage_level = int(data.get("storage_level", storage_level))
+	supply_shelf_level = clampi(int(data.get("supply_shelf_level", supply_shelf_level)), 1, 3)
+	tent_level = int(data.get("tent_level", tent_level))
+	grow_tent_count = clampi(int(data.get("grow_tent_count", grow_tent_count)), 1, 3)
+	auto_water_unlocked = bool(data.get("auto_water_unlocked", auto_water_unlocked))
+	auto_bagger_unlocked = bool(data.get("auto_bagger_unlocked", auto_bagger_unlocked))
+	auto_sales_unlocked = bool(data.get("auto_sales_unlocked", auto_sales_unlocked))
+	packing_employee_hired = bool(data.get("packing_employee_hired", auto_bagger_unlocked))
+	packing_employee_active = bool(data.get("packing_employee_active", packing_employee_hired))
+	production_worker_auto_plant = bool(data.get("production_worker_auto_plant", false))
+	production_worker_tasks_today = maxi(0, int(data.get("production_worker_tasks_today", 0)))
+	production_worker_last_action = str(data.get("production_worker_last_action", "Waiting for work" if packing_employee_active else "Off duty"))
+	production_worker_friend_name = str(data.get("production_worker_friend_name", ""))
+	var loaded_friend_staff: Variant = data.get("friend_staff_roles", friend_staff_roles)
+	if loaded_friend_staff is Dictionary:
+		friend_staff_roles = loaded_friend_staff as Dictionary
+	var loaded_friend_dealer_stats: Variant = data.get("friend_dealer_stats", {})
+	if loaded_friend_dealer_stats is Dictionary:
+		friend_dealer_stats = (loaded_friend_dealer_stats as Dictionary).duplicate(true)
+	dealer_count = maxi(0, int(data.get("dealer_count", 1 if auto_sales_unlocked else 0)))
+	dealers_active = bool(data.get("dealers_active", _total_dealer_count() > 0))
+	dealer_sales_today = maxi(0, int(data.get("dealer_sales_today", 0)))
+	dealer_cash_held = maxi(0, int(data.get("dealer_cash_held", 0)))
+	dealer_commission_held = maxi(0, int(data.get("dealer_commission_held", 0)))
+	dealer_balance_due = maxi(0, int(data.get("dealer_balance_due", 0)))
+	dealer_locker_level = clampi(int(data.get("dealer_locker_level", dealer_locker_level)), 0, 4)
+	var loaded_dealer_customers_today: Variant = data.get("dealer_customers_served_today", {})
+	if loaded_dealer_customers_today is Dictionary:
+		dealer_customers_served_today = (loaded_dealer_customers_today as Dictionary).duplicate(true)
+	var loaded_daily_sales: Variant = data.get("daily_sales_by_product", daily_sales_by_product)
+	if loaded_daily_sales is Dictionary:
+		daily_sales_by_product = loaded_daily_sales as Dictionary
+	var loaded_daily_expenses: Variant = data.get("daily_expenses_by_category", daily_expenses_by_category)
+	if loaded_daily_expenses is Dictionary:
+		daily_expenses_by_category = loaded_daily_expenses as Dictionary
+	daily_report_pending = bool(data.get("daily_report_pending", false))
+	var loaded_daily_report: Variant = data.get("daily_report_data", daily_report_data)
+	if loaded_daily_report is Dictionary:
+		daily_report_data = loaded_daily_report as Dictionary
+	var loaded_last_daily_report: Variant = data.get("last_daily_report", last_daily_report)
+	if loaded_last_daily_report is Dictionary:
+		last_daily_report = loaded_last_daily_report as Dictionary
+	last_production_payroll_cost = maxi(0, int(data.get("last_production_payroll_cost", 0)))
+	last_payroll_day = maxi(1, int(data.get("last_payroll_day", game_day)))
+	last_customer_name = str(data.get("last_customer_name", ""))
+	last_dealer_customer_name = str(data.get("last_dealer_customer_name", ""))
+	auto_bagger_unlocked = packing_employee_hired
+	auto_sales_unlocked = _total_dealer_count() > 0
+	tutorial_seen = bool(data.get("tutorial_seen", tutorial_seen))
+	tutorial_active = bool(data.get("tutorial_active", not tutorial_seen))
+	tutorial_step = clampi(int(data.get("tutorial_step", 0)), 0, TUTORIAL_ACTIONS.size())
+	tutorial_active = tutorial_active and tutorial_step < TUTORIAL_ACTIONS.size()
+	tutorial_slot = maxi(0, int(data.get("tutorial_slot", 0)))
+	tutorial_harvest_strain = str(data.get("tutorial_harvest_strain", "Purple Dream"))
+	main_ceiling_light_on = bool(data.get("main_ceiling_light_on", main_ceiling_light_on))
+	floor_lamp_on = bool(data.get("floor_lamp_on", floor_lamp_on))
+	grow_room_light_on = bool(data.get("grow_room_light_on", grow_room_light_on))
+	grow_lights_on = bool(data.get("grow_lights_on", grow_lights_on))
+	ventilation_installed = bool(data.get("ventilation_installed", ventilation_installed))
+	ventilation_on = bool(data.get("ventilation_on", ventilation_installed)) if ventilation_installed else false
+	current_day_power_cost = maxf(0.0, float(data.get("current_day_power_cost", current_day_power_cost)))
+	power_bill_due = maxi(0, int(data.get("power_bill_due", power_bill_due)))
+	last_power_bill = maxi(0, int(data.get("last_power_bill", last_power_bill)))
+	lifetime_power_cost = maxi(0, int(data.get("lifetime_power_cost", lifetime_power_cost)))
+	current_day_water_cost = maxf(0.0, float(data.get("current_day_water_cost", current_day_water_cost)))
+	current_day_water_uses = maxi(0, int(data.get("current_day_water_uses", current_day_water_uses)))
+	water_bill_due = maxi(0, int(data.get("water_bill_due", water_bill_due)))
+	last_water_bill = maxi(0, int(data.get("last_water_bill", last_water_bill)))
+	lifetime_water_cost = maxi(0, int(data.get("lifetime_water_cost", lifetime_water_cost)))
+	game_time_minutes = float(data.get("game_time_minutes", game_time_minutes))
+	game_day = maxi(1, int(data.get("game_day", game_day)))
+	business_open = bool(data.get("business_open", business_open))
+	away_message = str(data.get("away_message", away_message))
+	var loaded_paused_listings: Variant = data.get("paused_listing_snapshot", paused_listing_snapshot)
+	if loaded_paused_listings is Dictionary:
+		paused_listing_snapshot = loaded_paused_listings as Dictionary
+	last_customer_broadcast = str(data.get("last_customer_broadcast", last_customer_broadcast))
+	var saved_house_controls: Variant = data.get("house_control_state", {})
+	if saved_house_controls is Dictionary: house_control_state = saved_house_controls.duplicate(true)
+	var loaded_text_messages: Variant = data.get("phone_text_messages", [])
+	if loaded_text_messages is Array:
+		phone_text_messages.clear()
+		for msg_variant: Variant in loaded_text_messages:
+			if msg_variant is Dictionary:
+				phone_text_messages.append((msg_variant as Dictionary).duplicate(true))
+	phone_text_unread = maxi(0, int(data.get("phone_text_unread", phone_text_unread)))
+	critical_staff_event_active = bool(data.get("critical_staff_event_active", critical_staff_event_active))
+	dealer_arrested = bool(data.get("dealer_arrested", dealer_arrested))
+	dealer_bail_due = maxi(0, int(data.get("dealer_bail_due", dealer_bail_due)))
+	production_worker_arrested = bool(data.get("production_worker_arrested", production_worker_arrested))
+	production_worker_bail_due = maxi(0, int(data.get("production_worker_bail_due", production_worker_bail_due)))
+	var loaded_launch_seen: Variant = data.get("product_launch_seen", product_launch_seen)
+	if loaded_launch_seen is Dictionary:
+		product_launch_seen = loaded_launch_seen as Dictionary
+	hype_visits_remaining = maxi(0, int(data.get("hype_visits_remaining", hype_visits_remaining)))
+	hype_product_name = str(data.get("hype_product_name", hype_product_name))
+	var loaded_plants: Variant = data.get("plant_slots", plant_slots)
+	if loaded_plants is Array:
+		plant_slots.clear()
+		for item_variant in loaded_plants as Array:
+			if item_variant is Dictionary:
+				plant_slots.append(item_variant as Dictionary)
+	var loaded_seeds: Variant = data.get("seed_inventory", seed_inventory)
+	if loaded_seeds is Dictionary:
+		seed_inventory = loaded_seeds as Dictionary
+	for seed_name in SEED_ORDER:
+		if not seed_inventory.has(seed_name):
+			seed_inventory[seed_name] = 0
+	var loaded_untrimmed: Variant = data.get("untrimmed_inventory", untrimmed_inventory)
+	if loaded_untrimmed is Dictionary:
+		untrimmed_inventory = loaded_untrimmed as Dictionary
+	var loaded_trimmed: Variant = data.get("trimmed_inventory", trimmed_inventory)
+	if loaded_trimmed is Dictionary:
+		trimmed_inventory = loaded_trimmed as Dictionary
+	var loaded_bagged: Variant = data.get("bagged_inventory", bagged_inventory)
+	if loaded_bagged is Dictionary:
+		bagged_inventory = loaded_bagged as Dictionary
+	var legacy_personal: Dictionary = {}
+	var lp: Variant = data.get("personal_weed", {})
+	if lp is Dictionary:
+		legacy_personal = (lp as Dictionary).duplicate(true)
+	var lw: Variant = data.get("locker_weed", locker_weed)
+	if lw is Dictionary:
+		locker_weed = (lw as Dictionary).duplicate(true)
+	var legacy_cash: int = maxi(0, int(data.get("locker_cash", 0)))
+	var loaded_products: Variant = data.get("products", products)
+	if loaded_products is Dictionary:
+		products = loaded_products as Dictionary
+	for k: Variant in legacy_personal.keys():
+		var s: String = str(k)
+		var amount: int = maxi(0, int(legacy_personal.get(s, 0)))
+		if amount > 0:
+			_ensure_product_exists(s)
+			var pd: Dictionary = products[s]
+			pd["stock"] = int(pd.get("stock", 0)) + amount
+			products[s] = pd
+	for dealer_key: Variant in locker_weed.keys():
+		_ensure_product_exists(str(dealer_key))
+	if legacy_cash > 0:
+		cash += legacy_cash
+	var loaded_relationships: Variant = data.get("customer_relationships", customer_relationships)
+	if loaded_relationships is Dictionary:
+		customer_relationships = loaded_relationships as Dictionary
+	if customer_relationships.has("Marcus") and not customer_relationships.has("Marcuss"):
+		customer_relationships["Marcuss"] = customer_relationships["Marcus"]
+		customer_relationships.erase("Marcus")
+	for relationship_name_variant in customer_relationships.keys():
+		var relationship_name: String = str(relationship_name_variant)
+		var relationship: Dictionary = customer_relationships[relationship_name] as Dictionary
+		if not relationship.has("player_sales"):
+			relationship["player_sales"] = int(relationship.get("sales", 0))
+		if not relationship.has("dealer_sales"):
+			relationship["dealer_sales"] = 0
+		if not relationship.has("loyalty"):
+			var personal_sales: int = int(relationship.get("player_sales", 0))
+			var non_sale_visits: int = maxi(0, int(relationship.get("visits", 0)) - personal_sales)
+			relationship["loyalty"] = clampi(personal_sales * 18 + non_sale_visits * 2, 0, 100)
+		if not relationship.has("staff_purchases"):
+			relationship["staff_purchases"] = 0
+		customer_relationships[relationship_name] = relationship
+	preferred_customer_name = str(data.get("preferred_customer_name", preferred_customer_name))
+	if preferred_customer_name == "Marcus":
+		preferred_customer_name = "Marcuss"
+	heat = clampf(float(data.get("heat", heat)), 0.0, 100.0)
+	heat_peak = maxf(heat, float(data.get("heat_peak", heat_peak)))
+	heat_reduced_total = maxf(0.0, float(data.get("heat_reduced_total", heat_reduced_total)))
+	var loaded_heat_events_seen: Variant = data.get("heat_events_seen", heat_events_seen)
+	if loaded_heat_events_seen is Dictionary:
+		heat_events_seen = loaded_heat_events_seen as Dictionary
+	var loaded_heat_event_log: Variant = data.get("heat_event_log", heat_event_log)
+	if loaded_heat_event_log is Array:
+		heat_event_log.clear()
+		for heat_log_variant: Variant in loaded_heat_event_log as Array:
+			heat_event_log.append(str(heat_log_variant))
+	corrupt_contact_unlocked = bool(data.get("corrupt_contact_unlocked", heat_peak >= 50.0))
+	corrupt_contact_calls = maxi(0, int(data.get("corrupt_contact_calls", corrupt_contact_calls)))
+	lay_low_active = bool(data.get("lay_low_active", lay_low_active)) and not business_open
+	last_heat_cause = str(data.get("last_heat_cause", last_heat_cause))
+	reeves_met = bool(data.get("reeves_met", reeves_met))
+	reeves_arrangement_active = bool(data.get("reeves_arrangement_active", reeves_arrangement_active))
+	reeves_arrangement_ended = bool(data.get("reeves_arrangement_ended", reeves_arrangement_ended))
+	reeves_next_payment_day = maxi(0, int(data.get("reeves_next_payment_day", reeves_next_payment_day)))
+	reeves_missed_payments = maxi(0, int(data.get("reeves_missed_payments", reeves_missed_payments)))
+	reeves_payment_level = maxi(0, int(data.get("reeves_payment_level", reeves_payment_level)))
+	reeves_relationship = clampi(int(data.get("reeves_relationship", reeves_relationship)), 0, 100)
+	reeves_total_paid = clampi(int(data.get("reeves_total_paid", reeves_total_paid)), 0, REEVES_TOTAL_OBLIGATION)
+	if reeves_total_paid >= REEVES_TOTAL_OBLIGATION:
+		reeves_arrangement_active = false
+		reeves_arrangement_ended = true
+		reeves_next_payment_day = 0
+		reeves_missed_payments = 0
+	reeves_quiet_days = maxi(0, int(data.get("reeves_quiet_days", reeves_quiet_days)))
+	reeves_quiet_pause_seconds = maxf(0.0, float(data.get("reeves_quiet_pause_seconds", 0.0)))
+	reeves_visit_pending = bool(data.get("reeves_visit_pending", reeves_visit_pending))
+	reeves_visit_reason = str(data.get("reeves_visit_reason", reeves_visit_reason))
+	enforcement_risk = clampf(float(data.get("enforcement_risk", enforcement_risk)), 0.0, 100.0)
+	raid_warning_day = int(data.get("raid_warning_day", raid_warning_day))
+	raids_survived = maxi(0, int(data.get("raids_survived", raids_survived)))
+	last_raid_day = int(data.get("last_raid_day", last_raid_day))
+	raid_lockdown_until_day = maxi(0, int(data.get("raid_lockdown_until_day", raid_lockdown_until_day)))
+	reeves_last_payment_day = int(data.get("reeves_last_payment_day", reeves_last_payment_day))
+	reeves_last_missed_day = int(data.get("reeves_last_missed_day", reeves_last_missed_day))
+	enforcement_report_pending = bool(data.get("enforcement_report_pending", enforcement_report_pending))
+	last_enforcement_report = str(data.get("last_enforcement_report", last_enforcement_report))
+	var had_advancement_stats: bool = data.has("advancement_stats")
+	var loaded_advancement_stats: Variant = data.get("advancement_stats", advancement_stats)
+	if loaded_advancement_stats is Dictionary:
+		advancement_stats = loaded_advancement_stats as Dictionary
+	var advancement_metrics: Array[String] = ["plants_planted", "waters", "fertilizes", "harvests", "grams_trimmed", "bags_sealed", "grams_stored", "products_listed", "sales", "customers_known", "seeds_bought", "supplies_bought", "hybrids_created", "lights_toggled", "lamp_toggled", "grow_room_lights_toggled", "grow_lights_toggled", "ventilation_toggled", "power_bills_paid", "water_bills_paid", "night_sales", "dealer_sales", "staff_hired", "worker_tasks", "friend_recruits", "staff_purchases", "pressure_events", "contact_calls", "reeves_meetings", "reeves_arrangements", "reeves_payments", "reeves_negotiations", "reeves_missed_payments", "raids_survived", "reeves_freedom"]
+	for advancement_metric: String in advancement_metrics:
+		if not advancement_stats.has(advancement_metric):
+			advancement_stats[advancement_metric] = 0
+	var loaded_advancement_claimed: Variant = data.get("advancement_claimed", advancement_claimed)
+	if loaded_advancement_claimed is Dictionary:
+		advancement_claimed = loaded_advancement_claimed as Dictionary
+	chapter_four_story_stage = clampi(int(data.get("chapter_four_story_stage", chapter_four_story_stage)), 0, 6)
+	property_offer_unlocked = bool(data.get("property_offer_unlocked", property_offer_unlocked))
+	var saved_property: Variant=data.get("property_opportunity_state", {})
+	if saved_property is Dictionary: property_opportunity_state=saved_property.duplicate(true)
+	var saved_locations: Variant=data.get("location_state",{})
+	if saved_locations is Dictionary:location_state=saved_locations.duplicate(true)
+	var saved_rent: Variant=data.get("apartment_rent_state",{})
+	if saved_rent is Dictionary:apartment_rent_state=saved_rent.duplicate(true)
+	if not had_advancement_stats:
+		_bootstrap_advancement_stats_from_state()
+
+	if daily_report_pending:
+		game_day = maxi(1, int(daily_report_data.get("day", maxi(1, game_day - 1))))
+		game_time_minutes = 1439.999
+		daily_report_data["next_day"] = game_day + 1
+		closeout_announced = true
+	_restore_plant_clock(data)
+
+func _customer_relationship_visits(customer_name: String) -> int:
+	if not customer_relationships.has(customer_name):
+		return 0
+	var relationship: Dictionary = customer_relationships[customer_name]
+	return int(relationship.get("visits", 0))
+
+func _customer_is_known(customer: Dictionary) -> bool:
+	if customer.is_empty():
+		return false
+	var name: String = str(customer.get("name", ""))
+	var required_visits: int = int(customer.get("recognition_visits", 1))
+	return _customer_relationship_visits(name) >= required_visits
+
+func _customer_display_name(customer: Dictionary) -> String:
+	if str(customer.get("special", "")) == "reeves":
+		return "Agent Reeves" if reeves_met else "Unknown Official"
+	if _customer_is_known(customer):
+		return str(customer.get("name", "Customer"))
+	return "Unknown Buyer"
+
+func _record_customer_encounter(completed: bool) -> String:
+	if current_customer.is_empty() or not customer_answered:
+		return ""
+	var name: String = str(current_customer.get("name", ""))
+	if name.is_empty():
+		return ""
+	var was_known: bool = _customer_is_known(current_customer)
+	var relationship: Dictionary = {}
+	if customer_relationships.has(name):
+		relationship = (customer_relationships[name] as Dictionary).duplicate(true)
+	relationship["visits"] = int(relationship.get("visits", 0)) + 1
+	var loyalty_gain: int = 2
+	if completed:
+		relationship["sales"] = int(relationship.get("sales", 0)) + 1
+		relationship["player_sales"] = int(relationship.get("player_sales", 0)) + 1
+		loyalty_gain = 18
+	relationship["loyalty"] = clampi(int(relationship.get("loyalty", 0)) + loyalty_gain, 0, 100)
+	customer_relationships[name] = relationship
+	var now_known: bool = _customer_is_known(current_customer)
+	if not was_known and now_known:
+		return name
+	return ""
+
+func _reeves_remaining_balance() -> int:
+	return maxi(0, REEVES_TOTAL_OBLIGATION - reeves_total_paid)
+
+func _reeves_half_payment_amount() -> int:
+	var remaining: int = _reeves_remaining_balance()
+	if remaining <= 0 or cash <= 0:
+		return 0
+	return mini(remaining, maxi(1, int(floor(float(cash) * 0.50))))
+
+func _reeves_payment_amount() -> int:
+	return _reeves_half_payment_amount()
+
+func _reeves_final_payoff_cost() -> int:
+	return _reeves_remaining_balance()
+
+func _reeves_payment_overdue() -> bool:
+	return reeves_arrangement_active and _reeves_remaining_balance() > 0 and reeves_next_payment_day > 0 and game_day >= reeves_next_payment_day
+
+func _reeves_protection_active() -> bool:
+	return reeves_arrangement_active and not _reeves_payment_overdue() and reeves_missed_payments <= 0
+
+func _check_reeves_trigger() -> void:
+	if reeves_arrangement_ended:
+		return
+	if not reeves_met and heat >= REEVES_TRIGGER_HEAT:
+		reeves_visit_pending = true
+		reeves_visit_reason = "first_offer"
+		corrupt_contact_unlocked = true
+
+func _check_reeves_payment_due() -> void:
+	if reeves_arrangement_active and _reeves_payment_overdue():
+		reeves_visit_pending = true
+		reeves_visit_reason = "payment_due"
+
+func _maybe_start_reeves_visit() -> void:
+	if _simulation_blocked():
+		return
+	if not reeves_visit_pending or customer_waiting or daily_report_pending:
+		return
+	if phone_open or _any_modal_open():
+		return
+	_start_reeves_door_visit(reeves_visit_reason)
+
+func _start_reeves_door_visit(reason: String) -> void:
+	if _simulation_blocked():
+		return
+	if neighborhood != null and not neighborhood.client_visits.is_home():
+		reeves_visit_pending = true
+		reeves_visit_reason = reason
+		return
+	reeves_visit_pending = false
+	reeves_visit_reason = reason
+	current_customer = {
+		"name": "Agent Reeves",
+		"tier": "Federal",
+		"special": "reeves",
+		"recognition_visits": 0
+	}
+	active_request = {}
+	customer_departing = false
+	customer_answered = false
+	peephole_checked = false
+	customer_waiting = true
+	knock_banner.visible = true
+	_play_door_knock()
+	_start_customer_patience()
+	status_label.text = "Someone knocked at the door. The visit does not feel like a normal customer."
+	_refresh_navigation_ui()
+
+func _set_sale_action_labels(primary: String, secondary: String, decline: String) -> void:
+	if sale_primary_button != null:
+		sale_primary_button.text = primary
+	if sale_secondary_button != null:
+		sale_secondary_button.text = secondary
+	if sale_decline_button != null:
+		sale_decline_button.text = decline
+
+func _open_reeves_visit() -> void:
+	if customer_patience_timer != null:
+		customer_patience_timer.stop()
+	customer_answered = true
+	knock_banner.visible = false
+	sale_panel.visible = true
+	if sale_customer_art != null:
+		sale_customer_art.visible = false
+	_clear_substitutes()
+	if not reeves_met:
+		reeves_met = true
+		_increment_advancement_stat("reeves_meetings")
+		corrupt_contact_unlocked = true
+	var remaining: int = _reeves_remaining_balance()
+	var half_now: int = _reeves_half_payment_amount()
+	if not reeves_arrangement_active:
+		sale_title.text = "AGENT REEVES - FIRST ENCOUNTER"
+		sale_body.text = "\"You are getting noticed. My number is $%d total.\"
+
+PAY HALF puts 50%% of your current cash toward the balance. PAY FULL clears the entire remaining balance. REFUSE keeps your money, but Heat and enforcement risk stay on you. You can use Phone > Heat > LAY LOW to shut the operation down and hide out." % REEVES_TOTAL_OBLIGATION
+	else:
+		sale_title.text = "AGENT REEVES - PAYMENT DUE"
+		sale_body.text = "\"Time to keep your end.\"
+
+Protection balance: $%d / $%d remaining
+Pay half now: $%d
+Current enforcement risk: %d%%
+Missed payments: %d
+
+You can REFUSE and then LAY LOW, but protection is suspended while the payment is missed." % [remaining, REEVES_TOTAL_OBLIGATION, half_now, int(round(enforcement_risk)), reeves_missed_payments]
+	_set_sale_action_labels("PAY HALF $%d" % half_now, "PAY FULL $%d" % remaining, "REFUSE")
+	_save_game()
+
+func _reeves_primary_action() -> void:
+	_reeves_pay_half(false)
+
+func _reeves_secondary_action() -> void:
+	_reeves_pay_full(false)
+
+func _reeves_decline_action() -> void:
+	if reeves_visit_reason == "first_offer" or not reeves_arrangement_active:
+		enforcement_risk = clampf(enforcement_risk + 20.0, 0.0, 100.0)
+		reeves_next_payment_day = game_day + 2
+		_add_heat(5.0, "Reeves arrangement refused", false)
+		raid_warning_day = game_day if enforcement_risk >= RAID_RISK_WARNING_THRESHOLD else raid_warning_day
+		_log_heat_event("You refused Reeves. Enforcement risk increased. Laying low can cool the operation down.")
+		status_label.text = "You refused Reeves. Use Phone > Heat > LAY LOW if you want to shut down, turn the lights down, and hide out."
+		_end_reeves_visit()
+	else:
+		_miss_reeves_payment()
+
+func _reeves_apply_payment(amount: int, full_payment: bool, early: bool) -> void:
+	var remaining_before: int = _reeves_remaining_balance()
+	if remaining_before <= 0:
+		if reeves_arrangement_active:
+			_end_reeves_arrangement("balance already settled")
+		return
+	if early and reeves_last_payment_day == game_day:
+		status_label.text = "You already paid Reeves today."
+		return
+	amount = mini(amount, remaining_before)
+	if amount <= 0:
+		status_label.text = "You do not have cash available for a Reeves payment. Refuse or lay low."
+		return
+	if cash < amount:
+		status_label.text = "You need $%d for that Reeves payment." % amount
+		return
+	var first_payment: bool = not reeves_arrangement_active
+	cash -= amount
+	_record_daily_expense("Reeves protection payment", amount)
+	reeves_total_paid = mini(REEVES_TOTAL_OBLIGATION, reeves_total_paid + amount)
+	reeves_last_payment_day = game_day
+	reeves_last_missed_day = -1
+	reeves_missed_payments = 0
+	reeves_arrangement_active = true
+	reeves_arrangement_ended = false
+	reeves_relationship = mini(100, maxi(25, reeves_relationship) + (8 if full_payment else 4))
+	enforcement_risk = maxf(0.0, enforcement_risk - (20.0 if full_payment else 12.0))
+	_increment_advancement_stat("reeves_payments")
+	if first_payment:
+		_increment_advancement_stat("reeves_arrangements")
+		_reduce_heat(REEVES_INITIAL_HEAT_REDUCTION, "Reeves arrangement started", true)
+	_update_cash_ui()
+	var remaining_after: int = _reeves_remaining_balance()
+	if remaining_after <= 0:
+		if full_payment:
+			_increment_advancement_stat("reeves_negotiations")
+		status_label.text = "Reeves is paid in full. The $%d protection balance is settled." % REEVES_TOTAL_OBLIGATION
+		_end_reeves_arrangement("protection balance paid")
+		if sale_panel != null and sale_panel.visible and str(current_customer.get("special", "")) == "reeves":
+			_end_reeves_visit()
+		return
+	reeves_next_payment_day = maxi(game_day, reeves_next_payment_day) + REEVES_PAYMENT_INTERVAL_DAYS if early and reeves_next_payment_day > game_day else game_day + REEVES_PAYMENT_INTERVAL_DAYS
+	status_label.text = "Paid Reeves $%d. $%d remains. Next payment: Day %d." % [amount, remaining_after, reeves_next_payment_day]
+	if sale_panel != null and sale_panel.visible and str(current_customer.get("special", "")) == "reeves":
+		_end_reeves_visit()
+	else:
+		_save_game()
+		_refresh_phone()
+
+func _reeves_pay_half(early: bool = false) -> void:
+	_reeves_apply_payment(_reeves_half_payment_amount(), false, early)
+
+func _reeves_pay_full(early: bool = false) -> void:
+	var remaining: int = _reeves_remaining_balance()
+	if remaining <= 0:
+		status_label.text = "Reeves's $%d protection balance is already settled." % REEVES_TOTAL_OBLIGATION
+		return
+	if cash < remaining:
+		status_label.text = "You need $%d to clear Reeves's remaining balance." % remaining
+		return
+	_reeves_apply_payment(remaining, true, early)
+
+func _start_reeves_arrangement(negotiated: bool) -> void:
+	_reeves_pay_half(false)
+
+func _pay_reeves_due(early: bool = false) -> void:
+	_reeves_pay_half(early)
+
+func _miss_reeves_payment() -> void:
+	if reeves_last_missed_day == game_day:
+		status_label.text = "This Reeves payment period is already recorded as missed."
+		_end_reeves_visit()
+		return
+	reeves_last_missed_day = game_day
+	reeves_missed_payments += 1
+	_increment_advancement_stat("reeves_missed_payments")
+	enforcement_risk = clampf(enforcement_risk + 24.0, 0.0, 100.0)
+	reeves_relationship = maxi(0, reeves_relationship - 12)
+	reeves_next_payment_day = game_day + 1
+	if reeves_missed_payments >= 2 or enforcement_risk >= RAID_RISK_WARNING_THRESHOLD:
+		raid_warning_day = game_day
+		_log_heat_event("Reeves says the arrangement is no longer protecting you. Raid risk is high.")
+	else:
+		_log_heat_event("You missed a Reeves payment. Protection is suspended until you catch up.")
+	status_label.text = "Reeves payment refused. Enforcement risk: %d%%. LAY LOW is available in Phone > Heat." % int(round(enforcement_risk))
+	_end_reeves_visit()
+
+func _end_reeves_visit() -> void:
+	if customer_patience_timer != null:
+		customer_patience_timer.stop()
+	if customer_exit_timer != null:
+		customer_exit_timer.stop()
+	if sale_panel != null:
+		sale_panel.visible = false
+	if peephole_panel != null:
+		peephole_panel.visible = false
+	if knock_banner != null:
+		knock_banner.visible = false
+	customer_waiting = false
+	customer_departing = false
+	customer_answered = false
+	peephole_checked = false
+	current_customer = {}
+	active_request = {}
+	reeves_visit_reason = ""
+	_set_world_controls_visible(true)
+	_refresh_navigation_ui()
+	_save_game()
+	_refresh_phone()
+	_schedule_next_customer(true)
+
+func _process_reeves_day_transition(closing_day: int) -> void:
+	if not business_open and dealer_sales_today <= 0 and heat <= 25.0:
+		reeves_quiet_days = mini(REEVES_QUIET_EXIT_DAYS, reeves_quiet_days + 1)
+		reeves_quiet_pause_seconds = 0.0
+	else:
+		reeves_quiet_days = 0
+		reeves_quiet_pause_seconds = 0.0
+	if reeves_arrangement_active and _reeves_payment_overdue():
+		reeves_visit_pending = true
+		reeves_visit_reason = "payment_due"
+	elif reeves_met and not reeves_arrangement_active and not reeves_arrangement_ended and heat >= REEVES_TRIGGER_HEAT and game_day >= reeves_next_payment_day:
+		reeves_visit_pending = true
+		reeves_visit_reason = "first_offer"
+	_check_reeves_trigger()
+
+func _roll_enforcement_raid() -> void:
+	if raid_warning_day < 0 or game_day <= raid_warning_day:
+		return
+	if enforcement_risk < RAID_RISK_WARNING_THRESHOLD:
+		return
+	if _reeves_protection_active():
+		return
+	var chance: float = clampf(0.12 + (enforcement_risk - 55.0) / 110.0 + heat / 350.0, 0.12, 0.60)
+	if rng.randf() > chance:
+		_log_heat_event("Enforcement pressure stayed high, but nothing happened overnight.")
+		return
+	_trigger_raid_event()
+
+func _trigger_raid_event() -> void:
+	var lost_plants: int = 0
+	for slot_index: int in range(plant_slots.size()):
+		if int(plant_slots[slot_index].get("stage", -1)) >= 0:
+			lost_plants += 1
+			plant_slots[slot_index] = _empty_plant_slot()
+	var lost_bench: int = _inventory_grams(untrimmed_inventory) + _inventory_grams(trimmed_inventory) + _inventory_grams(bagged_inventory)
+	untrimmed_inventory.clear()
+	trimmed_inventory.clear()
+	bagged_inventory.clear()
+	var lost_storage: int = 0
+	var protected_storage: int = 0
+	if storage_level >= 5:
+		protected_storage = _total_stored_stock()
+	else:
+		for product_variant in products.keys():
+			var product_name: String = str(product_variant)
+			var data: Dictionary = products[product_name]
+			var stock: int = int(data.get("stock", 0))
+			lost_storage += stock
+			data["stock"] = 0
+			data["reserved"] = 0
+			data["listed"] = false
+			products[product_name] = data
+	var seized_cash: int = mini(cash, 300 + int(round(heat)) * 8)
+	cash -= seized_cash
+	reputation = maxi(0, reputation - 10)
+	dealers_active = false
+	packing_employee_active = false
+	production_worker_pending_action = ""
+	production_worker_task = "Off duty"
+	production_worker_last_action = "Sent home after raid"
+	_reset_production_worker_navigation()
+	if business_open:
+		_set_business_away()
+	lay_low_active = true
+	raid_lockdown_until_day = game_day + 1
+	raids_survived += 1
+	last_raid_day = game_day
+	_increment_advancement_stat("raids_survived")
+	enforcement_risk = maxf(20.0, enforcement_risk - 45.0)
+	heat = minf(heat, 35.0)
+	reeves_arrangement_active = false
+	reeves_missed_payments = 0
+	reeves_next_payment_day = game_day + 2
+	reeves_payment_level += 1
+	raid_warning_day = -1
+	_update_all_plant_visuals()
+	_sync_packing_bench_visuals(true)
+	if storage_panel != null and storage_panel.visible:
+		_refresh_storage_panel()
+	var protected_note: String = ""
+	if protected_storage > 0:
+		protected_note = " Hidden Wall Stash protected %dg." % protected_storage
+	last_enforcement_report = "Day %d federal raid: %d growing plant(s), %dg from the packing bench, %dg exposed storage and $%d cash seized. Reputation -10. Operation locked until Day %d.%s" % [game_day, lost_plants, lost_bench, lost_storage, seized_cash, raid_lockdown_until_day, protected_note]
+	enforcement_report_pending = true
+	_log_heat_event(last_enforcement_report)
+	_push_phone_text("AFB Alert", last_enforcement_report)
+	status_label.text = "FEDERAL RAID - Plants, bench stock and exposed storage were seized. Check the report."
+	_update_cash_ui()
+	_save_game()
+
+func _end_reeves_arrangement(method: String) -> void:
+	reeves_arrangement_active = false
+	reeves_arrangement_ended = true
+	reeves_next_payment_day = 0
+	reeves_missed_payments = 0
+	reeves_visit_pending = false
+	reeves_visit_reason = ""
+	enforcement_risk = maxf(0.0, enforcement_risk - 20.0)
+	_increment_advancement_stat("reeves_freedom")
+	_log_heat_event("Reeves arrangement ended: %s." % method)
+	status_label.text = "Reeves arrangement ended: %s." % method
+	_save_game()
+	_refresh_phone()
+
+func _reeves_final_payoff() -> void:
+	_reeves_pay_full(true)
+
+func _reeves_quiet_exit() -> void:
+	if not reeves_arrangement_active:
+		return
+	if business_open or heat > 10.0 or reeves_quiet_days < REEVES_QUIET_EXIT_DAYS:
+		status_label.text = "Stay closed for %d quiet days and cool Heat to 10 or lower first." % REEVES_QUIET_EXIT_DAYS
+		return
+	_end_reeves_arrangement("went completely quiet")
+
+
+func _build_visit_timer() -> void:
+	visit_timer = Timer.new()
+	visit_timer.one_shot = true
+	visit_timer.timeout.connect(_customer_arrives)
+	add_child(visit_timer)
+
+func _build_audio_players() -> void:
+	knock_player = AudioStreamPlayer.new()
+	var knock_stream: AudioStreamMP3 = AudioStreamMP3.new()
+	knock_stream.data = FileAccess.get_file_as_bytes("res://assets/audio/door_knock_soft.mp3")
+	knock_player.stream = knock_stream
+	knock_player.volume_db = -10.0
+	add_child(knock_player)
+
+func _play_door_knock() -> void:
+	if neighborhood != null and not neighborhood.client_visits.is_home():
+		return
+	if _simulation_blocked():
+		return
+	if knock_player == null or knock_player.stream == null:
+		return
+	knock_player.stop()
+	knock_player.play()
+
+func _build_customer_patience_timers() -> void:
+	customer_patience_timer = Timer.new()
+	customer_patience_timer.one_shot = true
+	customer_patience_timer.timeout.connect(_customer_waited_too_long)
+	add_child(customer_patience_timer)
+	customer_exit_timer = Timer.new()
+	customer_exit_timer.one_shot = true
+	customer_exit_timer.wait_time = CUSTOMER_COMPLAINT_SECONDS
+	customer_exit_timer.timeout.connect(_finish_customer_exit)
+	add_child(customer_exit_timer)
+
+func _customer_patience_seconds() -> float:
+	if str(current_customer.get("special", "")) == "reeves":
+		return 60.0
+	var tier: String = str(current_customer.get("tier", "Local"))
+	match tier:
+		"VIP", "Reserve":
+			return CUSTOMER_DOOR_PATIENCE - 7.0
+		"Premium", "Established":
+			return CUSTOMER_DOOR_PATIENCE - 4.0
+		_:
+			return CUSTOMER_DOOR_PATIENCE
+
+func _start_customer_patience() -> void:
+	if customer_patience_timer == null:
+		return
+	customer_patience_timer.stop()
+	customer_patience_timer.wait_time = _customer_patience_seconds()
+	customer_patience_timer.start()
+	if knock_text != null:
+		knock_text.text = "KNOCK  |  VISITOR WAITING"
+
+func _customer_waited_too_long() -> void:
+	if _simulation_blocked():
+		return
+	if not customer_waiting or customer_departing:
+		return
+	if str(current_customer.get("special", "")) == "reeves":
+		if reeves_visit_reason == "payment_due" or _reeves_payment_overdue():
+			_log_heat_event("You ignored Reeves on a due-payment visit. The payment was recorded as missed.")
+			_miss_reeves_payment()
+			return
+		customer_departing = true
+		enforcement_risk = clampf(enforcement_risk + 10.0, 0.0, 100.0)
+		raid_warning_day = game_day if enforcement_risk >= RAID_RISK_WARNING_THRESHOLD else raid_warning_day
+		_log_heat_event("Reeves waited at the door and left irritated. Enforcement risk increased.")
+		status_label.text = "You ignored Reeves. Enforcement risk increased."
+		_queue_customer_exit()
+		_save_game()
+		return
+	customer_departing = true
+	var rep_loss: int = 2 if str(current_customer.get("tier", "Local")) in ["VIP", "Reserve", "Premium"] else 1
+	reputation = maxi(0, reputation - rep_loss)
+	brand_level = maxi(1, 1 + int(reputation / 75))
+	if peephole_panel != null:
+		peephole_panel.visible = false
+	_set_world_controls_visible(not _any_modal_open())
+	var visitor_label: String = _customer_display_name(current_customer) if peephole_checked else "Someone"
+	if knock_text != null:
+		knock_text.text = "TOO LATE\n\"Forget it, I've been waiting too long.\""
+	knock_banner.visible = true
+	status_label.text = "%s left after waiting too long. Reputation -%d." % [visitor_label, rep_loss]
+	_add_heat(0.8, "Doorstep complaint", false)
+	_save_game()
+	_queue_customer_exit()
+
+func _queue_customer_exit() -> void:
+	customer_departing = true
+	if customer_exit_timer == null:
+		_finish_customer_exit()
+		return
+	customer_exit_timer.stop()
+	customer_exit_timer.wait_time = CUSTOMER_COMPLAINT_SECONDS
+	customer_exit_timer.start()
+
+func _finish_customer_exit() -> void:
+	if _simulation_blocked():
+		return
+	_end_customer_visit(false)
+
+func _schedule_next_customer(restart: bool = false) -> void:
+	if _simulation_blocked():
+		return
+	if visit_timer != null and not restart and not visit_timer.is_stopped():
+		return
+	if customer_waiting or visit_timer == null:
+		return
+	if restart:
+		visit_timer.stop()
+	if not business_open or not _has_listed_stock():
+		visit_timer.stop()
+		return
+	var hype_active: bool = hype_visits_remaining > 0 and not hype_product_name.is_empty() and products.has(hype_product_name) and _player_available_amount(hype_product_name) > 0
+	if hype_active:
+		visit_timer.wait_time = rng.randf_range(HYPE_CUSTOMER_WAIT_MIN, HYPE_CUSTOMER_WAIT_MAX)
+	else:
+		if hype_visits_remaining > 0:
+			hype_visits_remaining = 0
+			hype_product_name = ""
+		var traffic_range: Vector2 = _customer_wait_range()
+		visit_timer.wait_time = rng.randf_range(traffic_range.x, traffic_range.y)
+	visit_timer.start()
+
+func _has_listed_stock() -> bool:
+	if neighborhood!=null and neighborhood.location_ops.crew.can_handle() and neighborhood.location_ops.crew.packaged_stock()>0:return true
+	for k: Variant in products.keys():
+		if _player_product_sellable(str(k)): return true
+	return false
+
+func _customer_arrives() -> void:
+	if _simulation_blocked():
+		return
+	if customer_waiting:
+		return
+	if neighborhood != null and neighborhood.client_visits.reserve_slot():
+		return
+	if not business_open:
+		_schedule_next_customer(true)
+		return
+	var viable: Array[Dictionary] = _viable_customers()
+	if viable.size() > 1 and not last_customer_name.is_empty():
+		var no_repeat: Array[Dictionary] = []
+		for candidate: Dictionary in viable:
+			if str(candidate.get("name", "")) != last_customer_name:
+				no_repeat.append(candidate)
+		if not no_repeat.is_empty():
+			viable = no_repeat
+	if viable.is_empty():
+		status_label.text = "No customers are interested right now. Put bagged stock in storage and list it on your phone."
+		_schedule_next_customer()
+		return
+	var selected_customer: Dictionary = {}
+	if not preferred_customer_name.is_empty():
+		for viable_customer: Dictionary in viable:
+			if str(viable_customer.get("name", "")) == preferred_customer_name:
+				selected_customer = viable_customer.duplicate(true)
+				preferred_customer_name = ""
+				break
+	if selected_customer.is_empty() and force_rod_test_visit:
+		for viable_customer in viable:
+			if str(viable_customer.get("name", "")) == "Rod":
+				selected_customer = viable_customer.duplicate(true)
+				force_rod_test_visit = false
+				break
+	if selected_customer.is_empty():
+		var customer_index: int = rng.randi_range(0, viable.size() - 1)
+		selected_customer = viable[customer_index].duplicate(true)
+	current_customer = selected_customer
+	_add_heat(0.25, "Customer traffic", false)
+	var hype_product_available: bool = false
+	if not hype_product_name.is_empty() and products.has(hype_product_name):
+		var hype_data: Dictionary = products[hype_product_name]
+		hype_product_available = _player_product_sellable(hype_product_name) and _player_available_amount(hype_product_name) > 0
+	var hype_visit: bool = hype_visits_remaining > 0 and hype_product_available
+	if hype_visit:
+		hype_visits_remaining -= 1
+	var requested: String = hype_product_name if hype_visit else str(current_customer.get("favorite", ""))
+	if hype_visit and hype_visits_remaining <= 0:
+		hype_product_name = ""
+	customer_departing = false
+	customer_answered = false
+	peephole_checked = false
+	var min_qty: int = int(current_customer.get("min_qty", 1))
+	var max_qty: int = int(current_customer.get("max_qty", 1))
+	var qty: int = rng.randi_range(min_qty, max_qty)
+	active_request = {"product": requested, "qty": qty}
+	if neighborhood != null and neighborhood.client_visits.route_arrival():
+		return
+	customer_waiting = true
+	knock_banner.visible = true
+	_play_door_knock()
+	_start_customer_patience()
+	status_label.text = "Someone knocked at the door. Check the peephole before answering; they will not wait forever."
+	_refresh_navigation_ui()
+
+func _viable_customers() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	if not business_open or not _is_customer_time():
+		return result
+	var listed_names: Array[String] = []
+	for name_variant in products.keys():
+		var product_name: String = str(name_variant)
+		var data: Dictionary = products[product_name]
+		if _player_product_sellable(product_name) or (neighborhood!=null and neighborhood.location_ops.crew.can_handle() and neighborhood.location_ops.crew.product_stock(product_name)>0):
+			listed_names.append(product_name)
+	if neighborhood!=null and neighborhood.location_ops.crew.can_handle():
+		for source in [locker_weed,bagged_inventory]:
+			for name in source:
+				if int(source[name])>0 and not listed_names.has(str(name)):listed_names.append(str(name))
+	for customer: Dictionary in customers:
+		var customer_name: String = str(customer.get("name", ""))
+		if not _friend_staff_role(customer_name).is_empty():
+			continue
+		var customer_unlock_level: int = int(customer.get("unlock_level", 1))
+		if grower_level < customer_unlock_level:
+			continue
+		if force_rod_test_visit and str(customer.get("name", "")) == "Rod" and not listed_names.is_empty():
+			result.append(customer)
+			continue
+		var favorite: String = str(customer.get("favorite", ""))
+		if listed_names.has(favorite):
+			result.append(customer)
+		elif not listed_names.is_empty():
+			var flexibility: float = float(customer.get("flexibility", 0.0))
+			if rng.randf() < flexibility * 0.55:
+				result.append(customer)
+	if result.is_empty() and not listed_names.is_empty():
+		var fallback_customers: Array[Dictionary] = []
+		for fallback_customer: Dictionary in customers:
+			var fallback_name: String = str(fallback_customer.get("name", ""))
+			if not _friend_staff_role(fallback_name).is_empty():
+				continue
+			if grower_level < int(fallback_customer.get("unlock_level", 1)):
+				continue
+			fallback_customers.append(fallback_customer)
+		if not fallback_customers.is_empty():
+			result.append(fallback_customers[rng.randi_range(0, fallback_customers.size() - 1)])
+	return result
+
+func _player_available_amount(product_name: String) -> int:
+	return _available_amount(product_name)
+
+func _player_product_sellable(product_name: String) -> bool:
+	if not products.has(product_name): return false
+	var data: Dictionary = products[product_name]
+	return bool(data.get("listed", false)) and _available_amount(product_name) > 0
+
+func _consume_player_sale_stock(product_name: String, qty: int) -> bool:
+	if qty <= 0 or not products.has(product_name) or _available_amount(product_name) < qty: return false
+	var data: Dictionary = products[product_name]
+	data["stock"] = maxi(0, int(data.get("stock",0)) - qty)
+	products[product_name] = data
+	return true
+
+func _open_customer_sale() -> void:
+	if not customer_waiting:
+		return
+	if str(current_customer.get("special", "")) == "reeves":
+		_open_reeves_visit()
+		return
+	if customer_departing:
+		status_label.text = "That customer is already leaving."
+		return
+	if not peephole_checked:
+		status_label.text = "Check the peephole before answering the door."
+		_open_peephole()
+		return
+	if customer_patience_timer != null:
+		customer_patience_timer.stop()
+	customer_answered = true
+	knock_banner.visible = false
+	sale_panel.visible = true
+	_set_sale_action_labels("SELL", "SUBSTITUTE", "DECLINE")
+	var product_name: String = str(active_request.get("product", ""))
+	var qty: int = int(active_request.get("qty", 1))
+	var available: int = _player_available_amount(product_name)
+	var data: Dictionary = products.get(product_name, {})
+	var listed: bool = _player_product_sellable(product_name)
+	var line: String = ""
+	var customer_name_raw: String = str(current_customer.get("name", ""))
+	if available >= qty and listed:
+		var total: int = qty * _effective_price(product_name)
+		var request_quote: String = "I saw you have %s. Can I get %dg?" % [product_name, qty]
+		match customer_name_raw:
+			"Malik": request_quote = "You sure everything is cool? If it is, let me get %dg of %s." % [qty, product_name]
+			"Diddy": request_quote = "I need %dg of %s. I'm trying to roll something serious tonight." % [qty, product_name]
+			"Jeremias": request_quote = "%dg? Easy. You know I smoke more than everybody anyway. Give me the %s." % [qty, product_name]
+			"Marcuss": request_quote = "Before I get that PC in two weeks, let me get %dg of %s." % [qty, product_name]
+			"Kobi": request_quote = "Oh, it's just fuck Kobi. Lemme get %dg of %s." % [qty, product_name]
+			"Tyler": request_quote = "You got any head sets? ...and %dg of %s?" % [qty, product_name]
+			"Mahto": request_quote = "I got a lot going on. Just give me %dg of %s." % [qty, product_name]
+			"Mike": request_quote = "Man, after everything with my back, just give me %dg of %s and keep it simple." % [qty, product_name]
+		line = "\"%s\"\n\n%s is packaged and available from normal storage.\nTotal: $%d" % [request_quote, product_name, total]
+	else:
+		var missing_quote: String = "You got any %s? Looking for %dg." % [product_name, qty]
+		match customer_name_raw:
+			"Malik": missing_quote = "You don't have that %s right now? I don't know about switching up today." % product_name
+			"Diddy": missing_quote = "No %s? What else you got that'll work for a big blunt?" % product_name
+			"Jeremias": missing_quote = "No %s? Come on, I was about to show everybody how it's done." % product_name
+			"Marcuss": missing_quote = "No %s? That's crazy. Anyway, I'm getting that PC in two weeks." % product_name
+			"Kobi": missing_quote = "No %s? Yeah, that's some fuck Kobi shit." % product_name
+			"Tyler": missing_quote = "No %s? You got any head sets at least?" % product_name
+			"Mahto": missing_quote = "No %s? Man, I already got enough problems." % product_name
+			"Mike": missing_quote = "No %s? Figures. The one time I need something easy, it is never easy." % product_name
+		line = "\"%s\"\n\nThat strain is not available from business normal storage. Offer something else or decline." % missing_quote
+	var sale_name: String = _customer_display_name(current_customer)
+	sale_title.text = "%s   |   %s" % [sale_name, str(current_customer.get("tier", "Local")) if _customer_is_known(current_customer) else "Unidentified"]
+	_apply_customer_art(sale_customer_art, current_customer, "door_art")
+	sale_body.text = line
+	_clear_substitutes()
+
+func _sell_requested() -> void:
+	if str(current_customer.get("special", "")) == "reeves":
+		_reeves_primary_action()
+		return
+	if customer_departing:
+		return
+	var product_name: String = str(active_request.get("product", ""))
+	var qty: int = int(active_request.get("qty", 1))
+	if not products.has(product_name):
+		return
+	var data: Dictionary = products[product_name]
+	if not _player_product_sellable(product_name) or _player_available_amount(product_name) < qty:
+		sale_body.text += "\n\nThat product isn't available in business normal storage."
+		return
+	_complete_sale(product_name, qty)
+
+func _substitute_profile_family(profile: String) -> String:
+	match profile:
+		"purple", "premium", "berry", "cherry", "darkfruit", "luxury": return "rich"
+		"citrus", "gold", "solar": return "bright"
+		"cool", "smooth", "reserve", "dessert": return "smooth"
+		"budget": return "budget"
+		_: return profile
+
+func _substitute_acceptance_chance(product_name: String) -> float:
+	if current_customer.is_empty() or not products.has(product_name):
+		return 0.05
+	var data: Dictionary = products[product_name]
+	var requested_name: String = str(active_request.get("product", ""))
+	var requested_data: Dictionary = products.get(requested_name, {}) as Dictionary
+	var candidate_profile: String = str(data.get("profile", ""))
+	var requested_profile: String = str(requested_data.get("profile", current_customer.get("fallback_profile", "")))
+	var fallback_profile: String = str(current_customer.get("fallback_profile", ""))
+	var chance: float = 0.08 + float(current_customer.get("flexibility", 0.0)) * 0.72
+	if candidate_profile == requested_profile:
+		chance += 0.22
+	elif _substitute_profile_family(candidate_profile) == _substitute_profile_family(requested_profile):
+		chance += 0.10
+	else:
+		chance -= 0.06
+	if candidate_profile == fallback_profile and candidate_profile != requested_profile:
+		chance += 0.06
+	var requested_price: float = float(requested_data.get("price", _effective_price(requested_name)))
+	var candidate_price: float = float(data.get("price", _effective_price(product_name)))
+	if requested_price > 0.0:
+		var value_ratio: float = candidate_price / requested_price
+		chance += clampf((value_ratio - 1.0) * 0.16, -0.09, 0.07)
+	return clampf(chance, 0.08, 0.95)
+
+func _show_substitutes() -> void:
+	if str(current_customer.get("special", "")) == "reeves":
+		_reeves_secondary_action()
+		return
+	if customer_departing:
+		return
+	_clear_substitutes()
+	var qty: int = int(active_request.get("qty", 1))
+	var requested_name: String = str(active_request.get("product", ""))
+	var options: Array[String] = []
+	for name_variant in products.keys():
+		var product_name: String = str(name_variant)
+		if product_name == requested_name:
+			continue
+		var data: Dictionary = products[product_name]
+		if _player_product_sellable(product_name) and _player_available_amount(product_name) >= qty:
+			options.append(product_name)
+	if options.is_empty():
+		var empty: Label = Label.new()
+		empty.text = "No substitute has enough stock in normal storage."
+		substitute_box.add_child(empty)
+		return
+	var label: Label = Label.new()
+	label.text = "Offer an available alternative:"
+	substitute_box.add_child(label)
+	for product_name in options:
+		var data: Dictionary = products[product_name]
+		var accept_percent: int = int(round(_substitute_acceptance_chance(product_name) * 100.0))
+		var button: Button = Button.new()
+		button.text = "%s   |   $%d/g   |   %d%% ACCEPT" % [product_name, _effective_price(product_name), accept_percent]
+		button.tooltip_text = "%d%% estimated chance this customer accepts %s instead of %s." % [accept_percent, product_name, requested_name]
+		button.custom_minimum_size.y = 52
+		button.pressed.connect(_offer_substitute.bind(product_name))
+		substitute_box.add_child(button)
+
+func _offer_substitute(product_name: String) -> void:
+	if customer_departing:
+		return
+	var qty: int = int(active_request.get("qty", 1))
+	var data: Dictionary = products[product_name]
+	var accept_chance: float = _substitute_acceptance_chance(product_name)
+	if rng.randf() <= accept_chance:
+		sale_body.text = "\"Alright, I'll try the %s.\"\n\n%s accepted the substitute." % [product_name, _customer_display_name(current_customer)]
+		_complete_sale(product_name, qty)
+	else:
+		var customer_name: String = _customer_display_name(current_customer)
+		var wanted: String = str(active_request.get("product", "that strain"))
+		reputation = maxi(0, reputation - 2)
+		brand_level = maxi(1, 1 + int(reputation / 75))
+		_clear_substitutes()
+		var reject_quote: String = "I came over for %s, not this. If you don't have it, just say that." % wanted
+		match str(current_customer.get("name", "")):
+			"Malik": reject_quote = "Nah, changing it up right now is making me paranoid. I'm good."
+			"Diddy": reject_quote = "That's not what I came for. I'll catch you next time."
+			"Jeremias": reject_quote = "Nah, I asked for %s. I'll find it somewhere else." % wanted
+			"Marcuss": reject_quote = "Nah, I'll wait. I gotta save some money for that PC I'm getting in two weeks anyway."
+			"Kobi": reject_quote = "Nah. Of course Kobi gets the substitute."
+			"Tyler": reject_quote = "I'm good. But seriously, you got any head sets?"
+			"Mahto": reject_quote = "Nah, I can't add another problem today. I'm good."
+			"Mike": reject_quote = "Nah, I'll wait for what I asked for. I've had enough bad decisions already."
+		sale_body.text = "\"%s\"\n\n%s rejected the substitute and complained before leaving.\nReputation -2" % [reject_quote, customer_name]
+		status_label.text = "%s rejected the substitute. Reputation -2." % customer_name
+		_add_heat(0.4, "Customer complaint", false)
+		_save_game()
+		_queue_customer_exit()
+
+func _complete_sale(product_name: String, qty: int) -> void:
+	if not products.has(product_name):
+		_ensure_product_exists(product_name)
+	if not products.has(product_name) or _player_available_amount(product_name) < qty:
+		return
+	var price: int = _effective_price(product_name)
+	var total: int = qty * price
+	if not _consume_player_sale_stock(product_name, qty):
+		return
+	cash += total
+	lifetime_revenue += total
+	_record_daily_sale(product_name, qty, total, "player")
+	_increment_advancement_stat("sales")
+	_add_heat(1.2 + float(maxi(0, qty - 1)) * 0.65, "Door sale", false)
+	if _is_night_time():
+		_increment_advancement_stat("night_sales")
+	_add_progress(qty * 12, qty * 3)
+	_update_cash_ui()
+	status_label.text = "Sold %dg of %s to %s for $%d." % [qty, product_name, _customer_display_name(current_customer), total]
+	_save_game()
+	_end_customer_visit(true)
+
+func _decline_sale() -> void:
+	if str(current_customer.get("special", "")) == "reeves":
+		_reeves_decline_action()
+		return
+	if customer_departing:
+		return
+	status_label.text = "You declined %s's order." % _customer_display_name(current_customer)
+	_end_customer_visit(false)
+
+func _end_customer_visit(completed: bool) -> void:
+	if str(current_customer.get("special", "")) == "reeves":
+		_end_reeves_visit()
+		return
+	if not current_customer.is_empty():
+		last_customer_name = str(current_customer.get("name", last_customer_name))
+	if customer_patience_timer != null:
+		customer_patience_timer.stop()
+	if customer_exit_timer != null:
+		customer_exit_timer.stop()
+	var newly_known_name: String = _record_customer_encounter(completed)
+	sale_panel.visible = false
+	if peephole_panel != null:
+		peephole_panel.visible = false
+	knock_banner.visible = false
+	customer_waiting = false
+	customer_departing = false
+	customer_answered = false
+	peephole_checked = false
+	if knock_text != null:
+		knock_text.text = "KNOCK  |  VISITOR WAITING"
+	if not newly_known_name.is_empty():
+		_increment_advancement_stat("customers_known")
+		status_label.text += "  You now recognize this customer as %s; they were added to Clients." % newly_known_name
+	current_customer = {}
+	active_request = {}
+	_save_game()
+	_refresh_phone()
+	_set_world_controls_visible(not _any_modal_open())
+	_schedule_next_customer()
+
+func _clear_substitutes() -> void:
+	_clear_children(substitute_box)
+
+func _available_amount(product_name: String) -> int:
+	if not products.has(product_name):
+		return 0
+	var data: Dictionary = products[product_name]
+	var stock: int = int(data.get("stock", 0))
+	var reserved: int = int(data.get("reserved", 0))
+	return maxi(0, stock - reserved)
+
+func _clear_children(parent: Node) -> void:
+	for child in parent.get_children():
+		child.queue_free()
+
+
+func _simulation_blocked() -> bool:
+	return reset_confirmation_open or reset_in_progress or session_paused or daily_report_pending or tutorial_active or (tutorial_panel != null and tutorial_panel.visible)
+
+func _sync_simulation_pause() -> void:
+	var blocked: bool = _simulation_blocked()
+	for timer: Timer in [grow_timer, automation_timer, visit_timer, customer_patience_timer, customer_exit_timer]:
+		if timer != null:
+			timer.paused = blocked
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_GO_BACK_REQUEST and reset_confirmation_open:
+		_cancel_beta_reset()
+		return
+	if not gameplay_ready:
+		return
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_WM_CLOSE_REQUEST:
+		_pause_gameplay("The game paused while you were away. Your timers and visitors are waiting for you.")
+
+func _install_lifecycle_hooks() -> void:
+	get_viewport().size_changed.connect(_cancel_station_drag)
+	get_viewport().size_changed.connect(_cancel_phone_gesture)
+	if not OS.has_feature("web"):
+		return
+	# Keep the callback referenced for the entire lifetime of the browser page.
+	web_pause_callback = JavaScriptBridge.create_callback(_on_browser_pause)
+	web_touch_cancel_callback = JavaScriptBridge.create_callback(_on_browser_touch_cancel)
+	var browser: JavaScriptObject = JavaScriptBridge.get_interface("window")
+	browser.afbPauseNotify = web_pause_callback
+	browser.afbCancelTouchNotify = web_touch_cancel_callback
+	JavaScriptBridge.eval("""
+	window.afbLifecycle = { away: document.hidden, hidden: document.hidden };
+	window.afbMarkAway = function () {
+		window.afbLifecycle.away = true;
+		window.afbLifecycle.hidden = document.hidden;
+		if (window.afbPauseNotify) window.afbPauseNotify();
+	};
+	document.addEventListener('visibilitychange', function () {
+		window.afbLifecycle.hidden = document.hidden;
+		if (document.hidden) window.afbMarkAway();
+	});
+	window.addEventListener('blur', window.afbMarkAway);
+	window.addEventListener('pagehide', window.afbMarkAway);
+	window.addEventListener('touchcancel', function () {
+		if (window.afbCancelTouchNotify) window.afbCancelTouchNotify();
+	}, { capture: true, passive: true });
+	""", true)
+	web_lifecycle = JavaScriptBridge.get_interface("afbLifecycle")
+
+func _on_browser_touch_cancel(_arguments: Array) -> void:
+	_cancel_door_alert_pointer()
+	browser_touch_cancelled = true
+	_cancel_station_drag()
+	_cancel_phone_gesture()
+
+func _on_browser_pause(_arguments: Array) -> void:
+	_pause_gameplay("Your day and visitors are paused while you are away.")
+
+func _build_save_notification() -> void:
+	var layer: CanvasLayer = CanvasLayer.new()
+	layer.name = "SaveNotificationLayer"
+	layer.layer = 40
+	add_child(layer)
+	var root: Control = Control.new()
+	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(root)
+	var center: CenterContainer = CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	center.offset_top = 26
+	center.offset_bottom = 110
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(center)
+	save_notice_panel = PanelContainer.new()
+	save_notice_panel.custom_minimum_size = Vector2(390, 72)
+	save_notice_panel.add_theme_stylebox_override("panel", _style_box(Color("14251b"), Color("68bd7d"), 16, 2))
+	save_notice_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	save_notice_panel.visible = false
+	center.add_child(save_notice_panel)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 2)
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	save_notice_panel.add_child(box)
+	save_notice_title = Label.new()
+	save_notice_title.text = "GAME SAVED"
+	save_notice_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	save_notice_title.add_theme_font_size_override("font_size", 21)
+	save_notice_title.modulate = Color("e8fff0")
+	save_notice_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(save_notice_title)
+	save_notice_detail = Label.new()
+	save_notice_detail.text = "Your career is safe."
+	save_notice_detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	save_notice_detail.add_theme_font_size_override("font_size", 15)
+	save_notice_detail.modulate = Color("bcd6c4")
+	save_notice_detail.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(save_notice_detail)
+	save_notice_timer = Timer.new()
+	save_notice_timer.one_shot = true
+	save_notice_timer.wait_time = 2.4
+	save_notice_timer.timeout.connect(_hide_save_notification)
+	add_child(save_notice_timer)
+
+func _show_save_notification(title_text: String = "GAME SAVED", detail_text: String = "Your career is safe.") -> void:
+	if save_notice_panel == null:
+		return
+	save_notice_title.text = title_text
+	save_notice_detail.text = detail_text
+	save_notice_panel.visible = true
+	if save_notice_timer != null:
+		save_notice_timer.stop()
+		save_notice_timer.start()
+
+func _hide_save_notification() -> void:
+	if save_notice_panel != null:
+		save_notice_panel.visible = false
+
+func _build_pause_overlay() -> void:
+	pause_overlay = ColorRect.new()
+	(pause_overlay as ColorRect).color = Color(0.025, 0.04, 0.05, 0.96)
+	pause_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	pause_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	pause_overlay.visible = false
+	pause_overlay.z_index = 100
+	hud.add_child(pause_overlay)
+	var panel: PanelContainer = PanelContainer.new()
+	panel.set_anchors_preset(Control.PRESET_CENTER)
+	panel.offset_left = -285
+	panel.offset_right = 285
+	panel.offset_top = -255
+	panel.offset_bottom = 255
+	panel.add_theme_stylebox_override("panel", _style_box(Color("11191f"), Color("6ba779"), 24, 2))
+	pause_overlay.add_child(panel)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 18)
+	panel.add_child(box)
+	var brand_row: HBoxContainer = HBoxContainer.new()
+	brand_row.add_theme_constant_override("separation", 12)
+	box.add_child(brand_row)
+	_add_app_logo(brand_row, 48.0)
+	var title: Label = Label.new()
+	title.text = "GAME PAUSED"
+	title.add_theme_font_size_override("font_size", 30)
+	brand_row.add_child(title)
+	pause_message = Label.new()
+	pause_message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	pause_message.add_theme_font_size_override("font_size", 20)
+	box.add_child(pause_message)
+	var resume_button: Button = Button.new()
+	resume_button.text = "RESUME GAME"
+	resume_button.custom_minimum_size.y = 62
+	resume_button.pressed.connect(_resume_gameplay)
+	box.add_child(resume_button)
+
+func _pause_gameplay(reason: String = "Paused. Resume whenever you are ready.", start_unix: float = 0.0) -> void:
+	if not gameplay_ready or session_paused or reset_in_progress:
+		return
+	dealer_storage_reopen_after_pause = dealer_storage_panel != null and dealer_storage_panel.visible
+	if away_started_unix <= 0.0:
+		away_started_unix = start_unix if start_unix > 0.0 else Time.get_unix_time_from_system()
+		away_growth_allowed = _offline_crops_enabled()
+		away_worker_care_allowed = _offline_worker_care_enabled()
+		away_worker_next_service = OfflinePlantCare.CARE_INTERVAL
+		offline_plant_report.clear()
+	session_paused = true
+	_cancel_beta_reset()
+	_cancel_phone_gesture()
+	room_look_drag_active = false
+	_cancel_station_drag()
+
+	if dealer_storage_panel != null:
+		dealer_storage_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		if dealer_storage_reopen_after_pause:
+			dealer_storage_panel.visible = false
+
+	_sync_simulation_pause()
+	if knock_player != null:
+		knock_player.stop()
+	if pause_overlay != null:
+		var crop_copy: String = "Existing crops continue growing while you are away."
+		if away_worker_care_allowed:
+			crop_copy = "Your worker keeps existing plants watered and fertilized."
+		if not away_growth_allowed:
+			crop_copy = "First-day lesson active: plants stay frozen."
+		var heat_copy: String = "Heat cools slowly while paused."
+		if lay_low_active:
+			heat_copy = "Heat cools slowly. Lay Low time continues."
+		pause_message.text = "PAUSED\nDay %d  |  %s\n\nGameplay is frozen: visitors, sales, wages and story.\n\nWHILE AWAY\n%s\n%s" % [game_day, _format_game_clock(), crop_copy, heat_copy]
+		pause_overlay.z_index = 1000
+		pause_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+		pause_overlay.visible = true
+		pause_overlay.move_to_front()
+	_refresh_tutorial_coach()
+	_save_game()
+
+func _resume_gameplay() -> void:
+	if not session_paused:
+		return
+	if web_lifecycle != null and bool(web_lifecycle.hidden):
+		return
+	if away_started_unix > 0.0:
+		var paused_now: float = Time.get_unix_time_from_system()
+		_apply_paused_heat_and_quiet_time(maxf(0.0, paused_now - away_started_unix))
+	_settle_away_plants()
+	_update_all_plant_visuals()
+	_update_cash_ui()
+	if phone_open:
+		_refresh_phone()
+	if grow_panel.visible:
+		_refresh_grow_panel()
+	if plant_direct_panel != null and plant_direct_panel.visible:
+		_refresh_direct_plant_panel()
+	if not offline_plant_report.is_empty():
+		status_label.text = _offline_plant_summary()
+
+	session_paused = false
+	if web_lifecycle != null:
+		web_lifecycle.away = false
+	last_active_frame_msec = Time.get_ticks_msec()
+	last_active_frame_unix = Time.get_unix_time_from_system()
+
+	if pause_overlay != null:
+		pause_overlay.visible = false
+
+	if dealer_storage_panel != null:
+		dealer_storage_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+		if dealer_storage_reopen_after_pause and current_view == "locker":
+			dealer_storage_panel.visible = true
+			dealer_storage_panel.move_to_front()
+			_refresh_dealer_storage_panel()
+			if dealer_locker_level >= 3:
+				_set_premium_dealer_locker_open(true)
+	dealer_storage_reopen_after_pause = false
+
+	_sync_simulation_pause()
+	_refresh_utility_controls()
+	_set_world_controls_visible(not _any_modal_open())
+	_refresh_tutorial_coach()
+	if daily_report_pending:
+		_show_daily_report()
+	elif not _simulation_blocked():
+		_schedule_next_customer()
+		_check_reeves_trigger()
+		_maybe_start_reeves_visit()
+	_save_game()
+
+func _timer_remaining(timer: Timer) -> float:
+	return timer.time_left if timer != null and not timer.is_stopped() else -1.0
+
+func _capture_runtime_state() -> Dictionary:
+	if not gameplay_ready:
+		return restored_runtime.duplicate(true)
+	return {
+		"customer_waiting": customer_waiting,
+		"customer_departing": customer_departing,
+		"customer_answered": customer_answered,
+		"peephole_checked": peephole_checked,
+		"customer": current_customer.duplicate(true),
+		"request": active_request.duplicate(true),
+		"visit_seconds": _timer_remaining(visit_timer),
+		"patience_seconds": _timer_remaining(customer_patience_timer),
+		"exit_seconds": _timer_remaining(customer_exit_timer),
+		"grow_tick_seconds": _timer_remaining(grow_timer),
+		"automation_tick_seconds": _timer_remaining(automation_timer),
+		"auto_sale_accumulator": auto_sale_accumulator,
+		"grow_save_accumulator": grow_save_accumulator,
+		"current_view": current_view,
+		"current_room": current_room,
+		"sale_open": sale_panel != null and sale_panel.visible,
+		"phone_open": phone_open,
+		"phone_app": phone_current_app
+	}
+
+func _restore_runtime_state() -> void:
+	if restored_runtime.is_empty():
+		return
+	current_room = str(restored_runtime.get("current_room", "main"))
+	room_ring = grow_room_ring if current_room == "grow" else main_room_ring
+	var saved_view: String = str(restored_runtime.get("current_view", "main_grow_door"))
+	if saved_view == "locker":
+		saved_view = "main_workbench"
+	if views.has(saved_view):
+		_go_to_view(saved_view, false)
+	var visitor: Variant = restored_runtime.get("customer", {})
+	var request: Variant = restored_runtime.get("request", {})
+	if visitor is Dictionary:
+		current_customer = visitor as Dictionary
+	if request is Dictionary:
+		active_request = request as Dictionary
+	customer_waiting = bool(restored_runtime.get("customer_waiting", false)) and not current_customer.is_empty()
+	customer_departing = customer_waiting and bool(restored_runtime.get("customer_departing", false))
+	customer_answered = customer_waiting and bool(restored_runtime.get("customer_answered", false))
+	peephole_checked = customer_waiting and bool(restored_runtime.get("peephole_checked", false))
+	knock_banner.visible = customer_waiting and not daily_report_pending
+	auto_sale_accumulator = maxf(0.0, float(restored_runtime.get("auto_sale_accumulator", 0.0)))
+	grow_save_accumulator = maxf(0.0, float(restored_runtime.get("grow_save_accumulator", 0.0)))
+	_restore_timer_remaining(visit_timer, "visit_seconds")
+	_restore_timer_remaining(customer_patience_timer, "patience_seconds")
+	_restore_timer_remaining(customer_exit_timer, "exit_seconds")
+	_restore_timer_remaining(grow_timer, "grow_tick_seconds")
+	_restore_timer_remaining(automation_timer, "automation_tick_seconds")
+
+	# Recover impossible/stale visitor sessions left by an interrupted sale or an
+	# older save. A customer that was answered but has no open sale and no active
+	# patience/exit timer must not permanently block all future visitors.
+	var restored_sale_open: bool = bool(restored_runtime.get("sale_open", false))
+	var restored_patience: float = float(restored_runtime.get("patience_seconds", -1.0))
+	var restored_exit: float = float(restored_runtime.get("exit_seconds", -1.0))
+	var stale_customer_session: bool = customer_waiting and customer_answered and not restored_sale_open and restored_patience <= 0.0 and restored_exit <= 0.0
+	if stale_customer_session:
+		customer_waiting = false
+		customer_departing = false
+		customer_answered = false
+		peephole_checked = false
+		current_customer = {}
+		active_request = {}
+		knock_banner.visible = false
+		if customer_patience_timer != null:
+			customer_patience_timer.stop()
+		if customer_exit_timer != null:
+			customer_exit_timer.stop()
+
+	# A periodic timer's first restored interval must not change its normal cadence.
+	if grow_timer != null:
+		grow_timer.wait_time = 1.0
+	if automation_timer != null:
+		automation_timer.wait_time = AUTO_TICK_SECONDS
+	if bool(restored_runtime.get("sale_open", false)) and customer_waiting and not customer_departing and not daily_report_pending:
+		_open_customer_sale()
+	elif bool(restored_runtime.get("phone_open", false)) and not daily_report_pending:
+		phone_open = true
+		phone_panel.visible = true
+		phone_current_app = str(restored_runtime.get("phone_app", "home"))
+
+	# If the restored save has no active visitor and no restored visit timer,
+	# explicitly arm a new visit. _schedule_next_customer() still respects
+	# storefront closed/Lay Low, raid lockdown/simulation blocks, and listed stock.
+	if not customer_waiting and visit_timer != null and visit_timer.is_stopped() and not _simulation_blocked():
+		_schedule_next_customer(true)
+
+func _restore_timer_remaining(timer: Timer, key: String) -> void:
+	if timer == null:
+		return
+	var remaining: float = float(restored_runtime.get(key, -1.0))
+	if remaining > 0.0:
+		timer.start(maxf(0.001, remaining))
+	elif timer == visit_timer or timer == customer_patience_timer or timer == customer_exit_timer:
+		timer.stop()
+
+func _make_tutorial_coach(parent: Control) -> PanelContainer:
+	var panel: PanelContainer = PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", _style_box(Color("18291f"), Color("6ba779"), 16, 2))
+	panel.visible = false
+	parent.add_child(panel)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 8)
+	panel.add_child(box)
+	var label: Label = Label.new()
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.add_theme_font_size_override("font_size", 18)
+	box.add_child(label)
+	tutorial_coach_labels.append(label)
+	var row: HBoxContainer = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	box.add_child(row)
+	var show_step: Button = Button.new()
+	show_step.text = "SHOW ME"
+	show_step.custom_minimum_size.y = 48
+	show_step.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	show_step.pressed.connect(_tutorial_focus_step)
+	row.add_child(show_step)
+	var skip: Button = Button.new()
+	skip.text = "SKIP GUIDE"
+	skip.custom_minimum_size.y = 48
+	skip.pressed.connect(_skip_tutorial)
+	row.add_child(skip)
+	return panel
+
+func _build_tutorial_coach() -> void:
+	tutorial_world_coach = _make_tutorial_coach(hud)
+	tutorial_world_coach.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	tutorial_world_coach.offset_left = 24
+	tutorial_world_coach.offset_right = -24
+	tutorial_world_coach.offset_top = 196
+	tutorial_world_coach.offset_bottom = 368
+
+func _refresh_tutorial_coach() -> void:
+	var active: bool = tutorial_active and tutorial_seen and not session_paused and not daily_report_pending and tutorial_step < TUTORIAL_ACTIONS.size()
+	for station_panel: Control in [grow_panel, bagging_panel, storage_panel, trim_panel, bag_minigame_panel]:
+		if station_panel != null:
+			station_panel.offset_top = 460.0 if active else 132.0
+			station_panel.offset_bottom = -72.0
+	if tutorial_world_coach != null:
+		tutorial_world_coach.visible = active and not phone_open
+	if tutorial_phone_coach != null:
+		tutorial_phone_coach.visible = active and phone_open
+	if not active:
+		return
+	var text: String = "FIRST DAY  |  %d / %d  |  TIME PAUSED\n%s\n%s" % [tutorial_step + 1, TUTORIAL_ACTIONS.size(), TUTORIAL_TITLES[tutorial_step], TUTORIAL_HINTS[tutorial_step]]
+	for label: Label in tutorial_coach_labels:
+		label.text = text
+
+func _tutorial_can_do(action: String) -> bool:
+	if session_paused or daily_report_pending:
+		return false
+	if not tutorial_active:
+		return true
+	if tutorial_step >= TUTORIAL_ACTIONS.size():
+		return true
+	if TUTORIAL_ACTIONS[tutorial_step] == action:
+		return true
+	if status_label != null:
+		status_label.text = "First-day guide: %s. Tap SHOW ME for help, or SKIP GUIDE to play freely." % TUTORIAL_TITLES[tutorial_step]
+	return false
+
+func _tutorial_record(action: String, slot_index: int = -1, strain_name: String = "") -> void:
+	if not tutorial_active or tutorial_step >= TUTORIAL_ACTIONS.size() or TUTORIAL_ACTIONS[tutorial_step] != action:
+		return
+	if action == "harvest":
+		tutorial_harvest_strain = strain_name
+		tutorial_slot = slot_index
+	elif action == "plant":
+		tutorial_slot = slot_index
+	elif action in ["water", "fertilize"] and slot_index != tutorial_slot:
+		return
+	elif action in ["trim", "bag", "store", "list"] and strain_name != tutorial_harvest_strain:
+		return
+	tutorial_step += 1
+	if tutorial_step >= TUTORIAL_ACTIONS.size():
+		tutorial_active = false
+		status_label.text = "Basics complete! Your day is running. When someone knocks, check the peephole before answering. PHONE > HELP has a refresher."
+	_sync_simulation_pause()
+	_refresh_tutorial_coach()
+	_save_game()
+	if not tutorial_active:
+		_schedule_next_customer(true)
+
+func _hide_learning_panels() -> void:
+	_cancel_station_drag()
+	for panel: Control in [phone_panel, grow_panel, plant_direct_panel, bagging_panel, storage_panel, dealer_storage_panel, trim_panel, bag_minigame_panel, sale_panel, peephole_panel]:
+		if panel != null:
+			panel.visible = false
+	phone_open = false
+	selected_plant_slot = -1
+
+func _tutorial_focus_step() -> void:
+	if session_paused or daily_report_pending or not tutorial_active or tutorial_step >= TUTORIAL_ACTIONS.size():
+		return
+	var action: String = TUTORIAL_ACTIONS[tutorial_step]
+	if (action == "trim" and trim_panel.visible) or (action == "bag" and bag_minigame_panel.visible):
+		return
+	_hide_learning_panels()
+	if action in ["harvest", "plant", "water", "fertilize"]:
+		current_room = "grow"
+		room_ring = grow_room_ring
+		_go_to_view("grow", false)
+		_open_direct_plant(clampi(tutorial_slot, 0, plant_slots.size() - 1))
+	elif action in ["supplies", "buy_fertilizer", "list"]:
+		phone_open = true
+		phone_panel.visible = true
+		_set_world_controls_visible(false)
+		_open_phone_app("products" if action == "list" else "supplies")
+	else:
+		current_room = "main"
+		room_ring = main_room_ring
+		_go_to_view("workbench", false)
+		_open_bagging_panel()
+	_refresh_tutorial_coach()
+
+func _skip_tutorial() -> void:
+	tutorial_active = false
+	tutorial_seen = true
+	if tutorial_panel != null:
+		tutorial_panel.visible = false
+	_sync_simulation_pause()
+	_refresh_tutorial_coach()
+	_set_world_controls_visible(not _any_modal_open())
+	status_label.text = "Your day is running. PHONE > HELP explains the basics whenever you need them."
+	_save_game()
+	_schedule_next_customer(true)
+
+func _open_fertilizer_shop() -> void:
+	if session_paused or daily_report_pending:
+		return
+	_hide_learning_panels()
+	phone_open = true
+	phone_panel.visible = true
+	_set_world_controls_visible(false)
+	_open_phone_app("supplies")
+
+func _add_fertilizer_stock_card() -> void:
+	var card: PanelContainer = PanelContainer.new()
+	card.add_theme_stylebox_override("panel", _style_box(Color("18231c"), Color("6ba779"), 16, 2))
+	phone_list.add_child(card)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 8)
+	card.add_child(box)
+	var stock: Label = Label.new()
+	stock.text = "FERTILIZER  |  %d / %d USES" % [fertilizer_units, _supply_fertilizer_capacity()]
+	stock.add_theme_font_size_override("font_size", 22)
+	stock.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(stock)
+	var detail: Label = Label.new()
+	detail.text = "Stored on Grow Supply Shelf Lv %d. Each feed uses 1. A $45 pack adds 5 uses." % supply_shelf_level
+	if fertilizer_units <= 2:
+		detail.text += " Low stock - restock soon."
+	if fertilizer_units >= _supply_fertilizer_capacity():
+		detail.text += " Shelf full - use some or upgrade it in Central Market checkout."
+	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(detail)
+	var buy: Button = Button.new()
+	buy.custom_minimum_size.y = 54
+	if phone_current_app == "supplies":
+		buy.text = "BUY +5 USES  |  $45" if _supply_can_add_fertilizer(5) else "SUPPLY SHELF FULL"
+		buy.disabled = cash < 45 or not _supply_can_add_fertilizer(5) or (tutorial_active and TUTORIAL_ACTIONS[tutorial_step] != "buy_fertilizer")
+		buy.pressed.connect(_buy_supply.bind("Fertilizer Pack"))
+	else:
+		buy.text = "SHOP -> SUPPLIES"
+		buy.pressed.connect(_open_fertilizer_shop)
+	box.add_child(buy)
+
+func _resume_packing_lesson() -> void:
+	if session_paused or daily_report_pending or tutorial_step < 6 or tutorial_step >= TUTORIAL_ACTIONS.size():
+		return
+	var resume_step: int = -1
+	if tutorial_step <= 6 and int(untrimmed_inventory.get(tutorial_harvest_strain, 0)) > 0:
+		resume_step = 6
+	elif tutorial_step <= 7 and int(trimmed_inventory.get(tutorial_harvest_strain, 0)) > 0:
+		resume_step = 7
+	elif tutorial_step <= 8 and int(bagged_inventory.get(tutorial_harvest_strain, 0)) > 0:
+		resume_step = 8
+	elif int(products.get(tutorial_harvest_strain, {}).get("stock", 0)) > 0:
+		resume_step = 9
+	if resume_step < 0:
+		status_label.text = "The packing guide needs %s at the bench or in storage. Your game has not been paused." % tutorial_harvest_strain
+		return
+	tutorial_step = resume_step
+	tutorial_active = true
+	tutorial_seen = true
+	_sync_simulation_pause()
+	_tutorial_focus_step()
+	_save_game()
+
+func _build_help_app() -> void:
+	var intro: Label = Label.new()
+	intro.text = "AFEWBUDS  |  BUILD %s\nOne action at a time. Your day and visitors wait for RESUME. Existing crops grow while away; an on-duty production worker can water and fertilize them." % BUILD_VERSION
+	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	phone_list.add_child(intro)
+	if tutorial_active:
+		var lesson: Button = Button.new()
+		lesson.text = "CONTINUE FIRST-DAY GUIDE"
+		lesson.custom_minimum_size.y = 54
+		lesson.pressed.connect(_tutorial_focus_step)
+		phone_list.add_child(lesson)
+	elif tutorial_seen and tutorial_step >= 6 and tutorial_step < TUTORIAL_ACTIONS.size():
+		var resume_lesson: Button = Button.new()
+		resume_lesson.text = "RESUME PACKING LESSON"
+		resume_lesson.custom_minimum_size.y = 54
+		resume_lesson.pressed.connect(_resume_packing_lesson)
+		phone_list.add_child(resume_lesson)
+	for index: int in range(TUTORIAL_TITLES.size()):
+		var label: Label = Label.new()
+		label.text = "%d. %s\n%s" % [index + 1, TUTORIAL_TITLES[index], TUTORIAL_HINTS[index].replace("SHOW ME takes you there.", "")]
+		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		label.add_theme_font_size_override("font_size", 19)
+		phone_list.add_child(label)
+	var controls: Label = Label.new()
+	controls.text = "PHONE LAYOUT\nOrder seeds on the phone, collect them at Central Market checkout, then deposit carried supplies at your apartment computer. Seeds and fertilizer can be ordered on the phone for Central Market pickup; equipment is bought at its checkout. Paid equipment waits for computer installation. Property computers manage inventory, listings, genetics, staff and production. Phone -> Illegal Businesses -> Bills or apartment computer -> Bills includes apartment rent: $600 every 14 game days, with a three-day grace period. The back arrow returns to the parent category.\n\nCONTROLS\nSwipe phone, packing-bench and storage lists anywhere on a card or button; lift without swiping to tap. Tap the actual room switches or lamp to toggle them. Use room switches or the property computer for lights and power. Small finger movements stay taps; swipe farther to look around. Swipe the room to look; tap a station to use it. While bagging, keep the same finger on the bud until you drop it. During trimming, keep hold of the scissors.\n\nPAUSING\nSwitching apps/tabs, closing the game, or pressing PAUSE stops the day, visitors, story, wages and sales. Only existing plants keep growing and consume water and applied fertilizer; dry plants lose health. A plant that finishes before dying stays harvestable. A hired, ON-DUTY production worker can water and fertilize those plants using your stored fertilizer. No supplies are bought; watering continues when fertilizer runs out and adds to your Water Bill. An off-duty/fired worker or raid lockdown gives no care. No new seeds, harvesting, trimming, bagging or selling occur while away; equipment auto-refill remains live-only. The first-day guide fully protects plants. Press RESUME when you return. Daily closeout keeps its day/time frozen until START DAY. Storefront AWAY is different: it closes sales while you are still playing.\n\nREWARDS\nRewards over $100 have harder goals or extra requirements. Complete every displayed requirement before claiming. Already-claimed rewards remain yours."
+	controls.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	phone_list.add_child(controls)
+	var pause_button: Button = Button.new()
+	pause_button.text = "PAUSE GAME"
+	pause_button.custom_minimum_size.y = 56
+	pause_button.pressed.connect(_pause_gameplay.bind("Manually paused. Resume whenever you are ready."))
+	phone_list.add_child(pause_button)
+
+func _advancement_is_ready(entry: Dictionary) -> bool:
+	if _advancement_value(entry) < int(entry.get("target", 1)):
+		return false
+	for requirement_variant: Variant in entry.get("requires", []):
+		if not (requirement_variant is Dictionary):
+			return false
+		var requirement: Dictionary = requirement_variant as Dictionary
+		if _advancement_value(requirement) < int(requirement.get("target", 1)):
+			return false
+	return true
+
+func _pointer_in_control(control: Control, viewport_position: Vector2) -> bool:
+	if control == null or not control.is_visible_in_tree():
+		return false
+	var local_position: Vector2 = control.get_global_transform_with_canvas().affine_inverse() * viewport_position
+	return Rect2(Vector2.ZERO, control.size).has_point(local_position)
+
+func _handle_station_pointer(event: InputEvent) -> bool:
+	if session_paused or daily_report_pending:
+		return false
+	if not trim_panel.visible and not bag_minigame_panel.visible:
+		return false
+	if event.device == -1:
+		return false
+	var pointer: int = -99
+	var viewport_position: Vector2 = Vector2.ZERO
+	var pressed: bool = false
+	var released: bool = false
+	var moved: bool = false
+	var canceled: bool = false
+	if event is InputEventScreenTouch:
+		var touch: InputEventScreenTouch = event as InputEventScreenTouch
+		pointer = touch.index
+		viewport_position = touch.position
+		pressed = touch.pressed
+		released = not touch.pressed
+		canceled = touch.canceled
+	elif event is InputEventScreenDrag:
+		var drag: InputEventScreenDrag = event as InputEventScreenDrag
+		pointer = drag.index
+		viewport_position = drag.position
+		moved = true
+	elif event is InputEventMouseButton:
+		var button: InputEventMouseButton = event as InputEventMouseButton
+		if button.button_index != MOUSE_BUTTON_LEFT:
+			return false
+		pointer = -1
+		viewport_position = button.position
+		pressed = button.pressed
+		released = not button.pressed
+	elif event is InputEventMouseMotion:
+		pointer = -1
+		viewport_position = (event as InputEventMouseMotion).position
+		moved = true
+	else:
+		return false
+	if pressed and active_drag_kind.is_empty():
+		var token: Control = bag_bud_token if bag_minigame_panel.visible else trim_scissors
+		var area: Control = bag_play_area if bag_minigame_panel.visible else trim_play_area
+		if not _pointer_in_control(token, viewport_position):
+			return false
+		if trim_panel.visible and trim_harvest_amount <= 0:
+			return false
+		active_drag_kind = "bag" if bag_minigame_panel.visible else "trim"
+		active_drag_pointer = pointer
+		active_drag_offset = area.get_global_transform_with_canvas().affine_inverse() * viewport_position - token.position
+		bag_dragging = active_drag_kind == "bag"
+		trim_scissors_picked = active_drag_kind == "trim"
+		return true
+	if active_drag_kind.is_empty():
+		return false
+	if pointer != active_drag_pointer:
+		return true # Another finger must not steal the held item or finish its drop.
+	if canceled:
+		_cancel_station_drag()
+		return true
+	if moved or released:
+		_move_station_drag(viewport_position)
+	if released and not active_drag_kind.is_empty():
+		var finished_kind: String = active_drag_kind
+		active_drag_kind = ""
+		active_drag_pointer = -99
+		bag_dragging = false
+		trim_scissors_picked = false
+		if finished_kind == "bag":
+			_finish_bud_drag()
+	return true
+
+func _move_station_drag(viewport_position: Vector2) -> void:
+	var token: Control = bag_bud_token if active_drag_kind == "bag" else trim_scissors
+	var area: Control = bag_play_area if active_drag_kind == "bag" else trim_play_area
+	var local_position: Vector2 = area.get_global_transform_with_canvas().affine_inverse() * viewport_position
+	token.position = local_position - active_drag_offset
+	_clamp_control_to_parent(token, area)
+	if active_drag_kind == "trim":
+		_check_trim_collisions()
+
+func _cancel_station_drag() -> void:
+	_cancel_door_alert_pointer()
+	_reset_world_pointer()
+	active_drag_kind = ""
+	active_drag_pointer = -99
+	active_drag_offset = Vector2.ZERO
+	bag_dragging = false
+	trim_scissors_picked = false
+	room_look_drag_active = false
+	if bag_bud_token != null:
+		bag_bud_token.position = bag_token_home
+
+
+func _get_hidden_stash_art_texture() -> Texture2D:
+	if hidden_stash_art_texture != null:
+		return hidden_stash_art_texture
+	var raw: PackedByteArray = Marshalls.base64_to_raw("UklGRhofAABXRUJQVlA4WAoAAAAQAAAA/wAAPwEAQUxQSCMDAAABf8W4kSQnVB+8TP4Be4ggInJyFwlKci1HORc1hks+5bxvi9UPwTw3VhgeE0oDAE2ACv8/7HNJEf2fAFgkl8ao9K/i0hiKxFDHbj4oB4DkSFIisnpOS8AMDTbgBPbhDj8M0Fpr1V3x6EETkduLmIiYAFz8/38sxyAgQJC4I0GC0Lp6qJdf0rx/w9hN/EQCmpoihWKRqKLeePUjC49feYBUX7gJi0/fR6wrPD7JXObq4YRct+lhBkN6+KZ9n2+51PDw9o+5jJsevlcuiwkh1zE8JDtudo+n9o32ndo3uge2r/9sX12NjWRMPrUEQw9PtO9Gde8mgykPCw6M4eGUjMklGXrgkTHaVx6i1dUY27ckY3Ikw8PPpJKRByZDDzOZ8rAmQw+HpjwoGZPRqH0mefiNZOSh2nf8b8nIw0zGJI8Metja92P7tmTkQcmYnMnIw5oMPcxk5IHJmFQy8hCtiTr8ojXBZEyOZOjhRjImmYw8KJn+l4eZDD1syZhck9HV2I/ti5YelIzJVcHIw0/JXJNVMvTAZORhMJjyUOhe/9W+2b5NwZQHIVh66P9gMPRwKxmTD9D9J9u3tK/ap2ToIdr+mWQy8rAlY/Kr9n2XjDx8uHXv/Z+DMVkKZnqYPwRjUureTKY8kMGY7N82uydc9yeDkQlc9xeDkQkFY1I4+qKlBykYta//ap9JJlMmGAw9VPukYEwK3a/2jerewmDkgcmYJNrHYGgCwcoDFIxJsn04MKt9JtW+ObsndH+pYOih0D0lUyYUjEkhWHkodo/J0EMlY5LtE7rP9lV1b1P3ZjL0oP6h+/2Llh50/Kl7YPeqfacRjMkbycjDVDDTg9pX6B6TkYdqH0cw5aEYDD1oBLN5+PL1p0pT69w0AUksAIImAO2BWeROhLYpkNjm3AnYSAAEBBKEJooACGFSEkhBAkBN7UQCLIIUBquqSEhVkiYonk6n5aPXPNSdW6UVhQIBEBAAiAIAAQJAgBD2EgBC0g6AQEDnsBeIMxAAASAgnBXOgAAIgAIJkgAgAoJ2VaN+/MHD76gzF/9f/H/x/8X/F/9f/P8frwBWUDgg0BsAAFBsAJ0BKgABQAE+lUabSqWjpiGn2gowwBKJTd5Rf8FoIsN+0PZuhB5H69/e+TLnI7F8p98T/a+qb9O+wXzsPNB5uv/V9Zv9g9Sz/LdTX6JfS3f3D/y5RozL/P+DP5B88/oPzW9ZrK/2SakfzD8UfzfOHvt+HuoX7P8899P05+Z9AX2h+6d+z/x+iH2j9gP9cvTL/p+Gj6j7A36h9W7/S8nP6V/uvYLKCO7SPI56kQaQW/2RdHDcZASqgl6lSEVSZqBRNIiDMQ0gsyRMp0l9YrjFreZ6gB/a4tyCsPWXymy99Ym7Q0hHcoN+/Qz8Gi8qDx7Wbv6xKFexKhVkc8kjTM4PyyEBpL66E9zo7sfSYrVPY3PAwpbrK037Pby69k8IXq7gq7hlVquN+iVQB5E1TEfzQLVOQttXRAzRrN+pn17Oxy5ZJ1q1/O86e++ic+A+/O7QmFz/uj95YkbCCQQr+9I+N3nf7gZ4+1xIHTG0ZcnTGPANMT8xHVNR/VW9a9WXbTGuUjTDSPnzxuyFyyMmuVev01XbDG16Cndjiz20hviq868N10PXQmwoQXA7oQMZCcsO4h+08wAuFRnOaWHP0YAnWxU10/nrmyFI/puiPIQmxpnsBagKSTbUad973dqZyomR+uZvpe1DjONx7H4Eptw1Z9PAMv6CpYLmNS1+z1XF0TcoifYVrV5srhCLR5vuvJOmkHMf75PJVdMFnb6ijgZL5sttZsc3m3ndy/LZVm/CTv7u8c7Qv3LksqbVlk67VStSCY3pHcGruNjQ8hc0KYDq4CKgYP8JRMOvkmYgRuG+8qBYvxZDXqDcVhiUmfioSCLL0HduL53bDGy3J+cM4iAzyRJG2AUmopP/YqsbGO04WT/qVdSyMXWwv0HSScirQ3l6c7w7dN59/sqqpG+aW41rD00aG7/l564o5+mil4LZixpghff0fQ+nnkH8QB9qCkmtOZPf+hHHzNAj7G4MjsXIrj0hHeK6eNjOmV/RTtpAXuL2IYOiSq/7aorFQ5M5LQ1CKxjWfSOpY1QHrwNgPBYGsYPZzROmqwLQVxcoYdYOXmgGXm4OBlvgGuIcmHLlaKToaR3oTR6NLQjS1b8c9SINILuINILuINILuINILuINILuINILuINILuINILuINILuINILuINILuEgAAP7/g2AZvgQLXUCOS0A1ntNigrP0eYh25TbLvoM8ze7oBp4Wb3dBL7rkrSP2JUwYlhd1dIbRuH/fxOjQJxbTd4st3mw12PDe1pAsVZMfpTtXOogMcADmnge63punLR40mZWNW07C7X8hhgBWUPwQB7ZOmcAMwJfZVltgPx2lw1MpQjEk4Hi6bAwLNEfS8Dy73hsINIweQqGzPmQVcBSw8SnE2HSXPGc3R+syMJL/mLiMCE16Hb0v8fuidPuL5nHJ6lfYvoKg4DqcDsPyFSQi8b3+v91c3lDxLEKBqZcgsYzt7BdV5gz+rCLeh6oPhR5iTNyQY0PrPLBbOHdlKo6GeOFzneRLlxxAWIUQ0i8tePyPxH8YQCn9ANY1otHac8WnCamYMQCYnr4x/Hjw1N08W1Wx0ksnjC0IGAtSyIHU8HJdC5L4kSFvzKn6I2NQaiD7KfKLO4uXNLCAoP2wik/1y1nk1szH/JnkLwN4m2umlkqNuWUvDuqjuULYseKXnw0vMWIOMeygVRcFl9WZqO8GJZMONBjOiCob3xQHBMFFAejRzvAmC/oo/1wfuO6SL0wTM79mWJElvx05xdxn74b0DRReoscmrUJJlwi4IjCSTIFu/BsXAHQy4NJOnjy63++zYDn+ZoKzdtfli6Gn/+5KbGr1rAugWBpEWHLd+Xt+monZZcNbG+R2mciu3ryIV6B4x86DoSN8ADfF5PbzzajMLchxY+KY2oQiP5d4Pdic0PpXYnpntQwc7kS8OVBUIHhNiG50rHjRSqgQd1X/siJnWJlQDRFA2R3Uzq+VjOvj4kyO1mr0h9uP54LFzWZQ60oGo/4wQEvcN4dwQbAuby84AsiT/GG/Yl8DUxmM6tIzaGXMi7MIQGXkbI/OdJ5lQx6km8I+JwJjzmNYQJzTVxDHzTIuc/NJJZvm9iobSuPIFeAW9JuKQcXVjAxZDNGdrZoWqHbj4Y9Z3F6XHqJcnDlMWHll2zc+yonFEmLryDuNxTE2168q+OTrcoOcqyiso1wsIBO/L8eRBAq6eTqvASETcBI9MZrblH3axP2L2siDV/62L4sWKHRl20YYxbA9XpUsrXiOPQOtLmzJobJFtx4RcZc7EpdbgLuws1tYfHN5UUHSU+A+z9FuMAis7cYVRy4T3psmrg426V1rmHQ3C1Tyh3oYVxOkttR9e+WldbQzv/DSXf0C++f+wSiPn5dxC/WBzNih/UtaaNzBdWiy/EJz1qeM7zYfiZdyl3bfI6tnb0HlPKVCQ1KOH8YHzlLcuUoe/VlOLOi9waFT66Mu8e4xzZJdxPQyF5T89St+ym1KnibFpf1jjsHJR8cC0yGpW4H6qEWsG6vVQ+MZwBS8trabG0IwztFsvJX6ZpdrmAvoWaKT2RcRJ6tetovp74QxWgfpZgK6m5hM9i4UWCfaxZt09us1HqCOi03HKXmO1+btODRIRAX1CX2fU2bdT2NbrSA/DxHzDvtsv90osHuAXZ6zeWBDp7Wp/GfjC45rPvo5cVGyWPNtdt532oVGg73lDC4MFPYlJLbUNuaXLwnMQxPGkmpiYi3Cmk8FZqYs1csD2GLDbMSWbdcUkKfdfnrzxxdTFpK+xsomk5Yj+Z0kFrusMW0W72W+8LgooDgnalpsaks+0C2keAAhWpw0fP4gwOVCdKMs87juzfANd0+U66jAG7V66u3qByiCItIf6Q+pEjzGgO3lyc/Cu3GKqRFYMPnwqVe1yR1a9VRN/ZqC6z4FqEmy1O4dqNYDmjp+Gxrxv3Yze7ha2R2nKolvy0lNBXSVhV7mbZJzPm0PuA4VclEaoySiSitvkGGjqBWzX42hbmcrYrwEQbZRQtdYbyFmoD/+vuLJRG29cJmtyfcG8ZC70mN2QQNF15uwC2FmSrJfBl203rxGwv0KUmqXzYcn/lNRJ6YbwPP68lv2xlez1Shi6iG4nOrFLOnJwL5iDMXYrFlem7Bm7niEZwDxsvEbXCDhlgbY1HwusYprSu79RPboHvAZwtcAXhei19twzZEM2p1ytge5jxgbnMHHlgarEVaCkzZFbkHqjmCUKDix9bk8m/EDWBHp8LD6z69bAsQ8cuLc/71HYsQ7PBzdZ3QJcqcDmPJYsWCr8WAJvKf5ZpD1jscFZDCxeQvdJ05Jc/xkYPJfcTE4uhPyF6ccESzDKu6TNj8K1bbB9P0tgr9wZu/z7Y00Vb0meJufvXxuhExgbjtVHM0YW79gV0DkDZjeFAxJ/4vFtMsmQb6Dzmki/QOm7UtcvBdwasVMJjOOaoi+GC62Ii+zsbowW4rv6W583gdaPyLPVVyLXsCSsB2jXJ1BmbVf9J5inzLL/YuWPnTidObEEuL/uvYp5p0+9wXDZ+E631qvRW2pVw7nXzvx5js3oet6jLrZittCsvsyjLyXWqm1h3RtyJ6URshssySY3ePQxAOZohcA9X/2kzY/KAwSXIXCJXLTyXtO/a4wlzRUvK4GLJz/93kwgmI6vx1NBZNUNNJy3PBbr/ZOQHM6tqgg8E9Qwr+wUyF7c28fNup1/VNvOjMYWFKvZFeo5lFuOvL9eX3+kH4YKb5OsuYiLZJgOHvEsocCq51kWyYbQTnfobyLfhooArDBkP1HJ0/Ftu9fy3l1Qt1tiR9QU9ZcZP+iIPfDOOUnfewFfeSiYuDBMUMqRiLHo0ObEdLbBA8ZjZBhiAGVg459+8/IHoccQffzOqxCSqtC1k/Th9Ya7mnPWmpX261DudpJG+Penhj+pGX5gfDkNzcvh0Smb8ETS7onCfS0Ef31dVigRPLDoJBEFuTsOhQVrW/snf3mVCRXq9XFj3Oueve41tILoGQJCtIguqmEj1kdLc/YTRd25gDl7qTqE9JnGua3OEyl7i2DQeV+NjghRRH+je5eZCXC7igWh/020VM64g8oa61svDZAsPj6YE0N/kdr/q5PINMw/moYdwNw2D5RB/jEmtcS5LlngU7KVDlsg0DSci0p5M1+qOfutg03P8yv+D2pYiUaF8FPz3KZguTyJspsAZEVV9Ptg/cPLz4E5UkV9OHA3aYyTWUWj7z5NbGD5XZQvOxeTjnugC0xW+tdGTIYqG5f42o9Kb8jZCtF02NPv26NJs8gy8apAS4OA4yi6DjiA4DrpQyw1saVLWcJr/JWKUdgHkUVWxyY1uMnpfIlN7JuiCFEvfy89TDgmtk0y5oPFW4it6f4AE2pJaw6gC15gll5yhsBOWkcFMhtY7OPposcnIiQvntwwBidl7ojrjBq21ofnX+hg16xzdtrU0WzhXEN2MNF37eV3xHy/+sTrAOeVrGSgvdjszKTeIs1X6LsfYEF7qXPerBvCxP7nyXXLh7FNVUIFGl1u1knNqshdwY1ozPi4il2Apf0OuFuOCabErVIDDbttnUmHStu7DClKxtGJ9CLiPhZKlJXOdHRWnQAAPogS5kQtzB2SD0uq47DEFzJG4D630mrrnTpYGwxA6zq3T7me3WyovZxujoDZOWVJnzxu3oXGHbtflYe1ion50BD/AlkaIeldHNtX59ElebZG3QNG/NrWD0xnVt/mj6OVSyd09q5mySghULqb9db7rRUouk2TvWYVirfwBaykVIpdQGq1fsNlB3dyHnBZ6ZAkGPNgS6R9AiMQhoFn+iS4w5kydq0DSjn4QhSas8hiddE+63dbpAQ9ehMioxOYN8bMRGWNS37+4CmkLsjTPa9/c6EjNkhsZbreDyXYGHE8FcobiVaSaflHWv0IFTiFSviT9eDe7/Z2sniHGIy+wuwnepQbaTMBcDOu1H+gJ7yNSH+PfHDKtHKJmHvl/NPO8bRwFBuGYdLm+OvBAfeR5txk40EKTVxlFlGOZcTa8MUd8NE1xxaMkaLS1jVYPN5Us0/S17scF2Xr+xWvXzHAjEylWm8p4oEniAnlRuF16UNaCvIsrgVQwvVx9m8S6v4KhMTMb8jZOmtsOpsJiXdeK3rLFZOx598ZwehMReXtGL+Tvkr0jOWqwZ0sYzRAOK42Y6XsMRU6ahmKkH8aapsmyvfLVJUJMPkemEnp2aqMgPsY5c7oKCtEOv6HJi7FU/8Fy8C2SiFJaJcwBUuF9fcwSR16xbMCoVQ1R1nJpA/H7XhVxjKi6sSvDMrg/w3DD9VV5et4O3JwBVP9kC7WuE1aVgd5Ab0HObtcBc3yP6Oy34fOvVMNo18AMMKgNbd/Vx3ubHcLhG/6rjCxZyyXpjxmXeytwjqafD/nAjT6/H/lEnJbRYo8XGRzQscFKxaYiabLxm+3Kn26uR53I2lzfdggkfBFpvYPKTMXrpjA2YmbrOtr3JSFo4oV9JNd+km3jDyZM9guXVspV1kYtXtMpYSiq9ycjqLa255oxgFBrTLF/J/9Y9XwiS8Wk7djj+5c3gD6Pg29e+25wEGs/wnNF347savMrF2RZpXoFM/juIEkV+kc9liRlWBAjcvftzHJWRaAFAyfzQJyi1A+9qBvJ8x69xfmDwJZpCYMa2LsF6QYN+c19ut9u45vkO/zIdKBkS1vDPMkms+co3gu5sCb/HDmlJ9ddzIJEDoG05sELmn01yBQyDvc/dCWzelH7x37KHCfbvnKFcvngiuk0D2dFU8PbBUsS5WFyfnn1BomBLjPhuNDW2lU2NWQFZLAaYzIqSglk0QOSlKX69elA+WZgHekYJiLW91gA6Wr1L05UlEAIC8uJTaRJTtbABiYr0KmgVHa2zWJ29rS7SiTHRj35QahIwbiMtYR3up3PKdS1juodTqN3QtF0lgFzv5m2iqCmKTHTDnZdOpmwmx5Eza7Wu5n4bxMF/dG7fICxDBLUc7sV3zLCsZD5SH/DCwE4DvlJRFBEZ3ybktuApp89f5JviBDrHl/TlAsbXpcnmElLVZGdfqHWLHBsDFm6YKM09/vTEJvUuIp8s+ulEM+YZ1ygsW3mkLWMdfQnzD2a+h2zNbC9ceeCjMKFR4v5PACjx38aI6PD0FLbtD39Y7SvptD12niyQrOQH8NwqwdAG7aYK59fC3s6oOWkqYGHmeXfZFrHmlw9rlxyBELkDsS4/pP8uGm9OCs3ZTt/XkSAyYHK+mCTbbeOZbfX//lp8aKZzBtHWzhQ5Q516WJyCTfsLjnaOgWkjKNN0Kl187WfmJJynho7PERcgNUyZXN5rLylW+U5dEvni7hNP64VweLg+k32rh9p9MZOyV17IXwiT5AzJFprxuOT4hQwq+9HyW0xom8ZcKu15LSdawb1IfZXprgNZW+q1lVlBWOSlQo5EW2xC4idFN9c/pVnF7+/iaZhyiDu4+hwQ4xmhf3XexPZUquTSd7gujfh31jBRljHuuxPkwKrt41tJcSy4Fb9xE4BteQ1NakQFToxnutydaIJN75SR4XF8/CQHJZ8drp6fGegBZHZCwXn0nR8yBhr6TRrFm8H7s2me+7JhiHQyniuMr1swzLaGqExATH2Ac/pR7pRm5+1+L/ZmvNR0abdbFFm1pqr2Mmi3SuNGJt8bOY5OT/dw3eUGuWfwvxF+z88BCE60DvCkj+5Z822jck+HFXPlXY6kNa+54KRTOjIaYDDzK01MbGPsP0THNfRLVVAhlwY9+B9VHC4xa2smDSRD+iFISSLUC9T/MYMYAb+XVRhmfrKPusyO0zMzW/MF3SLyfYoDdkAwd6KZoUO7LU0JxN417eRU8BID2LKnwDhUlYfIrsEFHsv2UsJDcHe3phAZEfxQsTgxX2EbFisHVn8XjJRKTLQVPrVPm0sliDOyJl0Df3hRBBfdkrKzVqytdneKDIPwWNlf9ZmiOV6n9TkfJzJl8R5zPOFgao9u85P+DirNNZzW0LHtwr/Kl/JZcKmBQ1wmwLStpCiUitNeNrOxfrGsFVM0ryAu19AgCyKDMSCLExo/rOw712Yg1KcU0PLKE9fXMMf/7wXvksGMyhU3ez8wKzNRp6NJ/gZv8DDF1F4637DmTECAwQm+BaU9NWXmTBT0TYdnoAh0NMmzphGtkeIVN23LHcjsS9vg6NKuTyqkqXoXTUPmjq80F2ZLT6V1i9zRdr3iFPYvX5WUQcDSiFkNzb05kqoa9fIITlYiUWudPiCmZs65vZaopm/BEuIkCnO5DzufAQMxhWzg9lB9IQCqECv2BzOwP+u5UjaWUWQkHNKDPrM267ccgSVwpWeD+ZvWXoPm0hIht1qmAib1OyniQZujrfUhDWshrYLZnkktk/a42GygedtZzl6RP79sj0QxQZCBIPaK8N/iKBfOr7INNE9iZNeg49eHaqQDkV1buSTM9iWueUW+mYvsfu+TD7C3QCaSHOqrs3VvukqB1PV8RgwHSYC5WVqY1lFChfWAI7XipWFfAMdoHv8oSF79a/x4RTdnE2n5oUWqz+JaJbT9FTkraChxpLLK7ceFS5K70pSYpenzsbBsk0zMRsHkBE7GIGZqwVWL06e8aYmADEsbWxOuanLAgnLt7O0MnzjkMSwcqqDnjr7b5i+f5bAtn/urEmE68fmvnEA5If1IAcdaHomSzzEWhN6VqDOulg5oRlDCHPqOVnL+9mcjEvjzPLUsQ/LrosFg1QCpPx42besZ5FBzrdvSXYeSgkEyw9fdb8NOqrZFSYyCyKY3VzRl8Cxd2oi535ttXkQHBzBDm0eWomUkc0UGjnGinXhXsWq+Vz6doLrB9GlhylW6rZHksxaiGhgDB+YOd7+Qlh+7M1kXssA7RnQ7Mdq16THC0xBNvSJw8SNNMQCefgrAGdSBNHwy7DcnVgfh3Fw7OItpOzoGBCAO+8l2FXKzlOWwCePheWFXaNFkrBLH9uEF6tO3H0Wpq1KgTk8PKHQ/vS6aXi4Qt99rErAmV5vVW80IlbJijBW8Ff/kCnJ4TN2oW0dS3OyBaJKqqRsBMwsexxG9pBMAHCvxGV8rUx+Ee2mO1CRI+Gl7Hb0TX+dTCdI7lkupWoQiulSLfpWK6AlVhwaIrc4XxksvYy99LMWewk9u43SOuGhBfQF1z10aZ6Y3asPOQzNkj962Q9y6qFF9EJ//qWWpN+w0SIhz3I7n37HWZGf6liHgMwZlpZm5S79zquAy6ozmOSQfYI9xUJa2vDjaoi18D3j31AnK/2aQzm9pC9hZdC6c4NtWoK0Ku3Sq/lOkx0vtREufevW5gZ6Mvg2GHh9EI2qYfusxVaTVtoOyComYl8TKRuwBSPyBiCapCsFy3jfcL4iO9Duz+if6VVQPUjyd4/GYu4OwwSnpUEaTDXpDT9ZrqMXe0DlKaNn+eAjikvJe/TEcEqUYh0sccJ5zlu/qP5nker1dGVK7xcT/ULBQnpV8I4rIu7VfDq4OjKdSYj99kmpxiJzyHLLgyjI+UC+IRZGXVHZYKk/89yO4vQoB9bsx34ZmW5Jhl9Xq9MRBxpBS+xRCmwMWhHLtUU3jZE0K3WPZUazkVOxvGtdxi989XHgGN5sA/ZCSGLhuUg0QKqOG+WNblfIEMYrUEbqSus62MXeQVA0Gy9vprNe6N15P0muVXQlDN+HAtXT1z1SATZzJwWQCV6D2ASattc3Y2lwfwczWdAkgS6u+EiiVN9TKN2bUFZzNfmaScgZlBuu3hk240V3kz2IXY7nnhgG40S9PKrbINy3QiSv6mAQkYDT5eiq/XCJHagP+2AuCiRNXvrYbf1pL3tOTLvK2zDBu5VzRa/Rb9ixgloHeN5Lh4Qn55Ct1GuXYM6Qu+pyMS+AEmBDcwYM3qwZVw2slxAmSMT4INN2Jqg/Sb4UGT3M1lfwOlwMVdJKzJ0PuakxPD4Gus2UyxCMPaGWeh76b6cUMnCnGlT0ykPrD8encLFyXa3Y+ie6lA0YrFsFjCl26mtq4G7htNAGTHeUfaWh9XZl+k2UqR5vWgZh5TEk0c3NzED3lAW/i76vCA0OYCdI5oEFObAJA1QdZQB9Zl0+jJ8pMIyzPji3Lwqpu0w30YQp+KBecHOgCpjtrOygtNzWpan8E+wwFkfbv2X0r2gYBxyGv0i9Ly4V+R7P1GHp6I3t8H/PyNr7sTruoxxHK0MfD892E6YEpnKoNiw/hGkbKdOTmUBE9cmt26mg4iGfU8Mg4/3hfTqdogiGdvRzAv5mfqMcgdmSUsgJFAgqtn3FAAlglfFpwftazE6bizR1v8fJsm/8bhQd+9cPh4Cyh6wQYeZbsq4267s+Hh7C1FeWxtw4LbgbSxt+/WeBbVkpoU+6HZzUCB6IPzxxVPg5H2qfDTKkSqAjn/VNuO3rBVIHFg0Fr8nNSdl/6nUipwodEE5wPmVgzbBmDcWVzw7vAESuTxyHOloIAqVwVVcbAvWh9QBWoXiwucyWhDozjx5Vb+UMFKeHnXafrvXd5Xkt1AAAAAAAAAAAA=")
+	var source: Image = Image.new()
+	if source.load_webp_from_buffer(raw) != OK:
+		return null
+	var source_w: int = source.get_width()
+	var source_h: int = source.get_height()
+	if source_w <= 0 or source_h <= 0:
+		return null
+
+	# Crop to the colorful AFewBuds poster itself. The narrower width removes the lingering
+	# white mat on the right side while preserving the left/top/bottom composition.
+	var crop_x: int = clampi(int(round(float(source_w) * 0.285)), 0, source_w - 1)
+	var crop_y: int = clampi(int(round(float(source_h) * 0.135)), 0, source_h - 1)
+	var crop_w: int = clampi(int(round(float(source_w) * 0.445)), 1, source_w - crop_x)
+	var crop_h: int = clampi(int(round(float(source_h) * 0.468)), 1, source_h - crop_y)
+	var cropped: Image = source.get_region(Rect2i(crop_x, crop_y, crop_w, crop_h))
+	hidden_stash_art_texture = ImageTexture.create_from_image(cropped)
+	return hidden_stash_art_texture
+
+func _hidden_stash_box(parent: Node3D, part_name: String, pos: Vector3, size: Vector3, color: Color) -> MeshInstance3D:
+	var part: MeshInstance3D = MeshInstance3D.new()
+	part.name = part_name
+	var box: BoxMesh = BoxMesh.new()
+	box.size = size
+	var material: StandardMaterial3D = StandardMaterial3D.new()
+	material.albedo_color = color
+	material.roughness = 0.66
+	box.material = material
+	part.mesh = box
+	part.position = pos
+	parent.add_child(part)
+	return part
+
+func _build_hidden_wall_stash_visual() -> void:
+	if hidden_stash_interior_root != null:
+		return
+	hidden_stash_interior_root = Node3D.new()
+	hidden_stash_interior_root.name = "HiddenWallStash"
+	hidden_stash_interior_root.position = StorageVault.ANCHOR + Vector3(-0.36, 0.0, 0.0)
+	hidden_stash_interior_root.rotation.y = StorageVault.FACING
+	add_child(hidden_stash_interior_root)
+
+	var center_y: float = 1.72
+	_hidden_stash_box(hidden_stash_interior_root, "HiddenStashBack", Vector3(0.0, center_y, -0.115), Vector3(1.46, 1.06, 0.055), Color("17191b"))
+	_hidden_stash_box(hidden_stash_interior_root, "HiddenStashTop", Vector3(0.0, center_y + 0.55, -0.015), Vector3(1.52, 0.065, 0.25), Color("3e342c"))
+	_hidden_stash_box(hidden_stash_interior_root, "HiddenStashBottom", Vector3(0.0, center_y - 0.55, -0.015), Vector3(1.52, 0.065, 0.25), Color("3e342c"))
+	_hidden_stash_box(hidden_stash_interior_root, "HiddenStashSideL", Vector3(-0.73, center_y, -0.015), Vector3(0.065, 1.06, 0.25), Color("3e342c"))
+	_hidden_stash_box(hidden_stash_interior_root, "HiddenStashSideR", Vector3(0.73, center_y, -0.015), Vector3(0.065, 1.06, 0.25), Color("3e342c"))
+	for shelf_y: float in [center_y - 0.18, center_y + 0.18]:
+		_hidden_stash_box(hidden_stash_interior_root, "HiddenStashShelf", Vector3(0.0, shelf_y, 0.0), Vector3(1.34, 0.045, 0.22), Color("765b43"))
+
+	hidden_stash_frame_pivot = Node3D.new()
+	hidden_stash_frame_pivot.name = "HiddenStashFramePivot"
+	hidden_stash_frame_pivot.position = Vector3(-0.86, center_y, 0.145)
+	hidden_stash_interior_root.add_child(hidden_stash_frame_pivot)
+	_hidden_stash_box(hidden_stash_frame_pivot, "HiddenStashFrame", Vector3(0.86, 0.0, 0.0), Vector3(1.72, 1.36, 0.055), Color("111315"))
+	_hidden_stash_box(hidden_stash_frame_pivot, "HiddenStashMat", Vector3(0.86, 0.0, 0.032), Vector3(1.66, 1.30, 0.015), Color("e8e3d7"))
+
+	# Use a textured quad instead of Sprite3D aspect-fit. This makes the approved AFewBuds art
+	# cover the full inner face instead of appearing as a small portrait centered on a large canvas.
+	var art_texture: Texture2D = _get_hidden_stash_art_texture()
+	if art_texture != null:
+		var art_mesh: MeshInstance3D = MeshInstance3D.new()
+		art_mesh.name = "HiddenStashArtwork"
+		var art_quad: QuadMesh = QuadMesh.new()
+		art_quad.size = Vector2(1.62, 1.26)
+		var art_material: StandardMaterial3D = StandardMaterial3D.new()
+		art_material.albedo_texture = art_texture
+		art_material.roughness = 0.58
+		art_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+		art_quad.material = art_material
+		art_mesh.mesh = art_quad
+		art_mesh.position = Vector3(0.86, 0.0, 0.047)
+		hidden_stash_frame_pivot.add_child(art_mesh)
+
+	hidden_stash_frame_pivot.rotation.y = 0.0
+	hidden_stash_frame_open = false
+
+func _set_hidden_stash_open(opened: bool) -> void:
+	if hidden_stash_frame_pivot == null:
+		return
+	if hidden_stash_frame_tween != null and hidden_stash_frame_tween.is_running():
+		hidden_stash_frame_tween.kill()
+	hidden_stash_frame_open = opened
+	var target_angle: float = deg_to_rad(-92.0) if opened else 0.0
+	hidden_stash_frame_tween = create_tween()
+	hidden_stash_frame_tween.tween_property(hidden_stash_frame_pivot, "rotation:y", target_angle, 0.32)
+
+func _dealer_premium_box(parent: Node3D, part_name: String, pos: Vector3, size: Vector3, color: Color, roughness: float = 0.45, texture_path: String = "", emissive: bool = false) -> MeshInstance3D:
+	var part: MeshInstance3D = MeshInstance3D.new()
+	part.name = part_name
+	var mesh: BoxMesh = BoxMesh.new()
+	mesh.size = size
+	var material: StandardMaterial3D = StandardMaterial3D.new()
+	material.albedo_color = color
+	material.roughness = roughness
+	if not texture_path.is_empty():
+		var tex: Texture2D = load(texture_path) as Texture2D
+		if tex != null:
+			material.albedo_texture = tex
+	if emissive:
+		material.emission_enabled = true
+		material.emission = color
+		material.emission_energy_multiplier = 2.4
+	mesh.material = material
+	part.mesh = mesh
+	part.position = pos
+	parent.add_child(part)
+	return part
+
+func _dealer_premium_jar(parent: Node3D, part_name: String, pos: Vector3, radius: float, height: float, bud_color: Color) -> void:
+	var jar: MeshInstance3D = MeshInstance3D.new()
+	jar.name = part_name
+	var jar_mesh: CylinderMesh = CylinderMesh.new()
+	jar_mesh.top_radius = radius
+	jar_mesh.bottom_radius = radius
+	jar_mesh.height = height
+	jar_mesh.material = _make_flat_material(Color(bud_color.r * 0.72, bud_color.g * 0.72, bud_color.b * 0.72), 0.28)
+	jar.mesh = jar_mesh
+	jar.position = pos
+	parent.add_child(jar)
+	var cap: MeshInstance3D = MeshInstance3D.new()
+	var cap_mesh: CylinderMesh = CylinderMesh.new()
+	cap_mesh.top_radius = radius * 1.05
+	cap_mesh.bottom_radius = radius * 1.05
+	cap_mesh.height = 0.035
+	cap_mesh.material = _make_flat_material(Color("202428"), 0.24)
+	cap.mesh = cap_mesh
+	cap.position = pos + Vector3(0, height * 0.52, 0)
+	parent.add_child(cap)
+
+func _build_premium_dealer_locker_visual() -> void:
+	if premium_dealer_locker_root != null:
+		return
+	premium_dealer_locker_root = Node3D.new()
+	premium_dealer_locker_root.name = "PremiumDealerStorage"
+	premium_dealer_locker_root.position = Vector3(4.52, 0.0, -2.20)
+	add_child(premium_dealer_locker_root)
+
+	var black: Color = Color("171a1d")
+	var edge: Color = Color("252a2e")
+	var green: Color = Color("43f08a")
+	var interior: Color = Color("0e1712")
+
+	_dealer_premium_box(premium_dealer_locker_root, "PremiumBack", Vector3(0.28, 1.42, 0.0), Vector3(0.12, 2.70, 1.38), interior, 0.34, "res://assets/textures/brushed_metal.png")
+	_dealer_premium_box(premium_dealer_locker_root, "PremiumTop", Vector3(-0.02, 2.77, 0.0), Vector3(0.72, 0.12, 1.50), black, 0.32, "res://assets/textures/brushed_metal.png")
+	_dealer_premium_box(premium_dealer_locker_root, "PremiumBottom", Vector3(-0.02, 0.08, 0.0), Vector3(0.72, 0.16, 1.50), black, 0.32, "res://assets/textures/brushed_metal.png")
+	_dealer_premium_box(premium_dealer_locker_root, "PremiumSideL", Vector3(-0.02, 1.42, -0.72), Vector3(0.72, 2.62, 0.10), black, 0.32, "res://assets/textures/brushed_metal.png")
+	_dealer_premium_box(premium_dealer_locker_root, "PremiumSideR", Vector3(-0.02, 1.42, 0.72), Vector3(0.72, 2.62, 0.10), black, 0.32, "res://assets/textures/brushed_metal.png")
+
+	for shelf_y: float in [0.68, 1.13, 1.58, 2.03]:
+		_dealer_premium_box(premium_dealer_locker_root, "PremiumShelf", Vector3(-0.10, shelf_y, 0.0), Vector3(0.55, 0.055, 1.20), edge, 0.30, "res://assets/textures/brushed_metal.png")
+	_dealer_premium_box(premium_dealer_locker_root, "PremiumDrawer1", Vector3(-0.34, 0.42, 0.0), Vector3(0.08, 0.30, 1.10), Color("202428"), 0.28, "res://assets/textures/brushed_metal.png")
+	_dealer_premium_box(premium_dealer_locker_root, "PremiumDrawer2", Vector3(-0.34, 0.15, 0.0), Vector3(0.08, 0.20, 1.10), Color("1b1f22"), 0.28, "res://assets/textures/brushed_metal.png")
+
+	_dealer_premium_box(premium_dealer_locker_root, "PremiumLedTop", Vector3(-0.38, 2.59, 0.0), Vector3(0.025, 0.025, 1.28), green, 0.10, "", true)
+	_dealer_premium_box(premium_dealer_locker_root, "PremiumLedLeft", Vector3(-0.38, 1.42, -0.63), Vector3(0.025, 2.35, 0.025), green, 0.10, "", true)
+	_dealer_premium_box(premium_dealer_locker_root, "PremiumLedRight", Vector3(-0.38, 1.42, 0.63), Vector3(0.025, 2.35, 0.025), green, 0.10, "", true)
+	var glow: OmniLight3D = OmniLight3D.new()
+	glow.name = "PremiumInteriorGlow"
+	glow.position = Vector3(-0.18, 1.65, 0.0)
+	glow.light_color = Color("4cff96")
+	glow.light_energy = 0.45
+	glow.omni_range = 2.1
+	premium_dealer_locker_root.add_child(glow)
+
+	# Shelf-relative stock placement: x stays safely behind the front face; y sits on each shelf top.
+	_dealer_premium_jar(premium_dealer_locker_root, "PremiumJarA", Vector3(-0.18, 2.1675, -0.38), 0.11, 0.22, Color("718d48"))
+	_dealer_premium_jar(premium_dealer_locker_root, "PremiumJarB", Vector3(-0.18, 2.1575, -0.05), 0.10, 0.20, Color("87934e"))
+	_dealer_premium_jar(premium_dealer_locker_root, "PremiumJarC", Vector3(-0.18, 2.1425, 0.28), 0.08, 0.17, Color("667e40"))
+	_dealer_premium_jar(premium_dealer_locker_root, "PremiumJarD", Vector3(-0.18, 1.7075, -0.27), 0.10, 0.20, Color("8b7d45"))
+	_dealer_premium_jar(premium_dealer_locker_root, "PremiumJarE", Vector3(-0.18, 1.7075, 0.18), 0.10, 0.20, Color("6d8a4a"))
+	_dealer_premium_box(premium_dealer_locker_root, "PremiumPouchA", Vector3(-0.20, 1.3075, -0.22), Vector3(0.08, 0.30, 0.28), Color("485f52"), 0.62)
+	_dealer_premium_box(premium_dealer_locker_root, "PremiumPouchB", Vector3(-0.20, 1.2825, 0.15), Vector3(0.08, 0.25, 0.24), Color("58715d"), 0.62)
+
+	# Two true door leaves. Both are mounted from the front face and hinge from
+	# opposite outer edges. Their open angles are opposite signs so both swing
+	# toward the player, never through the cabinet interior.
+	premium_dealer_locker_left_door_pivot = Node3D.new()
+	premium_dealer_locker_left_door_pivot.name = "PremiumLeftDoorPivot"
+	premium_dealer_locker_left_door_pivot.position = Vector3(-0.42, 1.43, -0.73)
+	premium_dealer_locker_root.add_child(premium_dealer_locker_left_door_pivot)
+	_dealer_premium_box(premium_dealer_locker_left_door_pivot, "PremiumLeftDoor", Vector3(-0.02, 0.0, 0.36), Vector3(0.08, 2.55, 0.70), Color("181b1e"), 0.30, "res://assets/textures/brushed_metal.png")
+	_dealer_premium_box(premium_dealer_locker_left_door_pivot, "PremiumLeftLedOuter", Vector3(-0.07, 0.0, 0.03), Vector3(0.025, 2.30, 0.025), green, 0.10, "", true)
+	_dealer_premium_box(premium_dealer_locker_left_door_pivot, "PremiumLeftHandle", Vector3(-0.09, 0.0, 0.08), Vector3(0.08, 0.42, 0.09), Color("555d61"), 0.22, "res://assets/textures/brushed_metal.png")
+
+	premium_dealer_locker_right_door_pivot = Node3D.new()
+	premium_dealer_locker_right_door_pivot.name = "PremiumRightDoorPivot"
+	premium_dealer_locker_right_door_pivot.position = Vector3(-0.42, 1.43, 0.73)
+	premium_dealer_locker_root.add_child(premium_dealer_locker_right_door_pivot)
+	_dealer_premium_box(premium_dealer_locker_right_door_pivot, "PremiumRightDoor", Vector3(-0.02, 0.0, -0.36), Vector3(0.08, 2.55, 0.70), Color("181b1e"), 0.30, "res://assets/textures/brushed_metal.png")
+	_dealer_premium_box(premium_dealer_locker_right_door_pivot, "PremiumRightLedOuter", Vector3(-0.07, 0.0, -0.03), Vector3(0.025, 2.30, 0.025), green, 0.10, "", true)
+	_dealer_premium_box(premium_dealer_locker_right_door_pivot, "PremiumRightHandle", Vector3(-0.09, 0.0, -0.08), Vector3(0.08, 0.42, 0.09), Color("555d61"), 0.22, "res://assets/textures/brushed_metal.png")
+	_dealer_premium_box(premium_dealer_locker_right_door_pivot, "PremiumKeypad", Vector3(-0.095, -0.08, -0.22), Vector3(0.06, 0.28, 0.16), Color("111416"), 0.22)
+	_dealer_premium_box(premium_dealer_locker_right_door_pivot, "PremiumKeypadRing", Vector3(-0.13, -0.12, -0.22), Vector3(0.018, 0.07, 0.07), green, 0.10, "", true)
+
+	var left_label: Label3D = Label3D.new()
+	left_label.text = "DEALER"
+	left_label.font_size = 22
+	left_label.pixel_size = 0.0026
+	left_label.position = Vector3(-0.10, 0.42, 0.34)
+	left_label.rotation_degrees = Vector3(0, -90, 0)
+	left_label.modulate = Color("7df5a9")
+	premium_dealer_locker_left_door_pivot.add_child(left_label)
+
+	var right_label: Label3D = Label3D.new()
+	right_label.text = "STORAGE"
+	right_label.font_size = 22
+	right_label.pixel_size = 0.0026
+	right_label.position = Vector3(-0.10, 0.42, -0.34)
+	right_label.rotation_degrees = Vector3(0, -90, 0)
+	right_label.modulate = Color("7df5a9")
+	premium_dealer_locker_right_door_pivot.add_child(right_label)
+
+	premium_dealer_locker_root.visible = false
+	premium_dealer_locker_open = false
+
+func _sync_dealer_locker_visual() -> void:
+	var premium: bool = dealer_locker_level >= 3
+	for child: Node in get_children():
+		if not child is Node3D:
+			continue
+		var node: Node3D = child as Node3D
+		var part_name: String = str(node.name)
+		if part_name.begins_with("Locker") or part_name in ["DealerBasicLogo", "DealerBasicTag"]:
+			node.visible = not premium
+	if premium_dealer_locker_root != null:
+		premium_dealer_locker_root.visible = premium
+	if not premium:
+		if premium_dealer_locker_left_door_pivot != null:
+			premium_dealer_locker_left_door_pivot.rotation.y = 0.0
+		if premium_dealer_locker_right_door_pivot != null:
+			premium_dealer_locker_right_door_pivot.rotation.y = 0.0
+		premium_dealer_locker_open = false
+
+func _set_premium_dealer_locker_open(opened: bool) -> void:
+	if premium_dealer_locker_left_door_pivot == null or premium_dealer_locker_right_door_pivot == null or dealer_locker_level < 3:
+		return
+	if premium_dealer_locker_left_tween != null and premium_dealer_locker_left_tween.is_running():
+		premium_dealer_locker_left_tween.kill()
+	if premium_dealer_locker_right_tween != null and premium_dealer_locker_right_tween.is_running():
+		premium_dealer_locker_right_tween.kill()
+	premium_dealer_locker_open = opened
+
+	# Front of the cabinet is negative X. Left leaf uses negative Y rotation,
+	# right leaf positive Y rotation; both move toward negative X/outward.
+	var left_target: float = deg_to_rad(-102.0) if opened else 0.0
+	var right_target: float = deg_to_rad(102.0) if opened else 0.0
+
+	premium_dealer_locker_left_tween = create_tween()
+	premium_dealer_locker_left_tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+	premium_dealer_locker_left_tween.tween_property(premium_dealer_locker_left_door_pivot, "rotation:y", left_target, 0.32)
+
+	premium_dealer_locker_right_tween = create_tween()
+	premium_dealer_locker_right_tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+	premium_dealer_locker_right_tween.tween_property(premium_dealer_locker_right_door_pivot, "rotation:y", right_target, 0.32)
+
+func _sync_storage_furniture() -> void:
+	var show_hidden_stash: bool = storage_level >= 5
+	var show_vault: bool = storage_level >= 4 and not show_hidden_stash
+	if show_vault and storage_vault == null:
+		storage_vault = StorageVault.new()
+		storage_vault.name = "StorageVault"
+		storage_vault.position = StorageVault.ANCHOR
+		storage_vault.rotation.y = StorageVault.FACING
+		add_child(storage_vault)
+	if storage_vault != null:
+		storage_vault.visible = show_vault
+	if hidden_stash_interior_root == null:
+		_build_hidden_wall_stash_visual()
+	if hidden_stash_interior_root != null:
+		hidden_stash_interior_root.visible = show_hidden_stash
+		if not show_hidden_stash and hidden_stash_frame_pivot != null:
+			hidden_stash_frame_pivot.rotation.y = 0.0
+			hidden_stash_frame_open = false
+	var shelf_names: Array[String] = ["StorageBack", "ShelfPostL", "ShelfPostR", "Shelf0", "Shelf1", "Shelf2", "Shelf3", "StorageBinA", "StorageBinB", "StorageJarA", "StorageJarB", "StorageBagA", "StorageBagB", "StorageCaseC", "StorageUpgradeBin", "StorageShelfBank2", "StorageExtraShelf0", "StorageExtraShelf1", "StorageExtraShelf2", "StorageExtraShelf3", "StorageWorldLabel"]
+	for part_name: String in shelf_names:
+		var part: Node3D = get_node_or_null(part_name) as Node3D
+		if part != null:
+			part.visible = not show_vault and not show_hidden_stash
+	if storage_world_label != null:
+		storage_world_label.text = "STORAGE   |   %dg CAP" % _storage_capacity()
+
+func _handle_station_list_pointer(event: InputEvent) -> bool:
+	if phone_open or trim_panel.visible or bag_minigame_panel.visible: return false
+	if bagging_panel.visible and bagging_scroll != null: return bagging_scroll.handle_pointer(event)
+	if storage_panel.visible and storage_scroll != null: return storage_scroll.handle_pointer(event)
+	if dealer_storage_panel != null and dealer_storage_panel.visible and dealer_storage_scroll != null: return dealer_storage_scroll.handle_pointer(event)
+	if supply_inventory_panel != null and supply_inventory_panel.visible and supply_inventory_scroll != null: return supply_inventory_scroll.handle_pointer(event)
+	return false
+
+func _clear_station_list(list: VBoxContainer) -> void:
+	for child: Node in list.get_children():
+		list.remove_child(child)
+		child.queue_free()
+
+func _restore_station_list_scroll(kind: String, y: int, revision: int) -> void:
+	await get_tree().process_frame
+	var scroll: PhoneTouchScroll = bagging_scroll if kind == "bagging" else storage_scroll
+	var current_revision: int = bagging_refresh_revision if kind == "bagging" else storage_refresh_revision
+	if scroll == null or revision != current_revision or scroll.is_gesture_busy():
+		return
+	scroll.scroll_vertical = y
+
+func _build_reset_confirmation() -> void:
+	var layer: CanvasLayer = CanvasLayer.new()
+	layer.name = "ResetConfirmationLayer"
+	layer.layer = 30
+	add_child(layer)
+	var veil: ColorRect = ColorRect.new()
+	veil.name = "ResetConfirmation"
+	veil.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	veil.color = Color(0.02, 0.03, 0.04, 0.90)
+	veil.mouse_filter = Control.MOUSE_FILTER_STOP
+	veil.visible = false
+	layer.add_child(veil)
+	reset_overlay = veil
+	var center: CenterContainer = CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	veil.add_child(center)
+	var card: PanelContainer = PanelContainer.new()
+	card.name = "ResetCard"
+	card.custom_minimum_size = Vector2(560, 0)
+	card.add_theme_stylebox_override("panel", _style_box(Color("171d24"), Color("b57566"), 22, 2))
+	center.add_child(card)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 22)
+	card.add_child(box)
+	var title: Label = Label.new()
+	title.text = "RESET CAREER DATA?"
+	title.add_theme_font_size_override("font_size", 28)
+	box.add_child(title)
+	reset_message = Label.new()
+	reset_message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	reset_message.add_theme_font_size_override("font_size", 22)
+	box.add_child(reset_message)
+	reset_cancel_button = Button.new()
+	reset_cancel_button.name = "CancelReset"
+	reset_cancel_button.text = "CANCEL  |  KEEP MY CAREER"
+	reset_cancel_button.custom_minimum_size.y = 84
+	reset_cancel_button.add_theme_font_size_override("font_size", 22)
+	reset_cancel_button.pressed.connect(_cancel_beta_reset)
+	box.add_child(reset_cancel_button)
+	reset_confirm_button = Button.new()
+	reset_confirm_button.name = "ConfirmReset"
+	reset_confirm_button.text = "CONFIRM RESET  |  DELETE CAREER"
+	reset_confirm_button.custom_minimum_size.y = 84
+	reset_confirm_button.add_theme_font_size_override("font_size", 20)
+	reset_confirm_button.add_theme_stylebox_override("normal", _style_box(Color("602c2a"), Color("da9582"), 12, 2))
+	reset_confirm_button.pressed.connect(_confirm_beta_reset)
+	box.add_child(reset_confirm_button)
+
+func _build_door_alert() -> void:
+	door_alert_layer = CanvasLayer.new()
+	door_alert_layer.name = "VisitorAlertLayer"
+	door_alert_layer.layer = 20 # Above all gameplay panels, below reset confirmation.
+	add_child(door_alert_layer)
+	knock_banner = PanelContainer.new()
+	knock_banner.name = "VisitorAlert"
+	knock_banner.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	knock_banner.offset_left = 24
+	knock_banner.offset_right = -24
+	knock_banner.offset_top = 12
+	knock_banner.offset_bottom = 120
+	knock_banner.visible = false
+	knock_banner.mouse_filter = Control.MOUSE_FILTER_STOP
+	var style: StyleBoxFlat = _style_box(Color("17271f"), Color("c5b371"), 18, 2)
+	style.content_margin_top = 12
+	style.content_margin_bottom = 12
+	style.content_margin_left = 16
+	style.content_margin_right = 16
+	knock_banner.add_theme_stylebox_override("panel", style)
+	door_alert_layer.add_child(knock_banner)
+	var row: HBoxContainer = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	knock_banner.add_child(row)
+	door_alert_dot = Label.new()
+	door_alert_dot.text = "O"
+	door_alert_dot.add_theme_font_size_override("font_size", 25)
+	door_alert_dot.modulate = Color("f1ca70")
+	door_alert_dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(door_alert_dot)
+	var text: VBoxContainer = VBoxContainer.new()
+	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(text)
+	knock_text = Label.new()
+	knock_text.text = "KNOCK  |  VISITOR WAITING"
+	knock_text.add_theme_font_size_override("font_size", 22)
+	knock_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	knock_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	text.add_child(knock_text)
+	door_alert_detail = Label.new()
+	door_alert_detail.text = "Someone is at the front door."
+	door_alert_detail.add_theme_font_size_override("font_size", 18)
+	door_alert_detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	door_alert_detail.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	text.add_child(door_alert_detail)
+	door_alert_button = Button.new()
+	door_alert_button.name = "GoToDoor"
+	door_alert_button.text = "GO TO\nDOOR"
+	door_alert_button.custom_minimum_size = Vector2(156, 84)
+	door_alert_button.add_theme_font_size_override("font_size", 21)
+	door_alert_button.pressed.connect(_go_to_waiting_customer)
+	row.add_child(door_alert_button)
+	door_alert_button.hide()
+
+func _refresh_door_alert() -> void:
+	if knock_banner == null or door_alert_button == null:
+		return
+	var show: bool = customer_waiting and not customer_answered and not session_paused and not daily_report_pending and not tutorial_active and not reset_confirmation_open and not reset_in_progress
+	show = show and not (sale_panel != null and sale_panel.visible) and not (peephole_panel != null and peephole_panel.visible)
+	show = show and (neighborhood == null or neighborhood.client_visits.is_home())
+	knock_banner.visible = show
+	if not show:
+		_cancel_door_alert_pointer()
+		return
+	var covering_panel: bool = phone_open or bagging_panel.visible or storage_panel.visible or (dealer_storage_panel != null and dealer_storage_panel.visible) or (supply_inventory_panel != null and supply_inventory_panel.visible) or (system_control_panel != null and system_control_panel.visible) or trim_panel.visible or bag_minigame_panel.visible or grow_panel.visible or (plant_direct_panel != null and plant_direct_panel.visible)
+	knock_banner.offset_top = 12.0 if covering_panel else 194.0
+	knock_banner.offset_bottom = knock_banner.offset_top + 108.0
+	door_alert_button.disabled = customer_departing
+	if customer_departing:
+		knock_text.text = "VISITOR IS LEAVING"
+		door_alert_detail.text = "They waited too long at the door."
+		door_alert_dot.modulate = Color("d59683")
+		return
+	var remaining: int = int(ceil(customer_patience_timer.time_left)) if customer_patience_timer != null else 0
+	knock_text.text = "KNOCK  |  VISITOR WAITING"
+	door_alert_detail.text = "Walk to the front door  |  %ds left" % remaining
+	if remaining <= 7:
+		door_alert_detail.text = "Leaving soon!  |  %ds left" % remaining
+		door_alert_dot.modulate = Color("efb27e")
+	else:
+		door_alert_dot.modulate = Color("f1ca70")
+	door_alert_dot.modulate.a = 0.80 + 0.20 * (0.5 + 0.5 * sin(float(Time.get_ticks_msec()) / 400.0))
+
+func _cancel_door_alert_pointer() -> void:
+	door_alert_pointer = -99
+	door_alert_is_tap = false
+
+func _handle_door_alert_pointer(event: InputEvent) -> bool:
+	if door_alert_button == null or not door_alert_button.is_visible_in_tree():
+		return false
+	var now: int = Time.get_ticks_msec()
+	if event.device == -1 and (event is InputEventMouseButton or event is InputEventMouseMotion):
+		return door_alert_pointer != -99 or now < door_alert_suppress_mouse_until
+	if not knock_banner.visible:
+		return false
+	var pointer: int = -99
+	var point: Vector2 = Vector2.ZERO
+	var down: bool = false
+	var up: bool = false
+	var canceled: bool = false
+	var motion: bool = false
+	if event is InputEventScreenTouch:
+		pointer = event.index
+		point = event.position
+		down = event.pressed
+		up = not event.pressed
+		canceled = event.canceled
+	elif event is InputEventScreenDrag:
+		pointer = event.index
+		point = event.position
+		motion = true
+	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		pointer = -1
+		point = event.position
+		down = event.pressed
+		up = not event.pressed
+	elif event is InputEventMouseMotion:
+		pointer = -1
+		point = event.position
+		motion = true
+	else:
+		return false
+	if down:
+		if door_alert_pointer != -99:
+			return true
+		if not _pointer_in_control(knock_banner, point):
+			return false
+		if not active_drag_kind.is_empty() or (phone_scroll != null and phone_scroll.finger >= 0) or (bagging_scroll != null and bagging_scroll.finger >= 0) or (storage_scroll != null and storage_scroll.finger >= 0) or (supply_inventory_scroll != null and supply_inventory_scroll.finger >= 0):
+			return true
+		door_alert_pointer = pointer
+		door_alert_start = point
+		door_alert_is_tap = _pointer_in_control(door_alert_button, point) and not door_alert_button.disabled
+		door_alert_suppress_mouse_until = now + 350
+		return true
+	if door_alert_pointer == -99:
+		return false
+	if pointer != door_alert_pointer:
+		return true
+	if motion:
+		if point.distance_to(door_alert_start) > 22.0:
+			door_alert_is_tap = false
+		return true
+	if up:
+		var activate: bool = door_alert_is_tap and not canceled and point.distance_to(door_alert_start) <= 22.0 and _pointer_in_control(door_alert_button, point)
+		_cancel_door_alert_pointer()
+		door_alert_suppress_mouse_until = now + 350
+		if activate:
+			_go_to_waiting_customer()
+		return true
+	return false
+
+func _go_to_waiting_customer() -> void:
+	if neighborhood != null and neighborhood.active:
+		status_label.text = "Walk back to your apartment entrance to answer the door."
+		return
+	if _simulation_blocked() or not customer_waiting or customer_departing or customer_answered:
+		return
+	_hide_learning_panels()
+	trim_active_strain = ""
+	trim_harvest_amount = 0
+	trim_continue_button.visible = false
+	bag_active_strain = ""
+	current_room = "main"
+	room_ring = main_room_ring
+	_go_to_view("door", false)
+	_set_world_controls_visible(true)
+	status_label.text = "Check the peephole, then answer when you are ready."
+	_open_peephole()
+	_refresh_door_alert()
+	_save_game()

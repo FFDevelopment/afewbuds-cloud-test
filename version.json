@@ -1,5 +1,5 @@
 {
-  "release_id": "0.7.9-beta.19-cloudtest.98-kobi.1",
+  "release_id": "0.7.9-beta.19-cloudtest.99-mobile3d.12",
   "game_build": "0.7.9-beta.19",
   "channel": "main-based-cloud-test",
   "updater": "network-only-no-service-worker",
@@ -8,7 +8,7 @@
   "hud_adjustment": "up-12px-from-cloudtest19",
   "visible_test_label": "removed",
   "room_hint_adjustment": "down-5px-from-cloudtest22",
-  "phone_home": "Illegal Businesses, Store, Contacts, Messages, Tasks & Rewards, Leaderboard, Settings",
+  "phone_home": "Illegal Businesses, Real Estate, Store, Contacts, Messages, Tasks & Rewards, Leaderboard, Settings",
   "budshop_apps": [
     "Bills",
     "Heat",
@@ -22,7 +22,7 @@
   "storefront_control_location": "BudShop top",
   "task_page": "Chapter progress, Rewards",
   "visible_dev_wording": "removed",
-  "paused_heat_decay": "100 Heat over 72 real minutes",
+  "paused_heat_decay": "100 Heat over 180 real minutes",
   "paused_lay_low_progress": "1 Reeves quiet day per 24 real minutes while Lay Low is active",
   "texts_app": "persistent crew and story inbox",
   "critical_heat_staff": "100 Heat sends active crew home; one active role is arrested; return blocked at 75+ Heat",
@@ -105,7 +105,7 @@
   "expansion_lane": "New Advancements lane appears only after Chapter 3 is complete",
   "neighborhood": "Prototype 0.9.3 street, sidewalk and building footprint layout adapted with cloud-test texture atlas, opening door, analog controls and ground reserves.",
   "notification_audio": "Requested text ding at -14 dB; requested door knock at -10 dB.",
-  "runtime_delivery": "SHA-256-verified kobi-v1 delta over .97-police.3",
+  "runtime_delivery": "SHA-256-verified mobile-3d-v1 delta over .98-kobi.1",
   "interior_controls": "Free analog movement in apartment and grow room; nearby station double tap; Back restores walking position; walls and furniture collision.",
   "responsive_layout": "Automatic portrait/landscape game viewport, corner controls, centered phone menu and fitting browser splash/account overlays.",
   "walking_fov": 78,
@@ -177,5 +177,49 @@
       "sit"
     ],
     "outfit": "Plain white crewneck, khaki trousers, original light sneakers"
+  },
+  "mobile_3d_movement": {
+    "branch": "main",
+    "player": "CharacterBody3D capsule",
+    "input": "touch joystick + drag look; full forward stick sprints; Shift+forward sprints on keyboard",
+    "physics": "gravity, floor snap, cached StaticBody3D world proxies, physical doors and police stair ramp",
+    "police_station": "clean floor closure; side-door widths match scaled apertures; jamb/header trim sits inside openings; wall-base trim is surface-mounted",
+    "sprint": "5.4 m/s with shared 100-point stamina, drain/recovery/exhaustion and HUD label SPRINTING",
+    "save_schema": "backward-compatible; adds property agreement/relocation and advancement choice state"
+  },
+  "chapter_4_5": {
+    "property_finale": "Rent / Lease to Own / Purchase -> relocate -> first house entry completes Chapter 4",
+    "chapter_5": "Building an Operation starts in house",
+    "agreement_terms": "Rent 1800 + 600/7d; Lease 4500 + 1000/7d toward 18500; Purchase 17500",
+    "apartment_lease": "continues at 600/14d after relocation unless explicitly released in Real Estate; existing rent and utility debt survives release"
+  },
+  "heat_balance": {
+    "routine_gain_multiplier": 0.7,
+    "online_open_decay_per_game_minute": 0.012,
+    "online_quiet_decay_per_game_minute": 0.016,
+    "online_lay_low_decay_per_game_minute": 0.024,
+    "offline_full_cool_minutes": 180,
+    "daily_pressure_chance": "12%-40%"
+  },
+  "branching_tasks": {
+    "reeves_payment_outcome": "On-time payment vs missed-payment objectives are mutually exclusive; incompatible unclaimed task retires automatically"
+  },
+  "real_estate_app": {
+    "phone_home": true,
+    "portfolio": "apartment + house shown separately",
+    "billing": "independent rent/lease, electric and water balances by property",
+    "apartment_release": "requires another property and cleared apartment-assigned contents; future rent/utilities stop, existing debt remains; apartment door/computer lock",
+    "property_storage": "paid upgrades remain player-owned and can be unplaced/stored instead of deleted",
+    "apartment_reacquire": "released apartment can be rented again after prior debt is cleared"
+  },
+  "messages": "Newest messages first in each conversation; opening or refreshing Messages starts at the top",
+  "districts": {
+    "city": "Bongchester",
+    "current": [
+      "Roachwood",
+      "Half Baked Heights",
+      "Paranoia Point"
+    ],
+    "hud": "Persistent city / current district; follows player location"
   }
 }

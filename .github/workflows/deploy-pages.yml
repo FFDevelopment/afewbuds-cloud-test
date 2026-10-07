@@ -1,16 +1,10 @@
-name: Deploy standalone cloud test
-# mobile3d-preview-v10
-# deploy-current-main-plus-isolated-mobile3d-preview-v10
+name: Deploy cloud-test baseline
 
 on:
-  push:
-    branches: [main]
-    paths-ignore:
-      - ".github/workflows/bootstrap-cloud-test.yml"
   workflow_run:
-    workflows: ["Apply runtime patch", "Rebuild cloud test from main", "Mobile 3D movement preview"]
+    workflows: ["Build mobile baseline"]
     types: [completed]
-  workflow_dispatch:
+    branches: [main]
 
 permissions:
   contents: read
@@ -40,16 +34,10 @@ jobs:
       - name: Stage active web runtime
         run: python3 tools/stage_pages.py --output "${{ runner.temp }}/afb-pages"
 
-      - name: Check out isolated mobile 3D experiment
-        uses: actions/checkout@v4
-        with:
-          ref: experiment/mobile-3d-movement
-          path: preview-mobile3d
-
-      - name: Add mobile 3D preview subfolder
+      - name: Preserve the existing mobile 3D URL
         run: |
           set -euo pipefail
-          python3 preview-mobile3d/tools/stage_pages.py --output "${RUNNER_TEMP}/afb-mobile3d"
+          python3 tools/stage_pages.py --output "${RUNNER_TEMP}/afb-mobile3d"
           mkdir -p "${RUNNER_TEMP}/afb-pages/mobile-3d-movement"
           cp -a "${RUNNER_TEMP}/afb-mobile3d/." "${RUNNER_TEMP}/afb-pages/mobile-3d-movement/"
 

@@ -1,0 +1,48 @@
+name: Extract progression runtime source
+
+on:
+  push:
+    branches: [experiment/mobile-3d-movement]
+    paths:
+      - ".github/workflows/inspect-progression-heat.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: experiment/mobile-3d-movement
+          fetch-depth: 0
+
+      - name: Extract exact current main script
+        shell: python
+        run: |
+          from pathlib import Path
+          import importlib.util
+          ROOT=Path(".")
+          def module(name,path):
+              spec=importlib.util.spec_from_file_location(name,path)
+              m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m);return m
+          east=module("east",ROOT/"tools/east_expansion_v1/build.py")
+          data=east.fit.read_recipe(ROOT/"runtime/mobile-3d-v1.patch.json")
+          fb,entries=east.pack.parse(data)
+          files={n:b for n,b,f in entries}
+          out=ROOT/"tools/progression_v1/base_main.gd"
+          out.parent.mkdir(parents=True,exist_ok=True)
+          out.write_bytes(files["scripts/main.gd"])
+          print("MAIN_BYTES",out.stat().st_size)
+
+      - name: Commit extracted source
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tools/progression_v1/base_main.gd
+          if ! git diff --cached --quiet; then
+            git commit -m "Extract exact mobile runtime main source"
+            git push origin HEAD:experiment/mobile-3d-movement
+          fi

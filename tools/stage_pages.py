@@ -5,15 +5,15 @@ import argparse, json, re, shutil, subprocess
 ROOT = Path(__file__).resolve().parents[1]
 
 def selection():
-    html = (ROOT / 'index.html').read_text()
+    html = (ROOT / 'index.html').read_text(encoding='utf-8')
     packs = set(re.findall(r'"mainPack":"([^"?]+)', html))
     recipes = set()
     for script in re.findall(r'<script[^>]+src=["\']([^"\']+)', html):
         path = ROOT / script.split('?')[0]
-        for recipe in re.findall(r'runtime/[\w.-]+\.patch\.json', path.read_text()):
+        for recipe in re.findall(r'runtime/[\w.-]+\.patch\.json', path.read_text(encoding='utf-8')):
             recipes.add(recipe)
     for name in recipes:
-        recipe = json.loads((ROOT / name).read_text())
+        recipe = json.loads((ROOT / name).read_text(encoding='utf-8'))
         packs.add(recipe['base_url'].split('?')[0])
         for segment in recipe['segments']:
             if segment[0] == 'asset':
@@ -25,7 +25,7 @@ def selection():
         if not (ROOT / p).is_file():
             continue
         archive = (p.suffix == '.pck' and len(p.parts) == 1 and name not in packs) or (p.parts[0] == 'runtime' and name not in recipes)
-        source_only = p.parts[0] in {'.github', 'supabase'} or name.startswith('debug-') or '__pycache__' in p.parts
+        source_only = p.parts[0] in {'.github', 'supabase', 'archive', 'tools'} or name.startswith('debug-') or '__pycache__' in p.parts
         (removed if archive or source_only else kept).append(name)
     assert 'index.html' in kept and 'index.wasm' in kept and recipes.issubset(kept)
     assert all(name in kept for name in packs if (ROOT / name).exists())
