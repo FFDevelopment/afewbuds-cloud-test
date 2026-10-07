@@ -9,6 +9,7 @@ on:
       - "tools/mobile_3d_movement/mobile_physics_player.gd"
       - "tools/mobile_3d_movement/interior_door_physics.gd"
       - "tools/police_station_v1/station.gd"
+      - "tools/progression_v1/**"
       - ".github/workflows/mobile-3d-preview.yml"
   workflow_dispatch:
 
@@ -48,6 +49,9 @@ jobs:
           "${GODOT}" --headless --path "${RUNNER_TEMP}/mobile3d/candidate" --script "${GITHUB_WORKSPACE}/tools/mobile_3d_movement/check.gd" 2>&1 | tee "${RUNNER_TEMP}/mobile3d-check.log"
           grep -q "MOBILE_3D_TEST_RESULT: PASS" "${RUNNER_TEMP}/mobile3d-check.log"
           if grep -E 'SCRIPT ERROR|^ERROR:' "${RUNNER_TEMP}/mobile3d-check.log"; then exit 1; fi
+          "${GODOT}" --headless --path "${RUNNER_TEMP}/mobile3d/candidate" --script "${GITHUB_WORKSPACE}/tools/progression_v1/check.gd" 2>&1 | tee "${RUNNER_TEMP}/progression-v1-check.log"
+          grep -q "PROGRESSION_V1_TEST_RESULT: PASS" "${RUNNER_TEMP}/progression-v1-check.log"
+          if grep -E 'SCRIPT ERROR|^ERROR:' "${RUNNER_TEMP}/progression-v1-check.log"; then exit 1; fi
 
       - name: Commit generated preview runtime
         run: |
