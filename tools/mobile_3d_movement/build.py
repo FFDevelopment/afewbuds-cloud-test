@@ -319,6 +319,63 @@ def patch_progression_main(source:str) -> str:
 	if phone_open and phone_current_app in ["home", "heat", "business", "bills", "employees", "upgrades", "stats"]:
 		_refresh_phone()''')
 
+    source=_replace_func(source,'_track_power_usage',r'''func _track_power_usage(elapsed_game_minutes: float) -> void:
+	if elapsed_game_minutes <= 0.0:
+		return
+	if neighborhood!=null and neighborhood.location_ops!=null:
+		neighborhood.location_ops.track_power_usage(elapsed_game_minutes)
+		return
+	current_day_power_cost += _current_power_rate_per_game_minute() * elapsed_game_minutes''')
+
+    source=_replace_func(source,'_finalize_daily_power_bill',r'''func _finalize_daily_power_bill(show_feedback: bool) -> void:
+	if neighborhood!=null and neighborhood.location_ops!=null:
+		neighborhood.location_ops.finalize_power_bills(show_feedback)
+		return
+	var bill: int = maxi(0, int(ceil(current_day_power_cost)))
+	last_power_bill = bill
+	power_bill_due = mini(POWER_BILL_MAX_BALANCE, power_bill_due + bill)
+	lifetime_power_cost += bill
+	current_day_power_cost = 0.0''')
+
+    source=_replace_func(source,'_charge_water_use',r'''func _charge_water_use(count: int = 1) -> void:
+	if count <= 0:
+		return
+	if neighborhood!=null and neighborhood.location_ops!=null:
+		neighborhood.location_ops.charge_water_use(count)
+		return
+	current_day_water_uses += count
+	current_day_water_cost += WATER_COST_PER_WATERING * float(count)''')
+
+    source=_replace_func(source,'_finalize_daily_water_bill',r'''func _finalize_daily_water_bill(show_feedback: bool) -> void:
+	if neighborhood!=null and neighborhood.location_ops!=null:
+		neighborhood.location_ops.finalize_water_bills(show_feedback)
+		return
+	var bill: int = maxi(0, int(ceil(current_day_water_cost)))
+	last_water_bill = bill
+	if bill > 0:
+		water_bill_due = mini(WATER_BILL_MAX_BALANCE, water_bill_due + bill)
+		lifetime_water_cost += bill
+	current_day_water_cost = 0.0
+	current_day_water_uses = 0''')
+
+    source=_replace_func(source,'_pay_water_bill',r'''func _pay_water_bill() -> void:
+	if neighborhood!=null and neighborhood.location_ops!=null:
+		for property in ["apartment","house"]:
+			var due:int=neighborhood.location_ops.property_utility_due(property,"water")
+			if due>0 and cash>=due:
+				neighborhood.location_ops.pay_property_utility(property,"water")
+		return
+	if water_bill_due<=0:return''')
+
+    source=_replace_func(source,'_pay_power_bill',r'''func _pay_power_bill() -> void:
+	if neighborhood!=null and neighborhood.location_ops!=null:
+		for property in ["apartment","house"]:
+			var due:int=neighborhood.location_ops.property_utility_due(property,"power")
+			if due>0 and cash>=due:
+				neighborhood.location_ops.pay_property_utility(property,"power")
+		return
+	if power_bill_due<=0:return''')
+
     # Branching roadmap choices. Claimed history is never removed. Once one
     # Reeves payment outcome is chosen, its incompatible unclaimed objective
     # disappears from the active roadmap.
