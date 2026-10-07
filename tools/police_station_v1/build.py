@@ -52,11 +52,11 @@ def main():
     recipe_path=ROOT/'runtime/police-station-v1.patch.json';recipe_path.write_text(json.dumps(recipe,separators=(',',':'))+'\n',newline='\n')
     assert east.fit.read_recipe(recipe_path)==built
     loader=(ROOT/'shared/afb-runtime-east-expansion-v1.js').read_text().replace('east-expansion-v1','police-station-v1').replace('AFB_RUNTIME_EAST_EXPANSION_V1','AFB_RUNTIME_POLICE_STATION_V1')
-    loader=loader.replace('patch.json?v=1','patch.json?v=2')
+    loader=loader.replace('patch.json?v=1','patch.json?v=3')
     (ROOT/'shared/afb-runtime-police-station-v1.js').write_text(loader,newline='\n')
-    release='0.7.9-beta.19-cloudtest.97-police.2'
+    release='0.7.9-beta.19-cloudtest.97-police.3'
     index=(ROOT/'index.html').read_text().replace('east-expansion-v1','police-station-v1').replace('AFB_RUNTIME_EAST_EXPANSION_V1','AFB_RUNTIME_POLICE_STATION_V1')
-    index=index.replace('afb-runtime-police-station-v1.js?v=1','afb-runtime-police-station-v1.js?v=2')
+    index=re.sub(r'afb-runtime-police-station-v1\.js\?v=\d+','afb-runtime-police-station-v1.js?v=3',index)
     index=re.sub(r'0\.7\.9-beta\.19-cloudtest\.(?:96-east|97-police)\.\d+',release,index)
     index=re.sub(r'"fileSizes":\{[^}]*\}',f'"fileSizes":{{"index-police-station-v1.pck":{len(built)},"index.wasm":{(ROOT/"index.wasm").stat().st_size}}}',index,count=1)
     (ROOT/'index.html').write_text(index,newline='\n')

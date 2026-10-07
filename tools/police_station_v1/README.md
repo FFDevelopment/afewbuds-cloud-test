@@ -1,6 +1,6 @@
 # Police station district
 
-Release `0.7.9-beta.19-cloudtest.97-police.2` extends the map east of the
+Release `0.7.9-beta.19-cloudtest.97-police.3` extends the map east of the
 pocket park with a two-floor police station, four parked patrol cars in the
 rear lot, public parking beside the station, a crossing street and four
 decorative homes across the main road. The east boundary moves from 137 to 201.
@@ -100,3 +100,26 @@ not fetched by the running game. About 72 MB of startup assets remain before web
 compression, mostly the engine and immutable base pack; phone performance still
 needs measurement on the target devices. The polish adds only about 3 KB to the
 reconstructed game pack.
+
+## Openings and driveway repair (.97-police.3)
+
+The previous checks excluded the wall hosting each window and only inspected the
+pane. This revision also checks every actual frame against every wall box. Frames
+now fit inside the masonry aperture, with panes sized to the inner frame opening.
+Walls extend the full 3.6-unit story; floors and ceilings stop inside the facade.
+Exterior-wall skirting is placed on the interior face only. Its old centered boxes
+had produced the visible dark strips outside at ground and upper-floor level.
+
+Both lots have six-unit-wide asphalt driveway openings. Public parking now opens
+through the sidewalk and curb directly to the main road; patrol parking opens
+through the rear sidewalk to the lane, with cars moved clear of its center aisle.
+The public parking sign stands beside the driveway. The accessible sign's text
+and board both face its blue bay, whose boundaries align with the parking lines.
+
+452 station checks and 901 map checks pass. These include frame/wall intersections,
+glass apertures, floor/ceiling bounds, continuous facade coverage at the slab seam,
+interior-only skirting, driveway/curb intersections, parked-car aisle clearance,
+vehicle-width entry samples, sign direction and the existing room/stair routes.
+21 native views include six close-ups of the reported defects. The 125 fit and 55
+seating reports were last run for .97-police.2; their character/furniture assets
+are unchanged here. No driving mechanic is introduced by these driveway repairs.

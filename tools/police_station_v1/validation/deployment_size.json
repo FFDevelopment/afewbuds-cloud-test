@@ -1,7 +1,7 @@
 {
-  "selected_files": 392,
-  "source_bytes": 674839730,
-  "deployed_bytes": 132307419,
+  "selected_files": 399,
+  "source_bytes": 682722512,
+  "deployed_bytes": 140190201,
   "excluded_bytes": 542532311,
   "excluded_files": [
     ".github/workflows/apply-cloudtest40-leaderboard.yml",
