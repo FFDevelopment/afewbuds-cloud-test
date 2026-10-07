@@ -1,5 +1,5 @@
 {
-  "release_id": "0.7.9-beta.19-cloudtest.99-mobile3d.10",
+  "release_id": "0.7.9-beta.19-cloudtest.99-mobile3d.11",
   "game_build": "0.7.9-beta.19",
   "channel": "main-based-cloud-test",
   "updater": "network-only-no-service-worker",
@@ -211,5 +211,6 @@
     "apartment_release": "requires another property and cleared apartment-assigned contents; future rent/utilities stop, existing debt remains; apartment door/computer lock",
     "property_storage": "paid upgrades remain player-owned and can be unplaced/stored instead of deleted",
     "apartment_reacquire": "released apartment can be rented again after prior debt is cleared"
-  }
+  },
+  "messages": "Newest messages first in each conversation; opening or refreshing Messages starts at the top"
 }
