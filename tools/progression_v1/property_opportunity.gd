@@ -300,7 +300,7 @@ func _mark_first_entry_if_inside() -> void:
 	if not ROOMS.has(room):return
 	state()["first_entry"]=true
 	state()["chapter5_started"]=true
-	host._chapter_four_append_story_text("You made the move. The house is your operation now. Chapter 4 is complete — time to build something bigger.")
+	host._sync_chapter_four_story()
 	host._save_game()
 	host.status_label.text="CHAPTER 4 COMPLETE · Chapter 5 — Building an Operation."
 
