@@ -54,12 +54,12 @@ func toggle(player:Vector3) -> void:
 
 func refresh_collision() -> void:
 	if busy:return
-	var player_position:=host.camera.global_position if host!=null else global_position
+	var player_position:Vector3=host.camera.global_position if host!=null else global_position
 	if host!=null and host.neighborhood!=null and host.neighborhood.physics_body!=null:
 		player_position=host.neighborhood.physics_body.global_position+Vector3.UP*host.neighborhood.WALK_EYE_HEIGHT
 	var point:Vector3=get_node("Leaf").to_local(player_position)
-	var near_leaf:=Vector2(point.x,point.z).distance_to(Vector2(clampf(point.x,0.0,width),0.0))<.40
-	var next:=near_leaf
+	var near_leaf:bool=Vector2(point.x,point.z).distance_to(Vector2(clampf(point.x,0.0,width),0.0))<.40
+	var next:bool=near_leaf
 	if next!=pass_through and host!=null and host.neighborhood!=null:host.neighborhood.collision_timer=0.0
 	pass_through=next
 	_refresh_physics_collision()
