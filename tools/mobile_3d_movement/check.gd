@@ -112,6 +112,14 @@ func run() -> void:
 				if overlap_x>.005 and overlap_y>.005 and overlap_z>.005:
 					stair_clips.append(id_text)
 	check(stair_clips.is_empty(),"Police stair/wall geometry does not clip through upstairs floor",stair_clips)
+	# Exterior first-floor wall segments must close all the way to the second-floor
+	# datum. The floor slab then seals the joint instead of leaving a facade gap.
+	for wall_id in ["Front","Rear","West","East"]:
+		var top:float=-INF
+		for entry in station.parts:
+			if int(entry.floor)==0 and str(entry.id)==wall_id:
+				top=maxf(top,entry.bounds.end.y)
+		check(absf(top-station.STORY)<.01,"Downstairs "+wall_id+" wall meets upstairs floor line",top)
 	var final_nosing_count:=0
 	for entry in station.parts:
 		if str(entry.id)=="StairNosing" and int(entry.floor)==0:final_nosing_count+=1
