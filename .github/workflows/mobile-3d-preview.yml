@@ -7,6 +7,7 @@ on:
       - "tools/mobile_3d_movement/build.py"
       - "tools/mobile_3d_movement/check.gd"
       - "tools/mobile_3d_movement/mobile_physics_player.gd"
+      - "tools/mobile_3d_movement/interior_door_physics.gd"
       - ".github/workflows/mobile-3d-preview.yml"
   workflow_dispatch:
 
