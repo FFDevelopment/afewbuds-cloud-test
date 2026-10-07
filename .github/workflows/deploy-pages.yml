@@ -1,5 +1,5 @@
 name: Deploy standalone cloud test
-# deploy-current-main-plus-isolated-mobile3d-preview-v5
+# deploy-current-main-plus-isolated-mobile3d-preview-v7
 
 on:
   push:
