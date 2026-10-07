@@ -280,6 +280,7 @@ def _replace_func(source:str,name:str,replacement:str) -> str:
     return source[:match.start()]+replacement.rstrip()+"\n\n"+source[match.end():]
 
 def patch_progression_main(source:str) -> str:
+    source=source.replace('var restore_y: int = phone_scroll.scroll_vertical','var restore_y: int = 0 if phone_current_app == "texts" else phone_scroll.scroll_vertical',1)
     # Heat: routine attention builds more slowly, while staying live and
     # deliberately cooling the operation is materially faster than logging off.
     replacements={
@@ -744,6 +745,10 @@ def main():
     door=(HERE/'interior_door_physics.gd').read_bytes()
     property_opportunity=(ROOT/'tools/progression_v1/property_opportunity.gd').read_bytes()
     location_ops=(ROOT/'tools/progression_v1/location_ops.gd').read_bytes()
+    crew=before['scripts/crew_phone.gd'].decode()
+    assert 'host.phone_scroll.scroll_vertical=int(host.phone_scroll.get_v_scroll_bar().max_value)' in crew
+    crew=crew.replace('host.phone_scroll.scroll_vertical=int(host.phone_scroll.get_v_scroll_bar().max_value)','host.phone_scroll.scroll_vertical=0')
+    crew=crew.replace('for i in range(host.phone_text_messages.size()):','for i in range(host.phone_text_messages.size()-1,-1,-1):')
     replacements={
         'scripts/main.gd':main_script.encode(),
         'scripts/neighborhood.gd':neighborhood.encode(),
@@ -751,6 +756,7 @@ def main():
         'scripts/interior_door.gd':door,
         'scripts/property_opportunity.gd':property_opportunity,
         'scripts/location_ops.gd':location_ops,
+        'scripts/crew_phone.gd':crew.encode(),
     }
     updated=[]
     for n,b,f in entries:
@@ -760,7 +766,7 @@ def main():
     built=east.pack.rebuild(baseline,fb,updated)
     after={n:b for n,b,f in east.pack.parse(built)[1]}
     changed=[n for n in before if before[n]!=after[n]]
-    expected_changed={'scripts/interior_door.gd','scripts/location_ops.gd','scripts/main.gd','scripts/neighborhood.gd','scripts/police_station.gd','scripts/property_opportunity.gd'}
+    expected_changed={'scripts/crew_phone.gd','scripts/interior_door.gd','scripts/location_ops.gd','scripts/main.gd','scripts/neighborhood.gd','scripts/police_station.gd','scripts/property_opportunity.gd'}
     assert set(changed)==expected_changed,changed
     assert 'scripts/mobile_physics_player.gd' in after
 
@@ -819,16 +825,16 @@ def main():
 
     loader=(ROOT/'shared/afb-runtime-kobi-v1.js').read_text()
     loader=loader.replace('kobi-v1','mobile-3d-v1').replace('AFB_RUNTIME_KOBI_V1','AFB_RUNTIME_MOBILE_3D_V1')
-    loader=re.sub(r'patch\.json\?v=\d+','patch.json?v=10',loader)
+    loader=re.sub(r'patch\.json\?v=\d+','patch.json?v=11',loader)
     (ROOT/'shared/afb-runtime-mobile-3d-v1.js').write_text(loader,newline='\n')
 
-    release='0.7.9-beta.19-cloudtest.99-mobile3d.10'
+    release='0.7.9-beta.19-cloudtest.99-mobile3d.11'
     index=(ROOT/'index.html').read_text()
     index=index.replace('kobi-v1','mobile-3d-v1').replace('AFB_RUNTIME_KOBI_V1','AFB_RUNTIME_MOBILE_3D_V1')
-    index=re.sub(r'afb-runtime-mobile-3d-v1\.js\?v=\d+','afb-runtime-mobile-3d-v1.js?v=10',index)
+    index=re.sub(r'afb-runtime-mobile-3d-v1\.js\?v=\d+','afb-runtime-mobile-3d-v1.js?v=11',index)
     index=re.sub(r'0\.7\.9-beta\.19-cloudtest\.(?:98-kobi|99-mobile3d)\.\d+',release,index)
     index=re.sub(r'"fileSizes":\{[^}]*\\}',f'"fileSizes":{{"index-mobile-3d-v1.pck":{len(built)},"index.wasm":{(ROOT/"index.wasm").stat().st_size}}}',index,count=1)
-    index=index.replace('</title>',' · MOBILE 3D TEST</title>',1)
+    if 'MOBILE 3D TEST</title>' not in index:index=index.replace('</title>',' · MOBILE 3D TEST</title>',1)
     (ROOT/'index.html').write_text(index,newline='\n')
 
     version=json.loads((ROOT/'version.json').read_text())
@@ -847,6 +853,7 @@ def main():
     version['heat_balance']={'routine_gain_multiplier':0.70,'online_open_decay_per_game_minute':0.012,'online_quiet_decay_per_game_minute':0.016,'online_lay_low_decay_per_game_minute':0.024,'offline_full_cool_minutes':180,'daily_pressure_chance':'12%-40%'}
     version['branching_tasks']={'reeves_payment_outcome':'On-time payment vs missed-payment objectives are mutually exclusive; incompatible unclaimed task retires automatically'}
     version['real_estate_app']={'phone_home':True,'portfolio':'apartment + house shown separately','billing':'independent rent/lease, electric and water balances by property','apartment_release':'requires another property and cleared apartment-assigned contents; future rent/utilities stop, existing debt remains; apartment door/computer lock','property_storage':'paid upgrades remain player-owned and can be unplaced/stored instead of deleted','apartment_reacquire':'released apartment can be rented again after prior debt is cleared'}
+    version['messages']='Newest messages first in each conversation; opening or refreshing Messages starts at the top'
     version['phone_home']='Illegal Businesses, Real Estate, Store, Contacts, Messages, Tasks & Rewards, Leaderboard, Settings'
     version['runtime_delivery']='SHA-256-verified mobile-3d-v1 delta over .98-kobi.1'
     (ROOT/'version.json').write_text(json.dumps(version,indent=2)+'\n',newline='\n')

@@ -285,6 +285,45 @@ func run() -> void:
 	check(str(game.advancement_choice_state.get("reeves_payment_outcome",""))=="legacy_both","Old saves with progress on both Reeves routes preserve legacy history")
 	check(not game._advancement_is_retired(find_advancement("reeves_payments")) and not game._advancement_is_retired(find_advancement("reeves_miss")),"Legacy conflicting progress is not deleted")
 
+	# Message ordering uses the original saved indexes so reply actions still target their message.
+	var crew:RefCounted=game.neighborhood.location_ops.crew
+	game.phone_text_messages.clear()
+	game.phone_text_unread=0
+	game.phone_open=false
+	for i in range(18):
+		game._push_phone_text("Rod","History %02d: " % i + "Older conversation text. ".repeat(12))
+	game._push_phone_text("Tyler","Other contact unread")
+	game._push_phone_text("Rod","Newest Rod message")
+	var saved_order:Array=game.phone_text_messages.duplicate(true)
+	crew.open_thread("Rod")
+	for ui_frame in range(6):await process_frame
+	var rendered:Array[String]=[]
+	for node in game.phone_list.find_children("*","Label",true,false):rendered.append(node.text)
+	check(rendered.find("Newest Rod message")<rendered.find(str(saved_order[0].body)),"Conversation renders newest received message above older history")
+	check(game.phone_scroll.scroll_vertical==0,"Opening a conversation starts at its newest message at the top")
+	check(str(game.phone_text_messages[0].body)==str(saved_order[0].body) and str(game.phone_text_messages[-1].body)=="Newest Rod message","Rendering does not reorder saved messages or reply indexes")
+	check(crew.unread("Rod")==0 and crew.unread("Tyler")==1,"Opening one conversation leaves other contacts unread")
+	game.phone_scroll.scroll_vertical=9999
+	game._push_phone_text("Rod","Fresh arrival while open")
+	for ui_frame in range(6):await process_frame
+	rendered.clear()
+	for node in game.phone_list.find_children("*","Label",true,false):rendered.append(node.text)
+	check(rendered.find("Fresh arrival while open")<rendered.find("Newest Rod message") and game.phone_scroll.scroll_vertical==0,"Incoming message appears at the top without manual scrolling")
+	crew.outgoing("Rod","Latest outgoing reply")
+	game._refresh_phone()
+	for ui_frame in range(6):await process_frame
+	rendered.clear()
+	for node in game.phone_list.find_children("*","Label",true,false):rendered.append(node.text)
+	check(rendered.find("Latest outgoing reply")<rendered.find("Fresh arrival while open"),"Outgoing replies use the same newest-first ordering")
+	crew.back()
+	game._push_phone_text("Tyler","Newest conversation")
+	for ui_frame in range(6):await process_frame
+	var thread_buttons:Array[String]=[]
+	for node in game.phone_list.find_children("*","Button",true,false):thread_buttons.append(node.text)
+	check(not thread_buttons.is_empty() and thread_buttons[0].begins_with("Tyler"),"Inbox promotes the most recently active conversation")
+	game.phone_open=false
+	game.phone_panel.hide()
+
 	game.queue_free()
 	await frames()
 	print("PROGRESSION_V1_TEST_RESULT: ","PASS" if failures==0 else "FAIL"," checks=",checks," failures=",failures)
