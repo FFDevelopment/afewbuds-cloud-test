@@ -1,0 +1,89 @@
+name: Mobile 3D movement preview
+
+on:
+  push:
+    branches: [experiment/mobile-3d-movement]
+    paths:
+      - "tools/mobile_3d_movement/**"
+      - ".github/workflows/mobile-3d-preview.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build-test-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}mobile-3d-movement/
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: experiment/mobile-3d-movement
+          fetch-depth: 0
+
+      - name: Build mobile 3D runtime
+        run: |
+          set -euo pipefail
+          python3 tools/mobile_3d_movement/build.py --output-dir "${RUNNER_TEMP}/mobile3d"
+
+      - name: Install Godot 4.7.2
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 -o /tmp/godot.zip https://github.com/godotengine/godot-builds/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
+          unzip -q /tmp/godot.zip -d /tmp/godot
+          echo /tmp/godot >> "${GITHUB_PATH}"
+
+      - name: Import candidate and test CharacterBody3D movement
+        run: |
+          set -euo pipefail
+          GODOT=/tmp/godot/Godot_v4.7.2-stable_linux.x86_64
+          "${GODOT}" --headless --path "${RUNNER_TEMP}/mobile3d/candidate" --editor --import --quit
+          "${GODOT}" --headless --path "${RUNNER_TEMP}/mobile3d/candidate" --script "${GITHUB_WORKSPACE}/tools/mobile_3d_movement/check.gd" 2>&1 | tee "${RUNNER_TEMP}/mobile3d-check.log"
+          grep -q "MOBILE_3D_TEST_RESULT: PASS" "${RUNNER_TEMP}/mobile3d-check.log"
+          if grep -E 'SCRIPT ERROR|^ERROR:' "${RUNNER_TEMP}/mobile3d-check.log"; then exit 1; fi
+
+      - name: Commit generated preview runtime
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add runtime/mobile-3d-v1.patch.json shared/afb-runtime-mobile-3d-v1.js index.html version.json BUILD_VERSION.txt tools/mobile_3d_movement/build_receipt.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Build cloud-test mobile 3D movement preview"
+            git push origin HEAD:experiment/mobile-3d-movement
+          fi
+
+      - name: Check out current live main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: main-live
+
+      - name: Stage live site plus isolated preview
+        run: |
+          set -euo pipefail
+          python3 main-live/tools/stage_pages.py --output "${RUNNER_TEMP}/afb-pages"
+          python3 tools/stage_pages.py --output "${RUNNER_TEMP}/afb-mobile3d"
+          mkdir -p "${RUNNER_TEMP}/afb-pages/mobile-3d-movement"
+          cp -a "${RUNNER_TEMP}/afb-mobile3d/." "${RUNNER_TEMP}/afb-pages/mobile-3d-movement/"
+
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ${{ runner.temp }}/afb-pages
+
+      - name: Deploy preview without replacing live root
+        id: deployment
+        uses: actions/deploy-pages@v4
