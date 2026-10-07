@@ -5,8 +5,8 @@ var state:Dictionary
 var card:PanelContainer
 var text:Label
 var start_position:=Vector3.ZERO
-const STEPS:=["move","phone","backpack","harvest","order_seed","order_fertilizer","collect","plant","water","fertilize","grown_harvest","trim","bag","carry_product","store","computer","sale"]
-const TITLES:=["Find your feet","Open your phone","Check your backpack","Harvest the ready plant","Order seeds at Central Market","Order a fertilizer pack","Collect your paid orders","Plant a carried seed","Water the new plant","Use carried fertilizer","Harvest your first crop","Trim your harvest","Pack the trimmed product","Take packaged product","Try your storage","Visit your computer","Make your first sale"]
+const STEPS:=["move","phone","backpack","order_seed","order_fertilizer","collect","plant","water","fertilize","grown_harvest","trim","bag","carry_product","store","computer","sale"]
+const TITLES:=["Find your feet","Open your phone","Check your backpack","Order seeds at Central Market","Order a fertilizer pack","Collect your paid orders","Plant a carried seed","Water the new plant","Use carried fertilizer","Harvest your first crop","Trim your harvest","Pack the trimmed product","Take packaged product","Try your storage","Visit your computer","Make your first sale"]
 func setup(owner:Node3D,controller:Node) -> void:
  host=owner;inventory=controller
  var fresh:bool=not host.loaded_existing_game
@@ -14,9 +14,7 @@ func setup(owner:Node3D,controller:Node) -> void:
  if not host.location_state.has("first_day_guide"):host.location_state["first_day_guide"]={}
  state=host.location_state.first_day_guide
  if state.is_empty():state.merge({"version":2,"active":false,"step":0,"events":{},"completed":false})
- if int(state.get("version",2))<3:
-  if int(state.get("step",0))>=10:state.step=int(state.step)+1;state.events["grown_harvest"]=true
-  state.version=3
+ migrate_state()
  state["step"]=clampi(int(state.get("step",0)),0,STEPS.size())
  host.tutorial_active=false;host.tutorial_seen=true
  host.tutorial_panel.hide()
@@ -35,9 +33,8 @@ func hint(index:int) -> String:
  var grab:String="Hold the scissors or bud with your finger and drag" if input==null else ("Hold A/Cross and move the left stick" if input.controller_active else "Hold the left mouse button and drag")
  var hints:Array[String]=[
   controls(),
-  "Open the Phone icon. Story tracks your milestones, Real Estate manages properties, and Pause > Help resumes this guide.",
+  ("Open the Phone icon. Use PAUSE at the bottom to open Resume, Settings, Help and Save & Quit." if input==null else "Open the Phone icon. Story tracks milestones and Real Estate manages properties. Open Pause > Help to resume this guide."),
   "Open Backpack. You start with 35 lb capacity. Cash has no weight; market upgrades increase the limit.",
-  "Walk through the apartment's interior door into the grow room. Interact with the ready plant and choose Harvest. Your harvest goes to the packing bench.",
   "Leave through the apartment front door and enter Central Market nearby. At checkout choose Seeds, then order a base strain you can afford. Genetics-only strains must be bred.",
   "At the market choose Supplies and order a pack of 5 fertilizer for $45. The pack weighs 5 lb and waits in Order Pickup.",
   "Open Order Pickup and choose Collect All. It takes only what fits by backpack weight. Remaining paid items stay at the market for later.",
@@ -66,7 +63,7 @@ func record(event:String,slot:int=-1) -> void:
  if event=="plant" and slot>=0 and not state.events.has("plant"):
   state.plant_slot=slot;state.plant_property=str(host.location_state.get("active_property","apartment"));state.crop_ready=false
   state["crop_watered"]=false;state["crop_fertilized"]=false
- if event in ["water","fertilize"] and slot>=0 and not state.has("plant_slot") and bool(state.events.get("plant",false)) and int(state.step)<=9:
+ if event in ["water","fertilize"] and slot>=0 and not state.has("plant_slot") and bool(state.events.get("plant",false)) and int(state.step)<=8:
   state.plant_slot=slot;state.plant_property=str(host.location_state.get("active_property","apartment"))
   state.crop_watered=bool(state.events.get("water",false));state.crop_fertilized=bool(state.events.get("fertilize",false))
  var same_crop:bool=slot>=0 and slot==int(state.get("plant_slot",-1)) and str(host.location_state.get("active_property","apartment"))==str(state.get("plant_property",""))
@@ -121,3 +118,10 @@ func populate_help(parent:Node) -> void:
   inventory.label("%d. %s" % [i+1,TITLES[i]],parent,20)
   inventory.label(hint(i),parent,17)
  inventory.label("Pausing stops the day and visitors. Outside the guide, existing plants can grow while away; on-duty workers use property supplies. Rent continues for each held lease, while utilities accrue where equipment is used.",parent,17)
+func migrate_state() -> void:
+ if int(state.get("version",2))<3:
+  if int(state.get("step",0))>=10:state.step=int(state.step)+1;state.events["grown_harvest"]=true
+  state.version=3
+ if int(state.get("version",3))<4:
+  if int(state.get("step",0))>3:state.step=int(state.step)-1
+  state.version=4

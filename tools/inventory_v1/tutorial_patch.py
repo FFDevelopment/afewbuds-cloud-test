@@ -18,5 +18,5 @@ def patch_main(s):
     body=s[start:end];body=re.sub(r'body.text = ".*?"\n', 'body.text = "Welcome to Bongchester. Learn movement, your phone and backpack, market orders, growing, packing and selling.\\n\\nFollow the on-screen guide and do each action yourself. Time and plants are protected until the sale lesson. Controls match your device and current bindings.\\n\\nYou can skip any step or resume from Phone > Help."\n', body,count=1)
     body=body.replace('tutorial_panel.add_child(root)','var intro_scroll:=PhoneTouchScroll.new()\n\tintro_scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED\n\tintro_scroll.follow_focus=true\n\troot.size_flags_horizontal=Control.SIZE_EXPAND_FILL\n\ttutorial_panel.add_child(intro_scroll)\n\tintro_scroll.add_child(root)')
     s=s[:start]+body+s[end:]
-    s+='\nfunc _guide_protects_plants() -> bool:\n\tvar guide:Dictionary=location_state.get("first_day_guide",{})\n\treturn bool(guide.get("active",false)) and int(guide.get("step",0))<16\n'
+    s+='\nfunc _guide_protects_plants() -> bool:\n\tvar guide:Dictionary=location_state.get("first_day_guide",{})\n\treturn bool(guide.get("active",false)) and int(guide.get("step",0))<15\n'
     return s

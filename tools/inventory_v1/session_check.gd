@@ -36,6 +36,13 @@ func run():
  check(menu.panel.get_global_rect().size.y<=game.get_viewport().get_visible_rect().size.y,"Scrollable Help stays inside viewport")
  menu.show_page("home");game._open_phone_app("home")
  check(not "SETTINGS" in buttons(game.phone_panel) and not "Settings" in buttons(game.phone_panel),"Phone no longer duplicates settings navigation")
+ game._resume_gameplay();game.phone_open=true;game.phone_panel.show()
+ var pause_button:Button
+ for button in game.phone_panel.find_children("*","Button",true,false):
+  if button.text=="PAUSE":pause_button=button
+ check(pause_button!=null,"Mobile phone has a persistent Pause option")
+ if pause_button!=null:pause_button.pressed.emit()
+ check(game.session_paused and game.pause_overlay.visible and not game.phone_open and not game.phone_panel.visible,"Phone Pause closes the phone and opens the pause menu")
  game.phone_open=false;game.phone_panel.hide()
  var probe:=ExitProbe.new();root.add_child(probe);inv.session_menu=probe
  game.cash=1234

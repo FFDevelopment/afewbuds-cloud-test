@@ -28,4 +28,6 @@ def patch_main(s):
     s=s.replace('func _resume_gameplay() -> void:\n','func _resume_gameplay() -> void:\n\tif inventory_system!=null and inventory_system.session_menu!=null and inventory_system.session_menu.quitting:return\n')
     s=s.replace("SAVE & SLEEP / QUIT","SAVE & QUIT").replace("Sleep / safe quit","Save & quit")
     s=s.replace('\tif inventory_system!=null:inventory_system.pause_inventory()','\tif inventory_system!=null:inventory_system.pause_inventory()\n\tif inventory_system!=null and inventory_system.session_menu!=null:inventory_system.session_menu.show_page("home")',1)
+    s=s.replace('\t_add_phone_dock_button(dock, "TASKS", "task")','\t_add_phone_dock_button(dock, "TASKS", "task")\n\t_add_phone_dock_button(dock, "PAUSE", "pause")')
+    s=s.replace('func _open_phone_app(app_name: String) -> void:\n','func _open_phone_app(app_name: String) -> void:\n\tif app_name=="pause":\n\t\tphone_open=false;phone_panel.hide()\n\t\t_cancel_phone_gesture()\n\t\t_pause_gameplay()\n\t\treturn\n')
     return s
