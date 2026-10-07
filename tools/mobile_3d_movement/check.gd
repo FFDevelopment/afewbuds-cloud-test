@@ -106,7 +106,10 @@ func run() -> void:
 		var id_text:=str(entry.id)
 		if int(entry.floor)==0 and (id_text.begins_with("Stair") or id_text=="ContinuousHandrail" or id_text=="RailWallBracket"):
 			for deck in upper_decks:
-				if entry.bounds.intersects(deck):
+				var overlap_x:float=minf(entry.bounds.end.x,deck.end.x)-maxf(entry.bounds.position.x,deck.position.x)
+				var overlap_y:float=minf(entry.bounds.end.y,deck.end.y)-maxf(entry.bounds.position.y,deck.position.y)
+				var overlap_z:float=minf(entry.bounds.end.z,deck.end.z)-maxf(entry.bounds.position.z,deck.position.z)
+				if overlap_x>.005 and overlap_y>.005 and overlap_z>.005:
 					stair_clips.append(id_text)
 	check(stair_clips.is_empty(),"Police stair/wall geometry does not clip through upstairs floor",stair_clips)
 	var final_nosing_count:=0
