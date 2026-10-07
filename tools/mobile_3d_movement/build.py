@@ -740,6 +740,7 @@ def main():
     before={n:b for n,b,f in entries}
 
     main_script=patch_progression_main(before['scripts/main.gd'].decode())
+    main_script=main_script.replace('brand_label.text = "AFewBuds"', 'if neighborhood != null and neighborhood.mobile_hud != null:\n\t\t\tneighborhood.mobile_hud.update_location()\n\t\telse: brand_label.text = load("res://scripts/districts.gd").heading(camera.position)')
     neighborhood=patch_neighborhood(before['scripts/neighborhood.gd'].decode())
     station=patch_station((ROOT/'tools/police_station_v1/station.gd').read_text())
     door=(HERE/'interior_door_physics.gd').read_bytes()
@@ -757,16 +758,19 @@ def main():
         'scripts/property_opportunity.gd':property_opportunity,
         'scripts/location_ops.gd':location_ops,
         'scripts/crew_phone.gd':crew.encode(),
+        'scripts/mobile_hud.gd':(HERE/'mobile_hud.gd').read_bytes(),
     }
     updated=[]
     for n,b,f in entries:
         updated.append([n,replacements.get(n,b),f])
     updated.append(['scripts/mobile_physics_player.gd',(HERE/'mobile_physics_player.gd').read_bytes(),0])
 
+    updated.append(['scripts/districts.gd',(HERE/'districts.gd').read_bytes(),0])
+
     built=east.pack.rebuild(baseline,fb,updated)
     after={n:b for n,b,f in east.pack.parse(built)[1]}
     changed=[n for n in before if before[n]!=after[n]]
-    expected_changed={'scripts/crew_phone.gd','scripts/interior_door.gd','scripts/location_ops.gd','scripts/main.gd','scripts/neighborhood.gd','scripts/police_station.gd','scripts/property_opportunity.gd'}
+    expected_changed={'scripts/mobile_hud.gd','scripts/crew_phone.gd','scripts/interior_door.gd','scripts/location_ops.gd','scripts/main.gd','scripts/neighborhood.gd','scripts/police_station.gd','scripts/property_opportunity.gd'}
     assert set(changed)==expected_changed,changed
     assert 'scripts/mobile_physics_player.gd' in after
 
@@ -825,13 +829,13 @@ def main():
 
     loader=(ROOT/'shared/afb-runtime-kobi-v1.js').read_text()
     loader=loader.replace('kobi-v1','mobile-3d-v1').replace('AFB_RUNTIME_KOBI_V1','AFB_RUNTIME_MOBILE_3D_V1')
-    loader=re.sub(r'patch\.json\?v=\d+','patch.json?v=11',loader)
+    loader=re.sub(r'patch\.json\?v=\d+','patch.json?v=12',loader)
     (ROOT/'shared/afb-runtime-mobile-3d-v1.js').write_text(loader,newline='\n')
 
-    release='0.7.9-beta.19-cloudtest.99-mobile3d.11'
+    release='0.7.9-beta.19-cloudtest.99-mobile3d.12'
     index=(ROOT/'index.html').read_text()
     index=index.replace('kobi-v1','mobile-3d-v1').replace('AFB_RUNTIME_KOBI_V1','AFB_RUNTIME_MOBILE_3D_V1')
-    index=re.sub(r'afb-runtime-mobile-3d-v1\.js\?v=\d+','afb-runtime-mobile-3d-v1.js?v=11',index)
+    index=re.sub(r'afb-runtime-mobile-3d-v1\.js\?v=\d+','afb-runtime-mobile-3d-v1.js?v=12',index)
     index=re.sub(r'0\.7\.9-beta\.19-cloudtest\.(?:98-kobi|99-mobile3d)\.\d+',release,index)
     index=re.sub(r'"fileSizes":\{[^}]*\\}',f'"fileSizes":{{"index-mobile-3d-v1.pck":{len(built)},"index.wasm":{(ROOT/"index.wasm").stat().st_size}}}',index,count=1)
     if 'MOBILE 3D TEST</title>' not in index:index=index.replace('</title>',' · MOBILE 3D TEST</title>',1)
@@ -853,6 +857,7 @@ def main():
     version['heat_balance']={'routine_gain_multiplier':0.70,'online_open_decay_per_game_minute':0.012,'online_quiet_decay_per_game_minute':0.016,'online_lay_low_decay_per_game_minute':0.024,'offline_full_cool_minutes':180,'daily_pressure_chance':'12%-40%'}
     version['branching_tasks']={'reeves_payment_outcome':'On-time payment vs missed-payment objectives are mutually exclusive; incompatible unclaimed task retires automatically'}
     version['real_estate_app']={'phone_home':True,'portfolio':'apartment + house shown separately','billing':'independent rent/lease, electric and water balances by property','apartment_release':'requires another property and cleared apartment-assigned contents; future rent/utilities stop, existing debt remains; apartment door/computer lock','property_storage':'paid upgrades remain player-owned and can be unplaced/stored instead of deleted','apartment_reacquire':'released apartment can be rented again after prior debt is cleared'}
+    version['districts']={'city':'Bongchester','current':['Roachwood','Half Baked Heights','Paranoia Point'],'hud':'Persistent city / current district; follows player location'}
     version['messages']='Newest messages first in each conversation; opening or refreshing Messages starts at the top'
     version['phone_home']='Illegal Businesses, Real Estate, Store, Contacts, Messages, Tasks & Rewards, Leaderboard, Settings'
     version['runtime_delivery']='SHA-256-verified mobile-3d-v1 delta over .98-kobi.1'
@@ -866,7 +871,7 @@ def main():
         'target_sha256':hashlib.sha256(built).hexdigest(),
         'target_bytes':len(built),
         'changed_existing_entries':changed,
-        'added_entries':['scripts/mobile_physics_player.gd'],
+        'added_entries':['scripts/mobile_physics_player.gd','scripts/districts.gd'],
         'unchanged_entries':len(before)-len(changed),
         'reconstruction_verified':True
     }

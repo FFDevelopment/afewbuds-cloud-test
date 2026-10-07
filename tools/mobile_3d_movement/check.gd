@@ -22,6 +22,24 @@ func run() -> void:
 	root.add_child(game)
 	await frames(8)
 	w=game.neighborhood
+
+	var districts=load("res://scripts/districts.gd")
+	for sample in [[Vector3(0,0,0),"Roachwood"],[Vector3(40,0,0),"Roachwood"],[Vector3(72.99,0,0),"Roachwood"],[Vector3(73,0,0),"Half Baked Heights"],[Vector3(138.99,0,0),"Half Baked Heights"],[Vector3(139,0,0),"Paranoia Point"],[Vector3(175,6,0),"Paranoia Point"]]:
+		check(districts.heading(sample[0])=="Bongchester / "+sample[1],"District at "+str(sample[0]))
+	var original_camera:Vector3=game.camera.position
+	for x in [10.0,90.0,170.0,10.0]:
+		game.camera.position=Vector3(x,2,10)
+		w.mobile_hud.update_location()
+		check(game.brand_label.text=="Bongchester /\n"+districts.district_at(game.camera.position),"Mobile HUD follows district crossing in either direction")
+	w.in_station=true
+	w.walk_position=Vector3(170,2,10)
+	game.camera.position=Vector3.ZERO
+	w.mobile_hud.update_location()
+	check(game.brand_label.text.ends_with("Paranoia Point"),"Station close-up retains player district")
+	game._update_cash_ui()
+	check(game.brand_label.text.ends_with("Paranoia Point"),"Cash refresh preserves district during station close-up")
+	w.in_station=false
+	game.camera.position=original_camera
 	for timer in game.find_children("*","Timer",true,false):timer.stop()
 	game.session_paused=false
 	game.tutorial_active=false

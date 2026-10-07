@@ -5,6 +5,8 @@ on:
     branches: [experiment/mobile-3d-movement]
     paths:
       - "tools/mobile_3d_movement/build.py"
+      - "tools/mobile_3d_movement/mobile_hud.gd"
+      - "tools/mobile_3d_movement/districts.gd"
       - "tools/mobile_3d_movement/check.gd"
       - "tools/mobile_3d_movement/mobile_physics_player.gd"
       - "tools/mobile_3d_movement/interior_door_physics.gd"

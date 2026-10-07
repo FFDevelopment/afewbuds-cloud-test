@@ -281,7 +281,7 @@ func build(owner:Node3D) -> void:
 	for x in [8.0,16.0]:part("NavyFacade",x,3.5,28.18,Vector3(.8,7,.24),"254967",false)
 	part("EntranceCanopy",11.2,3.12,29,Vector3(6,.18,2),"354853",false)
 	part("StationNameBoard",12,6.9,28.3,Vector3(13,.65,.16),"d4d2c6",false)
-	label("AFEWBUDS POLICE",12,6.9,28.43,0,.009)
+	label("PARANOIA POINT POLICE",12,6.9,28.43,0,.009)
 	part("BadgeBacking",8,4.7,28.28,Vector3(1.2,1.2,.12),"254967",false)
 	label("AFB\nPOLICE",8,4.7,28.42,0,.005)
 	for x in [2.0,6.0,18.0,22.0]:plant(x,29.8)
