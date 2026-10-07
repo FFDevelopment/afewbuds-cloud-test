@@ -1,0 +1,58 @@
+name: Inspect progression heat and branching tasks
+
+on:
+  push:
+    branches: [experiment/mobile-3d-movement]
+    paths:
+      - ".github/workflows/inspect-progression-heat.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: experiment/mobile-3d-movement
+
+      - name: Inspect current packed runtime
+        shell: python
+        run: |
+          from pathlib import Path
+          import importlib.util,re
+
+          ROOT=Path(".")
+          def module(name,path):
+              spec=importlib.util.spec_from_file_location(name,path)
+              m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m);return m
+
+          east=module("east",ROOT/"tools/east_expansion_v1/build.py")
+          pack=east.pack
+          data=east.fit.read_recipe(ROOT/"runtime/mobile-3d-v1.patch.json")
+          fb,entries=pack.parse(data)
+          files={n:b for n,b,f in entries}
+          main=files["scripts/main.gd"].decode("utf-8","replace")
+          print("MAIN_BYTES",len(main))
+
+          print("\n===== GLOBAL MATCHES =====")
+          for i,line in enumerate(main.splitlines(),1):
+              low=line.lower()
+              if any(k in low for k in [
+                  "heat","reeves","task","chapter","property_offer","property_opportunity",
+                  "missed payment","payment","advancement","reward"
+              ]):
+                  print(f"{i}: {line}")
+
+          pat=re.compile(r'^func ([A-Za-z0-9_]+)\([^\n]*\)(?: -> [^:]+)?:\n.*?(?=^func |\Z)',re.M|re.S)
+          print("\n===== RELEVANT FUNCTIONS =====")
+          for m in pat.finditer(main):
+              block=m.group(0);low=block.lower()
+              if any(k in low for k in [
+                  "heat","reeves","task","chapter","property_offer","property_opportunity",
+                  "missed payment","payment","advancement","reward"
+              ]):
+                  print("\n--- "+m.group(1)+" ---")
+                  print(block)
