@@ -178,7 +178,7 @@ func show_details() -> void:
 		label("AFewBuds HOUSE OPERATION",30)
 		label("CHAPTER 5 — BUILDING AN OPERATION",27)
 		label("Agreement: %s" % agreement_name(),22)
-		label("The house is now your active operation. Your career inventory, genetics, crew, dealers and purchased equipment progression were preserved during the move.",20)
+		label("The house is now your active operation. Career inventory, genetics, crew, dealers and player-owned operation upgrades moved with you. The apartment lease remains separate until you release it in Real Estate.",20)
 		if str(state().get("agreement",""))=="lease":
 			label("OWNERSHIP EQUITY: $%d / $%d" % [int(state().get("equity_paid",0)),LEASE_TOTAL],22)
 		button("BACK TO NEIGHBORHOOD",end_tour)
@@ -286,6 +286,8 @@ func confirm_relocation() -> void:
 	state()["relocation_day"]=host.game_day
 	state()["keep_apartment"]=true
 	host.location_state["active_property"]="house"
+	host.location_state["operation_assets_property"]="house"
+	host.location_state["operation_contents_property"]="house"
 	if host.location_state.get("house",{}) is Dictionary:
 		host.location_state["house"]["active"]=true
 	if not host.apartment_rent_state.has("lease_active"):
