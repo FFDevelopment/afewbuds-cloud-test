@@ -140,6 +140,9 @@ func _stop_physics_walk() -> void:
         'if node==door_pivot and (door_busy or door_pass_through):return',
         'if node==door_pivot:return',1)
     source=source.replace(
+        'func _collect_map_colliders(node: Node) -> void:\n',
+        'func _collect_map_colliders(node: Node) -> void:\n\tif node==physics_obstacle_root or node==physics_body or node==physics_door_body:return\n',1)
+    source=source.replace(
         '\tdoor_busy=true;door_pass_through=true;collision_timer=0.0\n\tdoor_open=not door_open\n',
         '\tdoor_busy=true;door_pass_through=true;collision_timer=0.0\n\t_set_physics_door_closed(false)\n\tdoor_open=not door_open\n',1)
     source=source.replace(
@@ -197,7 +200,8 @@ func _stop_physics_walk() -> void:
         'MobilePhysicsPlayer','_rebuild_physics_obstacles()','physics_body.drive',
         'MobilePhysicsApartmentDoor','_set_physics_door_closed(false)',
         'physics_obstacle_signature','_physics_signature()',
-        'if node==door_pivot:return','3D PHYSICS TEST','_sync_physics_from_camera()'
+        'if node==door_pivot:return','node==physics_obstacle_root',
+        '3D PHYSICS TEST','_sync_physics_from_camera()'
     ]:
         assert required in source,required
     return source
