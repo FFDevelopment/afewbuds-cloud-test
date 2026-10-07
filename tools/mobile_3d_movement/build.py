@@ -21,6 +21,8 @@ var physics_obstacle_root: Node3D
 var physics_door_body: StaticBody3D
 var physics_door_shape: CollisionShape3D
 var physics_obstacle_signature := ""
+var stamina_bar: ProgressBar
+var stamina_text: Label
 var physics_ready := false
 const PHYSICS_MAP:=Rect2(-32,-36,233,75)
 ''',1)
@@ -117,9 +119,67 @@ func _sync_camera_from_physics() -> void:
 func _stop_physics_walk() -> void:
 	if physics_body!=null:physics_body.stop()
 
+func _update_stamina_hud() -> void:
+	if stamina_bar==null or stamina_text==null or physics_body==null:return
+	stamina_bar.value=physics_body.stamina
+	var show_bar:bool=active and (physics_body.is_sprinting or physics_body.stamina<physics_body.STAMINA_MAX-.1)
+	stamina_bar.visible=show_bar
+	stamina_text.visible=show_bar
+	if show_bar:
+		stamina_text.text="SPRINT" if physics_body.is_sprinting else ("EXHAUSTED" if physics_body.exhausted else "STAMINA")
+
 '''
     assert 'func _build_controls() -> void:' in source
     source=source.replace('func _build_controls() -> void:',physics_helpers+'func _build_controls() -> void:',1)
+
+    source=source.replace(
+        '\tcontrols.add_child(action)\n\tcontrols.hide()\n\tmobile_hud=load("res://scripts/mobile_hud.gd").new();mobile_hud.setup(self)\n',
+        '''\tcontrols.add_child(action)
+\tstamina_bar=ProgressBar.new()
+\tstamina_bar.name="SprintStamina"
+\tstamina_bar.min_value=0
+\tstamina_bar.max_value=100
+\tstamina_bar.value=100
+\tstamina_bar.show_percentage=false
+\tstamina_bar.mouse_filter=Control.MOUSE_FILTER_IGNORE
+\tstamina_bar.anchor_left=.5
+\tstamina_bar.anchor_right=.5
+\tstamina_bar.anchor_top=1.0
+\tstamina_bar.anchor_bottom=1.0
+\tstamina_bar.offset_left=-108
+\tstamina_bar.offset_right=108
+\tstamina_bar.offset_top=-76
+\tstamina_bar.offset_bottom=-56
+\tvar stamina_bg:=StyleBoxFlat.new()
+\tstamina_bg.bg_color=Color("102019")
+\tstamina_bg.border_color=Color("4c7257")
+\tstamina_bg.set_border_width_all(2)
+\tstamina_bg.set_corner_radius_all(8)
+\tvar stamina_fill:=StyleBoxFlat.new()
+\tstamina_fill.bg_color=Color("7fcf88")
+\tstamina_fill.set_corner_radius_all(6)
+\tstamina_bar.add_theme_stylebox_override("background",stamina_bg)
+\tstamina_bar.add_theme_stylebox_override("fill",stamina_fill)
+\tcontrols.add_child(stamina_bar)
+\tstamina_text=Label.new()
+\tstamina_text.mouse_filter=Control.MOUSE_FILTER_IGNORE
+\tstamina_text.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+\tstamina_text.add_theme_font_size_override("font_size",13)
+\tstamina_text.add_theme_color_override("font_color",Color("e8f4e7"))
+\tstamina_text.anchor_left=.5
+\tstamina_text.anchor_right=.5
+\tstamina_text.anchor_top=1.0
+\tstamina_text.anchor_bottom=1.0
+\tstamina_text.offset_left=-108
+\tstamina_text.offset_right=108
+\tstamina_text.offset_top=-101
+\tstamina_text.offset_bottom=-78
+\tcontrols.add_child(stamina_text)
+\tstamina_bar.hide()
+\tstamina_text.hide()
+\tcontrols.hide()
+\tmobile_hud=load("res://scripts/mobile_hud.gd").new();mobile_hud.setup(self)
+''',1)
 
     source=source.replace(
         '\thost.camera.position.y=WALK_EYE_HEIGHT\n\thost.camera.fov=78.0\n',
@@ -168,8 +228,11 @@ func _stop_physics_walk() -> void:
 		if movement.length()>0.15:_toggle_couch()
 		else:movement=Vector2.ZERO
 	if not couch_seated and bench_seating.seated<0:
-		physics_body.drive(movement,host.camera.rotation.y)
+		var mobile_sprint:bool=pad.value.length()>=.92 and pad.value.y<=-.72
+		var keyboard_sprint:bool=Input.is_physical_key_pressed(KEY_SHIFT) and movement.y<-.35
+		physics_body.drive(movement,host.camera.rotation.y,mobile_sprint or keyboard_sprint)
 		_sync_camera_from_physics()
+	_update_stamina_hud()
 '''
     source=source[:start]+movement+source[end:]
 
@@ -186,7 +249,8 @@ func _stop_physics_walk() -> void:
         'MobilePhysicsApartmentDoor','_set_physics_door_closed(false)',
         'physics_obstacle_signature','_physics_signature()',
         'if node==door_pivot:return','node==physics_obstacle_root','node==police_station',
-        'physics_body.drive(movement,host.camera.rotation.y)',
+        'physics_body.drive(movement,host.camera.rotation.y,mobile_sprint or keyboard_sprint)',
+        'SprintStamina','_update_stamina_hud()',
         '3D PHYSICS TEST','_sync_physics_from_camera()'
     ]:
         assert required in source,required
@@ -324,13 +388,13 @@ def main():
 
     loader=(ROOT/'shared/afb-runtime-kobi-v1.js').read_text()
     loader=loader.replace('kobi-v1','mobile-3d-v1').replace('AFB_RUNTIME_KOBI_V1','AFB_RUNTIME_MOBILE_3D_V1')
-    loader=re.sub(r'patch\.json\?v=\d+','patch.json?v=3',loader)
+    loader=re.sub(r'patch\.json\?v=\d+','patch.json?v=4',loader)
     (ROOT/'shared/afb-runtime-mobile-3d-v1.js').write_text(loader,newline='\n')
 
-    release='0.7.9-beta.19-cloudtest.99-mobile3d.3'
+    release='0.7.9-beta.19-cloudtest.99-mobile3d.4'
     index=(ROOT/'index.html').read_text()
     index=index.replace('kobi-v1','mobile-3d-v1').replace('AFB_RUNTIME_KOBI_V1','AFB_RUNTIME_MOBILE_3D_V1')
-    index=re.sub(r'afb-runtime-mobile-3d-v1\.js\?v=\d+','afb-runtime-mobile-3d-v1.js?v=3',index)
+    index=re.sub(r'afb-runtime-mobile-3d-v1\.js\?v=\d+','afb-runtime-mobile-3d-v1.js?v=4',index)
     index=re.sub(r'0\.7\.9-beta\.19-cloudtest\.(?:98-kobi|99-mobile3d)\.\d+',release,index)
     index=re.sub(r'"fileSizes":\{[^}]*\\}',f'"fileSizes":{{"index-mobile-3d-v1.pck":{len(built)},"index.wasm":{(ROOT/"index.wasm").stat().st_size}}}',index,count=1)
     index=index.replace('</title>',' · MOBILE 3D TEST</title>',1)
@@ -341,9 +405,10 @@ def main():
     version['mobile_3d_movement']={
         'branch':'experiment/mobile-3d-movement',
         'player':'CharacterBody3D capsule',
-        'input':'existing touch joystick + drag look',
+        'input':'touch joystick + drag look; full forward stick sprints; Shift+forward sprints on keyboard',
         'physics':'gravity, floor snap, cached StaticBody3D world proxies, physical doors and police stair ramp',
         'police_station':'same CharacterBody3D capsule with physical walls, doors, floors and stair ramp',
+        'sprint':'5.4 m/s with shared 100-point stamina, drain/recovery/exhaustion and HUD bar',
         'save_schema':'unchanged'
     }
     version['runtime_delivery']='SHA-256-verified mobile-3d-v1 delta over .98-kobi.1'
