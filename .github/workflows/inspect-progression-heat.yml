@@ -1,4 +1,4 @@
-name: Inspect progression heat and branching tasks
+name: Extract progression runtime source
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   inspect:
@@ -17,42 +17,32 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: experiment/mobile-3d-movement
+          fetch-depth: 0
 
-      - name: Inspect current packed runtime
+      - name: Extract exact current main script
         shell: python
         run: |
           from pathlib import Path
-          import importlib.util,re
-
+          import importlib.util
           ROOT=Path(".")
           def module(name,path):
               spec=importlib.util.spec_from_file_location(name,path)
               m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m);return m
-
           east=module("east",ROOT/"tools/east_expansion_v1/build.py")
-          pack=east.pack
           data=east.fit.read_recipe(ROOT/"runtime/mobile-3d-v1.patch.json")
-          fb,entries=pack.parse(data)
+          fb,entries=east.pack.parse(data)
           files={n:b for n,b,f in entries}
-          main=files["scripts/main.gd"].decode("utf-8","replace")
-          print("MAIN_BYTES",len(main))
+          out=ROOT/"tools/progression_v1/base_main.gd"
+          out.parent.mkdir(parents=True,exist_ok=True)
+          out.write_bytes(files["scripts/main.gd"])
+          print("MAIN_BYTES",out.stat().st_size)
 
-          print("\n===== GLOBAL MATCHES =====")
-          for i,line in enumerate(main.splitlines(),1):
-              low=line.lower()
-              if any(k in low for k in [
-                  "heat","reeves","task","chapter","property_offer","property_opportunity",
-                  "missed payment","payment","advancement","reward"
-              ]):
-                  print(f"{i}: {line}")
-
-          pat=re.compile(r'^func ([A-Za-z0-9_]+)\([^\n]*\)(?: -> [^:]+)?:\n.*?(?=^func |\Z)',re.M|re.S)
-          print("\n===== RELEVANT FUNCTIONS =====")
-          for m in pat.finditer(main):
-              block=m.group(0);low=block.lower()
-              if any(k in low for k in [
-                  "heat","reeves","task","chapter","property_offer","property_opportunity",
-                  "missed payment","payment","advancement","reward"
-              ]):
-                  print("\n--- "+m.group(1)+" ---")
-                  print(block)
+      - name: Commit extracted source
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tools/progression_v1/base_main.gd
+          if ! git diff --cached --quiet; then
+            git commit -m "Extract exact mobile runtime main source"
+            git push origin HEAD:experiment/mobile-3d-movement
+          fi
