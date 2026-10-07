@@ -364,9 +364,9 @@ func _ensure_property_utilities() -> void:
 	if not ledger is Dictionary:
 		ledger={}
 	var data:Dictionary=ledger as Dictionary
-	if not data.get("apartment",{}) is Dictionary:
+	if not data.has("apartment") or not data["apartment"] is Dictionary:
 		data["apartment"]=_utility_template()
-	if not data.get("house",{}) is Dictionary:
+	if not data.has("house") or not data["house"] is Dictionary:
 		data["house"]=_utility_template()
 	if not bool(data.get("_migrated_legacy",false)):
 		var apartment:Dictionary=data["apartment"]
@@ -383,7 +383,11 @@ func _ensure_property_utilities() -> void:
 
 func utility_state(property:String) -> Dictionary:
 	_ensure_property_utilities()
-	return (host.location_state["property_utilities"] as Dictionary)[property]
+	var ledger:Dictionary=host.location_state.get("property_utilities",{})
+	if not ledger.has(property) or not ledger[property] is Dictionary:
+		ledger[property]=_utility_template()
+		host.location_state["property_utilities"]=ledger
+	return ledger[property]
 
 func _property_controlled(property:String) -> bool:
 	if property=="apartment":return apartment_lease_active()
