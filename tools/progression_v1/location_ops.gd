@@ -28,6 +28,7 @@ func setup(owner: Node3D) -> void:
 	if not host.location_state.has("operation_assets_property"):host.location_state["operation_assets_property"]="apartment"
 	if not host.location_state.has("operation_contents_property"):host.location_state["operation_contents_property"]="apartment"
 	_ensure_property_utilities()
+	_sync_legacy_utility_totals()
 	if not host.apartment_rent_state.has("next_due"):
 		host.apartment_rent_state={"next_due":host.game_day+14,"balance":0,"first_unpaid":0,"lease_active":true}
 		host._save_game()
