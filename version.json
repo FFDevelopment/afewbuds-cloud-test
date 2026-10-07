@@ -22,7 +22,7 @@
   "storefront_control_location": "BudShop top",
   "task_page": "Chapter progress, Rewards",
   "visible_dev_wording": "removed",
-  "paused_heat_decay": "100 Heat over 72 real minutes",
+  "paused_heat_decay": "100 Heat over 180 real minutes",
   "paused_lay_low_progress": "1 Reeves quiet day per 24 real minutes while Lay Low is active",
   "texts_app": "persistent crew and story inbox",
   "critical_heat_staff": "100 Heat sends active crew home; one active role is arrested; return blocked at 75+ Heat",
