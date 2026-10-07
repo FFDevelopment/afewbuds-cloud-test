@@ -26,6 +26,8 @@ func setup(owner: Node3D) -> void:
 	if not host.location_state.get("property_storage",[]) is Array:host.location_state["property_storage"]=[]
 	if not host.location_state.get("asset_placements",{}) is Dictionary:host.location_state["asset_placements"]={}
 	if not host.location_state.has("operation_assets_property"):host.location_state["operation_assets_property"]="apartment"
+	if not host.location_state.has("operation_contents_property"):host.location_state["operation_contents_property"]="apartment"
+	_ensure_property_utilities()
 	if not host.apartment_rent_state.has("next_due"):
 		host.apartment_rent_state={"next_due":host.game_day+14,"balance":0,"first_unpaid":0,"lease_active":true}
 		host._save_game()
@@ -353,6 +355,148 @@ func redirect(app: String) -> bool:
 		host.status_label.text="Use your apartment computer for detailed operation management."
 		return true
 	return false
+func _utility_template() -> Dictionary:
+	return {"today_power":0.0,"power_due":0,"last_power":0,"today_water":0.0,"water_uses":0,"water_due":0,"last_water":0}
+
+func _ensure_property_utilities() -> void:
+	var ledger:Variant=host.location_state.get("property_utilities",{})
+	if not ledger is Dictionary:
+		ledger={}
+	var data:Dictionary=ledger as Dictionary
+	if not data.get("apartment",{}) is Dictionary:
+		data["apartment"]=_utility_template()
+	if not data.get("house",{}) is Dictionary:
+		data["house"]=_utility_template()
+	if not bool(data.get("_migrated_legacy",false)):
+		var apartment:Dictionary=data["apartment"]
+		apartment["today_power"]=maxf(float(apartment.get("today_power",0.0)),host.current_day_power_cost)
+		apartment["power_due"]=maxi(int(apartment.get("power_due",0)),host.power_bill_due)
+		apartment["last_power"]=maxi(int(apartment.get("last_power",0)),host.last_power_bill)
+		apartment["today_water"]=maxf(float(apartment.get("today_water",0.0)),host.current_day_water_cost)
+		apartment["water_uses"]=maxi(int(apartment.get("water_uses",0)),host.current_day_water_uses)
+		apartment["water_due"]=maxi(int(apartment.get("water_due",0)),host.water_bill_due)
+		apartment["last_water"]=maxi(int(apartment.get("last_water",0)),host.last_water_bill)
+		data["apartment"]=apartment
+		data["_migrated_legacy"]=true
+	host.location_state["property_utilities"]=data
+
+func utility_state(property:String) -> Dictionary:
+	_ensure_property_utilities()
+	return (host.location_state["property_utilities"] as Dictionary)[property]
+
+func _property_controlled(property:String) -> bool:
+	if property=="apartment":return apartment_lease_active()
+	if property=="house":return bool(house_state().get("acquired",false)) and bool(house_state().get("relocated",false))
+	return false
+
+func _sync_legacy_utility_totals() -> void:
+	_ensure_property_utilities()
+	var apartment:Dictionary=utility_state("apartment")
+	var house:Dictionary=utility_state("house")
+	host.current_day_power_cost=float(apartment.get("today_power",0.0))+float(house.get("today_power",0.0))
+	host.power_bill_due=int(apartment.get("power_due",0))+int(house.get("power_due",0))
+	host.last_power_bill=int(apartment.get("last_power",0))+int(house.get("last_power",0))
+	host.current_day_water_cost=float(apartment.get("today_water",0.0))+float(house.get("today_water",0.0))
+	host.current_day_water_uses=int(apartment.get("water_uses",0))+int(house.get("water_uses",0))
+	host.water_bill_due=int(apartment.get("water_due",0))+int(house.get("water_due",0))
+	host.last_water_bill=int(apartment.get("last_water",0))+int(house.get("last_water",0))
+
+func _apartment_power_rate() -> float:
+	if not apartment_lease_active():return 0.0
+	var rate:float=host.POWER_BASE_COST_PER_GAME_MINUTE if active_property()=="apartment" else 0.0
+	if host.main_ceiling_light_on:rate+=host.POWER_MAIN_LIGHT_COST_PER_GAME_MINUTE
+	if host.floor_lamp_on:rate+=host.POWER_LAMP_COST_PER_GAME_MINUTE
+	if host.grow_room_light_on:rate+=host.POWER_GROW_ROOM_LIGHT_COST_PER_GAME_MINUTE
+	if str(host.location_state.get("operation_assets_property","apartment"))=="apartment":
+		if host.grow_lights_on:rate+=host.POWER_GROW_LIGHT_COST_PER_TENT_PER_GAME_MINUTE*float(clampi(host.grow_tent_count,1,3))
+		if host.ventilation_installed and host.ventilation_on:rate+=host.POWER_VENTILATION_COST_PER_GAME_MINUTE
+	return rate
+
+func _house_power_rate() -> float:
+	if not _property_controlled("house"):return 0.0
+	var rate:float=host.POWER_BASE_COST_PER_GAME_MINUTE if active_property()=="house" else 0.0
+	for room_id in ["living","packing","kitchen","bathroom","bedroom","cross_hall","grow"]:
+		if bool(host.house_control_state.get(room_id,true)):rate+=host.POWER_MAIN_LIGHT_COST_PER_GAME_MINUTE
+	if str(host.location_state.get("operation_assets_property","apartment"))=="house":
+		if host.grow_lights_on:rate+=host.POWER_GROW_LIGHT_COST_PER_TENT_PER_GAME_MINUTE*float(clampi(host.grow_tent_count,1,3))
+		if host.ventilation_installed and host.ventilation_on:rate+=host.POWER_VENTILATION_COST_PER_GAME_MINUTE
+	return rate
+
+func track_power_usage(elapsed_game_minutes:float) -> void:
+	if elapsed_game_minutes<=0.0:return
+	for property in ["apartment","house"]:
+		var rate:float=_apartment_power_rate() if property=="apartment" else _house_power_rate()
+		if rate<=0.0:continue
+		var state:=utility_state(property)
+		state["today_power"]=float(state.get("today_power",0.0))+rate*elapsed_game_minutes
+	_sync_legacy_utility_totals()
+
+func charge_water_use(count:int=1) -> void:
+	if count<=0:return
+	var property:=str(host.location_state.get("operation_assets_property",active_property()))
+	if not _property_controlled(property):property=active_property()
+	if not _property_controlled(property):return
+	var state:=utility_state(property)
+	state["water_uses"]=int(state.get("water_uses",0))+count
+	state["today_water"]=float(state.get("today_water",0.0))+host.WATER_COST_PER_WATERING*float(count)
+	_sync_legacy_utility_totals()
+
+func finalize_power_bills(show_feedback:bool=false) -> void:
+	var total_bill:int=0
+	for property in ["apartment","house"]:
+		var state:=utility_state(property)
+		var bill:int=maxi(0,int(ceil(float(state.get("today_power",0.0)))))
+		state["last_power"]=bill
+		state["power_due"]=mini(host.POWER_BILL_MAX_BALANCE,int(state.get("power_due",0))+bill)
+		state["today_power"]=0.0
+		total_bill+=bill
+	host.lifetime_power_cost+=total_bill
+	_sync_legacy_utility_totals()
+	if show_feedback and total_bill>0:host.status_label.text="Property electric bills posted: $%d total." % total_bill
+
+func finalize_water_bills(show_feedback:bool=false) -> void:
+	var total_bill:int=0
+	for property in ["apartment","house"]:
+		var state:=utility_state(property)
+		var bill:int=maxi(0,int(ceil(float(state.get("today_water",0.0)))))
+		state["last_water"]=bill
+		state["water_due"]=mini(host.WATER_BILL_MAX_BALANCE,int(state.get("water_due",0))+bill)
+		state["today_water"]=0.0
+		state["water_uses"]=0
+		total_bill+=bill
+	host.lifetime_water_cost+=total_bill
+	_sync_legacy_utility_totals()
+	if show_feedback and total_bill>0:host.status_label.text="Property water bills posted: $%d total." % total_bill
+
+func property_utility_due(property:String,kind:String) -> int:
+	var state:=utility_state(property)
+	return maxi(0,int(state.get("power_due" if kind=="power" else "water_due",0)))
+
+func utility_total_due() -> int:
+	return property_utility_due("apartment","power")+property_utility_due("apartment","water")+property_utility_due("house","power")+property_utility_due("house","water")
+
+func pay_property_utility(property:String,kind:String) -> void:
+	var state:=utility_state(property)
+	var key:String="power_due" if kind=="power" else "water_due"
+	var amount:int=maxi(0,int(state.get(key,0)))
+	if amount<=0 or host.cash<amount:return
+	host.cash-=amount
+	state[key]=0
+	host._increment_advancement_stat("power_bills_paid" if kind=="power" else "water_bills_paid")
+	host._record_daily_expense(("%s electricity" if kind=="power" else "%s water") % property.capitalize(),amount)
+	_sync_legacy_utility_totals()
+	host._update_cash_ui();host._save_game();host._refresh_phone()
+	host.status_label.text="%s %s bill paid: $%d." % [property.capitalize(),"electric" if kind=="power" else "water",amount]
+
+func utility_bills_ui(parent:VBoxContainer) -> void:
+	for property in ["apartment","house"]:
+		if property=="apartment" and not apartment_lease_active() and property_utility_due(property,"power")==0 and property_utility_due(property,"water")==0:continue
+		if property=="house" and not bool(house_state().get("acquired",false)) and property_utility_due(property,"power")==0 and property_utility_due(property,"water")==0:continue
+		var state:=utility_state(property)
+		_property_label(parent,"%s UTILITIES\nElectric due: $%d · Water due: $%d\nToday: $%d electric · $%d water (%d uses)" % [property.to_upper(),int(state.get("power_due",0)),int(state.get("water_due",0)),int(ceil(float(state.get("today_power",0.0)))),int(ceil(float(state.get("today_water",0.0)))),int(state.get("water_uses",0))],17)
+		if int(state.get("power_due",0))>0:_property_button(parent,"PAY %s ELECTRIC · $%d" % [property.to_upper(),int(state.get("power_due",0))],pay_property_utility.bind(property,"power"),host.cash<int(state.get("power_due",0)))
+		if int(state.get("water_due",0))>0:_property_button(parent,"PAY %s WATER · $%d" % [property.to_upper(),int(state.get("water_due",0))],pay_property_utility.bind(property,"water"),host.cash<int(state.get("water_due",0)))
+
 func active_property() -> String:
 	return str(host.location_state.get("active_property","apartment"))
 
@@ -499,16 +643,17 @@ func _apartment_paid_equipment_labels() -> Array[String]:
 
 func _apartment_contents_blockers() -> Array[String]:
 	var blockers:Array[String]=[]
-	if _apartment_has_live_plants():blockers.append("Harvest or move all live plants.")
-	var pipeline:int=_dict_total(host.untrimmed_inventory)+_dict_total(host.trimmed_inventory)+_dict_total(host.bagged_inventory)
-	if pipeline>0:blockers.append("Move %dg of packing-bench product." % pipeline)
-	var stored:int=host._total_stored_stock()
-	if stored>0:blockers.append("Move %dg of sellable storage stock." % stored)
-	var dealer_stock:int=host._dealer_locker_total()
-	if dealer_stock>0:blockers.append("Move %dg from Dealer Storage." % dealer_stock)
-	var seed_total:int=host._total_seed_inventory()
-	if seed_total>0:blockers.append("Move %d stored seeds." % seed_total)
-	if host.fertilizer_units>0:blockers.append("Move %d fertilizer uses." % host.fertilizer_units)
+	if str(host.location_state.get("operation_contents_property","apartment"))=="apartment":
+		if _apartment_has_live_plants():blockers.append("Harvest or move all live plants.")
+		var pipeline:int=_dict_total(host.untrimmed_inventory)+_dict_total(host.trimmed_inventory)+_dict_total(host.bagged_inventory)
+		if pipeline>0:blockers.append("Move %dg of packing-bench product." % pipeline)
+		var stored:int=host._total_stored_stock()
+		if stored>0:blockers.append("Move %dg of sellable storage stock." % stored)
+		var dealer_stock:int=host._dealer_locker_total()
+		if dealer_stock>0:blockers.append("Move %dg from Dealer Storage." % dealer_stock)
+		var seed_total:int=host._total_seed_inventory()
+		if seed_total>0:blockers.append("Move %d stored seeds." % seed_total)
+		if host.fertilizer_units>0:blockers.append("Move %d fertilizer uses." % host.fertilizer_units)
 	var apartment_deliveries:int=0
 	for delivery_variant in host.location_state.get("deliveries",{}).values():
 		if delivery_variant is Dictionary and str((delivery_variant as Dictionary).get("property",""))=="apartment":apartment_deliveries+=1
@@ -615,6 +760,7 @@ func _property_button(parent:VBoxContainer,text_value:String,callback:Callable,d
 func real_estate_ui(parent:VBoxContainer) -> void:
 	_property_label(parent,"PROPERTY PORTFOLIO",24)
 	_property_label(parent,"Active operation: %s" % active_property().capitalize(),18)
+	utility_bills_ui(parent)
 
 	var apartment_status:String="LEASE ACTIVE" if apartment_lease_active() else "LEASE RELEASED"
 	var apartment_copy:String="APARTMENT · "+apartment_status
