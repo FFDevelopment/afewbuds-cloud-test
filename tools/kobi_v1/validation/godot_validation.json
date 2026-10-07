@@ -1,0 +1,14 @@
+{
+	"animation_clips": [
+		"bend_test",
+		"idle",
+		"sit",
+		"walk"
+	],
+	"bone_count": 56,
+	"engine": "4.7.2-stable (official)",
+	"failures": [],
+	"mesh_instances": 1,
+	"passed": true,
+	"vertices": 24040
+}

@@ -1,0 +1,154 @@
+{
+	"checks": [
+		{
+			"check": "Uploaded lower couch replaces original",
+			"passed": true
+		},
+		{
+			"check": "Couch retains fitted seat markers",
+			"passed": true
+		},
+		{
+			"check": "Malik master rig retained",
+			"passed": true
+		},
+		{
+			"check": "Malik supplied atlas applied",
+			"passed": true
+		},
+		{
+			"check": "Malik supplied 2.35-unit physical scale retained",
+			"passed": true
+		},
+		{
+			"check": "Malik uses supplied sit animation",
+			"passed": true
+		},
+		{
+			"check": "Malik seated feet grounded",
+			"passed": true
+		},
+		{
+			"check": "Malik pelvis rests on supplied cushion",
+			"passed": true
+		},
+		{
+			"check": "Malik standing resets seated root",
+			"passed": true
+		},
+		{
+			"check": "Malik production appearance updated",
+			"passed": true
+		},
+		{
+			"check": "Malik visitor appearance updated",
+			"passed": true
+		},
+		{
+			"check": "Rod master rig retained",
+			"passed": true
+		},
+		{
+			"check": "Rod supplied atlas applied",
+			"passed": true
+		},
+		{
+			"check": "Rod supplied 2.35-unit physical scale retained",
+			"passed": true
+		},
+		{
+			"check": "Rod uses supplied sit animation",
+			"passed": true
+		},
+		{
+			"check": "Rod seated feet grounded",
+			"passed": true
+		},
+		{
+			"check": "Rod pelvis rests on supplied cushion",
+			"passed": true
+		},
+		{
+			"check": "Rod standing resets seated root",
+			"passed": true
+		},
+		{
+			"check": "Rod production appearance updated",
+			"passed": true
+		},
+		{
+			"check": "Rod visitor appearance updated",
+			"passed": true
+		},
+		{
+			"check": "Kobi master rig retained",
+			"passed": true
+		},
+		{
+			"check": "Kobi supplied atlas applied",
+			"passed": true
+		},
+		{
+			"check": "Kobi supplied 2.35-unit physical scale retained",
+			"passed": true
+		},
+		{
+			"check": "Kobi uses supplied sit animation",
+			"passed": true
+		},
+		{
+			"check": "Kobi seated feet grounded",
+			"passed": true
+		},
+		{
+			"check": "Kobi pelvis rests on supplied cushion",
+			"passed": true
+		},
+		{
+			"check": "Kobi standing resets seated root",
+			"passed": true
+		},
+		{
+			"check": "Kobi production appearance updated",
+			"passed": true
+		},
+		{
+			"check": "Kobi visitor appearance updated",
+			"passed": true
+		},
+		{
+			"check": "Worker sits with floor-level character root",
+			"passed": true
+		},
+		{
+			"check": "Worker resumes standing for work",
+			"passed": true
+		},
+		{
+			"check": "Assigned Kobi door manager uses his ped",
+			"passed": true
+		},
+		{
+			"check": "Kobi manager and Rod worker have independent instances",
+			"passed": true
+		},
+		{
+			"check": "Kobi manager walks during movement",
+			"passed": true
+		},
+		{
+			"check": "Kobi manager can sit",
+			"passed": true
+		},
+		{
+			"check": "Kobi manager stands back into idle",
+			"passed": true
+		},
+		{
+			"check": "Door header matches adjoining painted-wall material",
+			"passed": true
+		}
+	],
+	"failures": 0,
+	"passed": true
+}
