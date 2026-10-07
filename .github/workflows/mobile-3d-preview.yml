@@ -18,10 +18,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build-test-deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}mobile-3d-movement/
+  build-test:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -40,7 +37,6 @@ jobs:
           set -euo pipefail
           curl -fL --retry 3 -o /tmp/godot.zip https://github.com/godotengine/godot-builds/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
           unzip -q /tmp/godot.zip -d /tmp/godot
-          echo /tmp/godot >> "${GITHUB_PATH}"
 
       - name: Import candidate and test CharacterBody3D movement
         run: |
@@ -61,6 +57,18 @@ jobs:
             git commit -m "Build cloud-test mobile 3D movement preview"
             git push origin HEAD:experiment/mobile-3d-movement
           fi
+
+  deploy-preview:
+    needs: build-test
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: experiment/mobile-3d-movement
+          fetch-depth: 0
 
       - name: Check out current live main
         uses: actions/checkout@v4
