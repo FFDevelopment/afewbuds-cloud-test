@@ -14,7 +14,7 @@ east=module('east_builder',ROOT/'tools/east_expansion_v1/build.py')
 
 def patch_neighborhood(source:str) -> str:
     source=source.replace(
-        'var couch_stand := Vector3.ZERO\\n',
+        'var couch_stand := Vector3.ZERO\n',
         '''var couch_stand := Vector3.ZERO
 var physics_body: CharacterBody3D
 var physics_obstacle_root: Node3D
@@ -24,8 +24,8 @@ const PHYSICS_MAP:=Rect2(-32,-36,233,75)
     assert 'var physics_body: CharacterBody3D' in source
 
     source=source.replace(
-        '\\t_build_block()\\n\\tweather=',
-        '\\t_build_block()\\n\\t_build_physics_walk()\\n\\tweather=',1)
+        '\t_build_block()\n\tweather=',
+        '\t_build_block()\n\t_build_physics_walk()\n\tweather=',1)
     assert source.count('_build_physics_walk()')>=1
 
     physics_helpers=r'''
@@ -96,23 +96,23 @@ func _stop_physics_walk() -> void:
     source=source.replace('func _build_controls() -> void:',physics_helpers+'func _build_controls() -> void:',1)
 
     source=source.replace(
-        '\\thost.camera.position.y=WALK_EYE_HEIGHT\\n\\thost.camera.fov=78.0\\n',
-        '\\thost.camera.position.y=WALK_EYE_HEIGHT\\n\\thost.camera.fov=78.0\\n\\t_sync_physics_from_camera()\\n\\tphysics_body.enabled=true\\n',1)
+        '\thost.camera.position.y=WALK_EYE_HEIGHT\n\thost.camera.fov=78.0\n',
+        '\thost.camera.position.y=WALK_EYE_HEIGHT\n\thost.camera.fov=78.0\n\t_sync_physics_from_camera()\n\tphysics_body.enabled=true\n',1)
 
     source=source.replace(
-        'func end_walk() -> void:\\n\\tif not active: return\\n\\tactive=false\\n',
-        'func end_walk() -> void:\\n\\tif not active: return\\n\\tactive=false\\n\\t_stop_physics_walk()\\n',1)
+        'func end_walk() -> void:\n\tif not active: return\n\tactive=false\n',
+        'func end_walk() -> void:\n\tif not active: return\n\tactive=false\n\t_stop_physics_walk()\n',1)
 
     source=source.replace(
-        '\\t\\t_collect_map_colliders(self)\\n\\t\\tcollision_timer=0.3\\n',
-        '\\t\\t_collect_map_colliders(self)\\n\\t\\t_rebuild_physics_obstacles()\\n\\t\\tcollision_timer=0.3\\n',1)
+        '\t\t_collect_map_colliders(self)\n\t\tcollision_timer=0.3\n',
+        '\t\t_collect_map_colliders(self)\n\t\t_rebuild_physics_obstacles()\n\t\tcollision_timer=0.3\n',1)
 
     source=source.replace(
-        '\\tif blocked:\\n\\t\\tpointer=-99\\n\\t\\tpad.release()\\n\\t\\treturn\\n',
-        '\\tif blocked:\\n\\t\\tpointer=-99\\n\\t\\tpad.release()\\n\\t\\t_stop_physics_walk()\\n\\t\\treturn\\n',1)
+        '\tif blocked:\n\t\tpointer=-99\n\t\tpad.release()\n\t\treturn\n',
+        '\tif blocked:\n\t\tpointer=-99\n\t\tpad.release()\n\t\t_stop_physics_walk()\n\t\treturn\n',1)
 
-    start=source.index('\\tvar turn:=float(Input.is_physical_key_pressed(KEY_LEFT))')
-    end=source.index('\\thost.view_label.text="Apartment" if _indoors(host.camera.position) else "Neighborhood"',start)
+    start=source.index('\tvar turn:=float(Input.is_physical_key_pressed(KEY_LEFT))')
+    end=source.index('\thost.view_label.text="Apartment" if _indoors(host.camera.position) else "Neighborhood"',start)
     movement=r'''	var turn:=float(Input.is_physical_key_pressed(KEY_LEFT))-float(Input.is_physical_key_pressed(KEY_RIGHT))
 	host.camera.rotation.y+=turn*delta*1.65
 	var movement: Vector2=pad.value
@@ -147,8 +147,8 @@ func _stop_physics_walk() -> void:
     source=source[:start]+movement+source[end:]
 
     source=source.replace(
-        'host.status_label.text="Relaxing on the couch. Move to stand up." if couch_seated else "Back on your feet."\\n',
-        'host.status_label.text="Relaxing on the couch. Move to stand up." if couch_seated else "Back on your feet."\\n\\tif physics_ready and not couch_seated:_sync_physics_from_camera()\\n',1)
+        'host.status_label.text="Relaxing on the couch. Move to stand up." if couch_seated else "Back on your feet."\n',
+        'host.status_label.text="Relaxing on the couch. Move to stand up." if couch_seated else "Back on your feet."\n\tif physics_ready and not couch_seated:_sync_physics_from_camera()\n',1)
 
     source=source.replace(
         'host.status_label.text="Walk through the open doorway. You can close the door from either side."',
@@ -236,22 +236,22 @@ def main():
         'segments':segments
     }
     recipe_path=ROOT/'runtime/mobile-3d-v1.patch.json'
-    recipe_path.write_text(json.dumps(recipe,separators=(',',':'))+'\\n',newline='\\n')
+    recipe_path.write_text(json.dumps(recipe,separators=(',',':'))+'\n',newline='\n')
     assert east.fit.read_recipe(recipe_path)==built
 
     loader=(ROOT/'shared/afb-runtime-kobi-v1.js').read_text()
     loader=loader.replace('kobi-v1','mobile-3d-v1').replace('AFB_RUNTIME_KOBI_V1','AFB_RUNTIME_MOBILE_3D_V1')
-    loader=re.sub(r'patch\\.json\\?v=\\d+','patch.json?v=1',loader)
-    (ROOT/'shared/afb-runtime-mobile-3d-v1.js').write_text(loader,newline='\\n')
+    loader=re.sub(r'patch\.json\?v=\d+','patch.json?v=1',loader)
+    (ROOT/'shared/afb-runtime-mobile-3d-v1.js').write_text(loader,newline='\n')
 
     release='0.7.9-beta.19-cloudtest.99-mobile3d.1'
     index=(ROOT/'index.html').read_text()
     index=index.replace('kobi-v1','mobile-3d-v1').replace('AFB_RUNTIME_KOBI_V1','AFB_RUNTIME_MOBILE_3D_V1')
-    index=re.sub(r'afb-runtime-mobile-3d-v1\\.js\\?v=\\d+','afb-runtime-mobile-3d-v1.js?v=1',index)
-    index=re.sub(r'0\\.7\\.9-beta\\.19-cloudtest\\.(?:98-kobi|99-mobile3d)\\.\\d+',release,index)
-    index=re.sub(r'"fileSizes":\\{[^}]*\\}',f'"fileSizes":{{"index-mobile-3d-v1.pck":{len(built)},"index.wasm":{(ROOT/"index.wasm").stat().st_size}}}',index,count=1)
+    index=re.sub(r'afb-runtime-mobile-3d-v1\.js\?v=\d+','afb-runtime-mobile-3d-v1.js?v=1',index)
+    index=re.sub(r'0\.7\.9-beta\.19-cloudtest\.(?:98-kobi|99-mobile3d)\.\d+',release,index)
+    index=re.sub(r'"fileSizes":\{[^}]*\\}',f'"fileSizes":{{"index-mobile-3d-v1.pck":{len(built)},"index.wasm":{(ROOT/"index.wasm").stat().st_size}}}',index,count=1)
     index=index.replace('</title>',' · MOBILE 3D TEST</title>',1)
-    (ROOT/'index.html').write_text(index,newline='\\n')
+    (ROOT/'index.html').write_text(index,newline='\n')
 
     version=json.loads((ROOT/'version.json').read_text())
     version['release_id']=release
@@ -264,10 +264,10 @@ def main():
         'save_schema':'unchanged'
     }
     version['runtime_delivery']='SHA-256-verified mobile-3d-v1 delta over .98-kobi.1'
-    (ROOT/'version.json').write_text(json.dumps(version,indent=2)+'\\n',newline='\\n')
+    (ROOT/'version.json').write_text(json.dumps(version,indent=2)+'\n',newline='\n')
     (ROOT/'BUILD_VERSION.txt').write_text(
-        'AFewBuds Cloud Test\\nGame build: 0.7.9-beta.19\\nWeb release: '+release+
-        '\\nRuntime: Experimental mobile CharacterBody3D movement on .98-kobi.1\\n',newline='\\n')
+        'AFewBuds Cloud Test\nGame build: 0.7.9-beta.19\nWeb release: '+release+
+        '\nRuntime: Experimental mobile CharacterBody3D movement on .98-kobi.1\n',newline='\n')
 
     receipt={
         'baseline_sha256':expected,
@@ -278,7 +278,7 @@ def main():
         'unchanged_entries':len(before)-len(changed),
         'reconstruction_verified':True
     }
-    (HERE/'build_receipt.json').write_text(json.dumps(receipt,indent=2)+'\\n',newline='\\n')
+    (HERE/'build_receipt.json').write_text(json.dumps(receipt,indent=2)+'\n',newline='\n')
     print(json.dumps(receipt))
 
 if __name__=='__main__':main()
