@@ -141,7 +141,7 @@ func _stop_physics_walk() -> void:
         'if node==door_pivot:return',1)
     source=source.replace(
         'func _collect_map_colliders(node: Node) -> void:\n',
-        'func _collect_map_colliders(node: Node) -> void:\n\tif node==physics_obstacle_root or node==physics_body or node==physics_door_body:return\n',1)
+        'func _collect_map_colliders(node: Node) -> void:\n\tif node==physics_obstacle_root or node==physics_body or node==physics_door_body or node==police_station:return\n',1)
     source=source.replace(
         '\tdoor_busy=true;door_pass_through=true;collision_timer=0.0\n\tdoor_open=not door_open\n',
         '\tdoor_busy=true;door_pass_through=true;collision_timer=0.0\n\t_set_physics_door_closed(false)\n\tdoor_open=not door_open\n',1)
@@ -168,23 +168,8 @@ func _stop_physics_walk() -> void:
 		if movement.length()>0.15:_toggle_couch()
 		else:movement=Vector2.ZERO
 	if not couch_seated and bench_seating.seated<0:
-		var step:Vector3=Basis(Vector3.UP,host.camera.rotation.y)*Vector3(movement.x,0,movement.y)*minf(delta,.05)*3.4
-		var station_now:bool=police_station!=null and police_station.covers(host.camera.global_position)
-		var station_next:bool=police_station!=null and police_station.covers(host.camera.global_position+step)
-		if station_now or station_next:
-			_stop_physics_walk()
-			var local:Vector3=host.camera.position-ORIGIN
-			var next:=local+Vector3(step.x,0,0)
-			if _walkable(next):local=next
-			next=local+Vector3(0,0,step.z)
-			if _walkable(next):local=next
-			local.y=(police_station.eye_height(ORIGIN+local) if police_station!=null and police_station.covers(ORIGIN+local) else WALK_EYE_HEIGHT)-ORIGIN.y
-			host.camera.position=ORIGIN+local
-			_sync_physics_from_camera()
-		else:
-			physics_body.enabled=true
-			physics_body.drive(movement,host.camera.rotation.y)
-			_sync_camera_from_physics()
+		physics_body.drive(movement,host.camera.rotation.y)
+		_sync_camera_from_physics()
 '''
     source=source[:start]+movement+source[end:]
 
@@ -200,10 +185,56 @@ func _stop_physics_walk() -> void:
         'MobilePhysicsPlayer','_rebuild_physics_obstacles()','physics_body.drive',
         'MobilePhysicsApartmentDoor','_set_physics_door_closed(false)',
         'physics_obstacle_signature','_physics_signature()',
-        'if node==door_pivot:return','node==physics_obstacle_root',
+        'if node==door_pivot:return','node==physics_obstacle_root','node==police_station',
+        'physics_body.drive(movement,host.camera.rotation.y)',
         '3D PHYSICS TEST','_sync_physics_from_camera()'
     ]:
         assert required in source,required
+    return source
+
+
+def patch_station(source:str) -> str:
+    if 'func build_physics() -> void:' in source:
+        return source
+    source=source.replace(
+        '\tflush()\n\nfunc ground_rooms() -> void:',
+        '\tflush()\n\tbuild_physics()\n\nfunc ground_rooms() -> void:',1)
+    physics=r'''
+func build_physics() -> void:
+	if has_node("StationStructure"):return
+	var body:=StaticBody3D.new()
+	body.name="StationStructure"
+	body.collision_layer=1
+	body.collision_mask=4
+	add_child(body)
+	for bounds in colliders:add_box_collision(body,bounds)
+	for entry in parts:
+		if entry.id in ["GroundFloor","UpperFloorWest","UpperFloorNorth","UpperFloorSouth","TopLanding","Roof"]:
+			add_box_collision(body,entry.bounds)
+	# Continuous ramp under the visible treads: the same capsule walks both
+	# floors without camera-height teleporting or per-step collision chatter.
+	var ramp:=ConvexPolygonShape3D.new()
+	var vertices:=PackedVector3Array()
+	for x in [19.2,23.8]:
+		vertices.append(point(x,-.1,20.5));vertices.append(point(x,0,20.5))
+		vertices.append(point(x,-.1,13.5));vertices.append(point(x,STORY,13.5))
+	ramp.points=vertices
+	var ramp_shape:=CollisionShape3D.new()
+	ramp_shape.name="StairRamp"
+	ramp_shape.shape=ramp
+	body.add_child(ramp_shape)
+
+func add_box_collision(body:StaticBody3D,bounds:AABB) -> void:
+	var collision:=CollisionShape3D.new()
+	var shape:=BoxShape3D.new()
+	shape.size=bounds.size
+	collision.shape=shape
+	collision.position=bounds.get_center()
+	body.add_child(collision)
+
+'''
+    source=source.replace('func covers(at:Vector3) -> bool:',physics+'func covers(at:Vector3) -> bool:',1)
+    assert 'StationStructure' in source and 'StairRamp' in source
     return source
 
 def main():
@@ -220,15 +251,22 @@ def main():
     before={n:b for n,b,f in entries}
 
     neighborhood=patch_neighborhood(before['scripts/neighborhood.gd'].decode())
+    station=patch_station(before['scripts/police_station.gd'].decode())
+    door=(HERE/'interior_door_physics.gd').read_bytes()
+    replacements={
+        'scripts/neighborhood.gd':neighborhood.encode(),
+        'scripts/police_station.gd':station.encode(),
+        'scripts/interior_door.gd':door,
+    }
     updated=[]
     for n,b,f in entries:
-        updated.append([n,neighborhood.encode() if n=='scripts/neighborhood.gd' else b,f])
+        updated.append([n,replacements.get(n,b),f])
     updated.append(['scripts/mobile_physics_player.gd',(HERE/'mobile_physics_player.gd').read_bytes(),0])
 
     built=east.pack.rebuild(baseline,fb,updated)
     after={n:b for n,b,f in east.pack.parse(built)[1]}
     changed=[n for n in before if before[n]!=after[n]]
-    assert changed==['scripts/neighborhood.gd'],changed
+    assert changed==['scripts/interior_door.gd','scripts/neighborhood.gd','scripts/police_station.gd'],changed
     assert 'scripts/mobile_physics_player.gd' in after
 
     (out/'candidate.pck').write_bytes(built)
@@ -286,13 +324,13 @@ def main():
 
     loader=(ROOT/'shared/afb-runtime-kobi-v1.js').read_text()
     loader=loader.replace('kobi-v1','mobile-3d-v1').replace('AFB_RUNTIME_KOBI_V1','AFB_RUNTIME_MOBILE_3D_V1')
-    loader=re.sub(r'patch\.json\?v=\d+','patch.json?v=2',loader)
+    loader=re.sub(r'patch\.json\?v=\d+','patch.json?v=3',loader)
     (ROOT/'shared/afb-runtime-mobile-3d-v1.js').write_text(loader,newline='\n')
 
-    release='0.7.9-beta.19-cloudtest.99-mobile3d.2'
+    release='0.7.9-beta.19-cloudtest.99-mobile3d.3'
     index=(ROOT/'index.html').read_text()
     index=index.replace('kobi-v1','mobile-3d-v1').replace('AFB_RUNTIME_KOBI_V1','AFB_RUNTIME_MOBILE_3D_V1')
-    index=re.sub(r'afb-runtime-mobile-3d-v1\.js\?v=\d+','afb-runtime-mobile-3d-v1.js?v=2',index)
+    index=re.sub(r'afb-runtime-mobile-3d-v1\.js\?v=\d+','afb-runtime-mobile-3d-v1.js?v=3',index)
     index=re.sub(r'0\.7\.9-beta\.19-cloudtest\.(?:98-kobi|99-mobile3d)\.\d+',release,index)
     index=re.sub(r'"fileSizes":\{[^}]*\\}',f'"fileSizes":{{"index-mobile-3d-v1.pck":{len(built)},"index.wasm":{(ROOT/"index.wasm").stat().st_size}}}',index,count=1)
     index=index.replace('</title>',' · MOBILE 3D TEST</title>',1)
@@ -304,8 +342,8 @@ def main():
         'branch':'experiment/mobile-3d-movement',
         'player':'CharacterBody3D capsule',
         'input':'existing touch joystick + drag look',
-        'physics':'gravity, floor snap, real StaticBody3D obstacle proxies',
-        'police_station':'retains proven floor-aware station movement in this first migration pass',
+        'physics':'gravity, floor snap, cached StaticBody3D world proxies, physical doors and police stair ramp',
+        'police_station':'same CharacterBody3D capsule with physical walls, doors, floors and stair ramp',
         'save_schema':'unchanged'
     }
     version['runtime_delivery']='SHA-256-verified mobile-3d-v1 delta over .98-kobi.1'
