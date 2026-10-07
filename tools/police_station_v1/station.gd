@@ -90,8 +90,18 @@ func wall(id:String,x:float,z:float,length:float,along_x:bool,holes:Array=[],col
 			var trim_depth:=.03
 			var trim_offset:=.11+trim_depth/2+.003
 			var faces:Array[Vector3]=[inward] if inward!=Vector3.ZERO else [normal,-normal]
-			for face in faces:
-				box(id+"Skirting",start+axis*mid+Vector3.UP*.07+face*trim_offset,Vector3(xs[i+1]-xs[i],.14,trim_depth) if along_x else Vector3(trim_depth,.14,xs[i+1]-xs[i]),"737777",false)
+			var trim_from:float=xs[i]
+			var trim_to:float=xs[i+1]
+			# Interior wall ends butt into another wall. Stop the base at that
+			# wall's half-thickness so perpendicular skirting forms a clean corner.
+			if inward==Vector3.ZERO:
+				if is_equal_approx(trim_from,0.0):trim_from+=.11
+				if is_equal_approx(trim_to,span):trim_to-=.11
+			var trim_length:=trim_to-trim_from
+			if trim_length>.02:
+				var trim_mid:float=(trim_from+trim_to)/2
+				for face in faces:
+					box(id+"Skirting",start+axis*trim_mid+Vector3.UP*.07+face*trim_offset,Vector3(trim_length,.14,trim_depth) if along_x else Vector3(trim_depth,.14,trim_length),"737777",false)
 
 func window_at(x:float,z:float,width:float,along_x:bool,sill:float=1.15,height:float=1.6,privacy:bool=false) -> void:
 	# Width/height describe the masonry aperture, not the pane. All frame
