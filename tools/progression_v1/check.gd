@@ -178,11 +178,26 @@ func run() -> void:
 	ops.charge_water_use(2)
 	check(float(house_util.get("today_water",0.0))>house_water_before and int(house_util.get("water_uses",0))==2,"Plant water usage follows the property holding operation equipment",house_util)
 
-	# Releasing is only available once another property exists and apartment-assigned operation contents/assets are gone.
+	# Release safety: no alternate property, remaining operation contents, or
+	# paid assets still placed in the apartment may be silently discarded.
+	reset_property_state()
 	game.camera.global_position=Vector3(30,1.64,0)
+	game.property_opportunity_state["acquired"]=false
+	game.property_opportunity_state["relocated"]=false
+	check(not ops.apartment_release_blockers().is_empty(),"Apartment cannot be released without another controlled property")
+
+	game.property_opportunity_state["acquired"]=true
+	game.property_opportunity_state["relocated"]=true
+	game.location_state["active_property"]="house"
+	game.location_state["operation_assets_property"]="apartment"
+	game.grow_tent_count=3
+	check(not ops.apartment_release_blockers().is_empty(),"Paid apartment equipment blocks lease release until packed")
 	game.location_state["operation_assets_property"]="house"
 	game.location_state["operation_contents_property"]="house"
+
 	var old_apartment_balance:int=ops.apartment_balance()
+	var old_power_due:int=ops.property_utility_due("apartment","power")
+	var old_water_due:int=ops.property_utility_due("apartment","water")
 	check(ops.apartment_release_blockers().is_empty(),"Cleared apartment with another property can be released",ops.apartment_release_blockers())
 	ops.request_apartment_release()
 	check(ops.apartment_release_confirm,"Real Estate release requires explicit confirmation")
@@ -190,8 +205,13 @@ func run() -> void:
 	check(not ops.apartment_lease_active() and int(game.apartment_rent_state.get("next_due",-1))==0,"Releasing apartment stops future apartment rent")
 	check(ops.apartment_balance()==old_apartment_balance,"Existing apartment rent debt survives lease release",ops.apartment_balance())
 	var apt_power_before:float=float(apt_util.get("today_power",0.0))
+	var apt_water_before:float=float(apt_util.get("today_water",0.0))
 	ops.track_power_usage(10.0)
+	game.location_state["operation_assets_property"]="apartment"
+	ops.charge_water_use(2)
 	check(is_equal_approx(float(apt_util.get("today_power",0.0)),apt_power_before),"Released apartment stops generating new electricity charges")
+	check(is_equal_approx(float(apt_util.get("today_water",0.0)),apt_water_before),"Released apartment stops generating new water charges")
+	check(ops.property_utility_due("apartment","power")==old_power_due and ops.property_utility_due("apartment","water")==old_water_due,"Existing apartment utility debt survives lease release")
 	var door_was_open:bool=game.neighborhood.door_open
 	game.neighborhood._toggle_door()
 	await create_timer(.1).timeout
