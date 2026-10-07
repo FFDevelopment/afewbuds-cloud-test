@@ -681,6 +681,7 @@ def main():
 
     version=json.loads((ROOT/'version.json').read_text())
     version['release_id']=release
+    version['paused_heat_decay']='100 Heat over 180 real minutes'
     version['mobile_3d_movement']={
         'branch':'experiment/mobile-3d-movement',
         'player':'CharacterBody3D capsule',
