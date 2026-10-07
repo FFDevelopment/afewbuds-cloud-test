@@ -8,6 +8,7 @@ var computer_context := ""
 var management_app := ""
 var rendering_management := false
 var last_notice := -1
+var apartment_release_confirm := false
 const APT_PC := Vector3(4.15,1.35,4.35)
 const HOUSE_PC := Vector3(26.35,1.35,1.65)
 const CHECKOUT := Vector3(14,1.3,3)
@@ -22,7 +23,10 @@ func setup(owner: Node3D) -> void:
 	host.location_state["carried_fertilizer"]=maxi(0,int(host.location_state.get("carried_fertilizer",0)))
 	if not host.location_state.has("active_property"):host.location_state["active_property"]="apartment"
 	if not host.apartment_rent_state.has("next_due"):
-		host.apartment_rent_state={"next_due":host.game_day+14,"balance":0,"first_unpaid":0}
+		host.apartment_rent_state={"next_due":host.game_day+14,"balance":0,"first_unpaid":0,"lease_active":true}
+		host._save_game()
+	elif not host.apartment_rent_state.has("lease_active"):
+		host.apartment_rent_state["lease_active"]=true
 		host._save_game()
 	crew=load("res://scripts/crew_phone.gd").new();crew.setup(world)
 	make_computer("Apartment",APT_PC,true)
@@ -232,7 +236,7 @@ func seeds() -> void:
 	ui.button("BACK TO CHECKOUT",market)
 func equipment() -> void:
 	clear("CENTRAL MARKET — EQUIPMENT")
-	if rent_overdue():ui.label("Apartment rent is overdue. Pay it in Phone → Illegal Businesses → Bills or your apartment computer → Bills to resume new equipment orders. Seeds, fertilizer and sales remain available.")
+	if rent_overdue():ui.label("A property balance is overdue. Pay it in Phone → Real Estate or Bills to resume new equipment orders. Seeds, fertilizer and sales remain available.")
 	ui.label("Delivery location: %s. Orders wait for installation at the active property computer." % active_property().to_upper())
 	if host.dealer_locker_level<4:
 		var level: int=host.dealer_locker_level+1
@@ -348,10 +352,30 @@ func house_state() -> Dictionary:
 	if not host.property_opportunity_state is Dictionary:host.property_opportunity_state={}
 	return host.property_opportunity_state
 
-func balance() -> int:
-	if active_property()=="house":
-		return maxi(0,int(house_state().get("balance",0)))
+func apartment_lease_active() -> bool:
+	return bool(host.apartment_rent_state.get("lease_active",true))
+
+func apartment_balance() -> int:
 	return maxi(0,int(host.apartment_rent_state.get("balance",0)))
+
+func house_balance() -> int:
+	return maxi(0,int(house_state().get("balance",0)))
+
+func balance() -> int:
+	return apartment_balance()+house_balance()
+
+func _update_apartment_rent() -> bool:
+	if not apartment_lease_active():return false
+	var due:int=int(host.apartment_rent_state.get("next_due",host.game_day+14))
+	if due<=0:due=host.game_day+14
+	var changed:=false
+	while host.game_day>=due:
+		if apartment_balance()==0:host.apartment_rent_state["first_unpaid"]=due
+		host.apartment_rent_state["balance"]=apartment_balance()+600
+		due+=14
+		changed=true
+	host.apartment_rent_state["next_due"]=due
+	return changed
 
 func _update_house_payment() -> bool:
 	var state:=house_state()
@@ -363,90 +387,169 @@ func _update_house_payment() -> bool:
 	if due<=0:due=host.game_day+7
 	var changed:=false
 	while host.game_day>=due:
-		if int(state.get("balance",0))==0:state["first_unpaid"]=due
+		if house_balance()==0:state["first_unpaid"]=due
 		var amount:=600 if agreement=="rent" else 1000
 		if agreement=="lease":
-			var remaining:=maxi(0,int(state.get("ownership_total",18500))-int(state.get("equity_paid",0))-int(state.get("balance",0)))
+			var remaining:=maxi(0,int(state.get("ownership_total",18500))-int(state.get("equity_paid",0))-house_balance())
 			amount=mini(amount,remaining)
-		if amount>0:state["balance"]=int(state.get("balance",0))+amount
+		if amount>0:state["balance"]=house_balance()+amount
 		due+=7
 		changed=true
 		if agreement=="lease" and amount<=0:break
 	state["next_due"]=due
 	return changed
 
+func _apartment_overdue() -> bool:
+	if apartment_balance()<=0:return false
+	var first:int=int(host.apartment_rent_state.get("first_unpaid",host.game_day))
+	return host.game_day>first+3
+
+func _house_overdue() -> bool:
+	if house_balance()<=0:return false
+	var first:int=int(house_state().get("first_unpaid",host.game_day))
+	return host.game_day>first+3
+
 func update(_delta: float) -> void:
 	crew.update(_delta)
 	if not host.phone_open and not is_open():computer_context=""
-	var changed:=false
-	if active_property()=="house":
-		changed=_update_house_payment()
-	else:
-		var due: int=int(host.apartment_rent_state.get("next_due",host.game_day+14))
-		while host.game_day>=due:
-			if balance()==0:host.apartment_rent_state["first_unpaid"]=due
-			host.apartment_rent_state.balance=balance()+600;due+=14;changed=true
-		host.apartment_rent_state.next_due=due
+	var changed:bool=_update_apartment_rent()
+	changed=_update_house_payment() or changed
 	if changed:host._save_game()
 	if last_notice==host.game_day:return
-	if active_property()=="house":
-		var state:=house_state()
-		var due:=int(state.get("next_due",0))
-		if balance()>0 or (due>0 and due-host.game_day<=2):
+	var apartment_due:int=apartment_balance()
+	var house_due:int=house_balance()
+	if apartment_due>0 or house_due>0:
+		last_notice=host.game_day
+		host.status_label.text="Property balances: Apartment $%d · House $%d. Manage them in Phone > Real Estate." % [apartment_due,house_due]
+		return
+	if apartment_lease_active():
+		var apartment_next:int=int(host.apartment_rent_state.get("next_due",host.game_day+14))
+		if apartment_next-host.game_day<=3:
 			last_notice=host.game_day
-			host.status_label.text=("House payment: $%d due." % balance()) if balance()>0 else ("House payment due on Day %d." % due)
-	else:
-		var due:=int(host.apartment_rent_state.get("next_due",host.game_day+14))
-		if due-host.game_day<=3 or balance()>0:
-			last_notice=host.game_day
-			host.status_label.text="Apartment rent: $%d due. Pay in Phone → Illegal Businesses → Bills or your property computer → Bills." % balance() if balance()>0 else "Apartment rent: $600 due on Day %d." % due
+			host.status_label.text="Apartment rent: $600 due on Day %d. Phone > Real Estate." % apartment_next
+			return
+	var state:=house_state()
+	var house_next:int=int(state.get("next_due",0))
+	if bool(state.get("relocated",false)) and house_next>0 and house_next-host.game_day<=2 and not bool(state.get("owned",false)):
+		last_notice=host.game_day
+		host.status_label.text="House payment due on Day %d. Phone > Real Estate." % house_next
 
-func pay_rent() -> void:
-	var amount:=balance()
+func pay_apartment_rent() -> void:
+	var amount:=apartment_balance()
 	if amount<=0 or host.cash<amount:return
 	host.cash-=amount
-	if active_property()=="house":
-		var state:=house_state()
-		state["balance"]=0
-		state["first_unpaid"]=0
-		if str(state.get("agreement",""))=="lease":
-			state["equity_paid"]=mini(int(state.get("ownership_total",18500)),int(state.get("equity_paid",0))+amount)
-			if int(state["equity_paid"])>=int(state.get("ownership_total",18500)):
-				state["owned"]=true
-				state["next_due"]=0
-			host._record_daily_expense("House payment",amount)
-	else:
-		host.apartment_rent_state.balance=0
-		host.apartment_rent_state.first_unpaid=0
-		host._record_daily_expense("Apartment rent",amount)
+	host.apartment_rent_state["balance"]=0
+	host.apartment_rent_state["first_unpaid"]=0
+	host._record_daily_expense("Apartment rent",amount)
 	host._update_cash_ui();host._save_game();host._refresh_phone()
-	host.status_label.text="Property payment paid: $%d." % amount
+	host.status_label.text="Apartment balance paid: $%d." % amount
+
+func pay_house_payment() -> void:
+	var amount:=house_balance()
+	if amount<=0 or host.cash<amount:return
+	var state:=house_state()
+	host.cash-=amount
+	state["balance"]=0
+	state["first_unpaid"]=0
+	if str(state.get("agreement",""))=="lease":
+		state["equity_paid"]=mini(int(state.get("ownership_total",18500)),int(state.get("equity_paid",0))+amount)
+		if int(state["equity_paid"])>=int(state.get("ownership_total",18500)):
+			state["owned"]=true
+			state["next_due"]=0
+	host._record_daily_expense("House payment",amount)
+	host._update_cash_ui();host._save_game();host._refresh_phone()
+	host.status_label.text="House balance paid: $%d." % amount
+
+func pay_rent() -> void:
+	if active_property()=="house" and house_balance()>0:pay_house_payment()
+	elif apartment_balance()>0:pay_apartment_rent()
+
+func request_apartment_release() -> void:
+	if not bool(house_state().get("relocated",false)) or not apartment_lease_active():return
+	apartment_release_confirm=true
+	host._refresh_phone()
+
+func cancel_apartment_release() -> void:
+	apartment_release_confirm=false
+	host._refresh_phone()
+
+func confirm_apartment_release() -> void:
+	if not bool(house_state().get("relocated",false)) or not apartment_lease_active():return
+	host.apartment_rent_state["lease_active"]=false
+	host.apartment_rent_state["released_day"]=host.game_day
+	host.apartment_rent_state["next_due"]=0
+	house_state()["keep_apartment"]=false
+	apartment_release_confirm=false
+	host._save_game()
+	host._refresh_phone()
+	host.status_label.text="Apartment lease released. No new apartment rent will accrue; any existing apartment balance remains due."
+
+func _property_label(parent:VBoxContainer,text_value:String,size:int=18) -> Label:
+	var item:=Label.new()
+	item.text=text_value
+	item.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	item.add_theme_font_size_override("font_size",size)
+	parent.add_child(item)
+	return item
+
+func _property_button(parent:VBoxContainer,text_value:String,callback:Callable,disabled:bool=false) -> Button:
+	var item:=Button.new()
+	item.text=text_value
+	item.custom_minimum_size.y=54
+	item.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	item.disabled=disabled
+	item.pressed.connect(callback)
+	parent.add_child(item)
+	return item
+
+func real_estate_ui(parent:VBoxContainer) -> void:
+	_property_label(parent,"PROPERTY PORTFOLIO",24)
+	_property_label(parent,"Active operation: %s" % active_property().capitalize(),18)
+
+	var apartment_status:String="LEASE ACTIVE" if apartment_lease_active() else "LEASE RELEASED"
+	var apartment_copy:String="APARTMENT · "+apartment_status
+	if apartment_lease_active():
+		apartment_copy+="\nRent: $600 every 14 game days · Next: Day %d" % int(host.apartment_rent_state.get("next_due",host.game_day+14))
+	else:
+		apartment_copy+="\nNo future apartment rent accrues."
+	apartment_copy+="\nOutstanding balance: $%d" % apartment_balance()
+	if active_property()=="apartment":apartment_copy+="\nACTIVE OPERATION"
+	_property_label(parent,apartment_copy,19)
+	if apartment_balance()>0:
+		_property_button(parent,"PAY APARTMENT BALANCE · $%d" % apartment_balance(),pay_apartment_rent,host.cash<apartment_balance())
+	if apartment_lease_active() and bool(house_state().get("relocated",false)):
+		if apartment_release_confirm:
+			var warning:=_property_label(parent,"RELEASE APARTMENT LEASE?\nFuture $600/14-day rent stops immediately. Any balance already owed remains due.",17)
+			warning.modulate=Color("e6b38a")
+			_property_button(parent,"CONFIRM RELEASE APARTMENT LEASE",confirm_apartment_release)
+			_property_button(parent,"KEEP APARTMENT",cancel_apartment_release)
+		else:
+			_property_button(parent,"RELEASE APARTMENT LEASE…",request_apartment_release)
+
+	var state:=house_state()
+	if not bool(state.get("acquired",false)):
+		_property_label(parent,"HOUSE · NOT ACQUIRED\nComplete the Chapter 4 expansion requirements to unlock the property opportunity.",19)
+	else:
+		var agreement:=str(state.get("agreement",""))
+		var house_copy:String="HOUSE · "+({"rent":"RENT","lease":"LEASE TO OWN","purchase":"OWNED"}.get(agreement,"ACQUIRED"))
+		if active_property()=="house":house_copy+=" · ACTIVE OPERATION"
+		if agreement=="rent":
+			house_copy+="\n$600 every 7 game days · Next: Day %d" % int(state.get("next_due",0))
+		elif agreement=="lease":
+			house_copy+="\n$1000 every 7 game days · Next: Day %d\nEquity: $%d / $%d" % [int(state.get("next_due",0)),int(state.get("equity_paid",0)),int(state.get("ownership_total",18500))]
+		else:
+			house_copy+="\nNo recurring house payment."
+		house_copy+="\nOutstanding balance: $%d" % house_balance()
+		_property_label(parent,house_copy,19)
+		if house_balance()>0:
+			_property_button(parent,"PAY HOUSE BALANCE · $%d" % house_balance(),pay_house_payment,host.cash<house_balance())
 
 func rent_ui(parent: VBoxContainer) -> void:
-	var text := Label.new()
-	if active_property()=="house":
-		var state:=house_state()
-		var agreement:=str(state.get("agreement",""))
-		if bool(state.get("owned",false)) or agreement=="purchase":
-			text.text="HOUSE · OWNED\nNo recurring property payment."
-		elif agreement=="lease":
-			text.text="HOUSE · LEASE TO OWN · $1000 EVERY 7 GAME DAYS\nNext payment: Day %d · Balance: $%d\nEQUITY: $%d / $%d" % [int(state.get("next_due",0)),balance(),int(state.get("equity_paid",0)),int(state.get("ownership_total",18500))]
-		else:
-			text.text="HOUSE RENT · $600 EVERY 7 GAME DAYS\nNext payment: Day %d · Balance: $%d" % [int(state.get("next_due",0)),balance()]
-		var first:int=int(state.get("first_unpaid",0))
-		if first>0:text.text+="\n"+("OVERDUE" if host.game_day>first+3 else "Grace period through Day %d" % (first+3))
-	else:
-		var first: int=int(host.apartment_rent_state.get("first_unpaid",0))
-		text.text="APARTMENT RENT · $600 EVERY 14 GAME DAYS\nNext payment: Day %d · Balance: $%d" % [int(host.apartment_rent_state.get("next_due",host.game_day+14)),balance()]
-		if first>0:text.text+="\n"+("OVERDUE" if host.game_day>first+3 else "Grace period through Day %d" % (first+3))
-	text.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
-	parent.add_child(text)
-	if balance()>0:
-		var pay := Button.new();pay.text="PAY PROPERTY BALANCE · $%d" % balance();pay.custom_minimum_size.y=54
-		pay.disabled=host.cash<balance();pay.pressed.connect(pay_rent);parent.add_child(pay)
+	real_estate_ui(parent)
+
 
 func equipment_ui(parent: VBoxContainer) -> void:
-	var hint := Label.new();hint.text="Order equipment at Central Market, then install paid deliveries here. Delivery location: Apartment."
+	var hint := Label.new();hint.text="Order equipment at Central Market, then install paid deliveries here. Delivery location: %s." % active_property().capitalize()
 	hint.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;parent.add_child(hint)
 	for name in host.location_state.deliveries:
 		if str(host.location_state.deliveries[name].get("kind",""))=="dealer":
@@ -458,13 +561,14 @@ func equipment_ui(parent: VBoxContainer) -> void:
 			var action := Button.new();action.text="INSTALL "+str(name);action.custom_minimum_size.y=54;action.pressed.connect(install.bind(str(name)));parent.add_child(action)
 
 func production() -> void:
-	if target()!="apartment_computer":return
+	var expected_target:String="house_computer" if computer_context=="house" else "apartment_computer"
+	if target()!=expected_target:return
 	close();world.in_station=true
 	world.walk_position=host.camera.position;world.walk_rotation=host.camera.rotation
 	host._open_system_control_panel()
 func order_summary(parent: VBoxContainer) -> void:
 	var note := Label.new()
-	note.text="CENTRAL MARKET: %d seed(s), %d fertilizer uses ready for pickup.\nCARRIED: %d seed(s), %d fertilizer uses. Deposit carried supplies at your apartment computer." % [total(host.location_state.pickup_seeds),int(host.location_state.pickup_fertilizer),total(host.location_state.carried_seeds),int(host.location_state.carried_fertilizer)]
+	note.text="CENTRAL MARKET: %d seed(s), %d fertilizer uses ready for pickup.\nCARRIED: %d seed(s), %d fertilizer uses. Deposit carried supplies at your active property computer." % [total(host.location_state.pickup_seeds),int(host.location_state.pickup_fertilizer),total(host.location_state.carried_seeds),int(host.location_state.carried_fertilizer)]
 	note.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;parent.add_child(note)
 
 func order_dealer() -> void:
@@ -485,9 +589,7 @@ func refresh_management() -> bool:
 	return false
 
 func rent_overdue() -> bool:
-	if balance()<=0:return false
-	var first:int=int(house_state().get("first_unpaid",host.game_day)) if active_property()=="house" else int(host.apartment_rent_state.get("first_unpaid",host.game_day))
-	return host.game_day>first+3
+	return _apartment_overdue() or _house_overdue()
 
 func order_fertilizer() -> void:
 	if host.tutorial_active or host.cash<45 or int(host.location_state.pickup_fertilizer)>45:return
