@@ -1,6 +1,13 @@
 extends Node
 ## Container inventory shared by desktop and mobile. Existing production counters
 ## are live adapters, so workers and sales cannot diverge from displayed stock.
+var inventory_scrolls:Array[ScrollContainer]=[]
+var touch_scroll:ScrollContainer
+var touch_card:Button
+var touch_index:=-1
+var touch_start:=Vector2.ZERO
+var touch_last:=Vector2.ZERO
+var touch_dragged:=false
 var guide:Node
 var host:Node3D
 var state:Dictionary
@@ -543,6 +550,8 @@ func select_item(source:String,item:String) -> void:
  selected=item;selected_source=source;selected_revision=revision
  render()
 func render() -> void:
+ inventory_scrolls.clear()
+ touch_scroll=null;touch_card=null;touch_index=-1
  clear(columns);clear(inspector);packing_action=null
  var screen:Vector2=host.get_viewport().get_visible_rect().size
  var compact:bool=screen.y<500
@@ -617,6 +626,8 @@ func render_inventory(id:String) -> void:
   button("+ Add Stock",func():adding=true;filter_kind="All";selected="";render(),head,true).add_theme_font_size_override("font_size",14)
  render_capacity(id,column)
  var scroll:=ScrollContainer.new();scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED;scroll.size_flags_vertical=Control.SIZE_EXPAND_FILL;column.add_child(scroll)
+ inventory_scrolls.append(scroll)
+ scroll.get_v_scroll_bar().custom_minimum_size.x=14
  var grid:=GridContainer.new();grid.columns=3 if container_id.is_empty() and host.get_viewport().get_visible_rect().size.x>=1100 and selected.is_empty() else 2
  grid.size_flags_horizontal=Control.SIZE_EXPAND_FILL;grid.add_theme_constant_override("h_separation",8);grid.add_theme_constant_override("v_separation",8);scroll.add_child(grid)
  var items:=contents(id);var keys:Array=items.keys();keys.sort_custom(func(a,b):
@@ -703,7 +714,36 @@ func commit_selection() -> void:
  var result:=transfer(selected_source,dst,selected,int(quantity.value),selected_revision)
  selected="";selected_source="";render();notice.text=str(result.reason)
 
+# Own touch gestures over cards: a swipe scrolls, only a stationary release selects.
+# Desktop mouse/wheel and controller input continue through the normal controls.
+func handle_inventory_touch(event:InputEvent) -> bool:
+ if not overlay.visible:return false
+ if event is InputEventScreenTouch:
+  if event.pressed:
+   if touch_index!=-1:return true
+   for scroll in inventory_scrolls:
+    if is_instance_valid(scroll) and scroll.get_global_rect().has_point(event.position):
+     touch_scroll=scroll;touch_index=event.index;touch_start=event.position;touch_last=event.position;touch_dragged=false;touch_card=null
+     for card in scroll.find_children("*","Button",true,false):
+      if not card.disabled and card.get_global_rect().has_point(event.position):touch_card=card;break
+     return true
+  elif event.index==touch_index:
+   var tapped:Button=touch_card if not touch_dragged else null
+   touch_scroll=null;touch_card=null;touch_index=-1
+   if is_instance_valid(tapped):tapped.pressed.emit()
+   return true
+ elif event is InputEventScreenDrag and event.index==touch_index and is_instance_valid(touch_scroll):
+  if touch_start.distance_to(event.position)>=8.0:touch_dragged=true
+  if touch_dragged:
+   var scale_y:float=maxf(absf(touch_scroll.get_global_transform().get_scale().y),0.01)
+   touch_scroll.scroll_vertical-=roundi((event.position.y-touch_last.y)/scale_y)
+  touch_last=event.position
+  return true
+ return false
+
 func _input(event:InputEvent) -> void:
+ if handle_inventory_touch(event):
+  get_viewport().set_input_as_handled();return
  if host.tutorial_panel.visible:
   var intro_scroll:ScrollContainer=host.tutorial_panel.get_child(0)
   if event is InputEventScreenTouch or event is InputEventScreenDrag or event is InputEventMouseButton or event is InputEventMouseMotion:

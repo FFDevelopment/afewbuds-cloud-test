@@ -44,6 +44,11 @@ func run():
  if pause_button!=null:pause_button.pressed.emit()
  check(game.session_paused and game.pause_overlay.visible and not game.phone_open and not game.phone_panel.visible,"Phone Pause closes the phone and opens the pause menu")
  game.phone_open=false;game.phone_panel.hide()
+ menu.on_cloud_event("offline");game._resume_gameplay()
+ check(game.session_paused and menu.cloud_locked,"Lost session verification prevents resuming gameplay")
+ menu.on_cloud_event("active");game._resume_gameplay()
+ check(not game.session_paused and not menu.cloud_locked,"Verified connection permits explicitly resuming")
+ game._pause_gameplay()
  var probe:=ExitProbe.new();root.add_child(probe);inv.session_menu=probe
  game.cash=1234
  await game._phone_safe_quit()
@@ -61,6 +66,27 @@ func run():
   inv._process(0)
   check(game.neighborhood.action.has_meta("modern_interaction"),"Mobile native interactions receive shared modern styling")
   check(game.neighborhood.action.anchor_right==1 and inv.nearby_button.anchor_right==1,"Both mobile prompt producers remain bottom-right")
+
+ game._resume_gameplay()
+ inv.overlay.show()
+ var touch_panel:=ScrollContainer.new();inv.overlay.add_child(touch_panel);touch_panel.position=Vector2(30,30);touch_panel.size=Vector2(200,140)
+ var touch_list:=VBoxContainer.new();touch_panel.add_child(touch_list)
+ var touch_button:=Button.new();touch_button.text="Touch target";touch_button.custom_minimum_size=Vector2(180,90);touch_list.add_child(touch_button)
+ var filler:=Control.new();filler.custom_minimum_size=Vector2(180,1000);touch_list.add_child(filler)
+ var taps:Array[int]=[0];touch_button.pressed.connect(func():taps[0]+=1)
+ inv.inventory_scrolls.clear();inv.inventory_scrolls.append(touch_panel)
+ for i in 3:await process_frame
+ var touch:=InputEventScreenTouch.new();touch.index=3;touch.position=touch_button.get_global_rect().get_center();touch.pressed=true
+ check(inv.handle_inventory_touch(touch),"Inventory captures a touch over an item card")
+ var drag:=InputEventScreenDrag.new();drag.index=3;drag.position=touch.position-Vector2(0,65)
+ inv.handle_inventory_touch(drag);touch.pressed=false;touch.position=drag.position;inv.handle_inventory_touch(touch)
+ check(touch_panel.scroll_vertical>0 and taps[0]==0,"Swiping item cards scrolls without selecting or transferring")
+ touch_panel.scroll_vertical=0
+ for i in 2:await process_frame
+ touch.position=touch_button.get_global_rect().get_center();touch.pressed=true;inv.handle_inventory_touch(touch);touch.pressed=false;inv.handle_inventory_touch(touch)
+ check(taps[0]==1,"Stationary touch still selects the item")
+ touch_panel.queue_free();inv.inventory_scrolls.clear();inv.overlay.hide()
+
  game.queue_free();probe.queue_free();await process_frame
  print("SESSION_UI_TEST_RESULT: ","PASS" if failures==0 else "FAIL"," checks=",checks," failures=",failures)
  quit(0 if failures==0 else 1)

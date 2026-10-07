@@ -23,9 +23,16 @@ def patch_main(s):
 		if str(JavaScriptBridge.eval("window.AFB_QUIT_SAVE_STATE || 'pending'",true))!="saved":
 			menu.quit_failed("Saving could not be confirmed. Keep this tab open and try again.")
 			return
+	if OS.has_feature("web"):
+		JavaScriptBridge.eval("window.AFB_RELEASE_STATE='pending';window.AFB_CLOUD.releasePlay().then(()=>window.AFB_RELEASE_STATE='saved').catch(()=>window.AFB_RELEASE_STATE='failed');",true)
+		var release_until:int=Time.get_ticks_msec()+15000
+		while str(JavaScriptBridge.eval("window.AFB_RELEASE_STATE",true))=="pending" and Time.get_ticks_msec()<release_until:await get_tree().process_frame
+		if str(JavaScriptBridge.eval("window.AFB_RELEASE_STATE",true))!="saved":
+			menu.quit_failed("Could not finish cloud saving. Keep this tab open and retry.")
+			return
 	menu.quit_saved()
 """+s[b:]
-    s=s.replace('func _resume_gameplay() -> void:\n','func _resume_gameplay() -> void:\n\tif inventory_system!=null and inventory_system.session_menu!=null and inventory_system.session_menu.quitting:return\n')
+    s=s.replace('func _resume_gameplay() -> void:\n','func _resume_gameplay() -> void:\n\tif inventory_system!=null and inventory_system.session_menu!=null and (inventory_system.session_menu.quitting or inventory_system.session_menu.cloud_locked):return\n')
     s=s.replace("SAVE & SLEEP / QUIT","SAVE & QUIT").replace("Sleep / safe quit","Save & quit")
     s=s.replace('\tif inventory_system!=null:inventory_system.pause_inventory()','\tif inventory_system!=null:inventory_system.pause_inventory()\n\tif inventory_system!=null and inventory_system.session_menu!=null:inventory_system.session_menu.show_page("home")',1)
     s=s.replace('\t_add_phone_dock_button(dock, "TASKS", "task")','\t_add_phone_dock_button(dock, "TASKS", "task")\n\t_add_phone_dock_button(dock, "PAUSE", "pause")')

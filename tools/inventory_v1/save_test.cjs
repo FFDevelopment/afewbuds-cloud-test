@@ -1,22 +1,2 @@
-const fs=require('node:fs');const vm=require('node:vm');const assert=require('node:assert/strict');
-const data=new Map([['live-career','untouched'],['afb_player_session','live-session']]);
-const storage={getItem:k=>data.get(k)||null,setItem:(k,v)=>data.set(k,String(v)),removeItem:k=>data.delete(k)};
-let session={account_id:'a',session_token:'fixture-a'},calls=[];
-const context={window:{AFB_API:{getPlayerSession:()=>session,rpc:async(name)=>{calls.push(name);return {exists:true,save_json:{cash:500,location_state:{}}};}}},localStorage:storage,Date,JSON,Error};
-vm.runInNewContext(fs.readFileSync('shared/afb-cloud-accountsync10.js','utf8'),context);
-(async()=>{
- const cloud=context.window.AFB_CLOUD;
- await cloud.prepareBeforeLaunch();assert.equal(JSON.parse(context.window.AFB_CLOUD_BOOT_SAVE).cash,500);
- await cloud.pushFromGame(JSON.stringify({cash:475,location_state:{container_inventory:{schema:1}}}));
- await cloud.prepareBeforeLaunch();assert.equal(JSON.parse(context.window.AFB_CLOUD_BOOT_SAVE).cash,475);assert.deepEqual(calls,['afb_get_save']);
- session={account_id:'b',session_token:'fixture-b'};await assert.rejects(()=>cloud.pushFromGame({cash:999}),/account changed/);await cloud.prepareBeforeLaunch();assert.equal(JSON.parse(context.window.AFB_CLOUD_BOOT_SAVE).cash,500);
- session=null;await cloud.prepareBeforeLaunch();assert.deepEqual(JSON.parse(context.window.AFB_CLOUD_BOOT_SAVE),{});
- await cloud.pushFromGame({cash:12});session={account_id:'a',session_token:'fixture-a'};await cloud.prepareBeforeLaunch();assert.equal(JSON.parse(context.window.AFB_CLOUD_BOOT_SAVE).cash,475);
- assert.equal(data.get('live-career'),'untouched');assert.equal(data.get('afb_player_session'),'live-session');
- let network=0;const apiContext={window:{AFB_CONFIG:{supabaseUrl:'https://fixture.invalid',supabasePublishableKey:'fixture'}},localStorage:storage,sessionStorage:storage,fetch:()=>{network++;throw Error('unexpected network');}};
- vm.runInNewContext(fs.readFileSync('shared/afb-api.js','utf8'),apiContext);
- for(const method of ['afb_set_save','afb_leaderboard_report'])await assert.rejects(()=>apiContext.window.AFB_API.rpc(method,{}),/cannot write/);
- assert.equal(network,0);
- const builder=fs.readFileSync('tools/mobile_3d_movement/build.py','utf8');assert(builder.includes('window.AFB_CLOUD.pushFromGame('));assert(builder.includes('user://afb_inventory_preview_save.json'));
- console.log('PREVIEW_SAVE_TEST_RESULT: PASS (copy, reload, accounts, guest, live-write guards, runtime callback)');
-})().catch(e=>{console.error(e);process.exitCode=1;});
+// Production shared-career coverage replaces the former local-only preview contract.
+require('./shared_save_test.cjs');
