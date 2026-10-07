@@ -8,7 +8,7 @@ on:
     paths-ignore:
       - ".github/workflows/bootstrap-cloud-test.yml"
   workflow_run:
-    workflows: ["Apply runtime patch", "Rebuild cloud test from main"]
+    workflows: ["Apply runtime patch", "Rebuild cloud test from main", "Mobile 3D movement preview"]
     types: [completed]
   workflow_dispatch:
 
