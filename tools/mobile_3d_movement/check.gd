@@ -120,6 +120,35 @@ func run() -> void:
 			if int(entry.floor)==0 and str(entry.id)==wall_id:
 				top=maxf(top,entry.bounds.end.y)
 		check(absf(top-station.STORY)<.01,"Downstairs "+wall_id+" wall meets upstairs floor line",top)
+
+	# Door trim must live inside the aperture, never inside masonry.
+	var door_trim_clips:Array[String]=[]
+	for entry in station.parts:
+		var trim_id:=str(entry.id)
+		if trim_id not in ["DoorJamb","DoorHeader"]:continue
+		for wall_bounds in station.wall_bounds:
+			var ox:float=minf(entry.bounds.end.x,wall_bounds.end.x)-maxf(entry.bounds.position.x,wall_bounds.position.x)
+			var oy:float=minf(entry.bounds.end.y,wall_bounds.end.y)-maxf(entry.bounds.position.y,wall_bounds.position.y)
+			var oz:float=minf(entry.bounds.end.z,wall_bounds.end.z)-maxf(entry.bounds.position.z,wall_bounds.position.z)
+			if ox>.003 and oy>.003 and oz>.003:door_trim_clips.append(trim_id)
+	check(door_trim_clips.is_empty(),"Police door jamb/header trim clears wall masonry",door_trim_clips)
+
+	var side_width_mismatches:Array[String]=[]
+	for d in station.doors:
+		if bool(d.get_meta("side_door",false)):
+			var expected_width:float=float(d.get_meta("plan_width",0.0))*.8
+			if absf(float(d.width)-expected_width)>.001:side_width_mismatches.append(str(d.name))
+	check(side_width_mismatches.is_empty(),"Side police doors match scaled wall apertures",side_width_mismatches)
+
+	# Skirting should be a thin surface strip rather than a box centered through
+	# the wall; this prevents coplanar flicker/z-fighting.
+	var buried_trim:Array[String]=[]
+	for entry in station.parts:
+		if not str(entry.id).ends_with("Skirting"):continue
+		var thin:float=minf(entry.bounds.size.x,entry.bounds.size.z)
+		if thin>.04:buried_trim.append(str(entry.id))
+	check(buried_trim.is_empty(),"Police wall-base trim is surface-mounted instead of buried",buried_trim)
+
 	var final_nosing_count:=0
 	for entry in station.parts:
 		if str(entry.id)=="StairNosing" and int(entry.floor)==0:final_nosing_count+=1
