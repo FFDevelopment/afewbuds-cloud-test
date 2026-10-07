@@ -89,7 +89,11 @@ func wall(id:String,x:float,z:float,length:float,along_x:bool,holes:Array=[],col
 			var normal:=Vector3.BACK if along_x else Vector3.RIGHT
 			var trim_depth:=.03
 			var trim_offset:=.11+trim_depth/2+.003
-			var faces:Array[Vector3]=[inward] if inward!=Vector3.ZERO else [normal,-normal]
+			var faces:Array[Vector3]=[]
+			if inward!=Vector3.ZERO:faces.append(inward)
+			else:
+				faces.append(normal)
+				faces.append(-normal)
 			var trim_from:float=xs[i]
 			var trim_to:float=xs[i+1]
 			# Interior wall ends butt into another wall. Stop the base at that
