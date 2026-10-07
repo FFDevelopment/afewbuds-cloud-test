@@ -1,4 +1,5 @@
 def patch_main(s):
+    s=s.replace('func _ready() -> void:\n','func _ready() -> void:\n\t# Recipe outputs are earned through genetics, never purchased as seeds.\n\tfor recipe in _genetics_recipe_catalog():\n\t\tseed_catalog[str(recipe.output)]["recipe_only"]=true\n',1)
     s=s.replace('var storage_level: int = 1', 'var inventory_system: Node\nvar storage_level: int = 1',1)
     s=s.replace('\tneighborhood.setup(self)\n', '\tneighborhood.setup(self)\n\tinventory_system=load("res://scripts/container_inventory.gd").new()\n\tadd_child(inventory_system)\n\tinventory_system.setup(self)\n',1)
     s=s.replace('func _any_modal_open() -> bool:\n','func _any_modal_open() -> bool:\n\tif inventory_system!=null and inventory_system.is_open():return true\n',1)

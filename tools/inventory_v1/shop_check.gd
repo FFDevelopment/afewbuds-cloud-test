@@ -95,6 +95,14 @@ func run():
  ops.manage("inventory");labels=[]
  for button in ops.ui.body.find_children("*","Button",true,false):labels.append(button.text)
  check(not labels.any(func(t):return "DEPOSIT" in t or "SUPPLIES: USE" in t),"Computer has no obsolete deposit-inventory controls")
+ ops.close();game.grower_level=99;game.cash=100000;game.location_state.pickup_seeds={}
+ var before_cash:int=game.cash
+ for recipe in game._genetics_recipe_catalog():
+  ops.order_seed(str(recipe.output))
+  check(not game.location_state.pickup_seeds.has(str(recipe.output)),"Genetics output cannot be purchased: "+str(recipe.output))
+ check(game.cash==before_cash,"Rejected genetics purchases do not charge cash")
+ ops.order_seed("Purple Dream");ops.order_seed("Blue Frost")
+ check(game.location_state.pickup_seeds.has("Purple Dream") and game.location_state.pickup_seeds.has("Blue Frost"),"Parent seeds remain available for breeding")
  ops.close();game._save_game()
  var saved:Dictionary=JSON.parse_string(FileAccess.get_file_as_string(game.SAVE_PATH))
  check(int(saved.location_state.container_inventory.backpack_level)==2,"Backpack upgrade persists in the preview save")
