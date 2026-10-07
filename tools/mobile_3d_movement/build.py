@@ -743,9 +743,9 @@ def main():
     inventory_patch=module('inventory_patch',ROOT/'tools/inventory_v1/patch.py')
     main_script=inventory_patch.patch_main(main_script)
     main_script=main_script.replace('user://bud_empire_beta_save.json','user://afb_inventory_preview_save.json')
-    save_hook='\tfile.store_string(JSON.stringify(data))\n\tfile.close()'
+    save_hook='\tfile.store_string(JSON.stringify(data))\n\tfile.flush()\n\tlast_save_ok=file.get_error()==OK\n\tfile.close()'
     assert save_hook in main_script
-    main_script=main_script.replace(save_hook,save_hook+'\n\tif OS.has_feature("web"):\n\t\tJavaScriptBridge.eval("window.AFB_CLOUD.pushFromGame("+JSON.stringify(JSON.stringify(data))+");",true)',1)
+    main_script=main_script.replace(save_hook,save_hook+'\n\tif OS.has_feature("web") and last_save_ok:\n\t\tJavaScriptBridge.eval("(()=>{const id=window.AFB_SAVE_SERIAL=(window.AFB_SAVE_SERIAL||0)+1;window.AFB_QUIT_SAVE_STATE=\'pending\';window.AFB_CLOUD.pushFromGame("+JSON.stringify(JSON.stringify(data))+").then(()=>{if(id===window.AFB_SAVE_SERIAL)window.AFB_QUIT_SAVE_STATE=\'saved\';}).catch(()=>{if(id===window.AFB_SAVE_SERIAL)window.AFB_QUIT_SAVE_STATE=\'failed\';});})();",true)',1)
     main_script=main_script.replace('brand_label.text = "AFewBuds"', 'if neighborhood != null and neighborhood.mobile_hud != null:\n\t\t\tneighborhood.mobile_hud.update_location()\n\t\telse: brand_label.text = load("res://scripts/districts.gd").heading(camera.position)')
     neighborhood=patch_neighborhood(before['scripts/neighborhood.gd'].decode())
     neighborhood=neighborhood.replace('action.visible=not target.is_empty()', 'action.visible=not target.is_empty() and not (host.inventory_system!=null and host.inventory_system.native_station_target(target))')
@@ -776,6 +776,7 @@ def main():
     updated.append(['scripts/districts.gd',(HERE/'districts.gd').read_bytes(),0])
 
     updated.append(['scripts/container_inventory.gd',(ROOT/'tools/inventory_v1/container_inventory.gd').read_bytes(),0])
+    updated.append(['scripts/session_menu.gd',(ROOT/'tools/inventory_v1/session_menu.gd').read_bytes(),0])
     updated.append(['scripts/first_day_guide.gd',(ROOT/'tools/inventory_v1/first_day_guide.gd').read_bytes(),0])
     inventory_art=sorted((ROOT/"assets/inventory").glob("*.png"))
     assert len(inventory_art)==6
@@ -843,14 +844,14 @@ def main():
 
     loader=(ROOT/'shared/afb-runtime-kobi-v1.js').read_text()
     loader=loader.replace('kobi-v1','mobile-3d-v1').replace('AFB_RUNTIME_KOBI_V1','AFB_RUNTIME_MOBILE_3D_V1')
-    loader=re.sub(r'patch\.json\?v=\d+','patch.json?v=inventory7',loader)
+    loader=re.sub(r'patch\.json\?v=\d+','patch.json?v=inventory8',loader)
     (ROOT/'shared/afb-runtime-mobile-3d-v1.js').write_text(loader,newline='\n')
 
-    release='0.7.9-beta.19-cloudtest.99-inventory.7'
+    release='0.7.9-beta.19-cloudtest.99-inventory.8'
     index=(ROOT/'index.html').read_text(encoding='utf-8')
-    index=index.replace('inventory1','inventory7').replace('inventory2','inventory7').replace('inventory3','inventory7').replace('inventory4','inventory7').replace('inventory5','inventory7').replace('inventory6','inventory7')
+    index=index.replace('inventory1','inventory8').replace('inventory2','inventory8').replace('inventory3','inventory8').replace('inventory4','inventory8').replace('inventory5','inventory8').replace('inventory6','inventory8')
     index=index.replace('kobi-v1','mobile-3d-v1').replace('AFB_RUNTIME_KOBI_V1','AFB_RUNTIME_MOBILE_3D_V1')
-    index=re.sub(r'afb-runtime-mobile-3d-v1\.js\?v=\d+','afb-runtime-mobile-3d-v1.js?v=inventory7',index)
+    index=re.sub(r'afb-runtime-mobile-3d-v1\.js\?v=\d+','afb-runtime-mobile-3d-v1.js?v=inventory8',index)
     index=re.sub(r'0\.7\.9-beta\.19-cloudtest\.(?:98-kobi|99-mobile3d|99-inventory)\.\d+',release,index)
     index=re.sub(r'"fileSizes":\{[^}]*\\}',f'"fileSizes":{{"index-mobile-3d-v1.pck":{len(built)},"index.wasm":{(ROOT/"index.wasm").stat().st_size}}}',index,count=1)
     (ROOT/'index.html').write_text(index,encoding='utf-8',newline='\n')
@@ -885,7 +886,7 @@ def main():
         'target_sha256':hashlib.sha256(built).hexdigest(),
         'target_bytes':len(built),
         'changed_existing_entries':changed,
-        'added_entries':['scripts/mobile_physics_player.gd','scripts/districts.gd','scripts/container_inventory.gd','scripts/first_day_guide.gd']+['assets/inventory/'+asset.name for asset in inventory_art],
+        'added_entries':['scripts/mobile_physics_player.gd','scripts/districts.gd','scripts/container_inventory.gd','scripts/first_day_guide.gd','scripts/session_menu.gd']+['assets/inventory/'+asset.name for asset in inventory_art],
         'unchanged_entries':len(before)-len(changed),
         'reconstruction_verified':True
     }

@@ -26,6 +26,7 @@ var collect_all_button:Button
 var confirm:Button
 var backpack_button:Button
 var phone_button:Button
+var session_menu:Node
 var nearby_button:Button
 var container_id:=""
 var adding:=false
@@ -60,6 +61,7 @@ func setup(owner:Node3D) -> void:
  ensure_state()
  build_ui()
  guide=load("res://scripts/first_day_guide.gd").new();add_child(guide);guide.setup(host,self)
+ session_menu=load("res://scripts/session_menu.gd").new();add_child(session_menu);session_menu.setup(host,self)
  if host.neighborhood.get("action")!=null:style_button(host.neighborhood.action,true)
  for work_panel in [host.trim_panel,host.bag_minigame_panel]:
   work_panel.add_theme_stylebox_override("panel",ui_style("111713","566052",16))
@@ -387,7 +389,7 @@ func sync_station_prompt(nearby:String) -> void:
   var target:Node=host.get("fp_target")
   if target!=null and native_station_target(str(target.get_meta("interaction_id",""))) :
    host.fp_prompt.text=""
-   if not nearby.is_empty():nearby_button.text+="  [E]"
+   if not nearby.is_empty():nearby_button.text+="  ["+host.get_node("/root/DesktopInput").label("interact")+"]"
  else:
   var world:Node=host.neighborhood
   if world.get("action")!=null:
@@ -397,6 +399,11 @@ func sync_station_prompt(nearby:String) -> void:
  if nearby_button.visible:host.contextual_button.hide()
 func _process(_delta:float) -> void:
  if host==null:return
+ for action in [host.contextual_button,host.door_quick_button,host.back_button]:
+  if action!=null and not action.has_meta("modern_interaction"):
+   style_button(action,true);action.set_meta("modern_interaction",true)
+ if host.neighborhood.get("action")!=null and not host.neighborhood.action.has_meta("modern_interaction"):
+  style_button(host.neighborhood.action,true);host.neighborhood.action.set_meta("modern_interaction",true)
  if is_open():_fit()
  var modal:bool=host._any_modal_open() or host.daily_report_pending or host.tutorial_active
  backpack_button.visible=not modal
@@ -479,7 +486,7 @@ func build_ui() -> void:
   icon.load_svg_from_string('<svg xmlns="http://www.w3.org/2000/svg" width="20" height="24" viewBox="0 0 20 24"><rect x="4" y="1" width="12" height="22" rx="3" fill="none" stroke="#f4f0df" stroke-width="2"/><path d="M8 4h4M8 20h4" stroke="#f4f0df" stroke-width="2"/></svg>')
   phone_button.icon=ImageTexture.create_from_image(icon)
  nearby_button=button("Open container",func():open_container(near_container()),hud,true)
- nearby_button.set_anchors_preset(Control.PRESET_CENTER_BOTTOM);nearby_button.offset_left=-180;nearby_button.offset_right=180;nearby_button.offset_top=-210;nearby_button.offset_bottom=-162
+ nearby_button.set_anchors_preset(Control.PRESET_CENTER_BOTTOM);nearby_button.offset_left=-180;nearby_button.offset_right=180;nearby_button.offset_top=-145;nearby_button.offset_bottom=-95
  if not host.has_method("_use_target"):
   nearby_button.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
   nearby_button.offset_left=-242;nearby_button.offset_right=-22;nearby_button.offset_top=-125;nearby_button.offset_bottom=-45

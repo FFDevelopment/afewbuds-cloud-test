@@ -22,7 +22,10 @@ def patch_main(s):
     s=module.patch_main(patch_stations(s))
     spec=importlib.util.spec_from_file_location("inventory_tutorial",Path(__file__).with_name("tutorial_patch.py"))
     tutorial=importlib.util.module_from_spec(spec);spec.loader.exec_module(tutorial)
-    return tutorial.patch_main(s)
+    s=tutorial.patch_main(s)
+    spec=importlib.util.spec_from_file_location("inventory_session",Path(__file__).with_name("session_patch.py"))
+    session=importlib.util.module_from_spec(spec);spec.loader.exec_module(session)
+    return session.patch_main(s)
 
 def patch_stations(s):
     s=s.replace('func _open_bagging_panel() -> void:\n','func _open_bagging_panel() -> void:\n\tif inventory_system!=null:\n\t\tinventory_system.open_container("packing")\n\t\treturn\n',1)
