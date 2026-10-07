@@ -195,6 +195,9 @@ func run() -> void:
 	game.location_state["operation_assets_property"]="house"
 	game.location_state["operation_contents_property"]="house"
 
+	apt_util["power_due"]=12
+	apt_util["water_due"]=4
+	ops._sync_legacy_utility_totals()
 	var old_apartment_balance:int=ops.apartment_balance()
 	var old_power_due:int=ops.property_utility_due("apartment","power")
 	var old_water_due:int=ops.property_utility_due("apartment","water")
@@ -218,12 +221,27 @@ func run() -> void:
 	check(not game.neighborhood.door_open and not door_was_open,"Released apartment front door remains locked")
 	game.cash=10000
 	ops.reacquire_apartment()
-	check(not ops.apartment_lease_active(),"Apartment cannot be re-rented while old rent debt remains")
+	check(not ops.apartment_lease_active(),"Apartment cannot be re-rented while old property debt remains")
 	ops.pay_apartment_rent()
+	ops.pay_property_utility("apartment","power")
+	ops.pay_property_utility("apartment","water")
 	var cash_before_rerent:int=game.cash
 	ops.reacquire_apartment()
 	check(ops.apartment_lease_active() and game.cash==cash_before_rerent-ops.APARTMENT_REACQUIRE_COST,"Cleared apartment can be rented again through Real Estate")
 	check(game.has_method("_build_real_estate_app"),"Real Estate exists as a top-level phone app")
+
+	# Player-owned furniture/equipment placement data is persistent and rule-based.
+	game.property_opportunity_state["acquired"]=true
+	game.property_opportunity_state["relocated"]=true
+	check(ops.can_place_owned_asset("Grow Tent Slot 2","house",Vector3(42,0,-10)),"Grow tent can be placed in house grow room")
+	check(not ops.can_place_owned_asset("Grow Tent Slot 2","house",Vector3(29,0,0)),"Grow tent cannot be placed in ordinary living room")
+	check(ops.can_place_owned_asset("Couch","house",Vector3(29,0,0)),"Normal furniture can be placed in living room")
+	check(ops.can_place_owned_asset("Couch","house",Vector3(42,0,-10)),"Normal furniture can also be placed in grow room if player chooses")
+	check(ops.save_asset_placement("couch_test","Couch","house",Vector3(29,0,0),0.5,true),"Furniture placement saves")
+	var placement:Dictionary=game.location_state.get("asset_placements",{}).get("couch_test",{})
+	check(bool(placement.get("locked",false)) and str(placement.get("room",""))=="living","Saved furniture placement records room and lock state",placement)
+	ops.set_asset_locked("couch_test",false)
+	check(not bool(game.location_state.get("asset_placements",{}).get("couch_test",{}).get("locked",true)),"Furniture placement can be unlocked for editing")
 
 	# Furniture/property placement rules.
 	game.apartment_rent_state["lease_active"]=true
