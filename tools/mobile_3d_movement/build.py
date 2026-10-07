@@ -264,7 +264,7 @@ def patch_station(source:str) -> str:
     # the slab underside rather than continuing through to its top surface.
     source=source.replace(
         'var xs:Array[float]=[0,span];var ys:Array[float]=[0,STORY]',
-        'var wall_height:float=STORY-.20 if floor_index==0 else STORY-.23\n\tvar xs:Array[float]=[0,span];var ys:Array[float]=[0,wall_height]',1)
+        'var wall_height:float=STORY\n\tif floor_index==0 and id.begins_with("Stair"):wall_height=STORY-.20\n\telif floor_index==1:wall_height=STORY-.23\n\tvar xs:Array[float]=[0,span];var ys:Array[float]=[0,wall_height]',1)
     # The final tread meets the top landing cleanly; its decorative nosing was
     # the only stair trim extending above/through the upstairs floor edge.
     source=source.replace(
@@ -398,13 +398,13 @@ def main():
 
     loader=(ROOT/'shared/afb-runtime-kobi-v1.js').read_text()
     loader=loader.replace('kobi-v1','mobile-3d-v1').replace('AFB_RUNTIME_KOBI_V1','AFB_RUNTIME_MOBILE_3D_V1')
-    loader=re.sub(r'patch\.json\?v=\d+','patch.json?v=5',loader)
+    loader=re.sub(r'patch\.json\?v=\d+','patch.json?v=6',loader)
     (ROOT/'shared/afb-runtime-mobile-3d-v1.js').write_text(loader,newline='\n')
 
-    release='0.7.9-beta.19-cloudtest.99-mobile3d.5'
+    release='0.7.9-beta.19-cloudtest.99-mobile3d.6'
     index=(ROOT/'index.html').read_text()
     index=index.replace('kobi-v1','mobile-3d-v1').replace('AFB_RUNTIME_KOBI_V1','AFB_RUNTIME_MOBILE_3D_V1')
-    index=re.sub(r'afb-runtime-mobile-3d-v1\.js\?v=\d+','afb-runtime-mobile-3d-v1.js?v=5',index)
+    index=re.sub(r'afb-runtime-mobile-3d-v1\.js\?v=\d+','afb-runtime-mobile-3d-v1.js?v=6',index)
     index=re.sub(r'0\.7\.9-beta\.19-cloudtest\.(?:98-kobi|99-mobile3d)\.\d+',release,index)
     index=re.sub(r'"fileSizes":\{[^}]*\\}',f'"fileSizes":{{"index-mobile-3d-v1.pck":{len(built)},"index.wasm":{(ROOT/"index.wasm").stat().st_size}}}',index,count=1)
     index=index.replace('</title>',' · MOBILE 3D TEST</title>',1)
@@ -417,7 +417,7 @@ def main():
         'player':'CharacterBody3D capsule',
         'input':'touch joystick + drag look; full forward stick sprints; Shift+forward sprints on keyboard',
         'physics':'gravity, floor snap, cached StaticBody3D world proxies, physical doors and police stair ramp',
-        'police_station':'same CharacterBody3D capsule; stairwell walls terminate below upper slab and final nosing no longer clips the landing',
+        'police_station':'same CharacterBody3D capsule; normal downstairs walls meet the second-floor deck while only stairwell walls trim to the slab underside',
         'sprint':'5.4 m/s with shared 100-point stamina, drain/recovery/exhaustion and HUD label SPRINTING',
         'save_schema':'unchanged'
     }
