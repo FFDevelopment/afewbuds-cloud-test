@@ -430,7 +430,8 @@ func set_filter(value:String) -> void:
  filter_kind=value;selected="";render()
 func filter_matches(item:String) -> bool:
  match filter_kind:
-  "Supplies":return category(item)=="seed" or item=="fertilizer"
+  "Seeds":return category(item)=="seed"
+  "Supplies":return item=="fertilizer" or (not container_id.ends_with(":supply") and category(item)=="seed")
   "Equipment":return group(item)=="equipment"
   "Products":return group(item)=="grams"
  return true
@@ -444,6 +445,9 @@ func build_ui() -> void:
  backpack_button.set_anchors_preset(Control.PRESET_TOP_RIGHT);backpack_button.offset_left=-200;backpack_button.offset_right=-18;backpack_button.offset_top=120;backpack_button.offset_bottom=166
  nearby_button=button("Open container",func():open_container(near_container()),hud,true)
  nearby_button.set_anchors_preset(Control.PRESET_CENTER_BOTTOM);nearby_button.offset_left=-180;nearby_button.offset_right=180;nearby_button.offset_top=-210;nearby_button.offset_bottom=-162
+ if not host.has_method("_use_target"):
+  nearby_button.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+  nearby_button.offset_left=-242;nearby_button.offset_right=-22;nearby_button.offset_top=-125;nearby_button.offset_bottom=-45
  overlay=ColorRect.new();overlay.color=Color(.015,.02,.015,.68);overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);layer.add_child(overlay)
  panel=PanelContainer.new();overlay.add_child(panel)
  var style:=ui_style("111713","566052",20)
@@ -455,7 +459,7 @@ func build_ui() -> void:
  heading=label("Backpack",top,25);heading.size_flags_horizontal=Control.SIZE_EXPAND_FILL
  close_button=button("×",close,top);close_button.custom_minimum_size.x=40
  filter_bar=HBoxContainer.new();filter_bar.add_theme_constant_override("separation",6);root.add_child(filter_bar)
- for value in ["All","Supplies","Equipment","Products"]:
+ for value in ["All","Supplies","Seeds","Equipment","Products"]:
   var tab:=button(value,set_filter.bind(value),filter_bar);tab.size_flags_horizontal=Control.SIZE_EXPAND_FILL;tab.add_theme_font_size_override("font_size",14);tab.custom_minimum_size.y=32
  preview_note=label("Inventory preview · Separate test career",root,12);preview_note.modulate=Color("a4ae9a")
  body_layout=BoxContainer.new();body_layout.size_flags_vertical=Control.SIZE_EXPAND_FILL;body_layout.add_theme_constant_override("separation",12);root.add_child(body_layout)
@@ -501,7 +505,9 @@ func render() -> void:
  heading.text="Backpack" if container_id.is_empty() else title(container_id)
  heading.add_theme_font_size_override("font_size",20 if compact else 25)
  filter_bar.visible=container_id.is_empty() or not adding
- for tab in filter_bar.get_children():style_button(tab,tab.text==filter_kind)
+ for tab in filter_bar.get_children():
+  tab.visible=tab.text in (["All","Supplies","Seeds"] if container_id.ends_with(":supply") else ["All","Supplies","Equipment","Products"])
+  style_button(tab,tab.text==filter_kind)
  inspector.visible=not adding and not selected.is_empty()
  if container_id.is_empty():render_inventory("backpack")
  else:
@@ -573,6 +579,7 @@ func render_inventory(id:String) -> void:
  var count:=0
  for item in keys:
   if int(items[item])<=0 or (not adding and not filter_matches(item)):continue
+  if container_id.ends_with(":supply") and not accepts(container_id,item):continue
   count+=1
   var compact:bool=host.get_viewport().get_visible_rect().size.y<500
   var card:=Button.new();card.custom_minimum_size=Vector2(0,128 if compact else 190);card.size_flags_horizontal=Control.SIZE_EXPAND_FILL

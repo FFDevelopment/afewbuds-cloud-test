@@ -73,6 +73,27 @@ func run():
  check(inv.nearby_button.visible,"New station button is available")
  check(game.fp_prompt.text.is_empty() if desktop else not game.neighborhood.action.visible,"Duplicate original station prompt is hidden")
  check(not game.contextual_button.visible,"Legacy contextual station button stays hidden")
+ inv.open_container("supply")
+ var tabs:Array=[]
+ for tab in inv.filter_bar.get_children():
+  if tab.visible:tabs.append(tab.text)
+ check(tabs==["All","Supplies","Seeds"],"Grow shelf exposes only All, Supplies and Seeds filters")
+ inv.set_filter("Seeds")
+ check(inv.filter_matches("seed|Purple Dream") and not inv.filter_matches("fertilizer"),"Seeds filter shows seeds only")
+ inv.set_filter("Supplies")
+ check(inv.filter_matches("fertilizer") and not inv.filter_matches("seed|Purple Dream"),"Shelf supplies filter shows fertilizer only")
+ game.location_state.carried_seeds={"Purple Dream":2};game.location_state.carried_fertilizer=2
+ game.cash=100;game.location_state.property_storage=["Grow Tent upgrade"];inv.state.backpack={"product|Purple Dream":2}
+ inv.adding=true;inv.render()
+ var backpack_frame:Node=inv.columns.get_child(1)
+ var items:Array=[]
+ for control in backpack_frame.find_children("*","Button",true,false):
+  if not control.tooltip_text.is_empty():items.append(control.tooltip_text)
+ check(items.size()==2 and str(items).contains("Fertilizer") and str(items).contains("Seeds"),"Add Stock hides cash, equipment and product at the grow shelf")
+ inv.close();inv.open_backpack()
+ check(inv.contents("backpack").has("cash") and inv.contents("backpack").has("equipment|Grow Tent upgrade") and inv.contents("backpack").has("product|Purple Dream"),"Shelf filtering never removes unrelated owned items")
+ check(inv.nearby_button.anchor_left==(.5 if desktop else 1.0) and inv.nearby_button.anchor_top==1.0,"Mobile interaction is bottom-right; desktop keeps its existing placement")
+ empty_bag();game.cash=0
  inv.close();game.untrimmed_inventory={};game.trimmed_inventory={};game.bagged_inventory={}
  for dimensions in [Vector2i(390,844),Vector2i(844,390),Vector2i(1280,800)]:
   root.content_scale_size=dimensions;root.size=dimensions
