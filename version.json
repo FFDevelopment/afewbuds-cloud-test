@@ -1,5 +1,5 @@
 {
-  "release_id": "0.7.9-beta.19-cloudtest.99-mobile3d.11",
+  "release_id": "0.7.9-beta.19-cloudtest.99-mobile3d.12",
   "game_build": "0.7.9-beta.19",
   "channel": "main-based-cloud-test",
   "updater": "network-only-no-service-worker",
@@ -212,5 +212,14 @@
     "property_storage": "paid upgrades remain player-owned and can be unplaced/stored instead of deleted",
     "apartment_reacquire": "released apartment can be rented again after prior debt is cleared"
   },
-  "messages": "Newest messages first in each conversation; opening or refreshing Messages starts at the top"
+  "messages": "Newest messages first in each conversation; opening or refreshing Messages starts at the top",
+  "districts": {
+    "city": "Bongchester",
+    "current": [
+      "Roachwood",
+      "Half Baked Heights",
+      "Paranoia Point"
+    ],
+    "hud": "Persistent city / current district; follows player location"
+  }
 }
