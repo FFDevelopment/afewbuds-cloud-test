@@ -44,19 +44,20 @@ func run() -> void:
 	# Cross the sidewalk/street/far-sidewalk seam on the actual physics body.
 	w.physics_body.global_position=Vector3(5,0.02,9)
 	w.physics_body.velocity=Vector3.ZERO
-	w.physics_body.enabled=true
-	w.physics_body.drive(Vector2(0,1),0)
+	game.camera.rotation=Vector3.ZERO
+	w.pad.value=Vector2(0,1)
 	await frames(270)
-	w.physics_body.drive(Vector2.ZERO,0)
+	w.pad.value=Vector2.ZERO
 	check(w.physics_body.global_position.z>22.0,"Physics capsule crosses sidewalk and road continuously",w.physics_body.global_position)
 	check(absf(w.physics_body.global_position.y)<.18,"Physics capsule remains grounded",w.physics_body.global_position)
 
 	# Interior wall should stop the capsule rather than camera-coordinate gating.
 	w.physics_body.global_position=Vector3(4.2,0.02,-2)
 	w.physics_body.velocity=Vector3.ZERO
-	w.physics_body.drive(Vector2(1,0),0)
+	game.camera.rotation=Vector3.ZERO
+	w.pad.value=Vector2(1,0)
 	await frames(90)
-	w.physics_body.drive(Vector2.ZERO,0)
+	w.pad.value=Vector2.ZERO
 	check(w.physics_body.global_position.x<4.9,"Apartment wall physically blocks the capsule",w.physics_body.global_position)
 
 	# Camera remains an eye-height view driven by the physics body.
