@@ -282,6 +282,7 @@ func show_relocation() -> void:
 
 func confirm_relocation() -> void:
 	if not bool(state().get("agreement_signed",false)) or bool(state().get("relocated",false)):return
+	if host.inventory_system!=null:host.inventory_system.relocate("apartment","house")
 	state()["relocated"]=true
 	state()["relocation_day"]=host.game_day
 	state()["keep_apartment"]=true

@@ -210,6 +210,9 @@ func install(name: String) -> void:
 	if host.phone_open:host._refresh_phone()
 	else:manage("property")
 func deposit() -> void:
+	if host.inventory_system!=null:
+		host.status_label.text="Open your grow shelf and choose Add Stock to deposit supplies."
+		return
 	var expected_target: String="house_computer" if active_property()=="house" else "apartment_computer"
 	if target()!=expected_target:return
 	var capacity: int=maxi(0,host._supply_seed_capacity()-host._total_seed_inventory())
@@ -229,7 +232,7 @@ func market() -> void:
 	b("FERTILIZER · +5 USES · $45",fertilizer,host.cash<45 or int(host.location_state.carried_fertilizer)>45)
 	b("BROWSE SEEDS",seeds)
 	b("EQUIPMENT & UPGRADES",equipment)
-	ui.label("CARRIED: %d / 50 seeds · %d / 50 fertilizer uses. Deposit supplies at your property computer." % [total(host.location_state.carried_seeds),int(host.location_state.carried_fertilizer)])
+	ui.label("CARRIED: %d / 50 seeds · %d / 50 fertilizer uses. Store supplies in your grow shelf with Add Stock." % [total(host.location_state.carried_seeds),int(host.location_state.carried_fertilizer)])
 	ui.button("CLOSE",close)
 func seeds() -> void:
 	clear("CENTRAL MARKET — SEEDS")
@@ -306,7 +309,7 @@ func business_home() -> void:
 	b("INVENTORY · Stock, genetics & supplies",manage.bind("inventory"))
 	b("PROPERTY & BILLS · Storefront, rent & equipment",manage.bind("property"))
 	var carried: int=total(host.location_state.carried_seeds)+int(host.location_state.carried_fertilizer)
-	if carried>0:ui.label("%d supplies carried · Deposit them in Inventory." % carried)
+	if carried>0:ui.label("%d supplies carried · Store them at your grow shelf." % carried)
 	if host.location_state.deliveries.size()>0:ui.label("%d deliveries ready · Install them in Property & Bills." % host.location_state.deliveries.size())
 func operations_home() -> void:
 	ui.label("CREW · %d staff · Door manager: %s" % [host._staff_count(),crew.manager() if not crew.manager().is_empty() else "None assigned"])
@@ -318,7 +321,7 @@ func inventory_home() -> void:
 	b("GENETICS · Hybrid recipes & seeds",manage.bind("genetics"))
 	ui.label("SUPPLY SHELF · %d / %d seeds · %d / %d fertilizer uses" % [host._total_seed_inventory(),host._supply_seed_capacity(),host.fertilizer_units,host._supply_fertilizer_capacity()])
 	ui.label("CARRIED · %d seeds · %d fertilizer uses" % [total(host.location_state.carried_seeds),int(host.location_state.carried_fertilizer)])
-	b("DEPOSIT CARRIED SUPPLIES",deposit,total(host.location_state.carried_seeds)==0 and int(host.location_state.carried_fertilizer)==0)
+	ui.label("Use Add Stock at the grow shelf to store carried supplies.")
 func property_home() -> void:
 	b("BILLS & RENT · Payments and balances",manage.bind("bills"))
 	b("EQUIPMENT · Upgrades & installation",manage.bind("upgrades"))
@@ -330,7 +333,7 @@ func business_extras() -> void:
 	crew.computer_controls()
 	ui.label("SUPPLY SHELF: %d / %d seeds · %d / %d fertilizer uses." % [host._total_seed_inventory(),host._supply_seed_capacity(),host.fertilizer_units,host._supply_fertilizer_capacity()])
 	ui.label("CARRIED: %d seeds · %d fertilizer uses." % [total(host.location_state.carried_seeds),int(host.location_state.carried_fertilizer)])
-	b("DEPOSIT CARRIED SUPPLIES",deposit,total(host.location_state.carried_seeds)==0 and int(host.location_state.carried_fertilizer)==0)
+	ui.label("Use Add Stock at the grow shelf to store carried supplies.")
 	for name in host.location_state.deliveries:b("INSTALL "+str(name),install.bind(str(name)))
 	var grid: GridContainer=host._phone_category_grid()
 	for app in ["employees","upgrades","products","genetics"]:
@@ -691,6 +694,8 @@ func _apartment_paid_equipment_labels() -> Array[String]:
 
 func _apartment_contents_blockers() -> Array[String]:
 	var blockers:Array[String]=[]
+	if host.inventory_system!=null and host.inventory_system.property_has_items("apartment"):
+		blockers.append("Empty the apartment containers before releasing its lease.")
 	if str(host.location_state.get("operation_contents_property","apartment"))=="apartment":
 		if _apartment_has_live_plants():blockers.append("Harvest or move all live plants.")
 		var pipeline:int=_dict_total(host.untrimmed_inventory)+_dict_total(host.trimmed_inventory)+_dict_total(host.bagged_inventory)

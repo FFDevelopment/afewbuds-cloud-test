@@ -286,7 +286,7 @@ body {
 	<body>
 		<div id="afb-account-gate" aria-label="AFewBuds account" hidden>
 			<div class="afb-auth-card">
-				<div class="afb-auth-brand"><div class="afb-auth-mark">AFB</div><div><h1>AFewBuds</h1><p>Player account</p></div></div>
+				<div class="afb-auth-brand"><div class="afb-auth-mark">AFB</div><div><h1>AFewBuds Inventory Preview</h1><p>Separate test career · Live progress unchanged</p></div></div>
 				<h2 class="afb-auth-title">Pick up where you left off.</h2>
 				<p class="afb-auth-sub">Sign in or create an account to keep one AFewBuds career across your PC, phone browser, and Home Screen app. Email is optional, used for password recovery, and only used for updates when you opt in.</p>
 				<div class="afb-tabs" id="afb-auth-tabs">
@@ -443,12 +443,12 @@ body {
 
 		<script src="shared/config.js"></script>
 		<script src="shared/afb-api.js"></script>
-		<script src="shared/afb-cloud-accountsync10.js?v=0.7.9-beta.19-leaderboard40"></script>
+		<script src="shared/afb-cloud-accountsync10.js?v=inventory1"></script>
 		<script src="index-accountsync10.js?v=0.7.9-beta.19-accountsync10"></script>
-		<script src="shared/afb-runtime-mobile-3d-v1.js?v=12"></script>
+		<script src="shared/afb-runtime-mobile-3d-v1.js?v=inventory1"></script>
 		<script>
-const AFB_TEST_RELEASE = "0.7.9-beta.19-cloudtest.99-mobile3d.12";
-const AFB_TEST_TITLE = "AFewBuds Cloud Test 0.7.9-beta.19-cloudtest.99-mobile3d.12";
+const AFB_TEST_RELEASE = "0.7.9-beta.19-cloudtest.99-inventory.1";
+const AFB_TEST_TITLE = "AFewBuds Inventory Preview 0.7.9-beta.19-cloudtest.99-inventory.1";
 function afbKeepTestTitle(){ if(document.title !== AFB_TEST_TITLE) document.title = AFB_TEST_TITLE; }
 afbKeepTestTitle();
 setInterval(afbKeepTestTitle, 1000);
@@ -535,7 +535,7 @@ async function afbValidateStoredSession() {
 		const verified = afbNormalizeSession(await AFB_API.rpc('afb_validate_session', {p_session_token:saved.session_token}));
 		if (!verified || !verified.username) throw new Error('session_invalid');
 		const merged = Object.assign({}, saved, verified, {session_token:saved.session_token});
-		AFB_API.savePlayerSession(merged, !!localStorage.getItem('afb_player_session'));
+		AFB_API.savePlayerSession(merged, !!localStorage.getItem('afb_inventory_preview_session'));
 		return merged;
 	} catch (_) {
 		AFB_API.clearPlayerSession();
@@ -553,11 +553,14 @@ async function afbLaunchGame() {
 	if (AFB_GAME_STARTED || AFB_GAME_STARTING) return;
 	AFB_GAME_STARTING = true;
 	try {
-		if (window.AFB_CLOUD && window.AFB_API && AFB_API.getPlayerSession && AFB_API.getPlayerSession()) {
+		if (window.AFB_CLOUD) {
 			await AFB_CLOUD.reconcileLatestSilently();
 		}
 	} catch (error) {
-		console.warn('AFewBuds account career reconcile skipped; using local career.', error);
+		console.warn('Inventory preview could not load its isolated career.', error);
+		afbMessage('afb-login-msg', 'Could not load the preview career. Please try again.');
+		AFB_GAME_STARTING = false;
+		return;
 	}
 	AFB_GAME_STARTED = true;
 	AFB_GAME_STARTING = false;
@@ -876,7 +879,7 @@ function afbAccountMessage(id, text, bad=false) {
 	el.classList.toggle('bad',!!bad);
 }
 function afbAccountRemembered() {
-	return !!localStorage.getItem('afb_player_session');
+	return !!localStorage.getItem('afb_inventory_preview_session');
 }
 async function afbAccountLoadProfile() {
 	const modal=document.getElementById('afb-account-settings-modal');

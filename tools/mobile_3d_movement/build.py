@@ -740,6 +740,12 @@ def main():
     before={n:b for n,b,f in entries}
 
     main_script=patch_progression_main(before['scripts/main.gd'].decode())
+    inventory_patch=module('inventory_patch',ROOT/'tools/inventory_v1/patch.py')
+    main_script=inventory_patch.patch_main(main_script)
+    main_script=main_script.replace('user://bud_empire_beta_save.json','user://afb_inventory_preview_save.json')
+    save_hook='\tfile.store_string(JSON.stringify(data))\n\tfile.close()'
+    assert save_hook in main_script
+    main_script=main_script.replace(save_hook,save_hook+'\n\tif OS.has_feature("web"):\n\t\tJavaScriptBridge.eval("window.AFB_CLOUD.pushFromGame("+JSON.stringify(JSON.stringify(data))+");",true)',1)
     main_script=main_script.replace('brand_label.text = "AFewBuds"', 'if neighborhood != null and neighborhood.mobile_hud != null:\n\t\t\tneighborhood.mobile_hud.update_location()\n\t\telse: brand_label.text = load("res://scripts/districts.gd").heading(camera.position)')
     neighborhood=patch_neighborhood(before['scripts/neighborhood.gd'].decode())
     station=patch_station((ROOT/'tools/police_station_v1/station.gd').read_text())
@@ -767,6 +773,7 @@ def main():
 
     updated.append(['scripts/districts.gd',(HERE/'districts.gd').read_bytes(),0])
 
+    updated.append(['scripts/container_inventory.gd',(ROOT/'tools/inventory_v1/container_inventory.gd').read_bytes(),0])
     built=east.pack.rebuild(baseline,fb,updated)
     after={n:b for n,b,f in east.pack.parse(built)[1]}
     changed=[n for n in before if before[n]!=after[n]]
@@ -829,14 +836,14 @@ def main():
 
     loader=(ROOT/'shared/afb-runtime-kobi-v1.js').read_text()
     loader=loader.replace('kobi-v1','mobile-3d-v1').replace('AFB_RUNTIME_KOBI_V1','AFB_RUNTIME_MOBILE_3D_V1')
-    loader=re.sub(r'patch\.json\?v=\d+','patch.json?v=12',loader)
+    loader=re.sub(r'patch\.json\?v=\d+','patch.json?v=inventory1',loader)
     (ROOT/'shared/afb-runtime-mobile-3d-v1.js').write_text(loader,newline='\n')
 
-    release='0.7.9-beta.19-cloudtest.99-mobile3d.12'
+    release='0.7.9-beta.19-cloudtest.99-inventory.1'
     index=(ROOT/'index.html').read_text()
     index=index.replace('kobi-v1','mobile-3d-v1').replace('AFB_RUNTIME_KOBI_V1','AFB_RUNTIME_MOBILE_3D_V1')
-    index=re.sub(r'afb-runtime-mobile-3d-v1\.js\?v=\d+','afb-runtime-mobile-3d-v1.js?v=12',index)
-    index=re.sub(r'0\.7\.9-beta\.19-cloudtest\.(?:98-kobi|99-mobile3d)\.\d+',release,index)
+    index=re.sub(r'afb-runtime-mobile-3d-v1\.js\?v=\d+','afb-runtime-mobile-3d-v1.js?v=inventory1',index)
+    index=re.sub(r'0\.7\.9-beta\.19-cloudtest\.(?:98-kobi|99-mobile3d|99-inventory)\.\d+',release,index)
     index=re.sub(r'"fileSizes":\{[^}]*\\}',f'"fileSizes":{{"index-mobile-3d-v1.pck":{len(built)},"index.wasm":{(ROOT/"index.wasm").stat().st_size}}}',index,count=1)
     if 'MOBILE 3D TEST</title>' not in index:index=index.replace('</title>',' Â· MOBILE 3D TEST</title>',1)
     (ROOT/'index.html').write_text(index,newline='\n')
@@ -845,7 +852,7 @@ def main():
     version['release_id']=release
     version['paused_heat_decay']='100 Heat over 180 real minutes'
     version['mobile_3d_movement']={
-        'branch':'main',
+        'branch':'experiment/container-inventory',
         'player':'CharacterBody3D capsule',
         'input':'touch joystick + drag look; full forward stick sprints; Shift+forward sprints on keyboard',
         'physics':'gravity, floor snap, cached StaticBody3D world proxies, physical doors and police stair ramp',
@@ -871,7 +878,7 @@ def main():
         'target_sha256':hashlib.sha256(built).hexdigest(),
         'target_bytes':len(built),
         'changed_existing_entries':changed,
-        'added_entries':['scripts/mobile_physics_player.gd','scripts/districts.gd'],
+        'added_entries':['scripts/mobile_physics_player.gd','scripts/districts.gd','scripts/container_inventory.gd'],
         'unchanged_entries':len(before)-len(changed),
         'reconstruction_verified':True
     }

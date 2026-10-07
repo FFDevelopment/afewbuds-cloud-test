@@ -1,25 +1,30 @@
-name: Build mobile baseline
+name: Build inventory preview
 
 on:
   push:
-    branches: [main]
+    branches: [experiment/container-inventory]
   workflow_dispatch:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 concurrency:
-  group: mobile-baseline-build
+  group: pages
   cancel-in-progress: true
 
 jobs:
   build-test:
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: experiment/container-inventory
           fetch-depth: 0
 
       - name: Build mobile 3D runtime
@@ -45,15 +50,45 @@ jobs:
           grep -q "PROGRESSION_V1_TEST_RESULT: PASS" "${RUNNER_TEMP}/progression-v1-check.log"
           if grep -E 'SCRIPT ERROR|^ERROR:' "${RUNNER_TEMP}/progression-v1-check.log"; then exit 1; fi
 
-      - name: Commit validated baseline runtime
+      - name: Test containers and preview save isolation
+        run: |
+          set -euo pipefail
+          node tools/inventory_v1/save_test.cjs
+          timeout 120s /tmp/godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path "${RUNNER_TEMP}/mobile3d/candidate" --script "${GITHUB_WORKSPACE}/tools/inventory_v1/check.gd" 2>&1 | tee "${RUNNER_TEMP}/inventory-check.log"
+          grep -q "INVENTORY_TEST_RESULT: PASS" "${RUNNER_TEMP}/inventory-check.log"
+          if grep -E 'SCRIPT ERROR|^ERROR:' "${RUNNER_TEMP}/inventory-check.log"; then exit 1; fi
+
+      - name: Commit validated inventory preview
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add runtime/mobile-3d-v1.patch.json shared/afb-runtime-mobile-3d-v1.js index.html version.json BUILD_VERSION.txt tools/mobile_3d_movement/build_receipt.json
           if ! git diff --cached --quiet; then
-            git commit -m "Build validated mobile baseline"
-            git fetch origin main
-            git rebase origin/main
-            git push origin HEAD:main
+            git commit -m "Build validated inventory preview"
+            git fetch origin experiment/container-inventory
+            git rebase origin/experiment/container-inventory
+            git push origin HEAD:experiment/container-inventory
           fi
+
+      - name: Stage validated preview
+        run: python3 tools/stage_pages.py --output "${{ runner.temp }}/afb-inventory"
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          path: baseline
+      - name: Preserve main and compatibility URLs
+        run: |
+          set -euo pipefail
+          python3 baseline/tools/stage_pages.py --output "${RUNNER_TEMP}/afb-pages"
+          python3 baseline/tools/stage_pages.py --output "${RUNNER_TEMP}/afb-mobile3d"
+          mkdir -p "${RUNNER_TEMP}/afb-pages/mobile-3d-movement" "${RUNNER_TEMP}/afb-pages/inventory-preview"
+          cp -a "${RUNNER_TEMP}/afb-mobile3d/." "${RUNNER_TEMP}/afb-pages/mobile-3d-movement/"
+          cp -a "${RUNNER_TEMP}/afb-inventory/." "${RUNNER_TEMP}/afb-pages/inventory-preview/"
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ${{ runner.temp }}/afb-pages
+      - name: Deploy isolated preview alongside main
+        id: deployment
+        uses: actions/deploy-pages@v4

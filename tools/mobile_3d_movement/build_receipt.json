@@ -1,7 +1,7 @@
 {
   "baseline_sha256": "bbc788e5d4dd19b59af7dd2824f34943361d901d08ae5b5c25f8e7c6b9a75410",
-  "target_sha256": "0504f4363f235e0cd6c6da70d818dd28202b2d0b67c7bb1721215384c1eb5394",
-  "target_bytes": 37292336,
+  "target_sha256": "8f507e90f33040842df9cd8f432c8d01486b3360b1fb154cb2ebe893b8415182",
+  "target_bytes": 37317912,
   "changed_existing_entries": [
     "scripts/main.gd",
     "scripts/interior_door.gd",
@@ -14,7 +14,8 @@
   ],
   "added_entries": [
     "scripts/mobile_physics_player.gd",
-    "scripts/districts.gd"
+    "scripts/districts.gd",
+    "scripts/container_inventory.gd"
   ],
   "unchanged_entries": 212,
   "reconstruction_verified": true

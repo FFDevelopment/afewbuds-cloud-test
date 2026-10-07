@@ -1,3 +1,7 @@
+# Inventory test build
+
+This branch is an isolated inventory experiment. See [preview instructions and save behavior](INVENTORY_PREVIEW.md).
+
 # AFewBuds Cloud Test — mobile 3D baseline
 
 `main` is the canonical mobile/web game. Baseline: **mobile 3D v12** (`0.7.9-beta.19-cloudtest.99-mobile3d.12`), paired with [desktop 0.13.2](https://github.com/FFDevelopment/afewbuds-3d-prototype).

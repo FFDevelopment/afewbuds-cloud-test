@@ -12,6 +12,7 @@
   }
 
   async function rpc(name, payload, bearer) {
+    if (["afb_set_save","afb_leaderboard_report"].includes(name)) throw new Error("Inventory preview cannot write to live careers.");
     if (!enabled) throw new Error('Backend is not configured yet.');
     const res = await fetch(base + '/rest/v1/rpc/' + name, {
       method: 'POST',
@@ -97,19 +98,19 @@
   }
 
   function savePlayerSession(value, remember) {
-    const key = 'afb_player_session';
+    const key = 'afb_inventory_preview_session';
     localStorage.removeItem(key);
     sessionStorage.removeItem(key);
     (remember ? localStorage : sessionStorage).setItem(key, JSON.stringify(value));
   }
   function getPlayerSession() {
-    const raw = localStorage.getItem('afb_player_session') || sessionStorage.getItem('afb_player_session');
+    const raw = localStorage.getItem('afb_inventory_preview_session') || sessionStorage.getItem('afb_inventory_preview_session');
     if (!raw) return null;
     try { return JSON.parse(raw); } catch (_) { return null; }
   }
   function clearPlayerSession() {
-    localStorage.removeItem('afb_player_session');
-    sessionStorage.removeItem('afb_player_session');
+    localStorage.removeItem('afb_inventory_preview_session');
+    sessionStorage.removeItem('afb_inventory_preview_session');
   }
 
   function deviceId() {
