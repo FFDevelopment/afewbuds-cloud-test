@@ -99,7 +99,7 @@ func run() -> void:
 	# Visual stairwell pieces must not occupy volume inside the upstairs deck.
 	var upper_decks:Array[AABB]=[]
 	for entry in station.parts:
-		if str(entry.id) in ["UpperFloorWest","UpperFloorNorth","UpperFloorSouth","TopLanding"]:
+		if str(entry.id) in ["UpperFloorWest","UpperFloorNorth","UpperFloorSouth"]:
 			upper_decks.append(entry.bounds)
 	var stair_clips:Array[String]=[]
 	for entry in station.parts:
