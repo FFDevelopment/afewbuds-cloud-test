@@ -13,6 +13,7 @@ var rooms:Array[Dictionary]=[]
 var openings:Array[Dictionary]=[]
 var windows:Array[Dictionary]=[]
 var parts:Array[Dictionary]=[]
+var wall_bounds:Array[AABB]=[]
 var floor_index:=0
 var material_cache:Dictionary={}
 
@@ -58,7 +59,7 @@ func wall(id:String,x:float,z:float,length:float,along_x:bool,holes:Array=[],col
 	var span:=length if along_x else length*.8
 	var cuts:Array[Rect2]=[]
 	for raw in holes:cuts.append(Rect2(raw.position*Vector2(1 if along_x else .8,1),raw.size*Vector2(1 if along_x else .8,1)))
-	var xs:Array[float]=[0,span];var ys:Array[float]=[0,3.5]
+	var xs:Array[float]=[0,span];var ys:Array[float]=[0,STORY]
 	for h in cuts:
 		xs.append(h.position.x);xs.append(h.end.x);ys.append(h.position.y);ys.append(h.end.y)
 		openings.append({"wall":id,"floor":floor_index,"origin":start,"axis":axis,"rect":h})
@@ -72,25 +73,38 @@ func wall(id:String,x:float,z:float,length:float,along_x:bool,holes:Array=[],col
 				if hole.has_point(center):cut=true
 			if cut:continue
 			box(id,start+axis*center.x+Vector3.UP*center.y,Vector3(w,h,.22) if along_x else Vector3(.22,h,w),color)
+			wall_bounds.append(parts[-1].bounds)
 	# Low trim is split around floor-level openings as well.
 	for i in range(xs.size()-1):
 		var mid:float=(xs[i]+xs[i+1])/2;var cut:=false
 		for hole in cuts:
 			if hole.has_point(Vector2(mid,.08)):cut=true
-		if not cut:box(id+"Skirting",start+axis*mid+Vector3.UP*.07,Vector3(xs[i+1]-xs[i],.14,.245) if along_x else Vector3(.245,.14,xs[i+1]-xs[i]),"737777",false)
+		if not cut:
+			# Facade skirting belongs on the inside only; a centered trim box
+			# previously protruded outside as a dark band at both floor levels.
+			var inward:Vector3={"Front":Vector3.FORWARD,"Rear":Vector3.BACK,"West":Vector3.RIGHT,"East":Vector3.LEFT}.get(id,Vector3.ZERO)
+			var depth:=.035 if inward!=Vector3.ZERO else .245
+			box(id+"Skirting",start+axis*mid+Vector3.UP*.07+inward*.12,Vector3(xs[i+1]-xs[i],.14,depth) if along_x else Vector3(depth,.14,xs[i+1]-xs[i]),"737777",false)
 
 func window_at(x:float,z:float,width:float,along_x:bool,sill:float=1.15,height:float=1.6,privacy:bool=false) -> void:
-	var at:=point(x,floor_index*STORY+sill+height/2,z);var size:=Vector3(width,height,.035) if along_x else Vector3(.035,height,width)
+	# Width/height describe the masonry aperture, not the pane. All frame
+	# parts sit INSIDE it; .01 m clearance avoids intersections with the wall.
+	var at:=point(x,floor_index*STORY+sill+height/2,z)
+	var pane_width:=width-.18;var pane_height:=height-.18
+	var size:=Vector3(pane_width,pane_height,.035) if along_x else Vector3(.035,pane_height,pane_width)
 	var glass:=MeshInstance3D.new();var mesh:=BoxMesh.new();mesh.size=size;glass.mesh=mesh;glass.position=at
 	var m:=StandardMaterial3D.new();m.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA;m.albedo_color=Color(.32,.48,.53,.28);m.roughness=.85 if privacy else .24
 	if privacy:m.albedo_color=Color(.59,.68,.69,.88)
 	glass.material_override=m;glass.layers=2;glass.set_meta("station_floor",floor_index);add_child(glass)
-	colliders.append(AABB(at-size/2,size));windows.append({"at":at,"floor":floor_index*STORY,"bottom":at.y-height/2,"top":at.y+height/2,"bounds":AABB(at-size/2,size),"privacy":privacy})
+	var aperture_size:=Vector3(width,height,.22) if along_x else Vector3(.22,height,width)
+	var pane_bounds:=AABB(at-size/2,size)
+	colliders.append(pane_bounds)
+	windows.append({"at":at,"floor":floor_index*STORY,"bottom":at.y-height/2,"top":at.y+height/2,"bounds":pane_bounds,"aperture":AABB(at-aperture_size/2,aperture_size),"privacy":privacy})
 	var axis:=Vector3.RIGHT if along_x else Vector3.BACK
 	for s in [-1.0,1.0]:
-		box("WindowJamb",at+axis*s*width/2,Vector3(.08,height+.1,.24) if along_x else Vector3(.24,height+.1,.08),"303e49",false)
-		box("WindowRail",at+Vector3.UP*s*(height/2+.04),Vector3(width+.08,.08,.24) if along_x else Vector3(.24,.08,width+.08),"303e49",false)
-	box("WindowMullion",at,Vector3(.06,height,.14) if along_x else Vector3(.14,height,.06),"303e49",false)
+		box("WindowJamb",at+axis*s*(width/2-.05),Vector3(.08,pane_height,.28) if along_x else Vector3(.28,pane_height,.08),"303e49",false)
+		box("WindowRail",at+Vector3.UP*s*(height/2-.05),Vector3(width-.02,.08,.28) if along_x else Vector3(.28,.08,width-.02),"303e49",false)
+	box("WindowMullion",at,Vector3(.06,pane_height,.14) if along_x else Vector3(.14,pane_height,.06),"303e49",false)
 
 func door(id:String,x:float,z:float,width:float,side:bool=false,bars:bool=false,glazed:bool=false) -> void:
 	var pivot:Node3D=load("res://scripts/police_door.gd").new();pivot.name=id;pivot.width=width;pivot.host=world.host
@@ -167,11 +181,11 @@ func build(owner:Node3D) -> void:
 	for f in [0,1]:
 		floor_index=f
 		# Upper deck has a real opening over the full stairwell.
-		if f==0:part("GroundFloor",12,-.08,14,Vector3(24,.16,22.4),"a3a39b",false)
+		if f==0:part("GroundFloor",12,-.08,14,Vector3(23.76,.16,22.16),"a3a39b",false)
 		else:
-			part("UpperFloorWest",9.5,STORY-.1,14,Vector3(19,.2,22.4),"aaaead",false)
-			part("UpperFloorNorth",21.5,STORY-.1,6.75,Vector3(5,.2,10.8),"aaaead",false)
-			part("UpperFloorSouth",21.5,STORY-.1,25,Vector3(5,.2,4.8),"aaaead",false)
+			part("UpperFloorWest",9.56,STORY-.1,14,Vector3(18.88,.2,22.16),"aaaead",false)
+			part("UpperFloorNorth",21.44,STORY-.1,6.825,Vector3(4.88,.2,10.68),"aaaead",false)
+			part("UpperFloorSouth",21.44,STORY-.1,24.925,Vector3(4.88,.2,4.68),"aaaead",false)
 		# Openings follow each room, with solid margins at partition junctions.
 		var front_holes:Array=[Rect2(1,1.15,5,1.6)]
 		if f==0:
@@ -221,17 +235,19 @@ func build(owner:Node3D) -> void:
 	part("TopLanding",21.5,STORY-.1,12.75,Vector3(4.6,.2,1.2),"a2a7a5",false)
 	# Separate plaster undersides keep floor finishes off the ceilings.
 	floor_index=1
-	part("CeilingWest",9.5,3.385,14,Vector3(19,.025,22.4),"d6d1c7",false)
-	part("CeilingNorth",21.5,3.385,6.75,Vector3(5,.025,10.8),"d6d1c7",false)
-	part("CeilingSouth",21.5,3.385,25,Vector3(5,.025,4.8),"d6d1c7",false)
+	part("CeilingWest",9.56,3.385,14,Vector3(18.88,.025,22.16),"d6d1c7",false)
+	part("CeilingNorth",21.44,3.385,6.825,Vector3(4.88,.025,10.68),"d6d1c7",false)
+	part("CeilingSouth",21.44,3.385,24.925,Vector3(4.88,.025,4.68),"d6d1c7",false)
 	# A roof separate from the upper-floor meshes permits honest cutaway captures.
 	floor_index=2;part("Roof",12,7.12,14,Vector3(24.5,.24,22.8),"676d70",false)
-	part("UpperCeiling",12,6.99,14,Vector3(24,.025,22.4),"d6d1c7",false)
+	part("UpperCeiling",12,6.99,14,Vector3(23.76,.025,22.16),"d6d1c7",false)
 	for x in [0.0,24.0]:part("RoofParapet",x,7.5,14,Vector3(.28,.65,22.6),"b8b7ae",false)
 	for z in [0.0,28.0]:part("RoofParapet",12,7.5,z,Vector3(24,.65,.28),"b8b7ae",false)
 	for x in [6.0,17.0]:part("RoofHVAC",x,7.7,8,Vector3(2,1,1.5),"a7aaa5",false)
 	floor_index=0
 	door("PUBLIC_ENTRANCE",11.2,28,2.4,false,false,true);door("REAR_BOOKING_ENTRANCE",14.3,0,1.8)
+	part("PublicThreshold",11.2,-.02,28,Vector3(2.4,.04,.5),"888d8e",false)
+	part("RearThreshold",14.3,-.02,0,Vector3(1.8,.04,.5),"888d8e",false)
 	for x in [8.0,16.0]:part("NavyFacade",x,3.5,28.18,Vector3(.8,7,.24),"254967",false)
 	part("EntranceCanopy",11.2,3.12,29,Vector3(6,.18,2),"354853",false)
 	part("StationNameBoard",12,6.9,28.3,Vector3(13,.65,.16),"d4d2c6",false)

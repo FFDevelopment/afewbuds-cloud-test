@@ -50,6 +50,56 @@ func run() -> void:
 			if p.id in ["Front","Rear","West","East"] or p.id.ends_with("Skirting") or p.id.begins_with("Window"):continue
 			if win.bounds.grow(.22).intersects(p.bounds):clips.append(p.id)
 		check(clips.is_empty(),"Window clears partitions and adjacent fixtures "+str(win.at),clips)
+	# Check the actual glazing AND frame volumes against every wall, including
+	# the containing facade. The earlier test deliberately omitted that facade.
+	var frame_clips:Array=[]
+	for p in station.parts:
+		if not p.id.begins_with("Window"):continue
+		for wall_box in station.wall_bounds:
+			if p.bounds.grow(-.001).intersects(wall_box):frame_clips.append({"id":p.id,"at":p.bounds.get_center()})
+	check(frame_clips.is_empty(),"All frame components clear masonry",frame_clips)
+	for win in station.windows:
+		var clear:=true
+		for wall_box in station.wall_bounds:
+			if win.bounds.intersects(wall_box):clear=false
+		check(clear,"Glass fits wholly in its wall opening "+str(win.at))
+	for p in station.parts:
+		if not (p.id.contains("Floor") or p.id.begins_with("Ceiling") or p.id=="UpperCeiling"):continue
+		var b:AABB=p.bounds
+		check(b.position.x>=station.BASE.x+.119 and b.end.x<=station.BASE.x+23.881 and b.position.z>=station.BASE.z+.119 and b.end.z<=station.BASE.z+22.281,"Floor/ceiling perimeter is inside wall inner faces "+p.id)
+	for p in station.parts:
+		if p.id not in ["FrontSkirting","RearSkirting","WestSkirting","EastSkirting"]:continue
+		var b:AABB=p.bounds
+		check(b.position.x>=station.BASE.x-.001 and b.end.x<=station.BASE.x+24.001 and b.position.z>=station.BASE.z-.001 and b.end.z<=station.BASE.z+22.401,"Interior skirting cannot protrude outside "+p.id+str(b.get_center()))
+	# Sample all four outside wall faces through the complete floor junction.
+	for edge in [station.point(0,0,14),station.point(24,0,14),station.point(8,0,0),station.point(8,0,28)]:
+		for h in [3.38,3.45,3.51,3.58,3.61]:
+			var at:=Vector3(edge.x,h,edge.z);var covered:=false
+			for b in station.wall_bounds:
+				if b.has_point(at):covered=true
+			check(covered,"Wall seals upper slab junction "+str(at))
+	for driveway in world.get_meta("police_driveways"):
+		var blocked:Array=[]
+		for surface in surfaces:
+			if surface.tile==3 or surface.top<-.04:continue
+			var overlap:Rect2=driveway.rect.intersection(surface.rect)
+			if overlap.size.x>.003 and overlap.size.y>.003:blocked.append(surface)
+		check(blocked.is_empty(),"Driveway has no sidewalk or raised curb: "+driveway.id,blocked)
+		check(driveway.rect.size.x>=6,"Six-unit vehicle entrance: "+driveway.id)
+		for prop in world.fitted_prop_bounds:
+			if prop.kind!="car":continue
+			var b:AABB=prop.bounds;var rect:=Rect2(Vector2(b.position.x,b.position.z),Vector2(b.size.x,b.size.z))
+			check(not driveway.aisle.intersects(rect),"Parked car clears vehicle aisle: "+driveway.id+" "+str(prop.origin))
+		# A 2.25-wide car fits between the actual fixed collision rectangles.
+		var center:Vector2=driveway.rect.get_center()
+		for z in range(ceil(driveway.rect.position.y),floor(driveway.rect.end.y)+1):
+			for dx in [-1.125,0,1.125]:check(world._walkable(Vector3(center.x+dx,2.16,z)),"Vehicle entrance width unblocked: "+driveway.id+" "+str(Vector2(dx,z)))
+	for sign in world.get_meta("police_signs"):
+		if sign.text=="ACCESSIBLE":
+			var to_bay:Vector3=(Vector3(182.5,sign.at.y,3.5)-sign.at).normalized()
+			check(sign.normal.dot(to_bay)>.99,"Accessible sign faces the parking bay")
+		for driveway in world.get_meta("police_driveways"):
+			check(not driveway.aisle.has_point(Vector2(sign.at.x,sign.at.z)),"Signpost clears vehicle aisle: "+sign.text+" "+driveway.id)
 	var entries:=0
 	for entry in world.entrance_records:
 		if entry.at.x<149:continue
