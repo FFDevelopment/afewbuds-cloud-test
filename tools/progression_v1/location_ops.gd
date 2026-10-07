@@ -498,6 +498,49 @@ func utility_bills_ui(parent:VBoxContainer) -> void:
 		if int(state.get("power_due",0))>0:_property_button(parent,"PAY %s ELECTRIC · $%d" % [property.to_upper(),int(state.get("power_due",0))],pay_property_utility.bind(property,"power"),host.cash<int(state.get("power_due",0)))
 		if int(state.get("water_due",0))>0:_property_button(parent,"PAY %s WATER · $%d" % [property.to_upper(),int(state.get("water_due",0))],pay_property_utility.bind(property,"water"),host.cash<int(state.get("water_due",0)))
 
+func placement_room(property:String,world_point:Vector3) -> String:
+	if property=="house":
+		var room:String=world.house_controls._inside_room(world_point)
+		return "" if room=="apartment" else room
+	if property=="apartment":
+		if not world._indoors(world_point):return ""
+		return "grow" if world_point.z< -4.0 else "main"
+	return ""
+
+func asset_requires_grow_room(asset_name:String) -> bool:
+	return asset_name.to_lower().contains("grow tent")
+
+func can_place_owned_asset(asset_name:String,property:String,world_point:Vector3) -> bool:
+	if not _property_controlled(property):return false
+	var room:=placement_room(property,world_point)
+	if room.is_empty():return false
+	if asset_requires_grow_room(asset_name):return room=="grow"
+	return true
+
+func save_asset_placement(asset_id:String,asset_name:String,property:String,world_point:Vector3,yaw:float,locked:bool=true) -> bool:
+	if asset_id.is_empty() or not can_place_owned_asset(asset_name,property,world_point):return false
+	var placements:Dictionary=host.location_state.get("asset_placements",{})
+	placements[asset_id]={
+		"name":asset_name,
+		"property":property,
+		"position":[world_point.x,world_point.y,world_point.z],
+		"yaw":yaw,
+		"locked":locked,
+		"room":placement_room(property,world_point)
+	}
+	host.location_state["asset_placements"]=placements
+	host._save_game()
+	return true
+
+func set_asset_locked(asset_id:String,locked:bool) -> void:
+	var placements:Dictionary=host.location_state.get("asset_placements",{})
+	if not placements.has(asset_id):return
+	var entry:Dictionary=placements[asset_id]
+	entry["locked"]=locked
+	placements[asset_id]=entry
+	host.location_state["asset_placements"]=placements
+	host._save_game()
+
 func active_property() -> String:
 	return str(host.location_state.get("active_property","apartment"))
 
