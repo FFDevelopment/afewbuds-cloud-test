@@ -41,6 +41,33 @@ func run() -> void:
 	check(w.get_node_or_null("MobilePhysicsGround") is StaticBody3D,"Playable map has a real physics floor")
 	check(w.physics_obstacle_root.get_child_count()>20,"Existing collision map is represented by StaticBody3D obstacles",w.physics_obstacle_root.get_child_count())
 
+	# Repeated legacy collision scans must not churn StaticBody3D nodes when the
+	# world layout did not actually change.
+	var proxy_count:=w.physics_obstacle_root.get_child_count()
+	var proxy_id:=w.physics_obstacle_root.get_child(0).get_instance_id() if proxy_count>0 else 0
+	for i in range(20):w._rebuild_physics_obstacles()
+	check(w.physics_obstacle_root.get_child_count()==proxy_count and (proxy_count==0 or w.physics_obstacle_root.get_child(0).get_instance_id()==proxy_id),"Stable world state reuses physics obstacle proxies")
+
+	# Closed apartment door blocks, then the same capsule must physically pass
+	# through the exact doorway after the door opens.
+	w.physics_body.global_position=Vector3(0,0.02,4.4)
+	w.physics_body.velocity=Vector3.ZERO
+	game.camera.rotation=Vector3.ZERO
+	w.pad.value=Vector2(0,1)
+	await frames(45)
+	w.pad.value=Vector2.ZERO
+	check(w.physics_body.global_position.z<5.75,"Closed apartment door physically blocks exit",w.physics_body.global_position)
+	w._toggle_door()
+	await get_tree().create_timer(.5).timeout
+	w.physics_body.global_position=Vector3(0,0.02,4.4)
+	w.physics_body.velocity=Vector3.ZERO
+	w._sync_camera_from_physics()
+	game.camera.rotation=Vector3.ZERO
+	w.pad.value=Vector2(0,1)
+	await frames(95)
+	w.pad.value=Vector2.ZERO
+	check(w.physics_body.global_position.z>7.0,"Open apartment doorway physically permits exit",w.physics_body.global_position)
+
 	# Cross the sidewalk/street/far-sidewalk seam on the actual physics body.
 	w.physics_body.global_position=Vector3(5,0.02,9)
 	w.physics_body.velocity=Vector3.ZERO
