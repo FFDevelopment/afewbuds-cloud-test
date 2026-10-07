@@ -12,6 +12,7 @@ var apartment_release_confirm := false
 const APT_PC := Vector3(4.15,1.35,4.35)
 const HOUSE_PC := Vector3(26.35,1.35,1.65)
 const CHECKOUT := Vector3(14,1.3,3)
+const APARTMENT_REACQUIRE_COST:=600
 func setup(owner: Node3D) -> void:
 	world=owner;host=owner.host
 	ui=load("res://scripts/property_opportunity.gd").new()
@@ -496,11 +497,8 @@ func _apartment_paid_equipment_labels() -> Array[String]:
 	if host.auto_water_unlocked:items.append("Auto Water Kit")
 	return items
 
-func apartment_release_blockers() -> Array[String]:
+func _apartment_contents_blockers() -> Array[String]:
 	var blockers:Array[String]=[]
-	if not _has_alternate_property():blockers.append("Acquire and move into another property first.")
-	if not apartment_lease_active():return blockers
-	if world._indoors(host.camera.position):blockers.append("Leave the apartment before releasing its lease.")
 	if _apartment_has_live_plants():blockers.append("Harvest or move all live plants.")
 	var pipeline:int=_dict_total(host.untrimmed_inventory)+_dict_total(host.trimmed_inventory)+_dict_total(host.bagged_inventory)
 	if pipeline>0:blockers.append("Move %dg of packing-bench product." % pipeline)
@@ -515,10 +513,53 @@ func apartment_release_blockers() -> Array[String]:
 	for delivery_variant in host.location_state.get("deliveries",{}).values():
 		if delivery_variant is Dictionary and str((delivery_variant as Dictionary).get("property",""))=="apartment":apartment_deliveries+=1
 	if apartment_deliveries>0:blockers.append("Install or redirect %d paid apartment deliver%s." % [apartment_deliveries,"y" if apartment_deliveries==1 else "ies"])
+	return blockers
+
+func apartment_release_blockers() -> Array[String]:
+	var blockers:Array[String]=[]
+	if not _has_alternate_property():blockers.append("Acquire and move into another property first.")
+	if not apartment_lease_active():return blockers
+	if world._indoors(host.camera.position):blockers.append("Leave the apartment before releasing its lease.")
+	blockers.append_array(_apartment_contents_blockers())
 	var paid_assets:=_apartment_paid_equipment_labels()
 	if not paid_assets.is_empty() and str(host.location_state.get("operation_assets_property","apartment"))=="apartment":
-		blockers.append("Relocate paid equipment first: "+", ".join(PackedStringArray(paid_assets))+".")
+		blockers.append("Pack paid apartment equipment into Property Storage first.")
 	return blockers
+
+func pack_apartment_paid_assets() -> void:
+	if not apartment_lease_active() or not _has_alternate_property():return
+	var blockers:=_apartment_contents_blockers()
+	if not blockers.is_empty():
+		host.status_label.text="Paid equipment cannot be packed yet: "+str(blockers[0])
+		host._refresh_phone()
+		return
+	var assets:=_apartment_paid_equipment_labels()
+	var stored_assets:Array=host.location_state.get("property_storage",[])
+	for asset in assets:
+		if not stored_assets.has(asset):stored_assets.append(asset)
+	host.location_state["property_storage"]=stored_assets
+	host.location_state["operation_assets_property"]="storage"
+	host._save_game()
+	host._refresh_phone()
+	host.status_label.text="Paid apartment equipment packed into Property Storage. Nothing you purchased was deleted."
+
+func reacquire_apartment() -> void:
+	if apartment_lease_active():return
+	if apartment_balance()>0:
+		host.status_label.text="Pay the old apartment balance before starting a new lease."
+		return
+	if host.cash<APARTMENT_REACQUIRE_COST:
+		host.status_label.text="You need $%d to start a new apartment lease." % APARTMENT_REACQUIRE_COST
+		return
+	host.cash-=APARTMENT_REACQUIRE_COST
+	host._record_daily_expense("Apartment lease restart",APARTMENT_REACQUIRE_COST)
+	host.apartment_rent_state["lease_active"]=true
+	host.apartment_rent_state["next_due"]=host.game_day+14
+	host.apartment_rent_state["first_unpaid"]=0
+	host.apartment_rent_state.erase("released_day")
+	house_state()["keep_apartment"]=true
+	host._update_cash_ui();host._save_game();host._refresh_phone()
+	host.status_label.text="Apartment lease restored. Door and computer access are active again."
 
 func request_apartment_release() -> void:
 	if not apartment_lease_active():return
@@ -599,6 +640,21 @@ func real_estate_ui(parent:VBoxContainer) -> void:
 			_property_button(parent,"KEEP APARTMENT",cancel_apartment_release)
 		else:
 			_property_button(parent,"RELEASE APARTMENT LEASE…",request_apartment_release)
+
+	var stored_assets:Array=host.location_state.get("property_storage",[])
+	if not stored_assets.is_empty():
+		_property_label(parent,"PROPERTY STORAGE · %d OWNED ITEM%s UNPLACED\n%s" % [stored_assets.size(),"" if stored_assets.size()==1 else "S"," · ".join(PackedStringArray(stored_assets))],17)
+	if apartment_lease_active() and str(host.location_state.get("operation_assets_property","apartment"))=="apartment":
+		var paid_assets:=_apartment_paid_equipment_labels()
+		if not paid_assets.is_empty():
+			var content_blockers:=_apartment_contents_blockers()
+			_property_button(parent,"PACK PAID APARTMENT EQUIPMENT TO PROPERTY STORAGE",pack_apartment_paid_assets,not _has_alternate_property() or not content_blockers.is_empty())
+	elif not apartment_lease_active():
+		if apartment_balance()>0:
+			_property_label(parent,"Clear the old apartment balance before renting this property again.",16)
+			_property_button(parent,"RENT APARTMENT AGAIN · $%d" % APARTMENT_REACQUIRE_COST,reacquire_apartment,true)
+		else:
+			_property_button(parent,"RENT APARTMENT AGAIN · $%d" % APARTMENT_REACQUIRE_COST,reacquire_apartment,host.cash<APARTMENT_REACQUIRE_COST)
 
 	var state:=house_state()
 	if not bool(state.get("acquired",false)):
