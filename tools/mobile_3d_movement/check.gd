@@ -146,6 +146,41 @@ func run() -> void:
 	check(cruise_speed>3.0,"Touch movement reaches normal walking speed",cruise_speed)
 	check(stopped_speed<.25,"Touch movement decelerates cleanly",stopped_speed)
 
+	# Full forward stick is the mobile sprint gesture. Partial forward remains
+	# walk speed so the player keeps fine control indoors.
+	w.physics_body.global_position=Vector3(5,.02,22)
+	w.physics_body.velocity=Vector3.ZERO
+	w.physics_body.stamina=w.physics_body.STAMINA_MAX
+	w.physics_body.exhausted=false
+	w._sync_camera_from_physics()
+	game.camera.rotation=Vector3.ZERO
+	w.pad.value=Vector2(0,-1)
+	await frames(45)
+	var sprint_speed:float=Vector2(w.physics_body.velocity.x,w.physics_body.velocity.z).length()
+	var stamina_after_sprint:float=w.physics_body.stamina
+	check(w.physics_body.is_sprinting and sprint_speed>4.8,"Full forward touch stick engages sprint",sprint_speed)
+	check(stamina_after_sprint<w.physics_body.STAMINA_MAX-5.0,"Sprint drains stamina",stamina_after_sprint)
+	check(w.stamina_bar!=null and w.stamina_bar.visible and w.stamina_bar.value<100.0,"Sprint stamina bar becomes visible",w.stamina_bar.value if w.stamina_bar!=null else -1)
+
+	w.pad.value=Vector2(0,-.72)
+	await frames(35)
+	var partial_speed:float=Vector2(w.physics_body.velocity.x,w.physics_body.velocity.z).length()
+	check(not w.physics_body.is_sprinting and partial_speed<4.1,"Partial forward touch remains normal walking",partial_speed)
+
+	w.pad.value=Vector2.ZERO
+	var stamina_before_recovery:float=w.physics_body.stamina
+	await frames(90)
+	check(w.physics_body.stamina>stamina_before_recovery+5.0,"Stamina recovers after sprint delay",w.physics_body.stamina)
+
+	w.physics_body.stamina=.1
+	w.physics_body.exhausted=false
+	w.pad.value=Vector2(0,-1)
+	await frames(10)
+	check(w.physics_body.exhausted and not w.physics_body.is_sprinting,"Empty stamina triggers exhaustion lockout")
+	w.pad.value=Vector2.ZERO
+	await frames(150)
+	check(not w.physics_body.exhausted and w.physics_body.stamina>=w.physics_body.STAMINA_REENABLE,"Recovery clears exhaustion after threshold",w.physics_body.stamina)
+
 	w.physics_body.stop()
 	game.queue_free()
 	await frames()
