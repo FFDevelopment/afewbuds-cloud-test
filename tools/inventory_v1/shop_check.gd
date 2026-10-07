@@ -66,9 +66,9 @@ func run():
  check(inv.backpack_weight()>inv.backpack_limit() and game.location_state.carried_fertilizer==old_fert+1,"Legacy overweight inventory is preserved")
  stand("apartment:supply");game.fertilizer_units=0
  check(inv.transfer("backpack","apartment:supply","fertilizer",1).ok,"Overweight players can unload items")
- empty_bag();stand("market:orders");ops.market()
+ empty_bag();stand("market:orders");ops.supplies()
  var labels:Array=[]
- for button in ops.ui.body.find_children("*","Button",true,false):labels.append(button.text)
+ for label_node in ops.ui.body.find_children("*","Label",true,false):labels.append(label_node.text.to_upper())
  check(labels.any(func(t):return "PACK OF 5" in t) and not labels.any(func(t):return "USES" in t),"Shop sells a pack of five fertilizer, not uses")
  old_cash=game.cash;ops.fertilizer()
  check(game.location_state.carried_fertilizer==5 and game.cash==old_cash-45,"Direct pack purchase adds five fertilizer to backpack exactly once")

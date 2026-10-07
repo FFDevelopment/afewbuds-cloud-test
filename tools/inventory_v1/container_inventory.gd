@@ -1,6 +1,7 @@
 extends Node
 ## Container inventory shared by desktop and mobile. Existing production counters
 ## are live adapters, so workers and sales cannot diverge from displayed stock.
+var guide:Node
 var host:Node3D
 var state:Dictionary
 var layer:CanvasLayer
@@ -21,6 +22,7 @@ var transfer_preview:Label
 var notice:Label
 var footer:BoxContainer
 var quantity:SpinBox
+var collect_all_button:Button
 var confirm:Button
 var backpack_button:Button
 var phone_button:Button
@@ -35,9 +37,9 @@ var busy:=false
 var resume_container:=""
 var packing_return:=""
 var packing_action:Button
-# Integer weight units preserve 1g of product exactly. One unit is 0.00001g.
-const POUND:=45359237
-const GRAM:=100000
+# Integer weight units preserve 1g of product exactly. One unit is 0.0000002g; seeds and grams both stay exact.
+const POUND:=2267961850
+const GRAM:=5000000
 const BACKPACK_LIMITS:=[35*POUND,55*POUND,80*POUND,110*POUND]
 const BACKPACK_PRICES:=[250,750,1750]
 const KINDS:=["supply","storage","dealer","packing"]
@@ -57,6 +59,7 @@ func setup(owner:Node3D) -> void:
  process_priority=50
  ensure_state()
  build_ui()
+ guide=load("res://scripts/first_day_guide.gd").new();add_child(guide);guide.setup(host,self)
  if host.neighborhood.get("action")!=null:style_button(host.neighborhood.action,true)
  for work_panel in [host.trim_panel,host.bag_minigame_panel]:
   work_panel.add_theme_stylebox_override("panel",ui_style("111713","566052",16))
@@ -212,7 +215,7 @@ func capacity(id:String,item:String) -> int:
  return 0
 func unit_weight(item:String) -> int:
  if item=="cash":return 0
- if category(item)=="seed":return 907185 # 0.02 lb, rounded to 0.00001g
+ if category(item)=="seed":return 45359237 # Exactly 0.02 lb
  if item=="fertilizer":return POUND # Five individual fertilizer items per 5 lb pack
  if group(item)=="grams":return GRAM
  if group(item)=="equipment":
@@ -301,12 +304,18 @@ func transfer(source:String,destination:String,item:String,amount:int,expected_r
  set_amount(source,item,from_amount-amount)
  set_amount(destination,item,to_amount+amount)
  revision+=1
+ if destination=="backpack" and category(item)=="product":
+  host._ensure_product_exists(item.get_slice("|",1))
+  host._schedule_next_customer(true)
  if destination==operation()+":storage" and category(item)=="product":
   var strain:String=item.get_slice("|",1)
   if host.tutorial_active and host.tutorial_step==8 and strain==host.tutorial_harvest_strain:host.products[strain]["listed"]=false
   host._increment_advancement_stat("grams_stored",amount)
   host._tutorial_record("store",-1,strain)
   host._schedule_next_customer(true)
+ if guide!=null:
+  if source=="market:orders":guide.record("collect")
+  if source.ends_with(":packing") and category(item)=="product":guide.record("carry_product")
  host._update_cash_ui()
  host._save_game()
  busy=false
@@ -487,11 +496,13 @@ func build_ui() -> void:
  filter_bar=HBoxContainer.new();filter_bar.add_theme_constant_override("separation",6);root.add_child(filter_bar)
  for value in ["All","Supplies","Seeds","Equipment","Products"]:
   var tab:=button(value,set_filter.bind(value),filter_bar);tab.size_flags_horizontal=Control.SIZE_EXPAND_FILL;tab.add_theme_font_size_override("font_size",14);tab.custom_minimum_size.y=32
- preview_note=label("Inventory preview · Separate test career",root,12);preview_note.modulate=Color("a4ae9a")
+ preview_note=label("PERSONAL INVENTORY",root,12);preview_note.modulate=Color("a4ae9a")
  body_layout=BoxContainer.new();body_layout.size_flags_vertical=Control.SIZE_EXPAND_FILL;body_layout.add_theme_constant_override("separation",12);root.add_child(body_layout)
  columns=BoxContainer.new();columns.size_flags_horizontal=Control.SIZE_EXPAND_FILL;columns.size_flags_vertical=Control.SIZE_EXPAND_FILL;columns.add_theme_constant_override("separation",12);body_layout.add_child(columns)
  inspector=PanelContainer.new();inspector.add_theme_stylebox_override("panel",ui_style("171e18"));body_layout.add_child(inspector)
  notice=label("",root,14)
+ collect_all_button=button("Collect All",collect_all_clicked,root,true)
+ collect_all_button.custom_minimum_size.y=46
  footer=BoxContainer.new();footer.add_theme_constant_override("separation",10);root.add_child(footer)
  quantity_strip=HBoxContainer.new();quantity_strip.size_flags_horizontal=Control.SIZE_EXPAND_FILL;quantity_strip.size_flags_stretch_ratio=2;quantity_strip.add_theme_constant_override("separation",5);footer.add_child(quantity_strip)
  button("−",func():quantity.value=maxf(1,quantity.value-1),quantity_strip).custom_minimum_size.x=36
@@ -540,6 +551,8 @@ func render() -> void:
   render_inventory(container_id)
   if adding:render_inventory("backpack")
  if inspector.visible:render_inspector()
+ collect_all_button.visible=container_id=="market:orders"
+ collect_all_button.disabled=contents("market:orders").is_empty()
  footer.visible=not container_id.is_empty()
  confirm.disabled=selected.is_empty()
  notice.text="Select an item for details." if container_id.is_empty() else ("Choose an order and quantity. Anything that does not fit stays at the shop." if container_id=="market:orders" else "Select an item to take, or open your backpack to add stock.")
@@ -682,3 +695,31 @@ func commit_selection() -> void:
  var dst:String=container_id if selected_source=="backpack" else "backpack"
  var result:=transfer(selected_source,dst,selected,int(quantity.value),selected_revision)
  selected="";selected_source="";render();notice.text=str(result.reason)
+
+func _input(event:InputEvent) -> void:
+ for ui in [host.neighborhood.location_ops.ui,host.neighborhood.property_opportunity]:
+  if ui.handle_scroll(event):
+   get_viewport().set_input_as_handled();return
+
+func collect_all() -> Dictionary:
+ if busy or not reachable("market:orders"):return {"ok":false,"reason":"Visit the market checkout to collect your order.","collected":0}
+ var orders:Dictionary=contents("market:orders")
+ var keys:Array=orders.keys()
+ keys.sort_custom(func(a,b):return unit_weight(a)<unit_weight(b) if unit_weight(a)!=unit_weight(b) else str(a)<str(b))
+ var collected:=0
+ for item in keys:
+  var amount:int=mini(available("market:orders",item),free_space("backpack",item))
+  if amount<=0:continue
+  var result:Dictionary=transfer("market:orders","backpack",item,amount)
+  if bool(result.ok):collected+=amount
+ var remaining:=0
+ for amount in contents("market:orders").values():remaining+=int(amount)
+ var message:String="Collected %d item%s." % [collected,"" if collected==1 else "s"]
+ if remaining>0:message+=" Backpack weight limit reached. %d paid item%s remain here for later." % [remaining,"" if remaining==1 else "s"]
+ elif collected==0:message="No orders waiting for collection."
+ return {"ok":true,"collected":collected,"remaining":remaining,"reason":message}
+func collect_all_clicked() -> void:
+ var result:Dictionary=collect_all()
+ selected="";selected_source="";render()
+ notice.text=str(result.reason)
+ host.status_label.text=str(result.reason)

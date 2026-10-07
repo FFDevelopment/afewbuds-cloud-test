@@ -69,6 +69,20 @@ jobs:
           grep -q "STATION_INVENTORY_TEST_RESULT: PASS" "${RUNNER_TEMP}/station-inventory-check.log"
           if grep -E 'SCRIPT ERROR|^ERROR:' "${RUNNER_TEMP}/station-inventory-check.log"; then exit 1; fi
 
+      - name: Test backpack use, packing upgrades and computer touch menus
+        run: |
+          set -euo pipefail
+          XDG_DATA_HOME="$(mktemp -d)" timeout 120s /tmp/godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path "${RUNNER_TEMP}/mobile3d/candidate" --script "${GITHUB_WORKSPACE}/tools/inventory_v1/release_check.gd" 2>&1 | tee "${RUNNER_TEMP}/release-check.log"
+          grep -q "RELEASE_READINESS_TEST_RESULT: PASS" "${RUNNER_TEMP}/release-check.log"
+          if grep -E 'SCRIPT ERROR|^ERROR:' "${RUNNER_TEMP}/release-check.log"; then exit 1; fi
+
+      - name: Test tutorial, market categories and weight-limited collection
+        run: |
+          set -euo pipefail
+          XDG_DATA_HOME="$(mktemp -d)" timeout 120s /tmp/godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path "${RUNNER_TEMP}/mobile3d/candidate" --script "${GITHUB_WORKSPACE}/tools/inventory_v1/tutorial_market_check.gd" 2>&1 | tee "${RUNNER_TEMP}/tutorial-market-check.log"
+          grep -q "TUTORIAL_MARKET_TEST_RESULT: PASS" "${RUNNER_TEMP}/tutorial-market-check.log"
+          if grep -E 'SCRIPT ERROR|^ERROR:' "${RUNNER_TEMP}/tutorial-market-check.log"; then exit 1; fi
+
       - name: Commit validated inventory preview
         run: |
           set -euo pipefail

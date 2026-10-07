@@ -14,6 +14,13 @@ var layer: CanvasLayer
 var overlay: ColorRect
 var panel: PanelContainer
 var footer: VBoxContainer
+var scroll: ScrollContainer
+var scroll_actions:=false
+var scroll_touch:=-1
+var scroll_origin:=Vector2.ZERO
+var scroll_last:=Vector2.ZERO
+var scroll_dragging:=false
+var swallow_mouse_release:=false
 var body: VBoxContainer
 var tour_bar: VBoxContainer
 var tour_label: Label
@@ -45,7 +52,11 @@ func setup(owner: Node3D) -> void:
 	style.content_margin_top=16
 	style.content_margin_bottom=16
 	panel.add_theme_stylebox_override("panel",style)
-	var scroll := ScrollContainer.new()
+	scroll = ScrollContainer.new()
+	scroll.follow_focus=true
+	scroll.scroll_deadzone=12
+	scroll.vertical_scroll_mode=ScrollContainer.SCROLL_MODE_AUTO
+	scroll.get_v_scroll_bar().custom_minimum_size.x=14
 	scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED
 	var layout := VBoxContainer.new()
 	layout.add_theme_constant_override("separation",12)
@@ -112,9 +123,11 @@ func state() -> Dictionary:
 
 func resize() -> void:
 	var viewport: Vector2=host.get_viewport().get_visible_rect().size
-	var width: float=minf(760,viewport.x-24)
-	var height: float=minf(780,viewport.y-36)
-	panel.position=Vector2((viewport.x-width)/2,(viewport.y-height)/2)
+	var ui_scale:float=maxf(1.0,viewport.x/maxf(1.0,host.get_window().size.x))
+	panel.scale=Vector2.ONE*ui_scale
+	var width: float=minf(760,viewport.x/ui_scale-24)
+	var height: float=minf(780,viewport.y/ui_scale-36)
+	panel.position=(viewport-Vector2(width,height)*ui_scale)/2
 	panel.size=Vector2(width,height)
 	tour_bar.position=Vector2(18,140)
 	tour_bar.size=Vector2(minf(410,viewport.x-36),100)
@@ -123,6 +136,8 @@ func is_open() -> bool:
 	return overlay!=null and overlay.visible
 
 func _clear() -> void:
+	scroll_actions=false
+	scroll.scroll_vertical=0
 	for container in [body,footer]:
 		for child in container.get_children():
 			container.remove_child(child)
@@ -144,7 +159,9 @@ func button(text: String, callback: Callable, disabled:bool=false) -> void:
 	item.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 	item.disabled=disabled
 	item.pressed.connect(callback)
-	footer.add_child(item)
+	if scroll_actions and not text.begins_with("BACK") and not text.begins_with("CLOSE"):
+		body.add_child(item)
+	else:footer.add_child(item)
 
 func visited() -> Array:
 	var result: Array=[]
@@ -349,3 +366,28 @@ func update(delta: float) -> void:
 			state()["inspection_complete"]=seen.size()==ROOMS.size()
 			host._save_game()
 	tour_label.text="HOUSE TOUR · %d / 6 ROOMS INSPECTED\n%s" % [seen.size(),("Inspection complete. Review the property when ready." if seen.size()==6 else (ROOMS[room]+(" · inspected" if seen.has(room) else " · inspecting…") if ROOMS.has(room) else "Walk to the house and inspect each room."))]
+
+func handle_scroll(event:InputEvent) -> bool:
+	if not is_open():
+		scroll_touch=-1;scroll_dragging=false;return false
+	if event is InputEventScreenTouch:
+		if event.pressed and scroll.get_global_rect().has_point(event.position):
+			scroll_touch=event.index;scroll_origin=event.position;scroll_last=event.position;scroll_dragging=false
+		elif not event.pressed and event.index==scroll_touch:
+			var consumed:bool=scroll_dragging
+			scroll_touch=-1;scroll_dragging=false
+			return consumed
+	elif event is InputEventScreenDrag and event.index==scroll_touch:
+		if event.position.distance_to(scroll_origin)>12:scroll_dragging=true
+		if scroll_dragging:
+			scroll.scroll_vertical-=int((event.position.y-scroll_last.y)/panel.scale.y)
+			swallow_mouse_release=true
+			for button_node in body.find_children("*","BaseButton",true,false):button_node.button_pressed=false
+			scroll_last=event.position
+			return true
+		scroll_last=event.position
+	elif event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_LEFT:
+		if not event.pressed and swallow_mouse_release:
+			swallow_mouse_release=false;return true
+		if event.pressed:swallow_mouse_release=false
+	return false

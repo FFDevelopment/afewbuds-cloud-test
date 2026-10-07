@@ -776,6 +776,7 @@ def main():
     updated.append(['scripts/districts.gd',(HERE/'districts.gd').read_bytes(),0])
 
     updated.append(['scripts/container_inventory.gd',(ROOT/'tools/inventory_v1/container_inventory.gd').read_bytes(),0])
+    updated.append(['scripts/first_day_guide.gd',(ROOT/'tools/inventory_v1/first_day_guide.gd').read_bytes(),0])
     inventory_art=sorted((ROOT/"assets/inventory").glob("*.png"))
     assert len(inventory_art)==6
     for asset in inventory_art:updated.append(["assets/inventory/"+asset.name,asset.read_bytes(),0])
@@ -842,17 +843,16 @@ def main():
 
     loader=(ROOT/'shared/afb-runtime-kobi-v1.js').read_text()
     loader=loader.replace('kobi-v1','mobile-3d-v1').replace('AFB_RUNTIME_KOBI_V1','AFB_RUNTIME_MOBILE_3D_V1')
-    loader=re.sub(r'patch\.json\?v=\d+','patch.json?v=inventory6',loader)
+    loader=re.sub(r'patch\.json\?v=\d+','patch.json?v=inventory7',loader)
     (ROOT/'shared/afb-runtime-mobile-3d-v1.js').write_text(loader,newline='\n')
 
-    release='0.7.9-beta.19-cloudtest.99-inventory.6'
+    release='0.7.9-beta.19-cloudtest.99-inventory.7'
     index=(ROOT/'index.html').read_text(encoding='utf-8')
-    index=index.replace('inventory1','inventory6').replace('inventory2','inventory6').replace('inventory3','inventory6').replace('inventory4','inventory6').replace('inventory5','inventory6')
+    index=index.replace('inventory1','inventory7').replace('inventory2','inventory7').replace('inventory3','inventory7').replace('inventory4','inventory7').replace('inventory5','inventory7').replace('inventory6','inventory7')
     index=index.replace('kobi-v1','mobile-3d-v1').replace('AFB_RUNTIME_KOBI_V1','AFB_RUNTIME_MOBILE_3D_V1')
-    index=re.sub(r'afb-runtime-mobile-3d-v1\.js\?v=\d+','afb-runtime-mobile-3d-v1.js?v=inventory6',index)
+    index=re.sub(r'afb-runtime-mobile-3d-v1\.js\?v=\d+','afb-runtime-mobile-3d-v1.js?v=inventory7',index)
     index=re.sub(r'0\.7\.9-beta\.19-cloudtest\.(?:98-kobi|99-mobile3d|99-inventory)\.\d+',release,index)
     index=re.sub(r'"fileSizes":\{[^}]*\\}',f'"fileSizes":{{"index-mobile-3d-v1.pck":{len(built)},"index.wasm":{(ROOT/"index.wasm").stat().st_size}}}',index,count=1)
-    if 'MOBILE 3D TEST</title>' not in index:index=index.replace('</title>',' Â· MOBILE 3D TEST</title>',1)
     (ROOT/'index.html').write_text(index,encoding='utf-8',newline='\n')
 
     version=json.loads((ROOT/'version.json').read_text())
@@ -885,7 +885,7 @@ def main():
         'target_sha256':hashlib.sha256(built).hexdigest(),
         'target_bytes':len(built),
         'changed_existing_entries':changed,
-        'added_entries':['scripts/mobile_physics_player.gd','scripts/districts.gd','scripts/container_inventory.gd']+['assets/inventory/'+asset.name for asset in inventory_art],
+        'added_entries':['scripts/mobile_physics_player.gd','scripts/districts.gd','scripts/container_inventory.gd','scripts/first_day_guide.gd']+['assets/inventory/'+asset.name for asset in inventory_art],
         'unchanged_entries':len(before)-len(changed),
         'reconstruction_verified':True
     }

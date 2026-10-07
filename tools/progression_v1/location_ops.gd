@@ -127,10 +127,12 @@ func use(id: String) -> void:
 		"house_computer":computer("house")
 		"market_checkout":market()
 func clear(title: String) -> void:
+	ui.scroll_actions=true
+	ui.scroll.scroll_vertical=0
 	for container in [ui.body,ui.footer]:
 		for child in container.get_children():container.remove_child(child);child.queue_free()
 	ui.label(title,26)
-	if host.inventory_system!=null and title.begins_with("CENTRAL MARKET"):
+	if host.inventory_system!=null and (title.begins_with("CENTRAL MARKET") or not computer_context.is_empty()):
 		ui.panel.add_theme_stylebox_override("panel",host.inventory_system.ui_style("111713","566052",18))
 	ui.overlay.show();ui.resize()
 	world.pad.release();world.pointer=-99
@@ -156,6 +158,7 @@ func order_seed(name: String) -> void:
 	host._record_daily_expense("Seed orders",price)
 	host.location_state.pickup_seeds[name]=int(host.location_state.pickup_seeds.get(name,0))+1
 	host._increment_advancement_stat("seeds_bought")
+	if host.inventory_system.guide!=null:host.inventory_system.guide.record("order_seed")
 	host._update_cash_ui();host._save_game();host._refresh_phone()
 	host.status_label.text="Seed order ready at Central Market. Pick it up at the checkout."
 func pickup() -> void:
@@ -211,32 +214,50 @@ func deposit() -> void:
 	# Compatibility for old callers: inventory transfers only happen at containers.
 	host.status_label.text="Open the grow shelf and choose Add Stock to store supplies."
 func market() -> void:
-	clear("CENTRAL MARKET — CHECKOUT")
-	ui.label("Collect seed orders, buy fertilizer, or order equipment for your property. Cash: $%d" % host.cash)
-	b("COLLECT ORDERS INTO BACKPACK",pickup,host.inventory_system.contents("market:orders").values().all(func(n):return int(n)<=0))
-	b("FERTILIZER · PACK OF 5 · $45",fertilizer,host.cash<45 or host.inventory_system.free_space("backpack","fertilizer")<5)
-	b("BROWSE SEEDS",seeds)
-	b("EQUIPMENT & UPGRADES",equipment)
-	ui.label(host.inventory_system.backpack_summary()+". Cash has no weight.")
-	ui.label("Pack of 5 fertilizer: "+host.inventory_system.weight_text(5*host.inventory_system.unit_weight("fertilizer"))+" total.")
-	var level:int=int(host.inventory_system.state.backpack_level)
-	if level<host.inventory_system.BACKPACK_LIMITS.size():
-		var price:int=host.inventory_system.BACKPACK_PRICES[level-1]
-		b("UPGRADE BACKPACK · %s · $%d" % [host.inventory_system.weight_text(host.inventory_system.BACKPACK_LIMITS[level]),price],host.inventory_system.upgrade_backpack.bind(level),host.cash<price)
+	clear("CENTRAL MARKET")
+	market_navigation()
+	ui.label("Order supplies, then collect everything that fits in your backpack. Paid items stay here until you take them.",18)
+	b("ORDER PICKUP",pickup,host.inventory_system.contents("market:orders").is_empty())
+	market_card("seed|Street Green","Seeds","Parent strains for planting and breeding.",seeds)
+	market_card("fertilizer","Supplies","Fertilizer and everyday growing supplies.",supplies)
+	market_card("equipment|Grow Tent upgrade","Upgrades","Equipment and larger backpacks.",equipment)
+	ui.button("CLOSE",close)
+func market_navigation() -> void:
+	ui.label("Cash: $%d  |  %s" % [host.cash,host.inventory_system.backpack_summary()],16)
+	var row:=HBoxContainer.new();row.add_theme_constant_override("separation",6);ui.body.add_child(row)
+	for category_name in ["Seeds","Supplies","Upgrades"]:
+		var callback:Callable={"Seeds":seeds,"Supplies":supplies,"Upgrades":equipment}[category_name]
+		var tab:Button=host.inventory_system.button(category_name,callback,row)
+		tab.size_flags_horizontal=Control.SIZE_EXPAND_FILL;tab.add_theme_font_size_override("font_size",16)
+func market_card(item:String,title:String,detail:String,callback:Callable,disabled:bool=false) -> void:
+	var card:=Button.new();card.custom_minimum_size.y=128;card.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+	host.inventory_system.style_button(card);card.disabled=disabled;card.pressed.connect(callback);ui.body.add_child(card)
+	var row:=HBoxContainer.new();row.add_theme_constant_override("separation",12);card.add_child(row)
+	row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);row.offset_left=12;row.offset_right=-12;row.offset_top=10;row.offset_bottom=-10
+	host.inventory_system.art_rect(item,row,Vector2(88,88))
+	var text_box:=VBoxContainer.new();text_box.size_flags_horizontal=Control.SIZE_EXPAND_FILL;row.add_child(text_box)
+	host.inventory_system.label(title,text_box,20)
+	host.inventory_system.label(detail,text_box,16).modulate=Color("bdcbb4")
+	host.inventory_system.ignore_pointer(row)
+	if disabled:row.modulate=Color(1,1,1,.5)
+func supplies() -> void:
+	clear("CENTRAL MARKET - SUPPLIES");market_navigation()
+	market_card("fertilizer","Fertilizer - Pack of 5","$45 | 5 lb total\nOrder for pickup",func():order_fertilizer();supplies(),host.cash<45)
+	ui.button("BACK TO CHECKOUT",market)
 	ui.button("CLOSE",close)
 func seeds() -> void:
-	clear("CENTRAL MARKET — SEEDS")
-	ui.label("Orders are held at this checkout until collected. They do not go straight onto your grow shelf.")
+	clear("CENTRAL MARKET - SEEDS");market_navigation()
+	ui.label("Order seeds here and collect them into your backpack.",18)
 	for name in host.SEED_ORDER:
 		if not host.seed_catalog.has(name):continue
 		var data: Dictionary=host.seed_catalog[name]
 		if bool(data.get("recipe_only",false)):continue
 		var price: int=int(data.get("cost",10))
 		var level: int=int(data.get("unlock",1))
-		b("ORDER %s · $%d · LEVEL %d" % [name,price,level],func():order_seed(name);seeds(),host.cash<price or host.grower_level<level or total(host.location_state.pickup_seeds)>=50)
+		market_card("seed|"+name,name,"$%d | 0.02 lb each\n%s" % [price,"Order for pickup" if host.grower_level>=level else "Unlocks at Level %d" % level],func():order_seed(name);seeds(),host.cash<price or host.grower_level<level or total(host.location_state.pickup_seeds)>=50)
 	ui.button("BACK TO CHECKOUT",market)
 func equipment() -> void:
-	clear("CENTRAL MARKET — EQUIPMENT")
+	clear("CENTRAL MARKET - UPGRADES");market_navigation()
 	if rent_overdue():ui.label("A property balance is overdue. Pay it in Phone → Real Estate or Bills to resume new equipment orders. Seeds, fertilizer and sales remain available.")
 	ui.label("Delivery location: %s. Collect paid orders into your backpack, then install them at the property computer." % active_property().to_upper())
 	if host.dealer_locker_level<4:
@@ -251,7 +272,11 @@ func equipment() -> void:
 		var title: String="%s · $%d · LEVEL %d" % [name,price,int(data.get("unlock",1))]
 		if host.location_state.deliveries.has(name):title+=" · PAID ORDER"
 		elif host._supply_is_purchased(name):title+=" · INSTALLED"
-		b(title,order_equipment.bind(name),not eligible(name) or host.cash<price)
+		market_card("equipment|"+name,title,str(data.get("description","Order for pickup")),order_equipment.bind(name),not eligible(name) or host.cash<price)
+	var backpack_level:int=int(host.inventory_system.state.backpack_level)
+	if backpack_level<host.inventory_system.BACKPACK_LIMITS.size():
+		var backpack_price:int=host.inventory_system.BACKPACK_PRICES[backpack_level-1]
+		market_card("equipment|Backpack","Backpack upgrade","$%d | Carry up to %s" % [backpack_price,host.inventory_system.weight_text(host.inventory_system.BACKPACK_LIMITS[backpack_level])],host.inventory_system.upgrade_backpack.bind(backpack_level),host.cash<backpack_price)
 	ui.button("BACK TO CHECKOUT",market)
 func computer(property: String) -> void:
 	if property=="apartment" and not apartment_lease_active():
@@ -285,21 +310,21 @@ func manage(app: String) -> void:
 		"upgrades":host._build_upgrades_app()
 		"bills":host._build_bills_app()
 	host.phone_list=previous_list
-	ui.button("REFRESH",manage.bind(app))
+	b("REFRESH",manage.bind(app))
 	if app=="business":ui.button("CLOSE COMPUTER",close)
 	else:
 		var parent: String={"employees":"operations","products":"inventory","genetics":"inventory","upgrades":"property","bills":"property"}.get(app,"business")
 		ui.button("BACK TO "+parent.to_upper(),manage.bind(parent))
+		ui.button("CLOSE COMPUTER",close)
+	format_management()
 	rendering_management=false
 func business_home() -> void:
 	var state: String="LAYING LOW" if host.lay_low_active else ("OPEN" if host.business_open else "AWAY")
 	ui.label("STOREFRONT · "+state,22)
 	ui.label("Crew: %d · Dealer stock: %dg · Outstanding bills: $%d" % [host._staff_count(),host._dealer_locker_total(),host.power_bill_due+host.water_bill_due+host.dealer_balance_due+balance()])
 	b("OPERATIONS · Staff, production & power",manage.bind("operations"))
-	b("INVENTORY · Stock, genetics & supplies",manage.bind("inventory"))
+	b("INVENTORY · Products & genetics",manage.bind("inventory"))
 	b("PROPERTY & BILLS · Storefront, rent & equipment",manage.bind("property"))
-	var carried: int=total(host.location_state.carried_seeds)+int(host.location_state.carried_fertilizer)
-	if carried>0:ui.label("%d supplies carried · Store them at your grow shelf." % carried)
 	if host.location_state.deliveries.size()>0:ui.label("%d paid equipment orders · Collect into your backpack before installation." % host.location_state.deliveries.size())
 func operations_home() -> void:
 	ui.label("CREW · %d staff · Door manager: %s" % [host._staff_count(),crew.manager() if not crew.manager().is_empty() else "None assigned"])
@@ -309,9 +334,6 @@ func operations_home() -> void:
 func inventory_home() -> void:
 	b("STORAGE · Stock, prices & listings",manage.bind("products"))
 	b("GENETICS · Hybrid recipes & seeds",manage.bind("genetics"))
-	ui.label("SUPPLY SHELF · %d / %d seeds · %d / %d fertilizer" % [host._total_seed_inventory(),host._supply_seed_capacity(),host.fertilizer_units,host._supply_fertilizer_capacity()])
-	ui.label("CARRIED · %d seeds · %d fertilizer" % [total(host.location_state.carried_seeds),int(host.location_state.carried_fertilizer)])
-	ui.label("Use Add Stock at the grow shelf to store carried supplies.")
 func property_home() -> void:
 	b("BILLS & RENT · Payments and balances",manage.bind("bills"))
 	b("EQUIPMENT · Upgrades & installation",manage.bind("upgrades"))
@@ -321,9 +343,6 @@ func property_home() -> void:
 	crew.computer_controls()
 func business_extras() -> void:
 	crew.computer_controls()
-	ui.label("SUPPLY SHELF: %d / %d seeds · %d / %d fertilizer." % [host._total_seed_inventory(),host._supply_seed_capacity(),host.fertilizer_units,host._supply_fertilizer_capacity()])
-	ui.label("CARRIED: %d seeds · %d fertilizer." % [total(host.location_state.carried_seeds),int(host.location_state.carried_fertilizer)])
-	ui.label("Use Add Stock at the grow shelf to store carried supplies.")
 	for name in host.location_state.deliveries:b("INSTALL "+str(name),install.bind(str(name)),not host.inventory_system.delivery_carried(str(name)))
 	var grid: GridContainer=host._phone_category_grid()
 	for app in ["employees","upgrades","products","genetics"]:
@@ -948,12 +967,13 @@ func rent_overdue() -> bool:
 func order_fertilizer() -> void:
 	if host.tutorial_active or host.cash<45 or int(host.location_state.pickup_fertilizer)>45:return
 	host.cash-=45;host.location_state.pickup_fertilizer+=5
+	if host.inventory_system.guide!=null:host.inventory_system.guide.record("order_fertilizer")
 	host._record_daily_expense("Supply orders",45);host._increment_advancement_stat("supplies_bought")
 	host._update_cash_ui();host._save_game();host._refresh_phone()
 	host.status_label.text="Fertilizer ready for pickup at Central Market."
 func phone_supplies() -> void:
 	var note:=Label.new()
-	note.text="Order fertilizer for Central Market pickup. Collect it at checkout, then store it at the grow shelf using Add Stock."
+	note.text="Order fertilizer for Central Market pickup. Collect it at checkout and use it from your backpack."
 	note.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;host.phone_list.add_child(note)
 	order_summary(host.phone_list)
 	var buy:=Button.new()
@@ -961,3 +981,11 @@ func phone_supplies() -> void:
 	buy.custom_minimum_size.y=76
 	buy.disabled=host.cash<45 or int(host.location_state.pickup_fertilizer)>45
 	buy.pressed.connect(order_fertilizer);host.phone_list.add_child(buy)
+
+func format_management() -> void:
+	for item in ui.body.find_children("*","Control",true,false):
+		if item is Label or item is Button:
+			item.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+			item.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+			item.custom_minimum_size.x=0
+		if item is GridContainer and ui.panel.size.x<520:item.columns=1

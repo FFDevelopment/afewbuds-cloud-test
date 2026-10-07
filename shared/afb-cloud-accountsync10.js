@@ -7,7 +7,7 @@
   const key=()=>PREFIX+(player()?.account_id || 'guest');
   const normalize=data=>Array.isArray(data)?normalize(data[0]):(data?.value && typeof data.value==='object'?data.value:data);
   const read=()=>{try{return JSON.parse(localStorage.getItem(key()) || 'null');}catch(_){return null;}};
-  const summary=save=>save?`Preview copy · Day ${save.game_day || 1} · $${save.cash || 0}`:'New preview career';
+  const summary=save=>save?`Day ${save.game_day || 1} · $${save.cash || 0}`:'New career';
   async function reconcileLatestSilently(){
     const previewKey=key();
     let save=read();

@@ -15,7 +15,14 @@ def patch_main(s):
     s=s.replace('"PUT IN STORAGE", _store_product','"TAKE TO BACKPACK", _inventory_take_packed')
     s+='\nfunc _inventory_take_packed(strain_name:String) -> void:\n\tbagging_panel.hide()\n\tinventory_system.open_container("packing")\n\tinventory_system.select_item(inventory_system.container_id,"product|"+strain_name)\n'
     for old,new in {'then deposit them at your apartment computer.': 'then collect them into your backpack and store them at the grow shelf using Add Stock.', 'then deposit carried seeds at your computer.': 'then put carried seeds on your grow shelf using Add Stock.', 'then deposit carried supplies at your apartment computer.': 'then store carried supplies at your grow shelf using Add Stock.', 'Paid equipment waits for computer installation.': 'Paid equipment must be collected into your backpack before computer installation.'}.items():s=s.replace(old,new)
-    return patch_stations(s)
+    import importlib.util
+    from pathlib import Path
+    spec=importlib.util.spec_from_file_location("inventory_release",Path(__file__).with_name("release_patch.py"))
+    module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+    s=module.patch_main(patch_stations(s))
+    spec=importlib.util.spec_from_file_location("inventory_tutorial",Path(__file__).with_name("tutorial_patch.py"))
+    tutorial=importlib.util.module_from_spec(spec);spec.loader.exec_module(tutorial)
+    return tutorial.patch_main(s)
 
 def patch_stations(s):
     s=s.replace('func _open_bagging_panel() -> void:\n','func _open_bagging_panel() -> void:\n\tif inventory_system!=null:\n\t\tinventory_system.open_container("packing")\n\t\treturn\n',1)
