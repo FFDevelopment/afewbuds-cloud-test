@@ -1,5 +1,5 @@
 {
-  "release_id": "0.7.9-beta.19-cloudtest.99-mobile3d.7",
+  "release_id": "0.7.9-beta.19-cloudtest.99-mobile3d.8",
   "game_build": "0.7.9-beta.19",
   "channel": "main-based-cloud-test",
   "updater": "network-only-no-service-worker",
@@ -185,6 +185,22 @@
     "physics": "gravity, floor snap, cached StaticBody3D world proxies, physical doors and police stair ramp",
     "police_station": "clean floor closure; side-door widths match scaled apertures; jamb/header trim sits inside openings; wall-base trim is surface-mounted",
     "sprint": "5.4 m/s with shared 100-point stamina, drain/recovery/exhaustion and HUD label SPRINTING",
-    "save_schema": "unchanged"
+    "save_schema": "backward-compatible; adds property agreement/relocation and advancement choice state"
+  },
+  "chapter_4_5": {
+    "property_finale": "Rent / Lease to Own / Purchase -> relocate -> first house entry completes Chapter 4",
+    "chapter_5": "Building an Operation starts in house",
+    "agreement_terms": "Rent 1800 + 600/7d; Lease 4500 + 1000/7d toward 18500; Purchase 17500"
+  },
+  "heat_balance": {
+    "routine_gain_multiplier": 0.7,
+    "online_open_decay_per_game_minute": 0.012,
+    "online_quiet_decay_per_game_minute": 0.016,
+    "online_lay_low_decay_per_game_minute": 0.024,
+    "offline_full_cool_minutes": 180,
+    "daily_pressure_chance": "12%-40%"
+  },
+  "branching_tasks": {
+    "reeves_payment_outcome": "On-time payment vs missed-payment objectives are mutually exclusive; incompatible unclaimed task retires automatically"
   }
 }
