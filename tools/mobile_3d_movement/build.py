@@ -253,6 +253,13 @@ func _update_stamina_hud() -> void:
         'if id=="HouseEntrance" and not door.opened and not property_opportunity.touring:',
         'if id=="HouseEntrance" and not door.opened and not property_opportunity.touring and not bool(host.property_opportunity_state.get("relocated",false)):',1)
 
+    source=source.replace(
+        'func _toggle_door() -> void:\n\tif transitioning or door_busy:return\n',
+        'func _toggle_door() -> void:\n\tif transitioning or door_busy:return\n\tif location_ops!=null and not location_ops.apartment_lease_active():\n\t\thost.status_label.text="Apartment lease released. The door is locked."\n\t\treturn\n',1)
+    source=source.replace(
+        '\tif target.begins_with("housecontrol_"): action.text=house_controls.title(target.trim_prefix("housecontrol_"))\n',
+        '\tif target=="apartment" and location_ops!=null and not location_ops.apartment_lease_active():action.text="APARTMENT | LEASE RELEASED"\n\tif target.begins_with("housecontrol_"): action.text=house_controls.title(target.trim_prefix("housecontrol_"))\n',1)
+
     for required in [
         'MobilePhysicsPlayer','_rebuild_physics_obstacles()','physics_body.drive',
         'MobilePhysicsApartmentDoor','_set_physics_door_closed(false)',
@@ -403,6 +410,11 @@ def patch_progression_main(source:str) -> str:
 
 '''
     source=source.replace('func _build_account_app() -> void:',real_estate_func+'func _build_account_app() -> void:',1)
+
+    source=source.replace('phone_title.text = "Apartment · Employees"','phone_title.text = ("%s · Employees" % (neighborhood.location_ops.active_property().capitalize() if neighborhood!=null and neighborhood.location_ops!=null else "Operation"))',1)
+    source=source.replace('phone_title.text = "Apartment · Equipment"','phone_title.text = ("%s · Equipment" % (neighborhood.location_ops.active_property().capitalize() if neighborhood!=null and neighborhood.location_ops!=null else "Operation"))',1)
+    source=source.replace('phone_title.text = "Apartment · Inventory"','phone_title.text = ("%s · Inventory" % (neighborhood.location_ops.active_property().capitalize() if neighborhood!=null and neighborhood.location_ops!=null else "Operation"))',1)
+    source=source.replace('phone_title.text = "Apartment · Genetics"','phone_title.text = ("%s · Genetics" % (neighborhood.location_ops.active_property().capitalize() if neighborhood!=null and neighborhood.location_ops!=null else "Operation"))',1)
 
     source=_replace_func(source,'_advancement_story_label',r'''func _advancement_story_label() -> String:
 	if not _story_chapter_one_complete():
