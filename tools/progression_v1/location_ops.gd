@@ -821,8 +821,28 @@ func real_estate_ui(parent:VBoxContainer) -> void:
 		if house_balance()>0:
 			_property_button(parent,"PAY HOUSE BALANCE · $%d" % house_balance(),pay_house_payment,host.cash<house_balance())
 
+func property_bills_ui(parent:VBoxContainer) -> void:
+	_property_label(parent,"PROPERTY PAYMENTS",22)
+	if apartment_lease_active() or apartment_balance()>0:
+		var apartment_line:String="APARTMENT · "+("LEASE ACTIVE" if apartment_lease_active() else "LEASE RELEASED")
+		if apartment_lease_active():apartment_line+="\nRent: $600 every 14 game days · Next: Day %d" % int(host.apartment_rent_state.get("next_due",host.game_day+14))
+		apartment_line+="\nRent balance: $%d" % apartment_balance()
+		_property_label(parent,apartment_line,17)
+		if apartment_balance()>0:_property_button(parent,"PAY APARTMENT RENT · $%d" % apartment_balance(),pay_apartment_rent,host.cash<apartment_balance())
+	var state:=house_state()
+	if bool(state.get("acquired",false)):
+		var agreement:=str(state.get("agreement",""))
+		var house_line:String="HOUSE · "+({"rent":"RENT","lease":"LEASE TO OWN","purchase":"OWNED"}.get(agreement,"ACQUIRED"))
+		if agreement=="rent":house_line+="\n$600 every 7 game days · Next: Day %d" % int(state.get("next_due",0))
+		elif agreement=="lease":house_line+="\n$1000 every 7 game days · Next: Day %d · Equity $%d / $%d" % [int(state.get("next_due",0)),int(state.get("equity_paid",0)),int(state.get("ownership_total",18500))]
+		else:house_line+="\nNo recurring house payment."
+		house_line+="\nHouse balance: $%d" % house_balance()
+		_property_label(parent,house_line,17)
+		if house_balance()>0:_property_button(parent,"PAY HOUSE BALANCE · $%d" % house_balance(),pay_house_payment,host.cash<house_balance())
+	utility_bills_ui(parent)
+
 func rent_ui(parent: VBoxContainer) -> void:
-	real_estate_ui(parent)
+	property_bills_ui(parent)
 
 
 func equipment_ui(parent: VBoxContainer) -> void:
