@@ -124,6 +124,19 @@ func _stop_physics_walk() -> void:
         '\t\t_collect_map_colliders(self)\n\t\tcollision_timer=0.3\n',
         '\t\t_collect_map_colliders(self)\n\t\t_rebuild_physics_obstacles()\n\t\tcollision_timer=0.3\n',1)
 
+    # The visual door may be rotated open, but the legacy scanner turns its
+    # axis-aligned bounds back into a blocker. Exclude it and use one dedicated
+    # physics leaf that is solid only while the apartment door is closed.
+    source=source.replace(
+        'if node==door_pivot and (door_busy or door_pass_through):return',
+        'if node==door_pivot:return',1)
+    source=source.replace(
+        '\tdoor_busy=true;door_pass_through=true;collision_timer=0.0\n\tdoor_open=not door_open\n',
+        '\tdoor_busy=true;door_pass_through=true;collision_timer=0.0\n\t_set_physics_door_closed(false)\n\tdoor_open=not door_open\n',1)
+    source=source.replace(
+        '\ttween.finished.connect(func():door_busy=false;_refresh_apartment_door_collision())',
+        '\ttween.finished.connect(func():door_busy=false;_refresh_apartment_door_collision();_set_physics_door_closed(not door_open))',1)
+
     source=source.replace(
         '\tif blocked:\n\t\tpointer=-99\n\t\tpad.release()\n\t\treturn\n',
         '\tif blocked:\n\t\tpointer=-99\n\t\tpad.release()\n\t\t_stop_physics_walk()\n\t\treturn\n',1)
