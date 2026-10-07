@@ -1,5 +1,5 @@
 {
-  "release_id": "0.7.9-beta.19-cloudtest.98-kobi.1",
+  "release_id": "0.7.9-beta.19-cloudtest.99-mobile3d.1",
   "game_build": "0.7.9-beta.19",
   "channel": "main-based-cloud-test",
   "updater": "network-only-no-service-worker",
@@ -105,7 +105,7 @@
   "expansion_lane": "New Advancements lane appears only after Chapter 3 is complete",
   "neighborhood": "Prototype 0.9.3 street, sidewalk and building footprint layout adapted with cloud-test texture atlas, opening door, analog controls and ground reserves.",
   "notification_audio": "Requested text ding at -14 dB; requested door knock at -10 dB.",
-  "runtime_delivery": "SHA-256-verified kobi-v1 delta over .97-police.3",
+  "runtime_delivery": "SHA-256-verified mobile-3d-v1 delta over .98-kobi.1",
   "interior_controls": "Free analog movement in apartment and grow room; nearby station double tap; Back restores walking position; walls and furniture collision.",
   "responsive_layout": "Automatic portrait/landscape game viewport, corner controls, centered phone menu and fitting browser splash/account overlays.",
   "walking_fov": 78,
@@ -177,5 +177,13 @@
       "sit"
     ],
     "outfit": "Plain white crewneck, khaki trousers, original light sneakers"
+  },
+  "mobile_3d_movement": {
+    "branch": "experiment/mobile-3d-movement",
+    "player": "CharacterBody3D capsule",
+    "input": "existing touch joystick + drag look",
+    "physics": "gravity, floor snap, real StaticBody3D obstacle proxies",
+    "police_station": "retains proven floor-aware station movement in this first migration pass",
+    "save_schema": "unchanged"
   }
 }
