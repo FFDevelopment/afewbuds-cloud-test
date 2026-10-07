@@ -929,3 +929,52 @@ The intended Chapter 4 progression is:
 → **Chapter 5 starts in the new house**
 
 This document is the implementation blueprint unless changed during cloud-test playtesting.
+
+
+## Chapter 4 finale / Chapter 5 property rules
+
+The house transition is a property expansion, not an automatic apartment cancellation.
+
+- Reaching **Expansion Ready** unlocks the house opportunity; it does **not** complete Chapter 4.
+- Player inspects all six house rooms, then chooses **Rent**, **Lease to Own**, or **Purchase**.
+- **Move Operation** transfers player-owned operation contents and paid operational upgrades to the house while keeping the apartment lease active by default.
+- Chapter 4 completes only after relocation and the player's first entry into the house. Chapter 5 begins as **Building an Operation**.
+- The apartment continues charging **$600 every 14 game days** until its lease is explicitly released in **Phone > Real Estate**.
+- House Rent charges **$600 every 7 game days**. Lease to Own charges **$1,000 every 7 game days** toward the ownership total. Purchased houses have no recurring property payment.
+- Apartment and house balances are independent. Keeping both means paying both applicable property obligations.
+- Electricity and water are tracked per property. A property only creates new utility charges while that property's lights/equipment/water systems are actually being used. Released properties cannot generate new utility charges.
+- Releasing a lease never erases debt already incurred.
+
+### Real Estate app
+
+**Phone > Real Estate** is the canonical property manager. It should show:
+- every controlled/acquired property;
+- active operation;
+- rent / lease / ownership status;
+- next payment and outstanding property balance;
+- electric and water balances by property;
+- lease-to-own equity;
+- Property Storage / unplaced player-owned assets;
+- release/re-rent actions where valid.
+
+Apartment release safeguards:
+- another controlled property must exist first;
+- player cannot be inside the apartment;
+- apartment-assigned plants/product/supplies/pending deliveries must be cleared or moved;
+- player-owned paid equipment must be moved or packed into Property Storage;
+- releasing locks the apartment entrance and computer;
+- future apartment rent/utilities stop;
+- existing debt remains payable;
+- apartment disappears from normal operation-management phone views and remains only in Real Estate as a released/available property;
+- re-renting is allowed later once prior apartment debt is cleared.
+
+### Player-owned assets and furnishing
+
+Paid assets belong to the player, not the landlord. Lease release must never delete purchased upgrades or furniture.
+
+- Paid tents, storage/vault/stash upgrades, bagging-bench upgrades, Dealer Storage, grow-supply upgrades, ventilation, automation equipment and future purchased furniture remain owned.
+- Assets can be installed at a controlled property or stored as **unplaced** in Property Storage.
+- Furnishing placements persist position, rotation and locked/unlocked edit state.
+- **Grow tents may only be placed inside a property's designated grow room.**
+- Ordinary furniture may be placed anywhere inside the controlled property's interior bounds.
+- Built-in landlord fixtures stay with the property when its lease is released.
