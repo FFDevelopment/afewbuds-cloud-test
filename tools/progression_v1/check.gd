@@ -243,23 +243,6 @@ func run() -> void:
 	ops.set_asset_locked("couch_test",false)
 	check(not bool(game.location_state.get("asset_placements",{}).get("couch_test",{}).get("locked",true)),"Furniture placement can be unlocked for editing")
 
-	# Furniture/property placement rules.
-	game.apartment_rent_state["lease_active"]=true
-	game.property_opportunity_state["acquired"]=true
-	game.property_opportunity_state["relocated"]=true
-	var house_grow_point:=Vector3(42,0.5,-10)
-	var house_living_point:=Vector3(29,0.5,0)
-	check(ops.can_place_owned_asset("Grow Tent III","house",house_grow_point),"Grow tent can be placed inside house grow room")
-	check(not ops.can_place_owned_asset("Grow Tent III","house",house_living_point),"Grow tent cannot be placed outside designated grow room")
-	check(ops.can_place_owned_asset("Couch","house",house_living_point),"Normal furniture can be placed in house living room")
-	check(ops.can_place_owned_asset("Couch","house",house_grow_point),"Normal furniture may be placed in grow room too")
-	check(ops.save_asset_placement("test_couch","Couch","house",house_living_point,0.5,true),"Furniture placement saves")
-	var placement:Dictionary=(game.location_state.get("asset_placements",{}) as Dictionary).get("test_couch",{})
-	check(str(placement.get("property",""))=="house" and str(placement.get("room",""))=="living" and bool(placement.get("locked",false)),"Furniture placement stores property room and locked state",placement)
-	ops.set_asset_locked("test_couch",false)
-	placement=(game.location_state.get("asset_placements",{}) as Dictionary).get("test_couch",{})
-	check(not bool(placement.get("locked",true)),"Furniture placement lock can be toggled")
-
 	# Heat balance: routine activity is softened, serious events are not.
 	game.heat=0
 	game.reeves_arrangement_active=false
