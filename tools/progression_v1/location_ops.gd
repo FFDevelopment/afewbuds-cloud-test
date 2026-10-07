@@ -335,7 +335,7 @@ func business_extras() -> void:
 	var grid: GridContainer=host._phone_category_grid()
 	for app in ["employees","upgrades","products","genetics"]:
 		var title: String={"employees":"Employees","upgrades":"Upgrades","products":"Storage","genetics":"Genetics"}[app]
-		host._add_phone_app_tile(grid,"",title,"Apartment operation",app)
+		host._add_phone_app_tile(grid,"",title,active_property().capitalize()+" operation",app)
 	b("PRODUCTION & UTILITIES",production)
 func management_allowed() -> bool:
 	return (computer_context=="apartment" and target()=="apartment_computer") or (computer_context=="house" and target()=="house_computer")
@@ -353,7 +353,7 @@ func redirect(app: String) -> bool:
 	if host.tutorial_active:return false
 	if app in ["employees","products","genetics","upgrades"]:
 		host.phone_current_app="home";host._refresh_phone()
-		host.status_label.text="Use your apartment computer for detailed operation management."
+		host.status_label.text="Use your active property computer for detailed operation management."
 		return true
 	return false
 func _utility_template() -> Dictionary:
@@ -732,10 +732,22 @@ func pack_apartment_paid_assets() -> void:
 	host._refresh_phone()
 	host.status_label.text="Paid apartment equipment packed into Property Storage. Nothing you purchased was deleted."
 
+func install_property_storage_at(property:String) -> void:
+	if property=="house" and not _property_controlled("house"):return
+	if property=="apartment" and not apartment_lease_active():return
+	var stored_assets:Array=host.location_state.get("property_storage",[])
+	if stored_assets.is_empty():return
+	host.location_state["operation_assets_property"]=property
+	host.location_state["property_storage"]=[]
+	host._save_game()
+	host._refresh_phone()
+	host.status_label.text="Owned equipment installed at the %s. Placement can be refined in Furnishing mode." % property
+
 func reacquire_apartment() -> void:
 	if apartment_lease_active():return
-	if apartment_balance()>0:
-		host.status_label.text="Pay the old apartment balance before starting a new lease."
+	var old_debt:int=apartment_balance()+property_utility_due("apartment","power")+property_utility_due("apartment","water")
+	if old_debt>0:
+		host.status_label.text="Clear the apartment's old rent and utility balances before starting a new lease."
 		return
 	if host.cash<APARTMENT_REACQUIRE_COST:
 		host.status_label.text="You need $%d to start a new apartment lease." % APARTMENT_REACQUIRE_COST
@@ -834,14 +846,17 @@ func real_estate_ui(parent:VBoxContainer) -> void:
 	var stored_assets:Array=host.location_state.get("property_storage",[])
 	if not stored_assets.is_empty():
 		_property_label(parent,"PROPERTY STORAGE · %d OWNED ITEM%s UNPLACED\n%s" % [stored_assets.size(),"" if stored_assets.size()==1 else "S"," · ".join(PackedStringArray(stored_assets))],17)
+		if _property_controlled("house"):_property_button(parent,"INSTALL STORED EQUIPMENT AT HOUSE",install_property_storage_at.bind("house"))
+		if apartment_lease_active():_property_button(parent,"INSTALL STORED EQUIPMENT AT APARTMENT",install_property_storage_at.bind("apartment"))
 	if apartment_lease_active() and str(host.location_state.get("operation_assets_property","apartment"))=="apartment":
 		var paid_assets:=_apartment_paid_equipment_labels()
 		if not paid_assets.is_empty():
 			var content_blockers:=_apartment_contents_blockers()
 			_property_button(parent,"PACK PAID APARTMENT EQUIPMENT TO PROPERTY STORAGE",pack_apartment_paid_assets,not _has_alternate_property() or not content_blockers.is_empty())
 	elif not apartment_lease_active():
-		if apartment_balance()>0:
-			_property_label(parent,"Clear the old apartment balance before renting this property again.",16)
+		var old_debt:int=apartment_balance()+property_utility_due("apartment","power")+property_utility_due("apartment","water")
+		if old_debt>0:
+			_property_label(parent,"Clear the old apartment rent/electric/water balance ($%d) before renting this property again." % old_debt,16)
 			_property_button(parent,"RENT APARTMENT AGAIN · $%d" % APARTMENT_REACQUIRE_COST,reacquire_apartment,true)
 		else:
 			_property_button(parent,"RENT APARTMENT AGAIN · $%d" % APARTMENT_REACQUIRE_COST,reacquire_apartment,host.cash<APARTMENT_REACQUIRE_COST)
