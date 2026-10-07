@@ -1,7 +1,7 @@
 {
   "baseline_sha256": "746ee56a3dee5bf02db4eb993752dc37a18fb7f72e720f0c8f4f24d6e56702a4",
-  "target_sha256": "7e85bde07b2da1414f57805a5feec8a9468b06ac91d91e2d17592f35e3ccbe8d",
-  "target_bytes": 33649756,
+  "target_sha256": "21702e3db6652ef425c1d072a797cdf6f9e4686b2cb9b2253e1c70d1c9f849a4",
+  "target_bytes": 33650556,
   "changed_existing_entries": [
     "scripts/neighborhood.gd",
     "scripts/east_expansion.gd"

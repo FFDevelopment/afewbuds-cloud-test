@@ -13,6 +13,7 @@ def main():
     fb,entries=east.pack.parse(baseline);before={n:b for n,b,f in entries}
     neighborhood=module('police_patch',HERE/'patch.py').apply(before['scripts/neighborhood.gd'].decode())
     district=before['scripts/east_expansion.gd'].decode().replace('const EAST_LIMIT:=137.0','const EAST_LIMIT:=201.0').replace('Vector2(114,143)','Vector2(114,139)')
+    district=district.replace('w.fence(Vector3(134,0,-14),Vector3(134,0,6))', 'w.fence(Vector3(134,0,-14),Vector3(134,0,-3))\n\tw.fence(Vector3(134,0,-.2),Vector3(134,0,6))')
     replacements={'scripts/neighborhood.gd':neighborhood.encode(),'scripts/east_expansion.gd':district.encode()}
     updated=[[n,replacements.get(n,b),f] for n,b,f in entries]
     added=[('station.gd','police_station.gd'),('district.gd','police_district.gd'),('door.gd','police_door.gd'),('surface.gdshader','police_surface.gdshader'),('bark.gdshader','bark.gdshader')]

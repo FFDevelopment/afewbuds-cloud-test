@@ -1,7 +1,7 @@
 {
   "passed": true,
-  "bytes": 33649756,
-  "sha256": "7e85bde07b2da1414f57805a5feec8a9468b06ac91d91e2d17592f35e3ccbe8d",
+  "bytes": 33650556,
+  "sha256": "21702e3db6652ef425c1d072a797cdf6f9e4686b2cb9b2253e1c70d1c9f849a4",
   "fetches": 7,
   "unchanged_wasm_pass_through": true
 }

@@ -42,7 +42,7 @@ func run() -> void:
 			var t:Transform3D=node.multimesh.get_instance_transform(i)
 			# Exclude four long curbs whose east endpoints are trimmed at the new crossing.
 			# Their centers lie west of x=136, but their ends belong to the repaired junction.
-			if t.origin.x<136 and t.origin.y>=0 and t.origin.z> -35 and t.origin.z<38 and not (t.origin.y<.1 and t.origin.x>114 and (t*node.multimesh.mesh.get_aabb()).end.x>138):core.append(str(node.multimesh.mesh.get_class())+":"+str(t))
+			if t.origin.x<136 and t.origin.y>=0 and t.origin.z> -35 and t.origin.z<38 and not (is_equal_approx(t.origin.x,134.0) and t.origin.y<=1.2 and t.origin.z>=-14 and t.origin.z<=6) and not (t.origin.y<.1 and t.origin.x>114 and (t*node.multimesh.mesh.get_aabb()).end.x>138):core.append(str(node.multimesh.mesh.get_class())+":"+str(t))
 			var bounds:AABB=t*node.multimesh.mesh.get_aabb()
 			if soil:soil_bounds.append(bounds)
 			elif bounds.size.y<.31 and bounds.end.y>-.04 and bounds.position.y<.1:paving_bounds.append(bounds)

@@ -1,6 +1,6 @@
 {
   "release": "0.7.9-beta.19-cloudtest.97-police.3",
-  "startup_asset_bytes_uncompressed": 72531580,
+  "startup_asset_bytes_uncompressed": 72532628,
   "startup_files": {
     "assets/characters/Malik.glb": 2589608,
     "assets/characters/Malik_BaseColor.png": 762386,
@@ -14,17 +14,17 @@
     "index.manifest.json": 791,
     "index.png": 203379,
     "index.wasm": 37902138,
-    "runtime/police-station-v1.patch.json": 1250624,
+    "runtime/police-station-v1.patch.json": 1251672,
     "shared/afb-api.js": 4913,
     "shared/afb-cloud-accountsync10.js": 20940,
     "shared/afb-runtime-police-station-v1.js": 3284,
     "shared/afb-tracker.js": 1286,
     "shared/config.js": 223
   },
-  "reconstructed_pack_bytes": 33649756,
+  "reconstructed_pack_bytes": 33650556,
   "previous_pack_bytes": 33648028,
-  "pack_growth_bytes": 1728,
-  "static_instances": 6476,
+  "pack_growth_bytes": 2528,
+  "static_instances": 6489,
   "static_batches": 141,
   "station_room_lights": 15,
   "limits": "File-size and geometry audit, not a mobile FPS/RAM benchmark. HTTP compression and browser cache affect actual transfer. Account/API responses and browser-selected icons/audio worklets are not included. Reviews and archived files are not fetched during gameplay."

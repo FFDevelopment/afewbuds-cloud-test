@@ -123,3 +123,19 @@ vehicle-width entry samples, sign direction and the existing room/stair routes.
 21 native views include six close-ups of the reported defects. The 125 fit and 55
 seating reports were last run for .97-police.2; their character/furniture assets
 are unchanged here. No driving mechanic is introduced by these driveway repairs.
+
+
+### Park exits and sidewalk returns
+
+The east park crosspath previously ended at a continuous fence. That fence now has
+an opening aligned to the path. The east sidewalk and cross-street returns now
+join the front/rear walks, with continuous curbs but open vehicle driveways.
+The original hub/interiors remain unchanged. The preservation comparison excludes
+the explicitly repaired east park fence and the four junction curb endpoints.
+
+50 actual movement checks pass, including both directions through all four park
+exits and both parking lots. Each of the three benches is tested from three
+approach distances: sit, remain seated through collision refresh, move to stand,
+then walk to the park path and sidewalk and back. Standing positions were clear;
+the reproduced blocked exit was the fence crossing. 23 native review images now
+include the completed sidewalk circuit and the open east park gate.

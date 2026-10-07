@@ -22,6 +22,19 @@ func build(world:Node3D) -> void:
 	# Front forecourt, west sidewalk and the public-parking route.
 	slab(145,149,-15.5,7,"a9a394",2)
 	slab(173.2,179,-15.5,7,"a9a394",2)
+	# Continuous returns around the cross street and the east edge of the park.
+	# These fill the missing vertical legs between the existing horizontal walks.
+	for span in [Vector2(-42,-24),Vector2(-14.4,6.1),Vector2(26,45)]:
+		slab(135,139,span.x,span.y,"a9a394",2)
+	for span in [Vector2(-42,-24),Vector2(26,45)]:
+		slab(145,149,span.x,span.y,"a9a394",2)
+	# Butt-joined curb returns: no doubled boxes at the corner seams.
+	for x in [139.0,145.0]:
+		for span in [Vector2(-42,-21.06),Vector2(-16.94,11.94),Vector2(22.06,45)]:
+			slab(x-.06,x+.06,span.x,span.y,"c8c4b9",-1,.025,.12)
+	for side in [Vector2(145,158.5),Vector2(164.5,200)]:
+		slab(side.x,side.y,-21.06,-20.94,"c8c4b9",-1,.025,.12)
+	slab(145,200,-17.06,-16.94,"c8c4b9",-1,.025,.12)
 	for side in [Vector2(145,185.5),Vector2(191.5,200)]:slab(side.x,side.y,11.94,12.06,"c8c4b9",-1,.025,.12)
 	slab(145,200,21.94,22.06,"c8c4b9",-1,.025,.12)
 	for x in range(146,201,4):

@@ -1,0 +1,256 @@
+{
+	"checks": [
+		{
+			"check": "West grass to west sidewalk outward",
+			"data": "(116.0081, 2.16, -1.600054)",
+			"passed": true
+		},
+		{
+			"check": "West grass to west sidewalk return",
+			"data": "(119.0, 2.16, -12.48003)",
+			"passed": true
+		},
+		{
+			"check": "West grass to front sidewalk outward",
+			"data": "(125.4998, 2.16, 8.960728)",
+			"passed": true
+		},
+		{
+			"check": "West grass to front sidewalk return",
+			"data": "(119.027, 2.16, 4.500006)",
+			"passed": true
+		},
+		{
+			"check": "East grass to east sidewalk outward",
+			"data": "(135.9814, 2.16, -1.600187)",
+			"passed": true
+		},
+		{
+			"check": "East grass to east sidewalk return",
+			"data": "(132.5001, 2.16, -7.964786)",
+			"passed": true
+		},
+		{
+			"check": "North grass to rear sidewalk outward",
+			"data": "(125.4994, 2.16, -15.76357)",
+			"passed": true
+		},
+		{
+			"check": "North grass to rear sidewalk return",
+			"data": "(123.0521, 2.16, -12.50075)",
+			"passed": true
+		},
+		{
+			"check": "Public lot to street outward",
+			"data": "(188.5, 2.16, 15.96169)",
+			"passed": true
+		},
+		{
+			"check": "Public lot to street return",
+			"data": "(188.5, 2.16, -11.96169)",
+			"passed": true
+		},
+		{
+			"check": "Accessible bay to sidewalk outward",
+			"data": "(182.5, 2.16, 9.973614)",
+			"passed": true
+		},
+		{
+			"check": "Accessible bay to sidewalk return",
+			"data": "(182.5, 2.16, 3.526387)",
+			"passed": true
+		},
+		{
+			"check": "Patrol lot to rear sidewalk outward",
+			"data": "(176.9999, 2.16, -16.00848)",
+			"passed": true
+		},
+		{
+			"check": "Patrol lot to rear sidewalk return",
+			"data": "(161.5, 2.16, -29.98867)",
+			"passed": true
+		},
+		{
+			"check": "Bench 0 sit from 0.72",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Bench 0 movement stands clear 0.72",
+			"data": "(122.5744, 2.16, -5.4)",
+			"passed": true
+		},
+		{
+			"check": "Bench 0 to path and sidewalk 0.72 outward",
+			"data": "(136.9999, 2.16, 8.953487)",
+			"passed": true
+		},
+		{
+			"check": "Bench 0 to path and sidewalk 0.72 return",
+			"data": "(122.6176, 2.16, -5.399313)",
+			"passed": true
+		},
+		{
+			"check": "Bench 0 sit from 1.05",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Bench 0 movement stands clear 1.05",
+			"data": "(122.9044, 2.16, -5.4)",
+			"passed": true
+		},
+		{
+			"check": "Bench 0 to path and sidewalk 1.05 outward",
+			"data": "(136.9999, 2.16, 8.953487)",
+			"passed": true
+		},
+		{
+			"check": "Bench 0 to path and sidewalk 1.05 return",
+			"data": "(122.9439, 2.16, -5.399291)",
+			"passed": true
+		},
+		{
+			"check": "Bench 0 sit from 1.65",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Bench 0 movement stands clear 1.65",
+			"data": "(123.5044, 2.16, -5.4)",
+			"passed": true
+		},
+		{
+			"check": "Bench 0 to path and sidewalk 1.65 outward",
+			"data": "(136.9999, 2.16, 8.953487)",
+			"passed": true
+		},
+		{
+			"check": "Bench 0 to path and sidewalk 1.65 return",
+			"data": "(123.5425, 2.16, -5.399111)",
+			"passed": true
+		},
+		{
+			"check": "Bench 1 sit from 0.72",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Bench 1 movement stands clear 0.72",
+			"data": "(128.4256, 2.16, -5.4)",
+			"passed": true
+		},
+		{
+			"check": "Bench 1 to path and sidewalk 0.72 outward",
+			"data": "(136.9999, 2.16, 8.953491)",
+			"passed": true
+		},
+		{
+			"check": "Bench 1 to path and sidewalk 0.72 return",
+			"data": "(128.383, 2.16, -5.399322)",
+			"passed": true
+		},
+		{
+			"check": "Bench 1 sit from 1.05",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Bench 1 movement stands clear 1.05",
+			"data": "(128.0956, 2.16, -5.4)",
+			"passed": true
+		},
+		{
+			"check": "Bench 1 to path and sidewalk 1.05 outward",
+			"data": "(136.9999, 2.16, 8.953491)",
+			"passed": true
+		},
+		{
+			"check": "Bench 1 to path and sidewalk 1.05 return",
+			"data": "(128.0566, 2.16, -5.399301)",
+			"passed": true
+		},
+		{
+			"check": "Bench 1 sit from 1.65",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Bench 1 movement stands clear 1.65",
+			"data": "(127.4956, 2.16, -5.4)",
+			"passed": true
+		},
+		{
+			"check": "Bench 1 to path and sidewalk 1.65 outward",
+			"data": "(136.9999, 2.16, 8.953491)",
+			"passed": true
+		},
+		{
+			"check": "Bench 1 to path and sidewalk 1.65 return",
+			"data": "(127.458, 2.16, -5.399124)",
+			"passed": true
+		},
+		{
+			"check": "Bench 2 sit from 0.72",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Bench 2 movement stands clear 0.72",
+			"data": "(130.0, 2.16, 3.0256)",
+			"passed": true
+		},
+		{
+			"check": "Bench 2 to path and sidewalk 0.72 outward",
+			"data": "(136.9999, 2.16, 8.953583)",
+			"passed": true
+		},
+		{
+			"check": "Bench 2 to path and sidewalk 0.72 return",
+			"data": "(129.9606, 2.16, 3.025586)",
+			"passed": true
+		},
+		{
+			"check": "Bench 2 sit from 1.05",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Bench 2 movement stands clear 1.05",
+			"data": "(130.0, 2.16, 2.6956)",
+			"passed": true
+		},
+		{
+			"check": "Bench 2 to path and sidewalk 1.05 outward",
+			"data": "(136.9999, 2.16, 8.953678)",
+			"passed": true
+		},
+		{
+			"check": "Bench 2 to path and sidewalk 1.05 return",
+			"data": "(129.9609, 2.16, 2.695144)",
+			"passed": true
+		},
+		{
+			"check": "Bench 2 sit from 1.65",
+			"data": null,
+			"passed": true
+		},
+		{
+			"check": "Bench 2 movement stands clear 1.65",
+			"data": "(130.0, 2.16, 2.0956)",
+			"passed": true
+		},
+		{
+			"check": "Bench 2 to path and sidewalk 1.65 outward",
+			"data": "(136.9999, 2.16, 8.953674)",
+			"passed": true
+		},
+		{
+			"check": "Bench 2 to path and sidewalk 1.65 return",
+			"data": "(129.9609, 2.16, 2.095159)",
+			"passed": true
+		}
+	],
+	"failures": 0,
+	"passed": true
+}
