@@ -325,7 +325,7 @@ def main():
     before={n:b for n,b,f in entries}
 
     neighborhood=patch_neighborhood(before['scripts/neighborhood.gd'].decode())
-    station=patch_station(before['scripts/police_station.gd'].decode())
+    station=patch_station((ROOT/'tools/police_station_v1/station.gd').read_text())
     door=(HERE/'interior_door_physics.gd').read_bytes()
     replacements={
         'scripts/neighborhood.gd':neighborhood.encode(),
@@ -398,13 +398,13 @@ def main():
 
     loader=(ROOT/'shared/afb-runtime-kobi-v1.js').read_text()
     loader=loader.replace('kobi-v1','mobile-3d-v1').replace('AFB_RUNTIME_KOBI_V1','AFB_RUNTIME_MOBILE_3D_V1')
-    loader=re.sub(r'patch\.json\?v=\d+','patch.json?v=6',loader)
+    loader=re.sub(r'patch\.json\?v=\d+','patch.json?v=7',loader)
     (ROOT/'shared/afb-runtime-mobile-3d-v1.js').write_text(loader,newline='\n')
 
-    release='0.7.9-beta.19-cloudtest.99-mobile3d.6'
+    release='0.7.9-beta.19-cloudtest.99-mobile3d.7'
     index=(ROOT/'index.html').read_text()
     index=index.replace('kobi-v1','mobile-3d-v1').replace('AFB_RUNTIME_KOBI_V1','AFB_RUNTIME_MOBILE_3D_V1')
-    index=re.sub(r'afb-runtime-mobile-3d-v1\.js\?v=\d+','afb-runtime-mobile-3d-v1.js?v=6',index)
+    index=re.sub(r'afb-runtime-mobile-3d-v1\.js\?v=\d+','afb-runtime-mobile-3d-v1.js?v=7',index)
     index=re.sub(r'0\.7\.9-beta\.19-cloudtest\.(?:98-kobi|99-mobile3d)\.\d+',release,index)
     index=re.sub(r'"fileSizes":\{[^}]*\\}',f'"fileSizes":{{"index-mobile-3d-v1.pck":{len(built)},"index.wasm":{(ROOT/"index.wasm").stat().st_size}}}',index,count=1)
     index=index.replace('</title>',' · MOBILE 3D TEST</title>',1)
@@ -417,7 +417,7 @@ def main():
         'player':'CharacterBody3D capsule',
         'input':'touch joystick + drag look; full forward stick sprints; Shift+forward sprints on keyboard',
         'physics':'gravity, floor snap, cached StaticBody3D world proxies, physical doors and police stair ramp',
-        'police_station':'same CharacterBody3D capsule; normal downstairs walls meet the second-floor deck while only stairwell walls trim to the slab underside',
+        'police_station':'clean floor closure; side-door widths match scaled apertures; jamb/header trim sits inside openings; wall-base trim is surface-mounted',
         'sprint':'5.4 m/s with shared 100-point stamina, drain/recovery/exhaustion and HUD label SPRINTING',
         'save_schema':'unchanged'
     }
