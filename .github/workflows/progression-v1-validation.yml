@@ -5,6 +5,10 @@ on:
     branches: [experiment/mobile-3d-movement]
     paths:
       - ".github/workflows/progression-v1-validation.yml"
+      - "tools/mobile_3d_movement/build.py"
+      - "tools/mobile_3d_movement/*.gd"
+      - "tools/progression_v1/**"
+      - "tools/police_station_v1/station.gd"
   workflow_dispatch:
 
 permissions:
