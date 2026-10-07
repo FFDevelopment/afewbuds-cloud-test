@@ -308,6 +308,12 @@ def patch_progression_main(source:str) -> str:
     # disappears from the active roadmap.
     assert 'var advancement_claimed: Dictionary = {}' in source
     source=source.replace('var advancement_claimed: Dictionary = {}','var advancement_claimed: Dictionary = {}\nvar advancement_choice_state: Dictionary = {}',1)
+    source=source.replace(
+        '{"id": "reeves_payments", "category": "Heat", "tier": 4, "title": "Keep Your End", "description": "Make 3 on-time Reeves payments.", "metric": "reeves_payments", "target": 3,',
+        '{"id": "reeves_payments", "category": "Heat", "tier": 4, "title": "Keep Your End", "description": "Make 3 on-time Reeves payments.", "metric": "reeves_payments", "target": 3, "choice_group": "reeves_payment_outcome", "choice_value": "pay",',1)
+    source=source.replace(
+        '{"id": "reeves_miss", "category": "Heat", "tier": 4, "title": "Lose His Protection", "description": "Miss a Reeves payment and trigger enforcement risk.", "metric": "reeves_missed_payments", "target": 1,',
+        '{"id": "reeves_miss", "category": "Heat", "tier": 4, "title": "Lose His Protection", "description": "Miss a Reeves payment and trigger enforcement risk.", "metric": "reeves_missed_payments", "target": 1, "choice_group": "reeves_payment_outcome", "choice_value": "miss",',1)
 
     old_c4='{"id": "c4_expansion_ready", "category": "Expansion", "tier": 5, "title": "Expansion Ready", "description": "Prove the operation is mature enough to support a larger property.", "state": "chapter_four_complete", "target": 1, "reward_cash": 0, "reward_xp": 500, "reward_rep": 25, "reward_unlock": "PROPERTY OPPORTUNITY"},'
     new_c4='{"id": "c4_expansion_ready", "category": "Expansion", "tier": 5, "title": "Expansion Ready", "description": "Prove the operation is mature enough to support a larger property.", "state": "chapter_four_operation_ready", "target": 1, "reward_cash": 0, "reward_xp": 500, "reward_rep": 25, "reward_unlock": "PROPERTY OPPORTUNITY"},\n\t{"id": "c4_new_base", "category": "Expansion", "tier": 6, "title": "Choose Your Next Base", "description": "Secure the house, relocate AFewBuds and enter the new operation.", "state": "chapter_four_complete", "target": 1, "reward_cash": 0, "reward_xp": 600, "reward_rep": 30, "reward_unlock": "CHAPTER 5 + HOUSE OPERATION"},'
@@ -396,31 +402,34 @@ def patch_progression_main(source:str) -> str:
     source=source.replace('\t\t\tfor next_entry: Dictionary in advancement_catalog:\n','\t\t\tfor next_entry: Dictionary in advancement_catalog:\n\t\t\t\tif _advancement_is_retired(next_entry):\n\t\t\t\t\tcontinue\n')
 
     helper=r'''func _advancement_choice_group(advancement_id: String) -> String:
-	if advancement_id in ["reeves_payments", "reeves_miss"]:
-		return "reeves_payment_outcome"
+	for candidate: Dictionary in advancement_catalog:
+		if str(candidate.get("id", "")) == advancement_id:
+			return str(candidate.get("choice_group", ""))
+	return ""
+
+func _advancement_choice_value(advancement_id: String) -> String:
+	for candidate: Dictionary in advancement_catalog:
+		if str(candidate.get("id", "")) == advancement_id:
+			return str(candidate.get("choice_value", ""))
 	return ""
 
 func _advancement_is_retired(entry: Dictionary) -> bool:
 	var advancement_id: String = str(entry.get("id", ""))
 	if bool(advancement_claimed.get(advancement_id, false)):
 		return false
-	var group: String = _advancement_choice_group(advancement_id)
-	if group.is_empty():
+	var group: String = str(entry.get("choice_group", ""))
+	var value: String = str(entry.get("choice_value", ""))
+	if group.is_empty() or value.is_empty():
 		return false
 	var selected: String = str(advancement_choice_state.get(group, ""))
-	if selected in ["", "legacy_both"]:
-		return false
-	if advancement_id == "reeves_miss":
-		return selected == "pay"
-	if advancement_id == "reeves_payments":
-		return selected == "miss"
-	return false
+	return selected not in ["", "legacy_both", value]
 
 func _lock_advancement_choice(advancement_id: String) -> void:
 	var group: String = _advancement_choice_group(advancement_id)
-	if group.is_empty() or advancement_choice_state.has(group):
+	var value: String = _advancement_choice_value(advancement_id)
+	if group.is_empty() or value.is_empty() or advancement_choice_state.has(group):
 		return
-	advancement_choice_state[group] = "miss" if advancement_id == "reeves_miss" else "pay"
+	advancement_choice_state[group] = value
 
 func _migrate_advancement_choices() -> void:
 	if advancement_choice_state.has("reeves_payment_outcome"):
