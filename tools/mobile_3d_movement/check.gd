@@ -1,4 +1,5 @@
 extends SceneTree
+# Branch preview gate: physics checks must pass before Pages deployment.
 var failures:=0
 var checks:=0
 var game:Node3D
