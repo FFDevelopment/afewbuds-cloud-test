@@ -111,7 +111,8 @@ func near(point: Vector3, range_limit: float=2.4) -> bool:
 	var offset: Vector3=point-host.camera.position
 	return offset.length()<range_limit and (-host.camera.global_basis.z).dot(offset.normalized())>0.3
 func target() -> String:
-	if world._indoors(host.camera.position) and near(APT_PC):return "apartment_computer"
+	if world._indoors(host.camera.position) and near(APT_PC):
+		return "apartment_computer" if apartment_lease_active() else ""
 	var room: String=world.house_controls._inside_room(host.camera.position)
 	if room=="living" and near(HOUSE_PC):return "house_computer"
 	if room=="market_front" and near(CHECKOUT,2.7):return "market_checkout"
@@ -256,6 +257,9 @@ func equipment() -> void:
 		b(title,order_equipment.bind(name),not eligible(name) or host.cash<price)
 	ui.button("BACK TO CHECKOUT",market)
 func computer(property: String) -> void:
+	if property=="apartment" and not apartment_lease_active():
+		host.status_label.text="Apartment lease released. You no longer have access to this property."
+		return
 	computer_context=property
 	management_app=""
 	if property=="house" and not bool(host.property_opportunity_state.get("relocated",false)):
@@ -539,6 +543,7 @@ func confirm_apartment_release() -> void:
 		host.status_label.text="Apartment lease cannot be released yet: "+str(blockers[0])
 		host._refresh_phone()
 		return
+	if world.door_open:world._toggle_door()
 	host.apartment_rent_state["lease_active"]=false
 	host.apartment_rent_state["released_day"]=host.game_day
 	host.apartment_rent_state["next_due"]=0
