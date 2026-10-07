@@ -1,5 +1,5 @@
 {
-  "release_id": "0.7.9-beta.19-cloudtest.99-mobile3d.9",
+  "release_id": "0.7.9-beta.19-cloudtest.99-mobile3d.10",
   "game_build": "0.7.9-beta.19",
   "channel": "main-based-cloud-test",
   "updater": "network-only-no-service-worker",
@@ -191,7 +191,7 @@
     "property_finale": "Rent / Lease to Own / Purchase -> relocate -> first house entry completes Chapter 4",
     "chapter_5": "Building an Operation starts in house",
     "agreement_terms": "Rent 1800 + 600/7d; Lease 4500 + 1000/7d toward 18500; Purchase 17500",
-    "apartment_lease": "continues at 600/14d after relocation unless explicitly released in Real Estate; existing balance survives release"
+    "apartment_lease": "continues at 600/14d after relocation unless explicitly released in Real Estate; existing rent and utility debt survives release"
   },
   "heat_balance": {
     "routine_gain_multiplier": 0.7,
@@ -207,7 +207,9 @@
   "real_estate_app": {
     "phone_home": true,
     "portfolio": "apartment + house shown separately",
-    "billing": "independent balances and due dates",
-    "apartment_release": "explicit two-step release; future rent stops, existing debt remains"
+    "billing": "independent rent/lease, electric and water balances by property",
+    "apartment_release": "requires another property and cleared apartment-assigned contents; future rent/utilities stop, existing debt remains; apartment door/computer lock",
+    "property_storage": "paid upgrades remain player-owned and can be unplaced/stored instead of deleted",
+    "apartment_reacquire": "released apartment can be rented again after prior debt is cleared"
   }
 }
