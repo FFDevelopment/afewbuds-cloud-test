@@ -22,6 +22,9 @@ func setup(owner: Node3D) -> void:
 	host.location_state["pickup_fertilizer"]=maxi(0,int(host.location_state.get("pickup_fertilizer",0)))
 	host.location_state["carried_fertilizer"]=maxi(0,int(host.location_state.get("carried_fertilizer",0)))
 	if not host.location_state.has("active_property"):host.location_state["active_property"]="apartment"
+	if not host.location_state.get("property_storage",[]) is Array:host.location_state["property_storage"]=[]
+	if not host.location_state.get("asset_placements",{}) is Dictionary:host.location_state["asset_placements"]={}
+	if not host.location_state.has("operation_assets_property"):host.location_state["operation_assets_property"]="apartment"
 	if not host.apartment_rent_state.has("next_due"):
 		host.apartment_rent_state={"next_due":host.game_day+14,"balance":0,"first_unpaid":0,"lease_active":true}
 		host._save_game()
@@ -464,8 +467,63 @@ func pay_rent() -> void:
 	if active_property()=="house" and house_balance()>0:pay_house_payment()
 	elif apartment_balance()>0:pay_apartment_rent()
 
+func _has_alternate_property() -> bool:
+	return bool(house_state().get("acquired",false)) and bool(house_state().get("relocated",false))
+
+func _dict_total(values:Dictionary) -> int:
+	var total_value:int=0
+	for value in values.values():total_value+=maxi(0,int(value))
+	return total_value
+
+func _apartment_has_live_plants() -> bool:
+	for slot_variant in host.plant_slots:
+		if slot_variant is Dictionary and int((slot_variant as Dictionary).get("stage",-1))>=0:return true
+	return false
+
+func _apartment_paid_equipment_labels() -> Array[String]:
+	var items:Array[String]=[]
+	if host.grow_tent_count>1:items.append("Grow Tent Slots II-III")
+	if host.tent_level>1:items.append("Grow Tent upgrade")
+	if host.bagging_level>1:items.append("Bagging Bench upgrades")
+	if host.storage_level>1:items.append("Storage / Vault / Hidden Stash upgrades")
+	if host.supply_shelf_level>1:items.append("Grow Supply Shelf upgrades")
+	if host.dealer_locker_level>0:items.append("Dealer Storage")
+	if host.ventilation_installed:items.append("Grow Room Ventilation")
+	if host.auto_water_unlocked:items.append("Auto Water Kit")
+	return items
+
+func apartment_release_blockers() -> Array[String]:
+	var blockers:Array[String]=[]
+	if not _has_alternate_property():blockers.append("Acquire and move into another property first.")
+	if not apartment_lease_active():return blockers
+	if world._indoors(host.camera.position):blockers.append("Leave the apartment before releasing its lease.")
+	if _apartment_has_live_plants():blockers.append("Harvest or move all live plants.")
+	var pipeline:int=_dict_total(host.untrimmed_inventory)+_dict_total(host.trimmed_inventory)+_dict_total(host.bagged_inventory)
+	if pipeline>0:blockers.append("Move %dg of packing-bench product." % pipeline)
+	var stored:int=host._total_stored_stock()
+	if stored>0:blockers.append("Move %dg of sellable storage stock." % stored)
+	var dealer_stock:int=host._dealer_locker_total()
+	if dealer_stock>0:blockers.append("Move %dg from Dealer Storage." % dealer_stock)
+	var seed_total:int=host._total_seed_inventory()
+	if seed_total>0:blockers.append("Move %d stored seeds." % seed_total)
+	if host.fertilizer_units>0:blockers.append("Move %d fertilizer uses." % host.fertilizer_units)
+	var apartment_deliveries:int=0
+	for delivery_variant in host.location_state.get("deliveries",{}).values():
+		if delivery_variant is Dictionary and str((delivery_variant as Dictionary).get("property",""))=="apartment":apartment_deliveries+=1
+	if apartment_deliveries>0:blockers.append("Install or redirect %d paid apartment deliver%s." % [apartment_deliveries,"y" if apartment_deliveries==1 else "ies"])
+	var paid_assets:=_apartment_paid_equipment_labels()
+	if not paid_assets.is_empty() and str(host.location_state.get("operation_assets_property","apartment"))=="apartment":
+		blockers.append("Relocate paid equipment first: "+", ".join(PackedStringArray(paid_assets))+".")
+	return blockers
+
 func request_apartment_release() -> void:
-	if not bool(house_state().get("relocated",false)) or not apartment_lease_active():return
+	if not apartment_lease_active():return
+	var blockers:=apartment_release_blockers()
+	if not blockers.is_empty():
+		host.status_label.text="Apartment lease cannot be released yet: "+str(blockers[0])
+		apartment_release_confirm=false
+		host._refresh_phone()
+		return
 	apartment_release_confirm=true
 	host._refresh_phone()
 
@@ -474,7 +532,13 @@ func cancel_apartment_release() -> void:
 	host._refresh_phone()
 
 func confirm_apartment_release() -> void:
-	if not bool(house_state().get("relocated",false)) or not apartment_lease_active():return
+	if not apartment_lease_active():return
+	var blockers:=apartment_release_blockers()
+	if not blockers.is_empty():
+		apartment_release_confirm=false
+		host.status_label.text="Apartment lease cannot be released yet: "+str(blockers[0])
+		host._refresh_phone()
+		return
 	host.apartment_rent_state["lease_active"]=false
 	host.apartment_rent_state["released_day"]=host.game_day
 	host.apartment_rent_state["next_due"]=0
@@ -518,8 +582,13 @@ func real_estate_ui(parent:VBoxContainer) -> void:
 	if apartment_balance()>0:
 		_property_button(parent,"PAY APARTMENT BALANCE · $%d" % apartment_balance(),pay_apartment_rent,host.cash<apartment_balance())
 	if apartment_lease_active() and bool(house_state().get("relocated",false)):
-		if apartment_release_confirm:
-			var warning:=_property_label(parent,"RELEASE APARTMENT LEASE?\nFuture $600/14-day rent stops immediately. Any balance already owed remains due.",17)
+		var blockers:=apartment_release_blockers()
+		if not blockers.is_empty():
+			var blocker_text:=_property_label(parent,"LEASE RELEASE SAFETY\n"+"\n".join(PackedStringArray(blockers)),16)
+			blocker_text.modulate=Color("c9a979")
+			_property_button(parent,"RELEASE APARTMENT LEASE · BLOCKED",request_apartment_release,true)
+		elif apartment_release_confirm:
+			var warning:=_property_label(parent,"RELEASE APARTMENT LEASE?\nFuture $600/14-day rent stops immediately. Any balance already owed remains due. Apartment access will be locked.",17)
 			warning.modulate=Color("e6b38a")
 			_property_button(parent,"CONFIRM RELEASE APARTMENT LEASE",confirm_apartment_release)
 			_property_button(parent,"KEEP APARTMENT",cancel_apartment_release)
