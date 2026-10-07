@@ -748,6 +748,8 @@ def main():
     main_script=main_script.replace(save_hook,save_hook+'\n\tif OS.has_feature("web"):\n\t\tJavaScriptBridge.eval("window.AFB_CLOUD.pushFromGame("+JSON.stringify(JSON.stringify(data))+");",true)',1)
     main_script=main_script.replace('brand_label.text = "AFewBuds"', 'if neighborhood != null and neighborhood.mobile_hud != null:\n\t\t\tneighborhood.mobile_hud.update_location()\n\t\telse: brand_label.text = load("res://scripts/districts.gd").heading(camera.position)')
     neighborhood=patch_neighborhood(before['scripts/neighborhood.gd'].decode())
+    neighborhood=neighborhood.replace('action.visible=not target.is_empty()', 'action.visible=not target.is_empty() and not (host.inventory_system!=null and host.inventory_system.native_station_target(target))')
+    neighborhood=neighborhood.replace('func _open_station(id: String) -> void:\n', 'func _open_station(id: String) -> void:\n\tif host.inventory_system!=null and host.inventory_system.native_station_target(id):\n\t\thost.inventory_system.open_container(host.inventory_system.native_container(id))\n\t\treturn\n')
     station=patch_station((ROOT/'tools/police_station_v1/station.gd').read_text())
     door=(HERE/'interior_door_physics.gd').read_bytes()
     property_opportunity=(ROOT/'tools/progression_v1/property_opportunity.gd').read_bytes()
@@ -840,14 +842,14 @@ def main():
 
     loader=(ROOT/'shared/afb-runtime-kobi-v1.js').read_text()
     loader=loader.replace('kobi-v1','mobile-3d-v1').replace('AFB_RUNTIME_KOBI_V1','AFB_RUNTIME_MOBILE_3D_V1')
-    loader=re.sub(r'patch\.json\?v=\d+','patch.json?v=inventory4',loader)
+    loader=re.sub(r'patch\.json\?v=\d+','patch.json?v=inventory5',loader)
     (ROOT/'shared/afb-runtime-mobile-3d-v1.js').write_text(loader,newline='\n')
 
-    release='0.7.9-beta.19-cloudtest.99-inventory.4'
+    release='0.7.9-beta.19-cloudtest.99-inventory.5'
     index=(ROOT/'index.html').read_text()
-    index=index.replace('inventory1','inventory4').replace('inventory2','inventory4').replace('inventory3','inventory4')
+    index=index.replace('inventory1','inventory5').replace('inventory2','inventory5').replace('inventory3','inventory5').replace('inventory4','inventory5')
     index=index.replace('kobi-v1','mobile-3d-v1').replace('AFB_RUNTIME_KOBI_V1','AFB_RUNTIME_MOBILE_3D_V1')
-    index=re.sub(r'afb-runtime-mobile-3d-v1\.js\?v=\d+','afb-runtime-mobile-3d-v1.js?v=inventory4',index)
+    index=re.sub(r'afb-runtime-mobile-3d-v1\.js\?v=\d+','afb-runtime-mobile-3d-v1.js?v=inventory5',index)
     index=re.sub(r'0\.7\.9-beta\.19-cloudtest\.(?:98-kobi|99-mobile3d|99-inventory)\.\d+',release,index)
     index=re.sub(r'"fileSizes":\{[^}]*\\}',f'"fileSizes":{{"index-mobile-3d-v1.pck":{len(built)},"index.wasm":{(ROOT/"index.wasm").stat().st_size}}}',index,count=1)
     if 'MOBILE 3D TEST</title>' not in index:index=index.replace('</title>',' Â· MOBILE 3D TEST</title>',1)

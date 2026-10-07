@@ -107,6 +107,25 @@ func run():
   check(empties==2,"Both empty inventories show one full-width message")
   var rect:Rect2=inv.panel.get_global_rect();var screen:Vector2=root.get_visible_rect().size
   check(rect.position.x>=0 and rect.position.y>=0 and rect.end.x<=screen.x+1 and rect.end.y<=screen.y+1,"Empty panels fit viewport at "+str(dimensions))
+ inv.close()
+ game.dealer_locker_level=1
+ for kind in ["supply","storage","dealer","packing"]:
+  stand("apartment:"+kind)
+  if not desktop:
+   game.current_room="grow" if kind=="supply" else "main"
+   game.neighborhood.active=true;game.neighborhood.in_station=false
+   game.neighborhood._sync_physics_from_camera()
+   game.neighborhood._process(0)
+   inv._process(0)
+   game.neighborhood.mobile_hud.update(0)
+   check(inv.nearby_button.visible and not game.neighborhood.action.visible,"Only modern mobile interaction survives both HUD updates: "+kind)
+   var native:String={"supply":"station_supply","storage":"station_storage","dealer":"station_locker","packing":"station_workbench"}[kind]
+   game.neighborhood._open_station(native)
+   check(inv.is_open() and not game.neighborhood.in_station,"Mobile interaction bypasses old close-up controls: "+kind)
+   inv.close()
+ for item in ["seed|Purple Dream","fertilizer","cash","product|Purple Dream","raw|Purple Dream","equipment|Grow Tent upgrade"]:
+  var texture:Texture2D=inv.art(item)
+  check(texture!=null and texture.get_width()>=1024,"High-resolution inventory art: "+item)
  inv.close();game.queue_free();await process_frame
  print("STATION_INVENTORY_TEST_RESULT: ","PASS" if failures==0 else "FAIL"," checks=",checks," failures=",failures)
  quit(0 if failures==0 else 1)

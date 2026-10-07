@@ -23,6 +23,7 @@ var footer:BoxContainer
 var quantity:SpinBox
 var confirm:Button
 var backpack_button:Button
+var phone_button:Button
 var nearby_button:Button
 var container_id:=""
 var adding:=false
@@ -268,6 +269,12 @@ func reachable(id:String) -> bool:
  if host.neighborhood.get("in_station")==true:position=host.neighborhood.walk_position
  return position.distance_to(POSITIONS[id])<=3.1
 func near_container() -> String:
+ if not host.has_method("_use_target"):
+  var native:String=host.neighborhood._near_target()
+  if native_station_target(native):
+   var id:String=native_container(native)
+   return id if reachable(id) and (not id.ends_with(":dealer") or host.dealer_locker_level>0) else ""
+  if not native.is_empty():return ""
  var best:=""
  var distance:=3.1
  for id in POSITIONS:
@@ -348,6 +355,7 @@ func close() -> void:
  if host.get("fp_player")!=null and not host.session_paused:Input.mouse_mode=Input.MOUSE_MODE_CAPTURED
 func _unhandled_key_input(event:InputEvent) -> void:
  if not event is InputEventKey or not event.pressed or event.echo:return
+ if host.has_method("_use_target"):return
  if event.physical_keycode==KEY_I:
   if is_open():close()
   else:open_backpack()
@@ -360,19 +368,22 @@ func pause_inventory() -> void:
 func resume_inventory() -> void:
  if not resume_container.is_empty():
   var reopening:=resume_container;resume_container="";open_container(reopening)
+func native_container(target:String) -> String:
+ var kind:String={"station_workbench":"packing","station_storage":"storage","storage_vault":"storage","station_supply":"supply","station_locker":"dealer"}.get(target,"")
+ return ("house" if host.camera.position.x>25 else "apartment")+":"+kind if not kind.is_empty() else ""
 func native_station_target(target:String) -> bool:
  return target in ["station_workbench","station_storage","storage_vault","station_supply","station_locker"]
 func sync_station_prompt(nearby:String) -> void:
  if host.get("fp_player")!=null:
   var target:Node=host.get("fp_target")
-  if target!=null and native_station_target(str(target.get_meta("interaction_id",""))) and not nearby.is_empty():
+  if target!=null and native_station_target(str(target.get_meta("interaction_id",""))) :
    host.fp_prompt.text=""
-   nearby_button.text+="  [E]"
+   if not nearby.is_empty():nearby_button.text+="  [E]"
  else:
   var world:Node=host.neighborhood
   if world.get("action")!=null:
    var target:String=world._near_target()
-   if not nearby.is_empty() and (target.is_empty() or native_station_target(target)):world.action.hide()
+   if native_station_target(target) or (not nearby.is_empty() and target.is_empty()):world.action.hide()
    elif not target.is_empty():nearby_button.hide()
  if nearby_button.visible:host.contextual_button.hide()
 func _process(_delta:float) -> void:
@@ -380,6 +391,11 @@ func _process(_delta:float) -> void:
  if is_open():_fit()
  var modal:bool=host._any_modal_open() or host.daily_report_pending or host.tutorial_active
  backpack_button.visible=not modal
+ if phone_button!=null:
+  phone_button.visible=not modal
+  var input:Node=host.get_node("/root/DesktopInput")
+  backpack_button.text="Backpack ["+input.label("backpack")+"]"
+  phone_button.text="Phone ["+input.label("phone")+"]"
  var nearby:String=near_container() if not modal else ""
  if nearby=="market:orders":nearby=""
  nearby_button.visible=not nearby.is_empty()
@@ -396,6 +412,7 @@ func style_button(b:Button,primary:bool=false) -> void:
  b.add_theme_stylebox_override("hover",ui_style("57a43b" if primary else "343d31","8ac46b" if primary else "719263",9))
  b.add_theme_stylebox_override("pressed",ui_style("2b6024","80df59",9,2))
  b.add_theme_stylebox_override("disabled",ui_style("222723","343a33",9))
+ b.add_theme_stylebox_override("focus",ui_style("33462c","c0fa83",9,3))
  b.add_theme_color_override("font_color",Color("faf5df"));b.add_theme_color_override("font_disabled_color",Color("747e70"))
 func button(text:String,callback:Callable,parent:Node,primary:bool=false) -> Button:
  var b:=Button.new();b.text=text;b.custom_minimum_size.y=40
@@ -408,6 +425,9 @@ func art(item:String) -> Texture2D:
  var key:String={"seed":"seeds","fertilizer":"fertilizer","equipment":"equipment","delivery":"equipment","cash":"cash","product":"product","raw":"jar","trimmed":"jar"}.get(category(item),"equipment")
  if art_cache.has(key):return art_cache[key]
  var path:String="res://assets/inventory/"+key+".png"
+ if ResourceLoader.exists(path,"Texture2D"):
+  var imported:=load(path) as Texture2D
+  if imported!=null:art_cache[key]=imported;return imported
  if FileAccess.file_exists(path):
   var img:=Image.new()
   if img.load_png_from_buffer(FileAccess.get_file_as_bytes(path))==OK:
@@ -443,6 +463,12 @@ func build_ui() -> void:
  var hud:=Control.new();hud.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);hud.mouse_filter=Control.MOUSE_FILTER_IGNORE;layer.add_child(hud)
  backpack_button=button("Backpack  [I]",open_backpack,hud)
  backpack_button.set_anchors_preset(Control.PRESET_TOP_RIGHT);backpack_button.offset_left=-200;backpack_button.offset_right=-18;backpack_button.offset_top=120;backpack_button.offset_bottom=166
+ if host.has_method("_use_target"):
+  phone_button=button("Phone",host._toggle_phone,hud)
+  phone_button.set_anchors_preset(Control.PRESET_TOP_RIGHT);phone_button.offset_left=-200;phone_button.offset_right=-18;phone_button.offset_top=174;phone_button.offset_bottom=220
+  var icon:=Image.new()
+  icon.load_svg_from_string('<svg xmlns="http://www.w3.org/2000/svg" width="20" height="24" viewBox="0 0 20 24"><rect x="4" y="1" width="12" height="22" rx="3" fill="none" stroke="#f4f0df" stroke-width="2"/><path d="M8 4h4M8 20h4" stroke="#f4f0df" stroke-width="2"/></svg>')
+  phone_button.icon=ImageTexture.create_from_image(icon)
  nearby_button=button("Open container",func():open_container(near_container()),hud,true)
  nearby_button.set_anchors_preset(Control.PRESET_CENTER_BOTTOM);nearby_button.offset_left=-180;nearby_button.offset_right=180;nearby_button.offset_top=-210;nearby_button.offset_bottom=-162
  if not host.has_method("_use_target"):
@@ -590,6 +616,8 @@ func render_inventory(id:String) -> void:
   card.toggle_mode=true;card.button_pressed=selected==item and selected_source==id
   card.disabled=id=="backpack" and not container_id.is_empty() and not accepts(container_id,item)
   card.tooltip_text=item_name(item)+" · "+("1 g" if group(item)=="grams" else weight_text(unit_weight(item)))+" each"+(" · Not accepted here" if card.disabled else "")
+  card.set_meta("navigation_key",id+"/"+item)
+  card.add_theme_stylebox_override("focus",ui_style("243720","c0fa83",12,3))
   grid.add_child(card)
   var stack:=VBoxContainer.new();card.add_child(stack);stack.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);stack.offset_left=8;stack.offset_right=-8;stack.offset_top=6;stack.offset_bottom=-6
   stack.add_theme_constant_override("separation",2)
