@@ -404,11 +404,14 @@ def patch_progression_main(source:str) -> str:
     assert objective in source
     source=source.replace(objective,objective_repl,1)
 
-    # Apply retirement filtering to all existing advancement-catalog loops
-    # before inserting helpers (so helper loops remain explicit).
-    source=source.replace('\tfor entry: Dictionary in advancement_catalog:\n','\tfor entry: Dictionary in advancement_catalog:\n\t\tif _advancement_is_retired(entry):\n\t\t\tcontinue\n')
-    source=source.replace('\t\tfor lane_entry: Dictionary in advancement_catalog:\n','\t\tfor lane_entry: Dictionary in advancement_catalog:\n\t\t\tif _advancement_is_retired(lane_entry):\n\t\t\t\tcontinue\n')
-    source=source.replace('\t\t\tfor next_entry: Dictionary in advancement_catalog:\n','\t\t\tfor next_entry: Dictionary in advancement_catalog:\n\t\t\t\tif _advancement_is_retired(next_entry):\n\t\t\t\t\tcontinue\n')
+    # Apply retirement filtering to the catalog loops that already exist in
+    # the packed runtime. Preserve each loop's original indentation; a naive
+    # substring replace can match inside deeper-indented loops and break GDScript.
+    loop_pattern=re.compile(r'^(?P<indent>\\t+)for (?P<var>[A-Za-z_][A-Za-z0-9_]*): Dictionary in advancement_catalog:\\n',re.M)
+    def add_retired_filter(match):
+        indent=match.group('indent');var=match.group('var')
+        return f'{indent}for {var}: Dictionary in advancement_catalog:\\n{indent}\\tif _advancement_is_retired({var}):\\n{indent}\\t\\tcontinue\\n'
+    source=loop_pattern.sub(add_retired_filter,source)
 
     helper=r'''func _advancement_choice_group(advancement_id: String) -> String:
 	for candidate: Dictionary in advancement_catalog:
