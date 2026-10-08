@@ -758,8 +758,8 @@ def main():
     equipment_patch=module("equipment_patch",ROOT/"tools/equipment_v2/integrate.py")
     main_script=equipment_patch.restore_cabinet_hooks(equipment_patch.patch_story(equipment_patch.patch_growth(equipment_patch.finish_main(equipment_patch.patch_main(main_script)))))
     # Idle production workers follow the current apartment couch, not its old anchor.
-    _old_idle = '\\t\\t_: return Vector3(-2.775, 0.0, 2.1)'
-    _new_idle = '\\t\\t_:\\n\\t\\t\\tif neighborhood != null and neighborhood.location_ops != null and neighborhood.location_ops.crew != null:\\n\\t\\t\\t\\treturn neighborhood.location_ops.crew.idle_spot(false,true)\\n\\t\\t\\treturn Vector3(-0.75, 0.0, 1.25)'
+    _old_idle = '\t\t_: return Vector3(-2.775, 0.0, 2.1)'
+    _new_idle = '\t\t_:\n\t\t\tif neighborhood != null and neighborhood.location_ops != null and neighborhood.location_ops.crew != null:\n\t\t\t\treturn neighborhood.location_ops.crew.idle_spot(false,true)\n\t\t\treturn Vector3(-0.75, 0.0, 1.25)'
     assert _old_idle in main_script
     main_script=main_script.replace(_old_idle,_new_idle,1)
     main_script=main_script.replace('user://bud_empire_beta_save.json','user://afb_inventory_preview_save.json')
