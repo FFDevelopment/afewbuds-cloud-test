@@ -195,7 +195,7 @@ func show_details() -> void:
 		label("AFewBuds HOUSE OPERATION",30)
 		label("CHAPTER 5 — BUILDING AN OPERATION",27)
 		label("Agreement: %s" % agreement_name(),22)
-		label("The house is now your active operation. Career inventory, genetics, crew, dealers and player-owned operation upgrades moved with you. The apartment lease remains separate until you release it in Real Estate.",20)
+		label("The house is available as a separate operation. Each property keeps its own equipment, stock and assigned crew. Move items yourself through your backpack. The apartment lease continues until you release it in Real Estate.",20)
 		if str(state().get("agreement",""))=="lease":
 			label("OWNERSHIP EQUITY: $%d / $%d" % [int(state().get("equity_paid",0)),LEASE_TOTAL],22)
 		button("BACK TO NEIGHBORHOOD",end_tour)
@@ -282,25 +282,23 @@ func show_relocation() -> void:
 	label("PREPARE RELOCATION",30)
 	label("Agreement signed: %s" % agreement_name(),23)
 	label("MOVE AT YOUR OWN PACE",22)
-	label("Your career, genetics and crew stay with you. Stock and furniture remain where you left them. Empty equipment, pick it up into your backpack, and place it at the new property. Order extra equipment to either property's curb.",19)
+	label("Your career and genetics stay with you. Workers remain assigned to their existing property. Stock and furniture remain where you left them. Empty equipment, pick it up into your backpack, and place it at the new property. Order extra equipment to either property's curb.",19)
 	label("The apartment lease continues until you empty and release it in Real Estate.",19)
 	if str(state().get("agreement",""))=="lease":
 		label("OWNERSHIP EQUITY: $%d / $%d" % [int(state().get("equity_paid",0)),LEASE_TOTAL],21)
 	label("APARTMENT LEASE",23)
 	label("Your apartment lease stays active when you move. Apartment rent continues at $600 every 14 game days in addition to any house payment. Manage or release the apartment later in Phone > Real Estate.",19)
-	button("MOVE OPERATION",confirm_relocation)
-	button("BACK TO PROPERTY",show_details)
+	button("MAKE HOUSE PRIMARY · KEEP BOTH PROPERTIES",confirm_relocation)
+	button("KEEP APARTMENT PRIMARY · OPEN HOUSE",confirm_relocation.bind(false))
+	button("DECIDE LATER",end_tour)
 	overlay.show();tour_bar.hide();resize()
 
-func confirm_relocation() -> void:
+func confirm_relocation(make_primary:bool=true) -> void:
 	if not bool(state().get("agreement_signed",false)) or bool(state().get("relocated",false)):return
-	if host.inventory_system!=null and not host.inventory_system.relocate("apartment","house"):return
 	state()["relocated"]=true
 	state()["relocation_day"]=host.game_day
 	state()["keep_apartment"]=true
-	host.location_state["active_property"]="house"
-	host.location_state["operation_assets_property"]="house"
-	host.location_state["operation_contents_property"]="house"
+	if make_primary:host.location_state["active_property"]="house"
 	if host.location_state.get("house",{}) is Dictionary:
 		host.location_state["house"]["active"]=true
 	if not host.apartment_rent_state.has("lease_active"):

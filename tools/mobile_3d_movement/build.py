@@ -294,6 +294,7 @@ def patch_progression_main(source:str) -> str:
     source=source.replace('var restore_y: int = phone_scroll.scroll_vertical','var restore_y: int = 0 if phone_current_app == "texts" else phone_scroll.scroll_vertical',1)
     # Heat: routine attention builds more slowly, while staying live and
     # deliberately cooling the operation is materially faster than logging off.
+    crew=property_patch.patch_crew(crew)
     replacements={
         'const HEAT_DECAY_OPEN_PER_GAME_MINUTE: float = 0.0010':'const HEAT_DECAY_OPEN_PER_GAME_MINUTE: float = 0.0120',
         'const HEAT_DECAY_QUIET_PER_GAME_MINUTE: float = 0.0040':'const HEAT_DECAY_QUIET_PER_GAME_MINUTE: float = 0.0160',
@@ -757,6 +758,8 @@ def main():
     main_script=expansion_patch.patch_main(main_script)
     equipment_patch=module("equipment_patch",ROOT/"tools/equipment_v2/integrate.py")
     main_script=equipment_patch.restore_cabinet_hooks(equipment_patch.patch_story(equipment_patch.patch_growth(equipment_patch.finish_main(equipment_patch.patch_main(main_script)))))
+    property_patch=module("property_isolation_patch",ROOT/"tools/property_isolation_v1/patch.py")
+    main_script=property_patch.patch_main(main_script)
     main_script=main_script.replace('user://bud_empire_beta_save.json','user://afb_inventory_preview_save.json')
     save_hook='\tfile.store_string(JSON.stringify(data))\n\tfile.flush()\n\tlast_save_ok=file.get_error()==OK\n\tfile.close()'
     assert save_hook in main_script
@@ -866,7 +869,7 @@ def main():
     loader=re.sub(r'patch\.json\?v=(?:\d+|(?:inventory|expansion)\d+)','patch.json?v=expansion8',loader)
     (ROOT/'shared/afb-runtime-mobile-3d-v1.js').write_text(loader,newline='\n')
 
-    release='0.7.9-beta.19-cloudtest.99-expansion.8'
+    release='0.7.9-beta.19-cloudtest.99-expansion.9'
     index=(ROOT/'index.html').read_text(encoding='utf-8')
     index=re.sub(r'([?&]v=)(?:inventory|expansion)\d+',r'\g<1>expansion8',index)
     index=index.replace('shared/afb-api.js\"','shared/afb-api.js?v=expansion8\"')

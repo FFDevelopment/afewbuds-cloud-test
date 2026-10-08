@@ -197,7 +197,7 @@ func empty_reason(id:String) -> String:
    if int(stock[item])>0:labels.append(inv().units(item,int(stock[item]))+" "+inv().item_name(item))
   if not labels.is_empty():return "Empty this equipment first: "+", ".join(labels)+"."
   if station_kind(id)=="packing" and inv().packing!=null and inv().packing.active:return "Finish or cancel the active packing work first."
- if bool(host.packing_employee_active) and not str(host.get("production_worker_pending_action")).is_empty() and state.items[id].get("property","")==inv().operation():
+ if bool(host.packing_employee_active) and not str(host.get("production_worker_pending_action")).is_empty() and state.items[id].get("property","")==inv().worker_property():
   if station_kind(id) in ["packing","supply","storage","dealer"] or is_tent(state.items[id]):return "Pause the production worker before moving equipment."
  return ""
 func validate(id:String,property:String,point:Vector3,yaw:int) -> String:

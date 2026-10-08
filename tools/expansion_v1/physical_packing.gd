@@ -52,7 +52,7 @@ func start(item:String) -> void:
  saved_camera=host.camera.global_transform;saved_fov=host.camera.fov;saved_aspect=host.camera.keep_aspect
  inventory.close();active=true;bar.show();Input.mouse_mode=Input.MOUSE_MODE_VISIBLE
  surface=Node3D.new();host.add_child(surface)
- var apartment:bool=inventory.operation()=="apartment"
+ var apartment:bool=station_id.begins_with("apartment:")
  surface.position=inventory.all_positions()[station_id]
  surface.rotation.y=-PI/2 if apartment else 0
  # Reuse the bench's actual world-space position rather than rendering a second UI scene.

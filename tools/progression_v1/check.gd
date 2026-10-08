@@ -99,7 +99,7 @@ func run() -> void:
 	op.confirm_relocation()
 	check(bool(game.property_opportunity_state.get("relocated",false)) and str(game.location_state.get("active_property",""))=="house","Relocation switches active operation to house")
 	check(bool(game.apartment_rent_state.get("lease_active",false)),"Moving to house keeps apartment lease active by default")
-	check(str(game.location_state.get("operation_assets_property",""))=="house" and str(game.location_state.get("operation_contents_property",""))=="house","Player-owned operation assets and contents move with the house relocation")
+	check(str(game.location_state.get("operation_assets_property",""))=="apartment" and str(game.location_state.get("operation_contents_property",""))=="apartment","Opening the house preserves apartment equipment and inventory ownership")
 	check(not game._story_chapter_four_complete(),"Relocation waits for first house entry before Chapter 4 completion")
 	var house_door:Node3D=game.neighborhood.get_node("HouseEntrance")
 	game.camera.global_position=Vector3(35,1.64,4.8)

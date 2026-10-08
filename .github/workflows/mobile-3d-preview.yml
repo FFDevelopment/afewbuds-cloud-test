@@ -97,6 +97,12 @@ jobs:
           grep -q "EQUIPMENT_V2_RESULT: PASS" "${RUNNER_TEMP}/equipment-check.log"
           if grep -E 'SCRIPT ERROR|^ERROR:' "${RUNNER_TEMP}/equipment-check.log"; then exit 1; fi
 
+      - name: Check property inventory and worker isolation
+        run: |
+          set -euo pipefail
+          XDG_DATA_HOME="$(mktemp -d)" timeout 120s /tmp/godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path "${RUNNER_TEMP}/mobile3d/candidate" --script "${GITHUB_WORKSPACE}/tools/property_isolation_v1/check.gd" 2>&1 | tee "${RUNNER_TEMP}/property-isolation.log"
+          grep -q "PROPERTY_ISOLATION_RESULT: PASS" "${RUNNER_TEMP}/property-isolation.log"
+          if grep -E 'SCRIPT ERROR|^ERROR:' "${RUNNER_TEMP}/property-isolation.log"; then exit 1; fi
       - name: Test expansion and isolated test saves
         run: |
           set -euo pipefail

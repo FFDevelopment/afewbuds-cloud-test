@@ -851,3 +851,39 @@ func worker_equipment_ready() -> bool:
  for kind in ["packing","supply","storage"]:
   if furniture.model.primary(operation(),kind).is_empty():return false
  return true
+
+# Legacy gameplay fields are adapters for exactly one property's containers.
+# Execute synchronous worker tasks in their assigned property and restore the
+# previous adapter afterwards; switching adapters never transfers contents.
+func staff_property(name:String) -> String:
+ return str(host.location_state.get("staff_assignments",{}).get(name,"apartment"))
+func worker_property() -> String:
+ return staff_property(host._critical_production_sender())
+func at_property(property:String,action:Callable) -> Variant:
+ if property not in ["apartment","house"] or not controlled(property+":packing"):return false
+ var previous:=operation()
+ if previous==property:return action.call()
+ activate_adapters(property)
+ var result:Variant=action.call()
+ activate_adapters(previous)
+ return result
+func activate_adapters(property:String) -> void:
+ var previous:=operation()
+ if previous==property:return
+ if not state.has("product_metadata"):state["product_metadata"]={}
+ state.product_metadata[previous]=host.products.duplicate(true)
+ var destination:Dictionary={}
+ for kind in KINDS:
+  destination[kind]=contents(property+":"+kind).duplicate(true)
+  state.containers[previous+":"+kind]=contents(previous+":"+kind).duplicate(true)
+  state.containers[property+":"+kind]={}
+ host.seed_inventory={};host.fertilizer_units=0;host.locker_weed={}
+ host.untrimmed_inventory={};host.trimmed_inventory={};host.bagged_inventory={}
+ host.products=state.product_metadata.get(property,host.products).duplicate(true)
+ for data in host.products.values():
+  data.stock=0
+  if not state.product_metadata.has(property):data.reserved=0
+ host.location_state.operation_contents_property=property
+ for kind in KINDS:
+  for item in destination[kind]:set_amount(property+":"+kind,item,int(destination[kind][item]))
+ if furniture!=null and furniture.equipment_world!=null:furniture.equipment_world.sync_levels()
