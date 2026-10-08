@@ -294,7 +294,6 @@ def patch_progression_main(source:str) -> str:
     source=source.replace('var restore_y: int = phone_scroll.scroll_vertical','var restore_y: int = 0 if phone_current_app == "texts" else phone_scroll.scroll_vertical',1)
     # Heat: routine attention builds more slowly, while staying live and
     # deliberately cooling the operation is materially faster than logging off.
-    crew=property_patch.patch_crew(crew)
     replacements={
         'const HEAT_DECAY_OPEN_PER_GAME_MINUTE: float = 0.0010':'const HEAT_DECAY_OPEN_PER_GAME_MINUTE: float = 0.0120',
         'const HEAT_DECAY_QUIET_PER_GAME_MINUTE: float = 0.0040':'const HEAT_DECAY_QUIET_PER_GAME_MINUTE: float = 0.0160',
@@ -776,6 +775,7 @@ def main():
     assert 'host.phone_scroll.scroll_vertical=int(host.phone_scroll.get_v_scroll_bar().max_value)' in crew
     crew=crew.replace('host.phone_scroll.scroll_vertical=int(host.phone_scroll.get_v_scroll_bar().max_value)','host.phone_scroll.scroll_vertical=0')
     crew=crew.replace('for i in range(host.phone_text_messages.size()):','for i in range(host.phone_text_messages.size()-1,-1,-1):')
+    crew=property_patch.patch_crew(crew)
     replacements={
         'scripts/main.gd':main_script.encode(),
         'scripts/offline_plant_care.gd':equipment_patch.patch_offline(before['scripts/offline_plant_care.gd'].decode()).encode(),
