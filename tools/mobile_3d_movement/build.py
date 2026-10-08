@@ -803,6 +803,42 @@ def main():
     crew=crew.replace('host.phone_scroll.scroll_vertical=int(host.phone_scroll.get_v_scroll_bar().max_value)','host.phone_scroll.scroll_vertical=0')
     crew=crew.replace('for i in range(host.phone_text_messages.size()):','for i in range(host.phone_text_messages.size()-1,-1,-1):')
     crew=property_patch.patch_crew(crew)
+    # Imported GLB sit animations contain only lower-body tracks (11 vs idle's 36).
+    # Restore unkeyed upper-body joint poses from the character's relaxed idle
+    # frame, while retaining every original sitting hip/leg keyframe.
+    sit_helper = '''func _complete_sit_tracks(avatar: Node3D) -> void:
+\tfor player in avatar.find_children("*","AnimationPlayer",true,false):
+\t\tvar idle: Animation=player.get_animation("idle")
+\t\tvar sit: Animation=player.get_animation("sit")
+\t\tif idle==null or sit==null:continue
+\t\tvar lib: AnimationLibrary=player.get_animation_library("")
+\t\tif lib==null:continue
+\t\tvar completed: Animation=sit.duplicate(true)
+\t\tvar added:int=0
+\t\tfor track in range(idle.get_track_count()):
+\t\t\tvar track_type:Animation.TrackType=idle.track_get_type(track)
+\t\t\tif track_type not in [Animation.TYPE_ROTATION_3D,Animation.TYPE_POSITION_3D,Animation.TYPE_SCALE_3D]:continue
+\t\t\tif idle.track_get_key_count(track)==0:continue
+\t\t\tvar track_path:NodePath=idle.track_get_path(track)
+\t\t\tvar already:bool=false
+\t\t\tfor existing in range(completed.get_track_count()):
+\t\t\t\tif completed.track_get_type(existing)==track_type and completed.track_get_path(existing)==track_path:
+\t\t\t\t\talready=true
+\t\t\t\t\tbreak
+\t\t\tif already:continue
+\t\t\tvar next:int=completed.add_track(track_type)
+\t\t\tcompleted.track_set_path(next,track_path)
+\t\t\tcompleted.track_insert_key(next,0.0,idle.track_get_key_value(track,0))
+\t\t\tadded+=1
+\t\tif added>0:
+\t\t\tlib.remove_animation("sit")
+\t\t\tlib.add_animation("sit",completed)
+
+'''
+    assert crew.count("func character_instance(name: String) -> Node3D:\n")==1, "GLB character entrypoint changed"
+    crew=crew.replace("func character_instance(name: String) -> Node3D:\n",sit_helper+"func character_instance(name: String) -> Node3D:\n",1)
+    assert crew.count('\tinstance.set_meta("character",name)')==1, "GLB character initializer changed"
+    crew=crew.replace('\tinstance.set_meta("character",name)', '\tinstance.set_meta("character",name)\n\t_complete_sit_tracks(instance)',1)
     # The apartment dealer/production crew must follow the currently placed couch.
     from pathlib import Path as _Path
     seating_edits = json.loads((_Path(__file__).resolve().parent / "crew_seating_replacements.json").read_text())
