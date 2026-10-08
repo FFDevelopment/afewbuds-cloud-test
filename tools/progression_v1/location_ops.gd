@@ -91,6 +91,7 @@ func make_computer(id: String, at: Vector3, apartment: bool) -> void:
 	var strip: MeshInstance3D=box.call("RearLED",Vector3(0.37,0.905,0),Vector3(0.012,0.008,1.29),"69ba91")
 	strip.mesh.material.emission_enabled=true;strip.mesh.material.emission=Color("69ba91")
 	for node in parts:
+		node.set_meta("equipment_template_group","computer" if apartment else "house_computer")
 		node.layers=1 if apartment else 2
 		if not apartment:node.reparent(world,true)
 func dashboard_texture() -> ImageTexture:

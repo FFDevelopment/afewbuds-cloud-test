@@ -34,10 +34,10 @@ const CATALOG={
  "tv_console":{"name":"TV & Console","shop":"furniture","price":420,"size":[2.1,1.8,.65],"weight":24},
  "fridge":{"name":"Refrigerator","shop":"furniture","price":400,"size":[1.05,2.4,1],"weight":32},
  "floor_lamp":{"name":"Floor Lamp","shop":"furniture","price":85,"size":[.5,1.8,.5],"weight":5},
- "computer":{"name":"Computer Desk","shop":"furniture","price":550,"size":[1.5,1.5,.85],"weight":22}}
+ "computer":{"name":"Computer Desk","shop":"furniture","price":550,"size":[1.5,1.65,.85],"weight":22}}
 const ROOMS={
  "apartment":{"main":Rect2(-4.7,-3.65,9.4,9.1),"grow":Rect2(-4.7,-10.0,9.4,5.5)},
- "house":{"living":Rect2(25.4,-4.6,7.65,7.15),"packing":Rect2(37,-4.6,7.6,7.15),"kitchen":Rect2(25.4,-13.55,5.5,6.1),"bathroom":Rect2(31.7,-13.55,2.05,6.1),"bedroom":Rect2(34.65,-13.55,3.5,6.1),"grow":Rect2(39.05,-13.55,5.55,6.1)}}
+ "house":{"living":Rect2(25.4,-4.6,7.65,7.15),"packing":Rect2(37,-4.6,7.6,7.15),"kitchen":Rect2(25.4,-13.55,5.5,6.1),"bathroom":Rect2(31.7,-13.55,2.05,6.1),"bedroom":Rect2(34.65,-13.55,3.5,6.1),"grow":Rect2(38.71,-13.89,6.18,6.78)}}
 # Front grow-room corners keep migrated utility units clear of shelves and tents.
 const UTILITY_POSITIONS={
  "apartment":{"water_kit":Vector3(3.8,0,-5.1),"ventilation":Vector3(3.8,0,-6.4)},
@@ -212,7 +212,7 @@ func validate(id:String,property:String,point:Vector3,yaw:int) -> String:
  if not point.is_finite() or absf(point.y)>.05 or yaw%90!=0:return "Place on the floor with quarter-turn rotation."
  var rect:=bounds(id,point,yaw).grow(.06);var room:=""
  for key in ROOMS[property]:
-  if (ROOMS[property][key] as Rect2).encloses(rect):room=key;break
+  if (ROOMS[property][key] as Rect2).grow(.35 if e.sku=="storage_5" else 0.0).encloses(rect):room=key;break
  if room.is_empty():return "Keep the entire item inside one room and clear of doorways."
  if bool(CATALOG[e.sku].get("grow_only",false)) and room!="grow":return "Grow equipment can only be placed in grow rooms."
  for other in state.items:

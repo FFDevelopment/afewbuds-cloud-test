@@ -37,6 +37,36 @@ func run():
  check(house_items==0,"New house starts without free furniture or stations")
  check(JSON.stringify(model.state.items)==original_items,"House acquisition and world sync preserve apartment furniture")
  game.cash=50000
+ var computer_parts:=0
+ var visible_templates:=0
+ for node in game.neighborhood.get_children():
+  if node.get_meta("equipment_template_group","")=="house_computer":
+   computer_parts+=1
+   if node.visible:visible_templates+=1
+ check(computer_parts>100 and visible_templates==0,"Every original house computer part is captured and hidden")
+ var orphan_tags:=0
+ for node in game.neighborhood.get_children():
+  if node is Label3D and node.text in [inv.title("house:packing"),inv.title("house:storage"),inv.title("house:supply"),inv.title("house:dealer")]:orphan_tags+=1
+ check(orphan_tags==0,"Empty house has no floating station labels")
+ var placement_tent:String=model.own("tent_1")
+ inv.furniture.open_property("apartment");inv.furniture.close()
+ game.camera.global_position=Vector3(41.8,1.64,-10)
+ inv.open_backpack();inv.place_backpack_item(placement_tent)
+ check(inv.furniture.is_placing() and inv.furniture.property=="house" and not inv.is_open(),"Backpack placement uses current house despite previously browsing apartment")
+ for near_wall in [Vector3(39.35,0,-10),Vector3(44.25,0,-10),Vector3(41.8,0,-13.2),Vector3(43.5,0,-7.8)]:
+  inv.furniture.point=near_wall;inv.furniture.yaw=0
+  check(inv.furniture.obstacle().is_empty(),"House tent can place near wall at "+str(near_wall)+": "+inv.furniture.obstacle())
+ check(not model.validate(placement_tent,"house",Vector3(38.9,0,-10),0).is_empty(),"Tent still cannot cross the grow-room wall")
+ inv.furniture.close()
+ inv.furniture.open_property("house");inv.furniture.close()
+ game.camera.global_position=Vector3(0,1.64,-7)
+ inv.open_backpack();inv.place_backpack_item(placement_tent)
+ check(inv.furniture.is_placing() and inv.furniture.property=="apartment","Backpack placement switches to the apartment without using Real Estate")
+ inv.furniture.close()
+ game.camera.global_position=Vector3(0,1.64,15)
+ inv.open_backpack();inv.place_backpack_item(placement_tent)
+ check(not inv.furniture.is_placing() and inv.is_open() and inv.notice.text.contains("Enter a property"),"Outdoor placement keeps backpack open and explains the restriction")
+ inv.close();model.state.items.erase(placement_tent)
  for spec in [["bench_1",Vector3(41.2,0,-3.58)],["shelf_1",Vector3(43.5,0,-9.1)],["storage_1",Vector3(43.5,0,-1.2)]]:
   var id:String=model.own(spec[0],"house")
   check(not id.is_empty() and model.state.items[id].property=="house:delivery" and not model.state.items[id].has("position"),"House order waits at curb: "+spec[0])
@@ -65,6 +95,32 @@ func run():
  var computer_id:String=model.own("computer")
  check(model.place(computer_id,"house",Vector3(30,0,1),0),"Backpack computer placed in house")
  editor.sync_world()
+ var desk_meshes:Array=editor.equipment_world.rendered[computer_id].find_children("*","MeshInstance3D",true,false)
+ var textured_parts:=0
+ for mesh in desk_meshes:
+  var material=mesh.get_active_material(0)
+  if material is BaseMaterial3D and material.albedo_texture!=null:textured_parts+=1
+ check(desk_meshes.size()>100 and textured_parts>0,"Purchased computer retains complete textured desk assembly")
+ editor.selected=computer_id;editor.build_preview()
+ check(editor.preview_model.find_children("*","MeshInstance3D",true,false).size()==desk_meshes.size(),"Computer placement preview matches complete placed model")
+ check(editor.preview_model.find_children("*","CollisionObject3D",true,false).is_empty(),"Detailed placement preview cannot block placement")
+ editor.clear_preview();editor.selected=""
+ var saved_camera:Transform3D=game.camera.global_transform
+ game.camera.global_position=Vector3(30,1.2,2.8);game.camera.look_at(Vector3(30,.8,1))
+ editor.start_layout("house")
+ check(editor.layout_focus==computer_id and not editor.layout_move.disabled,"Walk-around layout selects the complete desk")
+ editor.layout_move_item()
+ check(editor.is_placing() and editor.layout_mode,"Layout move enters placement without reopening phone")
+ editor.cancel_placement()
+ check(editor.layout_mode and editor.layout_panel.visible and not editor.is_placing(),"Cancel placement returns to walk-around layout")
+ editor.close()
+ var stash_id:String=model.own("storage_5")
+ game.camera.global_position=Vector3(41,1.5,-11);game.camera.look_at(Vector3(38.6,1.5,-11))
+ editor.begin(stash_id);editor.snap_stash_to_wall()
+ check(editor.wall_found and editor.obstacle().is_empty(),"Hidden stash snaps flush to a clear house wall: "+editor.obstacle())
+ editor.wall_found=false
+ check(not editor.obstacle().is_empty(),"Hidden stash cannot be placed on an empty floor")
+ editor.close();model.state.items.erase(stash_id);game.camera.global_transform=saved_camera
  var computer_area:Node=editor.equipment_world.rendered[computer_id].find_children("*","Area3D",true,false)[0]
  check(computer_area.get_meta("equipment_container")=="house:computer","Computer interaction belongs to its placed property")
  game.camera.global_position=Vector3(30,1.64,0)

@@ -1,4 +1,14 @@
 extends Node
+var preview_model:Node3D
+var preview_material:StandardMaterial3D
+var layout_mode:=false
+var layout_property:=""
+var layout_focus:=""
+var layout_panel:PanelContainer
+var layout_hint:Label
+var layout_move:Button
+var layout_pickup:Button
+var wall_found:=false
 var chapter:RefCounted
 var equipment_world:Node
 var portfolio_property:=""
@@ -47,20 +57,30 @@ func setup(owner:Node3D,inv:Node) -> void:
  var row:=HBoxContainer.new();placement_box.add_child(row)
  inventory.button("Rotate",rotate_item,row)
  place_button=inventory.button("Place",confirm,row,true)
- inventory.button("Cancel",close,row)
+ inventory.button("Cancel",cancel_placement,row)
  placement_panel.hide()
+ layout_panel=PanelContainer.new();layout_panel.add_theme_stylebox_override("panel",inventory.ui_style("111713","617651"));layer.add_child(layout_panel)
+ var layout_box:=VBoxContainer.new();layout_panel.add_child(layout_box)
+ layout_hint=inventory.label("Look at furniture to select it",layout_box,16)
+ var layout_row:=HBoxContainer.new();layout_box.add_child(layout_row)
+ layout_move=inventory.button("Move",layout_move_item,layout_row)
+ layout_pickup=inventory.button("Pick up",layout_pickup_item,layout_row)
+ inventory.button("All furniture",func():open_property(layout_property),layout_row)
+ inventory.button("Done",close,layout_row)
+ layout_panel.hide()
  panel.hide()
  rod_button=inventory.button("Talk to Rod",func():
   if rod!=null and host.camera.global_position.distance_to(rod.global_position+Vector3.UP)<3.0 and chapter.meet_rod():rod.hide(),layer,true)
  rod_button.hide()
-func is_open() -> bool:return panel.visible or is_placing()
+func is_open() -> bool:return panel.visible or is_placing() or layout_mode
 func is_placing() -> bool:return not selected.is_empty() and editing_camera
 func blocks_movement() -> bool:return panel.visible
-func over_controls(p:Vector2) -> bool:return placement_panel.visible and placement_panel.get_global_rect().has_point(p)
+func over_controls(p:Vector2) -> bool:return (placement_panel.visible and placement_panel.get_global_rect().has_point(p)) or (layout_panel.visible and layout_panel.get_global_rect().has_point(p))
 func restore_camera() -> void:
  editing_camera=false
  placement_panel.hide()
 func close() -> void:
+ layout_mode=false;layout_panel.hide();clear_preview()
  restore_camera()
  selected="";panel.hide();ghost.hide()
  if host.get("fp_player")!=null and not host.session_paused:Input.mouse_mode=Input.MOUSE_MODE_CAPTURED
@@ -79,11 +99,14 @@ func toggle_lock(id:String) -> void:
  model.lock(id,not bool(model.state.items[id].get("locked",false)));render_list()
 func open() -> void:
  portfolio_property=""
+ layout_panel.hide()
  if host.phone_open:host._toggle_phone()
  if host.neighborhood.location_ops.is_open():host.neighborhood.location_ops.close()
  panel.show();Input.mouse_mode=Input.MOUSE_MODE_VISIBLE;selected="";ghost.hide();render_list()
 func render_list() -> void:
  restore_camera();clear();hint.text="FURNITURE & EQUIPMENT" if portfolio_property.is_empty() else portfolio_property.to_upper()+" · FURNITURE"
+ var current_property:String=portfolio_property if not portfolio_property.is_empty() else ("house" if inside("house") else "apartment")
+ inventory.button("Walk-around edit mode",start_layout.bind(current_property),list).disabled=not inside(current_property)
  inventory.label("Empty and unlock equipment before picking it up. Packed items go into your backpack with their upgrades intact.",list)
  for id in model.state.items:
   var e:Dictionary=model.state.items[id]
@@ -137,8 +160,9 @@ func begin(id:String) -> void:
  if e.get("property","") not in [property,"backpack"]:hint.text="Pick up this item at its property first.";selected="";return
  if not model.empty_reason(id).is_empty():hint.text=model.empty_reason(id);selected="";return
  editing_camera=true
+ layout_panel.hide();build_preview()
  point=host.camera.global_position-host.camera.global_basis.z*2.0;point.y=0
- point.x=snappedf(point.x,.25);point.z=snappedf(point.z,.25);yaw=0
+ point.x=snappedf(point.x,.05);point.z=snappedf(point.z,.05);yaw=0
  if e.get("property","")==property and e.has("position"):
   point=Vector3(e.position[0],0,e.position[2]);yaw=int(e.yaw)
  panel.hide();placement_panel.show()
@@ -157,9 +181,10 @@ func aim() -> void:
  if forward.y<-.05:distance=origin.y / -forward.y * Vector2(forward.x,forward.z).length()
  distance=clampf(distance,nearest,5.5)
  point=origin+flat*distance;point.y=0
- point.x=snappedf(point.x,.25);point.z=snappedf(point.z,.25)
+ point.x=snappedf(point.x,.05);point.z=snappedf(point.z,.05)
+ if model.state.items[selected].sku=="storage_5":snap_stash_to_wall()
 func handle_placement_input(event:InputEvent) -> bool:
- if not is_placing() or host.session_paused:return false
+ if (not is_placing() and not layout_mode) or host.session_paused:return false
  if not event.is_pressed() or event.is_echo():return false
  var desktop:Node=host.get_node_or_null("/root/DesktopInput")
  var accept:bool=desktop.pressed(event,"interact") if desktop!=null else event is InputEventKey and event.keycode==KEY_E
@@ -167,8 +192,15 @@ func handle_placement_input(event:InputEvent) -> bool:
  if event is InputEventJoypadButton:
   accept=accept or event.button_index==JOY_BUTTON_A
   cancel=cancel or event.button_index==JOY_BUTTON_B
- if cancel:close();return true
- if accept:confirm();return true
+ if cancel:
+  if is_placing():cancel_placement()
+  else:close()
+  return true
+ if accept:
+  if is_placing():confirm()
+  else:layout_move_item()
+  return true
+ if not is_placing():return false
  if (event is InputEventKey and event.keycode==KEY_R) or (event is InputEventJoypadButton and event.button_index==JOY_BUTTON_RIGHT_SHOULDER):rotate_item();return true
  # Opening another activity would strand the preview or interact through it.
  if desktop!=null:
@@ -177,6 +209,7 @@ func handle_placement_input(event:InputEvent) -> bool:
  elif event is InputEventKey and event.keycode in [KEY_P,KEY_I]:return true
  return false
 func obstacle() -> String:
+ if not selected.is_empty() and model.state.items[selected].sku=="storage_5" and not wall_found:return "Aim at a clear wall to mount the hidden stash."
  if not inside(property):return "Enter this property before placing furniture."
  var problem:String=model.validate(selected,property,point,yaw)
  if not problem.is_empty():return problem
@@ -212,12 +245,16 @@ func preview() -> void:
  placement_hint.text=hint.text+"\nWalk / look to aim | R / RB: rotate | E / A: place" if host.get("fp_player")!=null else hint.text+"\nMove with joystick; drag to aim"
  place_button.disabled=not problem.is_empty()
  var mat:=StandardMaterial3D.new();mat.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA;mat.albedo_color=Color(0.3,.9,.4,.35) if problem.is_empty() else Color(1,.25,.2,.35)
- ghost.material_override=mat;ghost.show()
+ ghost.material_override=mat;ghost.hide()
+ if preview_model!=null:
+  preview_model.position=point;preview_model.rotation.y=deg_to_rad(yaw)
+  preview_material.albedo_color=Color(.25,.85,.35,.18) if problem.is_empty() else Color(1,.12,.12,.5)
+  preview_model.show()
 func confirm() -> void:
  if selected.is_empty():return
  var problem:=obstacle()
  if not problem.is_empty():preview();return
- if model.place(selected,property,point,yaw):close()
+ if model.place(selected,property,point,yaw):cancel_placement()
  else:hint.text=model.error
 func _process(_delta:float) -> void:
  if host==null:return
@@ -226,6 +263,8 @@ func _process(_delta:float) -> void:
   var screen:Vector2=host.get_viewport().get_visible_rect().size
   placement_panel.size=Vector2(minf(440,screen.x-24),0)
   placement_panel.position=Vector2((screen.x-placement_panel.size.x)/2,80)
+ elif layout_mode and not panel.visible:
+  refresh_layout()
  elif panel.visible:
   var screen:Vector2=host.get_viewport().get_visible_rect().size
   panel.size=Vector2(minf(360,screen.x-24),minf(540,screen.y-96))
@@ -303,3 +342,89 @@ func build_prop(root:Node3D,id:String,sku:String) -> void:
   piece(root,id,Vector3(0,.32,0),Vector3(s.x,.4,s.z),"435b57")
   piece(root,id,Vector3(0,s.y/2,-s.z/2+.12),Vector3(s.x,s.y,.24),"526b64")
   for x in [-1,1]:piece(root,id,Vector3(x*(s.x/2-.1),.52,0),Vector3(.2,.45,s.z),"354b46")
+
+func clear_preview() -> void:
+ if is_instance_valid(preview_model):preview_model.free()
+ preview_model=null
+func build_preview() -> void:
+ clear_preview()
+ preview_model=Node3D.new();preview_model.name="FurniturePreview";preview_model.set_meta("no_collision",true);host.add_child(preview_model)
+ var e:Dictionary=model.state.items[selected]
+ if model.is_tent(e):
+  equipment_world.tent(preview_model,selected)
+  var slots:Array=e.get("slots",[])
+  for i in range(slots.size()):
+   if int(slots[i])>=host.plant_visuals.size():continue
+   var pot:Node3D=host.plant_visuals[int(slots[i])].duplicate()
+   preview_model.add_child(pot);pot.position=Vector3((float(i)-(slots.size()-1)*.5)*(model.size_of(selected).x-.35)/slots.size(),.26,0);pot.rotation=Vector3.ZERO;pot.show()
+ elif not equipment_world.clone_computer(preview_model,selected,e) and not equipment_world.clone_supply(preview_model,selected,e) and not equipment_world.clone_cabinet(preview_model,selected,e) and not equipment_world.clone_legacy(preview_model,selected,e):build_prop(preview_model,selected,e.sku)
+ for body in preview_model.find_children("*","CollisionObject3D",true,false):
+  if is_instance_valid(body):body.free()
+ preview_material=StandardMaterial3D.new();preview_material.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA;preview_material.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
+ for node in preview_model.find_children("*","Node",true,false):
+  node.set_script(null)
+  if node is MeshInstance3D:node.set_meta("no_collision",true);node.material_overlay=preview_material
+  if node is Label3D:node.hide()
+func cancel_placement() -> void:
+ restore_camera();selected="";ghost.hide();clear_preview()
+ if layout_mode and inside(layout_property):
+  panel.hide();layout_panel.show();refresh_layout()
+ else:close()
+func start_layout(property_id:String) -> void:
+ if not inside(property_id):hint.text="Enter this property before editing its furniture.";return
+ layout_mode=true;layout_property=property_id;portfolio_property=property_id;panel.hide();layout_panel.show()
+ if host.get("fp_player")!=null:Input.mouse_mode=Input.MOUSE_MODE_CAPTURED
+ refresh_layout()
+func refresh_layout() -> void:
+ if not inside(layout_property):close();return
+ layout_focus=""
+ var origin:Vector3=host.camera.global_position
+ var direction:Vector3=-host.camera.global_basis.z
+ var distance:=5.0
+ for id in model.state.items:
+  var e:Dictionary=model.state.items[id]
+  if e.get("property","")!=layout_property or not e.has("position"):continue
+  var size:Vector3=model.size_of(id,int(e.get("yaw",0)))
+  var box:=AABB(Vector3(e.position[0]-size.x*.5,0,e.position[2]-size.z*.5),size)
+  var hit=box.intersects_ray(origin,direction)
+  if hit!=null and origin.distance_to(hit)<distance:layout_focus=id;distance=origin.distance_to(hit)
+ var reason:String="" if layout_focus.is_empty() else model.empty_reason(layout_focus)
+ layout_hint.text=layout_property.capitalize()+" · "+("Look at furniture to select it" if layout_focus.is_empty() else model.item_name(layout_focus))
+ if not reason.is_empty():layout_hint.text+="\n"+reason
+ layout_move.disabled=layout_focus.is_empty() or not reason.is_empty();layout_pickup.disabled=layout_move.disabled
+ var screen:Vector2=host.get_viewport().get_visible_rect().size
+ layout_panel.size=Vector2(minf(440,screen.x-24),0);layout_panel.position=Vector2((screen.x-layout_panel.size.x)/2,80)
+func layout_move_item() -> void:
+ refresh_layout()
+ if layout_focus.is_empty() or not model.empty_reason(layout_focus).is_empty():return
+ model.lock(layout_focus,false);begin(layout_focus)
+func layout_pickup_item() -> void:
+ refresh_layout()
+ if layout_focus.is_empty() or not model.empty_reason(layout_focus).is_empty():return
+ model.lock(layout_focus,false)
+ if not model.pack(layout_focus):layout_hint.text=model.error
+ sync_world();refresh_layout()
+func snap_stash_to_wall() -> void:
+ wall_found=false
+ var origin:Vector3=host.camera.global_position
+ var direction:Vector3=-host.camera.global_basis.z
+ var nearest:=6.0
+ var half_width:float=model.size_of(selected).x*.5
+ for mesh in host.find_children("*","MeshInstance3D",true,false):
+  if not mesh.is_visible_in_tree() or mesh.mesh==null or mesh.has_meta("furniture_id") or mesh.get_meta("no_collision",false):continue
+  if not mesh.get_meta("structural",false) and not str(mesh.name).to_lower().contains("wall"):continue
+  var wall:AABB=mesh.global_transform*mesh.get_aabb()
+  if wall.position.y>.15 or wall.end.y<model.size_of(selected).y or minf(wall.size.x,wall.size.z)>.5:continue
+  var hit=wall.intersects_ray(origin,direction)
+  if hit==null or origin.distance_to(hit)>=nearest:continue
+  var normal:=Vector3.ZERO
+  if wall.size.x<wall.size.z:
+   if wall.size.z<half_width*2+.12:continue
+   normal.x=1 if origin.x>wall.get_center().x else -1
+   hit.z=clampf(hit.z,wall.position.z+half_width+.06,wall.end.z-half_width-.06)
+  else:
+   if wall.size.x<half_width*2+.12:continue
+   normal.z=1 if origin.z>wall.get_center().z else -1
+   hit.x=clampf(hit.x,wall.position.x+half_width+.06,wall.end.x-half_width-.06)
+  nearest=origin.distance_to(hit);point=hit+normal*(model.size_of(selected).z*.5+.025);point.y=0
+  yaw=posmod(int(round(rad_to_deg(atan2(normal.x,normal.z))/90))*90,360);wall_found=true

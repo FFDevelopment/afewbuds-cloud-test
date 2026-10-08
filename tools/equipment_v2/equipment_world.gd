@@ -12,6 +12,7 @@ func setup(owner:Node) -> void:
  capture()
  sync()
 func group_for(node:Node) -> String:
+ if node.has_meta("equipment_template_group"):return str(node.get_meta("equipment_template_group"))
  var n:=str(node.name)
  if n.begins_with("Tent") or n.begins_with("ExpansionTent") or n.begins_with("GrowLight") or n.begins_with("GrowSlot"):return "tent"
  if n=="AFBLoveseat":return "sofa"
@@ -40,6 +41,7 @@ func capture() -> void:
    model.state.computer_migrated=true
 func hide_original(node:Node3D) -> void:
  node.hide();node.set_meta("no_collision",true)
+ if node is CollisionObject3D:node.collision_layer=0
  for body in node.find_children("*","CollisionObject3D",true,false):body.collision_layer=0
 func sync() -> void:
  capture()
@@ -71,7 +73,7 @@ func sync() -> void:
    var root:=Node3D.new();root.name="Owned_"+id;root.set_meta("equipment_id",id);host.add_child(root);rendered[id]=root
    root.position=Vector3(e.position[0],0,e.position[2]);root.rotation.y=deg_to_rad(float(e.get("yaw",0)))
    if model.is_tent(e):tent(root,id)
-   elif not clone_supply(root,id,e) and not clone_cabinet(root,id,e) and not clone_legacy(root,id,e):editor.build_prop(root,id,e.sku)
+   elif not clone_computer(root,id,e) and not clone_supply(root,id,e) and not clone_cabinet(root,id,e) and not clone_legacy(root,id,e):editor.build_prop(root,id,e.sku)
    if not model.station_kind(id).is_empty():
     if root.find_child("SupplyShelfStatus",true,false)==null:label(root,model.item_name(id),Vector3(0,model.size_of(id).y+.2,0))
     interaction(root,id,model.container_of(id),model.size_of(id))
@@ -98,12 +100,26 @@ func sync() -> void:
   plant.global_transform=Transform3D(Basis(Vector3.UP,deg_to_rad(float(e.get("yaw",0)))),Vector3(e.position[0],0,e.position[2]))*Transform3D(Basis.IDENTITY,Vector3(x,.26,0))
  sync_levels()
  sync_supply_labels()
+func clone_computer(root:Node3D,id:String,e:Dictionary) -> bool:
+ if e.get("sku","")!="computer" or not str(e.get("legacy_group","")).is_empty():return false
+ var copied:=0
+ # Reuse the complete textured desk assembly, normalized to the catalog footprint.
+ var local_transform:=Transform3D(Basis(Vector3.UP,PI/2),Vector3.ZERO)*Transform3D(Basis.IDENTITY,Vector3(-4.15,0,-4.35))
+ for record in originals.values():
+  if record.group!="computer" or not record.visible or record.node is CollisionObject3D:continue
+  var copy:Node3D=record.node.duplicate()
+  copy.set_script(null)
+  for body in copy.find_children("*","CollisionObject3D",true,false):body.free()
+  copy.set_meta("equipment_legacy",false);copy.set_meta("equipment_id",id);copy.set_meta("furniture_id",id)
+  root.add_child(copy);copy.transform=local_transform*record.transform;copy.show()
+  colliders(copy,id);copied+=1
+ return copied>0
 func clone_legacy(root:Node3D,id:String,e:Dictionary) -> bool:
  var group:String=e.get("legacy_group","")
  if group.is_empty() or (e.get("upgrades",{}).size()>0 and group!="house_supply"):return false
  var nodes:Array=[]
  for record in originals.values():
-  if record.group==group and record.visible:nodes.append(record)
+  if record.group==group and record.visible and not record.node is CollisionObject3D:nodes.append(record)
  if nodes.is_empty():return false
  # Keep existing meshes and materials, translated as one item from their original anchor.
  var anchor:Vector3=editor.inventory.POSITIONS.get("apartment:"+group,Vector3(-2.4,0,3.2));anchor.y=0
@@ -172,6 +188,7 @@ func capture_house() -> void:
   elif n.begins_with("Shelf"):
    group="house_supply" if node.position.z<-7 else "house_storage"
   if n.begins_with("LivingRug"):group="house_rug"
+  group=str(node.get_meta("equipment_template_group",group))
   if group.is_empty():continue
   originals[node.get_instance_id()]={"node":node,"group":group,"transform":node.global_transform,"visible":node.visible}
   node.set_meta("equipment_legacy",true)

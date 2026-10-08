@@ -79,15 +79,6 @@ func setup(owner:Node3D) -> void:
   work_panel.add_theme_stylebox_override("panel",ui_style("111713","566052",16))
   for action in work_panel.find_children("*","Button",true,false):style_button(action,true)
  host.get_viewport().size_changed.connect(resize)
- # Label the house's containers so each has a distinct physical interaction.
- for id in POSITIONS:
-  if not id.begins_with("house:"):continue
-  var marker:=Label3D.new()
-  marker.text=title(id);marker.font_size=30;marker.pixel_size=.007
-  marker.position=POSITIONS[id]+Vector3(0,.65,0);marker.rotation.y=-PI/2
-  marker.billboard=BaseMaterial3D.BILLBOARD_ENABLED
-  marker.modulate=Color("cee5b4");marker.outline_size=8
-  host.neighborhood.add_child(marker)
 
 func ensure_state() -> void:
  if not host.location_state.get("container_inventory",{}) is Dictionary:host.location_state["container_inventory"]={}
@@ -404,6 +395,14 @@ func open_container(kind:String) -> void:
  container_id=id;adding=id=="market:orders";selected="";selected_source="";filter_kind="All"
  furniture.equipment_world.animate_container(id,true)
  overlay.show();Input.mouse_mode=Input.MOUSE_MODE_VISIBLE;render()
+func place_backpack_item(asset:String) -> void:
+ if not furniture.inside("apartment") and not furniture.inside("house"):
+  notice.text="Enter a property you own before placing this item."
+  return
+ if not furniture.model.state.items.has(asset) or furniture.model.state.items[asset].get("property","")!="backpack":return
+ close()
+ furniture.portfolio_property=""
+ furniture.begin(asset)
 func close() -> void:
  furniture.equipment_world.animate_container(container_id,false)
  overlay.hide();selected="";container_id="";adding=false
@@ -743,7 +742,7 @@ func render_inspector() -> void:
   var spec:Dictionary=furniture.model.CATALOG[furniture.model.state.items[asset].sku]
   if spec.has("tier"):label("Tier "+str(spec.tier),text_box,14)
   elif spec.has("plants"):label(str(spec.plants)+" plant capacity",text_box,14)
-  button("Place item",func():close();furniture.begin(asset),text_box,true)
+  button("Place item",place_backpack_item.bind(asset),text_box,true)
   if reachable("market:orders"):
    button("Sell to market · $%d"%furniture.model.resale(asset),func():
     if furniture.model.sell(asset):selected="";render()
