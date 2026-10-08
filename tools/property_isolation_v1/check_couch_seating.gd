@@ -28,6 +28,8 @@ func run() -> void:
  game.gameplay_ready=true;game.session_paused=false;game.daily_report_pending=false;game.tutorial_active=false;game.customer_waiting=false
  game.tutorial_panel.hide();game.daily_report_panel.hide();game.pause_overlay.hide()
  var inv:Node=game.inventory_system;inv.set_process(false);inv.furniture.set_process(false)
+ inv.guide.state.active=false;inv.guide.state.completed=true
+ check(not game._simulation_blocked(),"NPC test simulation is unpaused and guide is inactive")
  var model:RefCounted=inv.furniture.model
  var crew:RefCounted=game.neighborhood.location_ops.crew
  game.location_state.active_property="apartment"
@@ -44,7 +46,7 @@ func run() -> void:
  var seat:Vector3=crew.idle_spot(false,false)
  worker.position=seat+Vector3(.65,0,-.90)
  step_worker(game,crew,125)
- check(bool(worker.get_meta("seated",false)) and horizontal(worker.position,seat)<.02,"Production worker reaches and sits on actual cushion")
+ check(bool(worker.get_meta("seated",false)) and horizontal(worker.position,seat)<.02,"Production worker reaches cushion (at %s, target %s, task %s, blocked %s)"%[worker.position,seat,game.production_worker_task,game._simulation_blocked()])
  var position_before:Vector3=worker.position
  step_worker(game,crew,70)
  check(bool(worker.get_meta("seated",false)) and horizontal(worker.position,position_before)<.005,"Idle worker holds one seat for repeated frames; no couch/table ping-pong")
@@ -56,7 +58,7 @@ func run() -> void:
  step_worker(game,crew,1)
  check(not bool(worker.get_meta("seated",false)),"Moving the sofa invalidates the old NPC seat")
  step_worker(game,crew,165)
- check(bool(worker.get_meta("seated",false)) and horizontal(worker.position,new_seat)<.02,"Worker sits at the relocated and rotated sofa")
+ check(bool(worker.get_meta("seated",false)) and horizontal(worker.position,new_seat)<.02,"Worker reaches moved sofa (at %s, target %s, nav %s)"%[worker.position,new_seat,game.production_worker_target_position])
  # The generic dealer also needs a position lock (its sit pose changes Y).
  game.dealer_count=1;game.dealers_active=true;game.dealer_arrested=false
  var dealers:Array=game._active_dealer_roster()
