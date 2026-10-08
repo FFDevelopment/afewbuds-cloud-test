@@ -773,6 +773,12 @@ def main():
     assert 'host.phone_scroll.scroll_vertical=int(host.phone_scroll.get_v_scroll_bar().max_value)' in crew
     crew=crew.replace('host.phone_scroll.scroll_vertical=int(host.phone_scroll.get_v_scroll_bar().max_value)','host.phone_scroll.scroll_vertical=0')
     crew=crew.replace('for i in range(host.phone_text_messages.size()):','for i in range(host.phone_text_messages.size()-1,-1,-1):')
+    # Relocated player-owned couch controls crew idle waypoints and seats.
+    from pathlib import Path as _Path
+    crew_patch = __import__("json").loads((_Path(__file__).resolve().parent / "crew_seating_replacements.json").read_text())
+    for edit in crew_patch:
+        assert edit["old"] in crew, "mobile crew idle code changed"
+        crew = crew.replace(edit["old"],edit["new"],1)
     replacements={
         'scripts/main.gd':main_script.encode(),
         'scripts/offline_plant_care.gd':equipment_patch.patch_offline(before['scripts/offline_plant_care.gd'].decode()).encode(),
