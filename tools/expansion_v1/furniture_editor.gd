@@ -1,6 +1,7 @@
 extends Node
 var chapter:RefCounted
 var equipment_world:Node
+var portfolio_property:=""
 var delivery_property:="backpack"
 var rod:Node3D
 var rod_button:Button
@@ -65,26 +66,37 @@ func close() -> void:
  if host.get("fp_player")!=null and not host.session_paused:Input.mouse_mode=Input.MOUSE_MODE_CAPTURED
 func clear() -> void:
  for child in list.get_children():list.remove_child(child);child.queue_free()
+func inside(property_id:String) -> bool:
+ return model.controlled(property_id) and host.neighborhood.location_ops.placement_room(property_id,host.camera.global_position)!=""
+func open_property(property_id:String) -> void:
+ open();portfolio_property=property_id;render_list()
+func pickup(id:String) -> void:
+ if not inside(str(model.state.items[id].get("property",""))):hint.text="Enter this property before picking up furniture.";return
+ if model.pack(id):render_list()
+ else:hint.text=model.error
+func toggle_lock(id:String) -> void:
+ if not inside(str(model.state.items[id].get("property",""))):hint.text="Enter this property before changing furniture.";return
+ model.lock(id,not bool(model.state.items[id].get("locked",false)));render_list()
 func open() -> void:
+ portfolio_property=""
  if host.phone_open:host._toggle_phone()
  if host.neighborhood.location_ops.is_open():host.neighborhood.location_ops.close()
  panel.show();Input.mouse_mode=Input.MOUSE_MODE_VISIBLE;selected="";ghost.hide();render_list()
 func render_list() -> void:
- restore_camera();clear();hint.text="FURNITURE & EQUIPMENT"
+ restore_camera();clear();hint.text="FURNITURE & EQUIPMENT" if portfolio_property.is_empty() else portfolio_property.to_upper()+" · FURNITURE"
  inventory.label("Empty and unlock equipment before picking it up. Packed items go into your backpack with their upgrades intact.",list)
  for id in model.state.items:
   var e:Dictionary=model.state.items[id]
+  if not portfolio_property.is_empty() and e.get("property","") not in [portfolio_property,"backpack"]:continue
   inventory.label(model.item_name(id)+" · "+str(e.get("property","backpack")).capitalize(),list)
   var reason:String=model.empty_reason(id)
   if not reason.is_empty():inventory.label(reason,list,13)
   var row:=HBoxContainer.new();list.add_child(row)
   if e.get("property","") in model.ROOMS:
-   inventory.button("Unlock" if e.get("locked",false) else "Lock",func():model.lock(id,not bool(e.get("locked",false)));render_list(),row)
-   inventory.button("Move",begin.bind(id),row).disabled=bool(e.get("locked",false)) or not reason.is_empty()
-   inventory.button("Pick up",func():
-    if model.pack(id):render_list()
-    else:hint.text=model.error,row).disabled=bool(e.get("locked",false)) or not reason.is_empty()
-  elif e.get("property","")=="backpack":inventory.button("Place",begin.bind(id),row)
+   inventory.button("Unlock" if e.get("locked",false) else "Lock",toggle_lock.bind(id),row).disabled=not inside(str(e.property))
+   inventory.button("Move",begin.bind(id),row).disabled=not inside(str(e.property)) or bool(e.get("locked",false)) or not reason.is_empty()
+   inventory.button("Pick up",pickup.bind(id),row).disabled=not inside(str(e.property)) or bool(e.get("locked",false)) or not reason.is_empty()
+  elif e.get("property","")=="backpack":inventory.button("Place",begin.bind(id),row).disabled=not (inside(portfolio_property) if not portfolio_property.is_empty() else (inside("apartment") or inside("house")))
   var upgrade:String=model.next_upgrade(id)
   if not upgrade.is_empty() and e.get("property","") in ["apartment","house","backpack"]:
    inventory.button(model.upgrade_label(id),func():
@@ -119,9 +131,10 @@ func begin(id:String) -> void:
  restore_camera()
  placement_camera=host.camera.global_transform
  selected=id
- property="house" if host.neighborhood.location_ops.placement_room("house",host.camera.global_position)!="" else "apartment"
- if not model.controlled(property):hint.text="Enter a property you hold before arranging furniture.";selected="";return
+ property=portfolio_property if not portfolio_property.is_empty() else ("house" if inside("house") else "apartment")
+ if not inside(property):hint.text="Enter a property you hold before arranging furniture.";selected="";return
  var e:Dictionary=model.state.items[id]
+ if e.get("property","") not in [property,"backpack"]:hint.text="Pick up this item at its property first.";selected="";return
  if not model.empty_reason(id).is_empty():hint.text=model.empty_reason(id);selected="";return
  editing_camera=true
  point=host.camera.global_position-host.camera.global_basis.z*2.0;point.y=0
@@ -164,6 +177,7 @@ func handle_placement_input(event:InputEvent) -> bool:
  elif event is InputEventKey and event.keycode in [KEY_P,KEY_I]:return true
  return false
 func obstacle() -> String:
+ if not inside(property):return "Enter this property before placing furniture."
  var problem:String=model.validate(selected,property,point,yaw)
  if not problem.is_empty():return problem
  var size:Vector3=model.size_of(selected,yaw)

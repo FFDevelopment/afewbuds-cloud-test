@@ -31,6 +31,55 @@ func run():
  property.confirm_relocation(true)
  check(game.location_state.active_property=="house" and inv.operation()=="apartment","Making house primary does not reassign apartment inventory")
  inv.furniture.equipment_world.sync()
+ var house_items:=0
+ for e in model.state.items.values():
+  if e.get("property","")=="house":house_items+=1
+ check(house_items==0,"New house starts without free furniture or stations")
+ check(JSON.stringify(model.state.items)==original_items,"House acquisition and world sync preserve apartment furniture")
+ game.cash=50000
+ for spec in [["bench_1",Vector3(41.2,0,-3.58)],["shelf_1",Vector3(43.5,0,-9.1)],["storage_1",Vector3(43.5,0,-1.2)]]:
+  var id:String=model.own(spec[0],"house")
+  check(not id.is_empty() and model.state.items[id].property=="house:delivery" and not model.state.items[id].has("position"),"House order waits at curb: "+spec[0])
+  game.camera.global_position=model.CURBS.house+Vector3.UP*1.64
+  check(inv.transfer("house:delivery","backpack","furniture|"+id,1).ok,"Collect house delivery into backpack: "+spec[0])
+  check(model.place(id,"house",spec[1],0),"Place purchased house station: "+spec[0]+" "+model.error)
+ var portable:String=model.own("dining_chair","backpack")
+ check(not portable.is_empty() and model.place(portable,"house",Vector3(28,0,-2),0),"Backpack purchase can be placed in owned house")
+ model.lock(portable,false)
+ check(model.pack(portable),"Empty furniture can return to backpack")
+ check(model.place(portable,"apartment",Vector3(1,0,2),0),"Same backpack item can be placed in owned apartment")
+ inv.furniture.equipment_world.sync()
+ var editor=inv.furniture
+ model.lock(portable,false)
+ game.camera.global_position=Vector3(0,1.64,15)
+ editor.open_property("apartment");editor.begin(portable)
+ check(not editor.is_placing(),"Outdoor furniture placement is blocked")
+ editor.pickup(portable)
+ check(model.state.items[portable].property=="apartment","Remote furniture pickup is blocked")
+ game.camera.global_position=Vector3(28,1.64,0)
+ editor.open_property("apartment");editor.begin(portable)
+ check(not editor.is_placing(),"House visit cannot arrange apartment furniture")
+ editor.open_property("house")
+ check(editor.hint.text.contains("HOUSE"),"Real Estate opens the selected property furniture list")
+ editor.close()
+ var computer_id:String=model.own("computer")
+ check(model.place(computer_id,"house",Vector3(30,0,1),0),"Backpack computer placed in house")
+ editor.sync_world()
+ var computer_area:Node=editor.equipment_world.rendered[computer_id].find_children("*","Area3D",true,false)[0]
+ check(computer_area.get_meta("equipment_container")=="house:computer","Computer interaction belongs to its placed property")
+ game.camera.global_position=Vector3(30,1.64,0)
+ game.neighborhood.location_ops.computer("house")
+ check(game.neighborhood.location_ops.computer_context=="house" and inv.operation()=="house","House computer selects house inventory")
+ game.neighborhood.location_ops.close()
+ model.lock(computer_id,false);model.pack(computer_id)
+ check(model.place(computer_id,"apartment",Vector3(-1,0,0),0),"Packed computer can move to apartment")
+ editor.sync_world()
+ computer_area=editor.equipment_world.rendered[computer_id].find_children("*","Area3D",true,false)[0]
+ check(computer_area.get_meta("equipment_container")=="apartment:computer","Moved computer changes its property association")
+ game.camera.global_position=Vector3(-1,1.64,1)
+ game.neighborhood.location_ops.computer("apartment")
+ check(inv.operation()=="apartment","Apartment computer selects apartment inventory")
+ game.neighborhood.location_ops.close()
  for i in range(game.plant_slots.size()):game.plant_slots[i]=game._empty_plant_slot()
  var strain:String="Purple Dream"
  inv.set_amount("apartment:packing","raw|"+strain,30)

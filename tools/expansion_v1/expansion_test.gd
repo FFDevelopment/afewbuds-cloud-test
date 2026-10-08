@@ -138,6 +138,10 @@ func run():
  check(story.meet_rod() and story.complete(),"Chapter 5 can complete")
  var cash:int=game.cash
  check(not story.meet_rod() and game.cash==cash,"Finale reward cannot be claimed twice")
+ game.cash+=1000
+ var house_bench:String=m.own("bench_1")
+ check(m.place(house_bench,"house",Vector3(41,0,-3.5),0),"Purchased house packing station placed")
+ inv.furniture.sync_world()
  var packing=inv.packing
  game.untrimmed_inventory={"Street Green":8};game.trimmed_inventory={};game.bagged_inventory={}
  game.camera.global_position=inv.all_positions()["house:packing"]+Vector3(0,.6,1.4)

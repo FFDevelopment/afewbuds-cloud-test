@@ -182,6 +182,9 @@ func run():
  check(not game.supply_shelf_ref.visible and inv.contents("apartment:supply")==supply_before,"Only owned supply shelf renders and its contents are preserved")
  for i in 3:editor.sync_world()
  check(editor.equipment_world.rendered.legacy_supply.get_node("OriginalGrowSupplyShelf").find_children("*","MeshInstance3D",true,false).size()==source_count,"Repeated world updates cannot duplicate the grow shelf")
+ # Fixture for a shelf retained from an older furnished-house save.
+ m.state.items["house_supply"]={"sku":"shelf_1","property":"house","position":[44.25,0,-9.1],"visual_anchor":[44.25,0,-9.1],"yaw":0,"locked":true,"legacy_group":"house_supply","container":"house:supply","paid":180,"upgrades":{},"condition":100}
+ editor.sync_world()
  var house_shelf:String=m.primary("house","supply")
  var house_meshes:int=editor.equipment_world.rendered[house_shelf].find_children("*","MeshInstance3D",true,false).size()
  var house_size:Vector3=m.size_of(house_shelf)

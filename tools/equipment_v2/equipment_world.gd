@@ -152,17 +152,7 @@ func sync_levels() -> void:
   if e.sku=="ventilation":host.ventilation_installed=true
 
 func capture_house() -> void:
- if not model.controlled("house"):return
- if not model.state.has("decor_migrated"):model.state["decor_migrated"]={}
- var bundles={
-  "house_computer":["computer",Vector3(26.35,0,1.65)],"house_sofa":["sofa",Vector3(29.2,0,-3.6)],"house_coffee":["coffee_table",Vector3(29.2,0,-1.8)],
-  "house_dining":["dining_table",Vector3(28.3,0,-9.4)],"house_bed":["bed",Vector3(36.5,0,-11.4)],
-  "house_wardrobe":["wardrobe",Vector3(34.85,0,-8.6)],"house_tv":["tv_console",Vector3(29.2,0,2.2)],
-  "house_packing":["bench_1",Vector3(41.2,0,-4.2)],"house_supply":["shelf_1",Vector3(44.25,0,-9.1)],
-  "house_storage":["storage_1",Vector3(44.35,0,-3.2)],"house_dealer":["dealer_1",Vector3(38,0,-4.25)],
-  "house_fridge":["fridge",Vector3(29.6,0,-7.7)],
-  "house_chair_0":["dining_chair",Vector3(27.7,0,-10.5)],"house_chair_1":["dining_chair",Vector3(28.9,0,-10.5)],
-  "house_chair_2":["dining_chair",Vector3(27.7,0,-8.3)],"house_chair_3":["dining_chair",Vector3(28.9,0,-8.3)]}
+ # Keep scene templates for existing saved items, but never grant furniture with a new house.
  for node in host.neighborhood.get_children():
   if not node is Node3D or originals.has(node.get_instance_id()):continue
   if node.global_position.x<25 or node.global_position.x>45 or node.global_position.z< -14 or node.global_position.z>3:continue
@@ -181,18 +171,10 @@ func capture_house() -> void:
    group="house_packing" if node.position.x>37 else ("house_dining" if node.position.z<-7 else "house_coffee")
   elif n.begins_with("Shelf"):
    group="house_supply" if node.position.z<-7 else "house_storage"
+  if n.begins_with("LivingRug"):group="house_rug"
   if group.is_empty():continue
   originals[node.get_instance_id()]={"node":node,"group":group,"transform":node.global_transform,"visible":node.visible}
   node.set_meta("equipment_legacy",true)
-  if not model.state.decor_migrated.has(group):
-   var spec:Array=bundles[group];var at:Vector3=spec[1];var sku:String=spec[0]
-   var kind:String=model.CATALOG[sku].get("kind","")
-   model.state.items[group]={"sku":sku,"property":"house","position":[at.x,0,at.z],"visual_anchor":[at.x,0,at.z],"yaw":0,"locked":true,"legacy_group":group,"paid":model.CATALOG[sku].price,"upgrades":{},"condition":100}
-   if not kind.is_empty():
-    var primary:String=model.primary("house",kind)
-    model.state.items[group].container="house:"+kind if primary.is_empty() else "house:"+kind+"@"+group
-    if not editor.inventory.state.containers.has(model.state.items[group].container):editor.inventory.state.containers[model.state.items[group].container]={}
-   model.state.decor_migrated[group]=true
 
 func measure_templates() -> void:
  for id in model.state.items:

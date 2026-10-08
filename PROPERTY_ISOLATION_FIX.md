@@ -11,3 +11,7 @@ Based on public equipment beta 0.16.0, preserving the session hotfix and Chapter
 This fixes isolation of the existing workforce. It does not increase the existing production-worker hiring limit or add a second house workforce management screen.
 
 Regression coverage: both house choices, pre-existing house-active saves, apartment worker trim/bag/store, manual house trimming, plant ownership, fertilizer isolation, save/reload, and desktop prompt activation. Existing equipment, progression, inventory, crew, account and session gates remain in place.
+
+## Empty houses and property controls
+
+Newly acquired houses no longer grant the scene display furniture or stations. Existing saved items remain intact. Market curb deliveries and backpack purchases can be carried and placed at either controlled property. Real Estate lists each property separately with activity and furniture controls; pickup, movement and placement require being inside that property. Placed computers select their own property inventory, including after being carried elsewhere. Regression fixtures buy stations explicitly and retain a legacy shelf fixture to verify old-save compatibility.

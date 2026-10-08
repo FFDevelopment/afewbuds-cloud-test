@@ -282,6 +282,7 @@ func computer(property: String) -> void:
 		host.status_label.text="Apartment lease released. You no longer have access to this property."
 		return
 	computer_context=property
+	if host.inventory_system!=null and _property_controlled(property):host.inventory_system.activate_adapters(property)
 	management_app=""
 	if property=="house" and not bool(host.property_opportunity_state.get("relocated",false)):
 		clear("HOUSE — OPERATION COMPUTER")
@@ -358,7 +359,7 @@ func supply_intercept(name: String) -> bool:
 	return true
 func redirect(app: String) -> bool:
 	if rendering_management:return false
-	if is_open() and computer_context=="apartment" and app in ["business","bills","employees","products","genetics","upgrades"]:
+	if is_open() and computer_context in ["apartment","house"] and app in ["business","bills","employees","products","genetics","upgrades"]:
 		manage(app)
 		return true
 	if host.tutorial_active:return false
@@ -833,10 +834,21 @@ func _property_button(parent:VBoxContainer,text_value:String,callback:Callable,d
 	parent.add_child(item)
 	return item
 
+func property_activity(property_id:String) -> String:
+	var inventory=host.inventory_system
+	var model=inventory.furniture.model
+	var furniture_count:=0
+	var growing:=0
+	for item in model.state.items.values():
+		if item.get("property","")!=property_id:continue
+		furniture_count+=1
+		for slot in item.get("slots",[]):
+			if int(slot)<host.plant_slots.size() and int(host.plant_slots[int(slot)].get("stage",-1))>=0:growing+=1
+	var working:bool=host.packing_employee_hired and host.packing_employee_active and inventory.worker_property()==property_id
+	return ("RUNNING" if working or growing>0 else "IDLE")+" · %d furniture items · %d planted pots\nProduction worker: %s" % [furniture_count,growing,"working here" if working else ("assigned here / paused" if host.packing_employee_hired and inventory.worker_property()==property_id else "none assigned")]
+
 func real_estate_ui(parent:VBoxContainer) -> void:
-	_property_button(parent,"ARRANGE FURNITURE / PROPERTY STORAGE",host.inventory_system.furniture.open)
 	_property_label(parent,"PROPERTY PORTFOLIO",24)
-	_property_label(parent,"Active operation: %s" % active_property().capitalize(),18)
 	utility_bills_ui(parent)
 
 	var apartment_status:String="LEASE ACTIVE" if apartment_lease_active() else "LEASE RELEASED"
@@ -846,8 +858,9 @@ func real_estate_ui(parent:VBoxContainer) -> void:
 	else:
 		apartment_copy+="\nNo future apartment rent accrues."
 	apartment_copy+="\nOutstanding balance: $%d" % apartment_balance()
-	if active_property()=="apartment":apartment_copy+="\nACTIVE OPERATION"
+	apartment_copy+="\n"+property_activity("apartment")
 	_property_label(parent,apartment_copy,19)
+	if apartment_lease_active():_property_button(parent,"APARTMENT · FURNITURE / PICK UP / PLACE",host.inventory_system.furniture.open_property.bind("apartment"))
 	if apartment_balance()>0:
 		_property_button(parent,"PAY APARTMENT BALANCE · $%d" % apartment_balance(),pay_apartment_rent,host.cash<apartment_balance())
 	if apartment_lease_active() and bool(house_state().get("relocated",false)):
@@ -864,17 +877,7 @@ func real_estate_ui(parent:VBoxContainer) -> void:
 		else:
 			_property_button(parent,"RELEASE APARTMENT LEASE…",request_apartment_release)
 
-	var stored_assets:Array=host.location_state.get("property_storage",[])
-	if not stored_assets.is_empty():
-		_property_label(parent,"PROPERTY STORAGE · %d OWNED ITEM%s UNPLACED\n%s" % [stored_assets.size(),"" if stored_assets.size()==1 else "S"," · ".join(PackedStringArray(stored_assets))],17)
-		if _property_controlled("house"):_property_button(parent,"INSTALL STORED EQUIPMENT AT HOUSE",install_property_storage_at.bind("house"))
-		if apartment_lease_active():_property_button(parent,"INSTALL STORED EQUIPMENT AT APARTMENT",install_property_storage_at.bind("apartment"))
-	if apartment_lease_active() and str(host.location_state.get("operation_assets_property","apartment"))=="apartment":
-		var paid_assets:=_apartment_paid_equipment_labels()
-		if not paid_assets.is_empty():
-			var content_blockers:=_apartment_contents_blockers()
-			_property_button(parent,"PACK PAID APARTMENT EQUIPMENT TO PROPERTY STORAGE",pack_apartment_paid_assets,not _has_alternate_property() or not content_blockers.is_empty())
-	elif not apartment_lease_active():
+	if not apartment_lease_active():
 		var old_debt:int=apartment_balance()+property_utility_due("apartment","power")+property_utility_due("apartment","water")
 		if old_debt>0:
 			_property_label(parent,"Clear the old apartment rent/electric/water balance ($%d) before renting this property again." % old_debt,16)
@@ -888,7 +891,7 @@ func real_estate_ui(parent:VBoxContainer) -> void:
 	else:
 		var agreement:=str(state.get("agreement",""))
 		var house_copy:String="HOUSE · "+({"rent":"RENT","lease":"LEASE TO OWN","purchase":"OWNED"}.get(agreement,"ACQUIRED"))
-		if active_property()=="house":house_copy+=" · ACTIVE OPERATION"
+		house_copy+="\n"+property_activity("house")
 		if agreement=="rent":
 			house_copy+="\n$600 every 7 game days · Next: Day %d" % int(state.get("next_due",0))
 		elif agreement=="lease":
@@ -897,6 +900,7 @@ func real_estate_ui(parent:VBoxContainer) -> void:
 			house_copy+="\nNo recurring house payment."
 		house_copy+="\nOutstanding balance: $%d" % house_balance()
 		_property_label(parent,house_copy,19)
+		_property_button(parent,"HOUSE · FURNITURE / PICK UP / PLACE",host.inventory_system.furniture.open_property.bind("house"))
 		if house_balance()>0:
 			_property_button(parent,"PAY HOUSE BALANCE · $%d" % house_balance(),pay_house_payment,host.cash<house_balance())
 

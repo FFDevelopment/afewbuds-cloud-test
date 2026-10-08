@@ -77,6 +77,9 @@ func run():
  check(inv.transfer("apartment:storage","backpack","equipment|Grow Tent upgrade",1).ok and inv.contents("backpack").get("equipment|Grow Tent upgrade")==2,"Taking matching paid equipment preserves both items")
  check(inv.contents("apartment:storage").cash==25 and not inv.contents("apartment:supply").has("cash"),"Containers never expose each other's contents")
  game.property_opportunity_state.acquired=true;game.property_opportunity_state.relocated=true
+ game.cash+=1000
+ var house_storage:String=inv.furniture.model.own("storage_1")
+ check(inv.furniture.model.place(house_storage,"house",Vector3(43,0,-2),0),"Purchased house storage placed")
  inv.furniture.sync_world()
  stand("house:storage")
  check(inv.transfer("backpack","house:storage","product|Purple Dream",2).ok,"House container has independent contents")
