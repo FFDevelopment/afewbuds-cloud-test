@@ -17,7 +17,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 PUBLIC_RELEASE = "0.16.0-mobile-beta.4"
 PUBLIC_PACK_SHA256 = "494f9f05e81eb2fa1353f92fd4b2f959c4acd31609513bdf0f1ddf4bcf63095f"
-TEST_RELEASE = "0.16.0-beta4-cloudtest-recovery.1"
+TEST_RELEASE_PREFIX = "0.16.0-beta4-cloudtest-recovery"
 REQUIRED_UI = (
     "func start_layout(", "func refresh_layout(", "func build_preview(",
     "func begin(", "Walk-around edit mode", "func snap_stash_to_wall(",
@@ -82,6 +82,8 @@ def stage(public, candidate, dest):
     assert manifest["release_id"] == PUBLIC_RELEASE
     main_bytes = (public / "index-mobile.pck").read_bytes()
     candidate_bytes = candidate.read_bytes()
+    # Use an immutable per-build release ID so the PWA cannot reuse old animation packs.
+    test_release = TEST_RELEASE_PREFIX + "." + digest(candidate_bytes)[:12]
     verify_game(main_bytes, candidate_bytes)
     dest.mkdir(parents=True)
     for asset in manifest["files"]:
@@ -101,7 +103,7 @@ def stage(public, candidate, dest):
     (dest / "index-mobile.pck").write_bytes(candidate_bytes)
     html = (dest / "index.html").read_text()
     assert "index-mobile.pck" in html and PUBLIC_RELEASE in html
-    html = html.replace(PUBLIC_RELEASE, TEST_RELEASE)
+    html = html.replace(PUBLIC_RELEASE, test_release)
     html, hits = re.subn(
         r'("index-mobile\.pck"\s*:\s*)\d+',
         lambda m: m.group(1) + str(len(candidate_bytes)),
@@ -109,8 +111,8 @@ def stage(public, candidate, dest):
     )
     assert hits == 1, "Public launcher game package size was not replaced exactly once"
     (dest / "index.html").write_text(html)
-    manifest["release_id"] = TEST_RELEASE
-    manifest["game_build"] = TEST_RELEASE
+    manifest["release_id"] = test_release
+    manifest["game_build"] = test_release
     for item in manifest["files"]:
         data = (dest / item["path"]).read_bytes()
         item["size"] = len(data)
@@ -118,7 +120,7 @@ def stage(public, candidate, dest):
     (dest / "version.json").write_text(json.dumps(manifest, indent=2) + "\n")
     (dest / "BUILD_VERSION.txt").write_text(
         "AFewBuds Cloud Test\n"
-        f"Baseline: {PUBLIC_RELEASE}\nBuild: {TEST_RELEASE}\n"
+        f"Baseline: {PUBLIC_RELEASE}\nBuild: {test_release}\n"
         f"Base pack sha256: {PUBLIC_PACK_SHA256}\n"
         f"Test pack sha256: {digest(candidate_bytes)}\n"
     )
