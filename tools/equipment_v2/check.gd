@@ -188,5 +188,30 @@ func run():
  check(m.upgrade(house_shelf),"Empty house supply shelf upgrades its capacity in place")
  editor.sync_world()
  check(m.size_of(house_shelf)==house_size and editor.equipment_world.rendered[house_shelf].find_children("*","MeshInstance3D",true,false).size()==house_meshes,"House shelf retains its existing model and footprint when upgraded")
+ var stock_before:Dictionary=inv.contents("apartment:supply").duplicate(true)
+ var tier_before:String=m.state.items.legacy_supply.sku
+ for property_name in ["apartment","house"]:
+  for sku in ["water_kit","ventilation"]:
+   m.state.items["legacy_"+sku]={"sku":sku,"property":property_name,"position":[-3.8,0,-5.3],"locked":true,"paid":420,"upgrades":{"retained":true},"yaw":0}
+  editor.sync_world()
+  var utility_bounds:Array=[]
+  for sku in ["water_kit","ventilation"]:
+   var id:String="legacy_"+sku;var e:Dictionary=m.state.items[id]
+   var at:=Vector3(e.position[0],0,e.position[2])
+   var rect:Rect2=m.bounds(id,at,0)
+   utility_bounds.append(rect)
+   check(m.ROOMS[property_name].grow.encloses(rect),"Migrated %s stays in %s grow room"%[sku,property_name])
+   check(e.paid==420 and e.upgrades.retained,"Utility repair preserves paid value and upgrades")
+   var shelf_id:String=m.primary(property_name,"supply")
+   var shelf_entry:Dictionary=m.state.items[shelf_id]
+   var shelf_at:=Vector3(shelf_entry.position[0],0,shelf_entry.position[2])
+   check(not rect.intersects(m.bounds(shelf_id,shelf_at,int(shelf_entry.yaw)).grow(.4)),"Utility leaves clear access to original grow shelf")
+  check(not utility_bounds[0].intersects(utility_bounds[1]),"Water and ventilation no longer overlap")
+ check(inv.contents("apartment:supply")==stock_before and m.state.items.legacy_supply.sku==tier_before,"Repair retains shelf stock and purchased tier")
+ m.state.items.legacy_water_kit.position=[-3.8,0,-5.3]
+ m.state.items.legacy_water_kit.player_placed=true
+ m.state.items.legacy_water_kit.erase("utility_layout_version")
+ m.repair_utility_positions()
+ check(m.state.items.legacy_water_kit.position==[-3.8,0,-5.3],"Repair never moves player-placed equipment")
  print("EQUIPMENT_V2_RESULT: ","PASS" if failures==0 else "FAIL"," checks=",checks," failures=",failures)
  game.queue_free();await process_frame;quit(0 if failures==0 else 1)

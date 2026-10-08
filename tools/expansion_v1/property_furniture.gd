@@ -38,6 +38,10 @@ const CATALOG={
 const ROOMS={
  "apartment":{"main":Rect2(-4.7,-3.65,9.4,9.1),"grow":Rect2(-4.7,-10.0,9.4,5.5)},
  "house":{"living":Rect2(25.4,-4.6,7.65,7.15),"packing":Rect2(37,-4.6,7.6,7.15),"kitchen":Rect2(25.4,-13.55,5.5,6.1),"bathroom":Rect2(31.7,-13.55,2.05,6.1),"bedroom":Rect2(34.65,-13.55,3.5,6.1),"grow":Rect2(39.05,-13.55,5.55,6.1)}}
+# Front grow-room corners keep migrated utility units clear of shelves and tents.
+const UTILITY_POSITIONS={
+ "apartment":{"water_kit":Vector3(-3.2,0,-5.1),"ventilation":Vector3(3.2,0,-5.1)},
+ "house":{"water_kit":Vector3(39.65,0,-8.2),"ventilation":Vector3(40.65,0,-8.2)}}
 const CURBS={"apartment":Vector3(-2,0,7.2),"house":Vector3(34.8,0,4.8)}
 var host:Node
 var state:Dictionary
@@ -81,7 +85,7 @@ func migrate() -> void:
   var pos:Vector3=inv().POSITIONS.get((property if property in ROOMS else "apartment")+":"+kind,Vector3.ZERO)
   state.items["legacy_"+kind]={"sku":sku,"property":property if property in ROOMS else "backpack","position":[pos.x,0,pos.z],"yaw":90 if property=="apartment" else 0,"locked":true,"container":property+":"+kind,"legacy_group":kind,"paid":CATALOG[sku].price,"upgrades":{},"condition":100}
  for spec in [["water_kit",host.auto_water_unlocked],["ventilation",host.ventilation_installed]]:
-  if spec[1]:state.items["legacy_"+spec[0]]={"sku":spec[0],"property":property if property in ROOMS else "backpack","position":[-3.8,0,-5.3],"yaw":0,"locked":true,"paid":CATALOG[spec[0]].price,"upgrades":{},"condition":100}
+  if spec[1]:state.items["legacy_"+spec[0]]={"sku":spec[0],"property":property if property in ROOMS else "backpack","position":utility_position(property,str(spec[0])),"yaw":0,"locked":true,"paid":CATALOG[spec[0]].price,"upgrades":{},"condition":100}
  # Existing moveable decor is owned; built-in walls, plumbing and switches remain fixtures.
  state.items["legacy_sofa"]={"sku":"sofa","property":"apartment","position":[-2.4,0,3.2],"yaw":0,"locked":true,"legacy_group":"sofa","paid":350,"upgrades":{},"condition":100}
 
@@ -103,6 +107,20 @@ func migrate() -> void:
  host.location_state.property_storage=retained
  state["schema"]=2
  state["migration_complete"]=true
+func utility_position(property:String,sku:String) -> Array:
+ var at:Vector3=UTILITY_POSITIONS.get(property,UTILITY_POSITIONS.apartment)[sku]
+ return [at.x,0,at.z]
+func repair_utility_positions() -> void:
+ for sku in ["water_kit","ventilation"]:
+  var id:String="legacy_"+str(sku)
+  if not state.items.has(id):continue
+  var e:Dictionary=state.items[id]
+  if e.get("utility_layout_version",0)>=1:continue
+  var p:Array=e.get("position",[])
+  # Repair only the old generated spawn, never a player's chosen placement.
+  if not e.get("player_placed",false) and e.get("property","") in ROOMS and p.size()==3 and Vector2(p[0],p[2]).distance_to(Vector2(-3.8,-5.3))<.02:
+   e.position=utility_position(e.property,sku)
+  e.utility_layout_version=1
 func ensure_slots() -> void:
  var next:int=host.plant_slots.size()
  for e in state.items.values():

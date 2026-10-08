@@ -48,6 +48,7 @@ func sync() -> void:
   var target:Node=host.get_node_or_null(name)
   if target is CollisionObject3D:target.collision_layer=0
  if host.floor_lamp_light_ref!=null:host.floor_lamp_light_ref.hide()
+ model.repair_utility_positions()
  repair_cabinet_records()
  measure_templates()
  model.ensure_slots()
@@ -72,7 +73,7 @@ func sync() -> void:
    if model.is_tent(e):tent(root,id)
    elif not clone_supply(root,id,e) and not clone_cabinet(root,id,e) and not clone_legacy(root,id,e):editor.build_prop(root,id,e.sku)
    if not model.station_kind(id).is_empty():
-    label(root,model.item_name(id),Vector3(0,model.size_of(id).y+.2,0))
+    if root.find_child("SupplyShelfStatus",true,false)==null:label(root,model.item_name(id),Vector3(0,model.size_of(id).y+.2,0))
     interaction(root,id,model.container_of(id),model.size_of(id))
    elif e.sku=="computer":interaction(root,id,e.property+":computer",model.size_of(id))
    elif e.sku in ["sofa","armchair","dining_chair"]:
