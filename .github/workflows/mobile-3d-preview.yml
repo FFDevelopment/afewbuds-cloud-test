@@ -1,4 +1,4 @@
-name: Build expansion preview
+name: Deploy validated beta4 recovery preview
 
 on:
   push:
@@ -21,7 +21,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: experiment/container-inventory
+          ref: recovery/public-beta4-plus-fixes
           fetch-depth: 0
 
       - name: Build mobile 3D runtime
@@ -113,9 +113,9 @@ jobs:
           git add runtime/mobile-3d-v1.patch.json shared/afb-runtime-mobile-3d-v1.js index.html version.json BUILD_VERSION.txt tools/mobile_3d_movement/build_receipt.json
           if ! git diff --cached --quiet; then
             git commit -m "Build validated inventory preview"
-            git fetch origin experiment/container-inventory
-            git rebase origin/experiment/container-inventory
-            git push origin HEAD:experiment/container-inventory
+            git fetch origin recovery/public-beta4-plus-fixes
+            git rebase origin/recovery/public-beta4-plus-fixes
+            git push origin HEAD:recovery/public-beta4-plus-fixes
           fi
 
       - name: Stage validated preview
