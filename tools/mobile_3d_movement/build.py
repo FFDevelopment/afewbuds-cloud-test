@@ -764,6 +764,28 @@ def main():
     _new_idle = '\t\t_:\n\t\t\tif neighborhood != null and neighborhood.location_ops != null and neighborhood.location_ops.crew != null:\n\t\t\t\treturn neighborhood.location_ops.crew.idle_spot(false,false)\n\t\t\treturn Vector3(-0.75, 0.0, 1.25)'
     assert _old_idle in main_script
     main_script=main_script.replace(_old_idle,_new_idle,1)
+    # Both desktop and mobile need to retarget the production worker every idle
+    # frame. The previous mobile runtime kept the old table-side destination.
+    idle_motion_old = (
+        '\tif not on_duty:\n'
+        '\t\tif production_worker_node.visible:production_worker_node.position=production_worker_node.position.move_toward(_production_worker_station_position("idle"),PRODUCTION_WORKER_MOVE_SPEED*delta)\n'
+        '\t\treturn\n'
+        '\tvar move_target: Vector3 = _production_worker_navigation_target()'
+    )
+    idle_motion_new = (
+        '\tif not on_duty:\n'
+        '\t\tif production_worker_node.visible and not bool(production_worker_node.get_meta("seated",false)):\n'
+        '\t\t\tproduction_worker_node.position=production_worker_node.position.move_toward(_production_worker_station_position("idle"),PRODUCTION_WORKER_MOVE_SPEED*delta)\n'
+        '\t\treturn\n'
+        '\tvar worker_idle: bool=production_worker_pending_action.is_empty() and (production_worker_task=="Waiting for work" or lay_low_active)\n'
+        '\tif worker_idle:\n'
+        '\t\tproduction_worker_target_position=_production_worker_station_position("idle")\n'
+        '\t\tif bool(production_worker_node.get_meta("seated",false)):\n'
+        '\t\t\treturn\n'
+        '\tvar move_target: Vector3 = _production_worker_navigation_target()'
+    )
+    assert main_script.count(idle_motion_old)==1, "Production worker movement baseline drift"
+    main_script=main_script.replace(idle_motion_old,idle_motion_new,1)
     main_script=main_script.replace('user://bud_empire_beta_save.json','user://afb_inventory_preview_save.json')
     save_hook='\tfile.store_string(JSON.stringify(data))\n\tfile.flush()\n\tlast_save_ok=file.get_error()==OK\n\tfile.close()'
     assert save_hook in main_script
