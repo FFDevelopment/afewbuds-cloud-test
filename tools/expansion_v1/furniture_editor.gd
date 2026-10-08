@@ -12,6 +12,9 @@ var list:VBoxContainer
 var hint:Label
 var placement_camera:=Transform3D.IDENTITY
 var editing_camera:=false
+var placement_panel:PanelContainer
+var placement_hint:Label
+var place_button:Button
 var selected:=""
 var property:="apartment"
 var point:=Vector3.ZERO
@@ -33,13 +36,26 @@ func setup(owner:Node3D,inv:Node) -> void:
  list=VBoxContainer.new();list.size_flags_horizontal=Control.SIZE_EXPAND_FILL;scroll.add_child(list)
  inventory.button("Close / cancel placement",close,outer)
  ghost=MeshInstance3D.new();ghost.mesh=BoxMesh.new();ghost.set_meta("no_collision",true);host.add_child(ghost);ghost.hide()
+ placement_panel=PanelContainer.new();placement_panel.add_theme_stylebox_override("panel",inventory.ui_style("111713","617651"));layer.add_child(placement_panel)
+ var placement_box:=VBoxContainer.new();placement_panel.add_child(placement_box)
+ placement_hint=inventory.label("Walk and look to position furniture",placement_box,16)
+ placement_hint.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+ var row:=HBoxContainer.new();placement_box.add_child(row)
+ inventory.button("Rotate",rotate_item,row)
+ place_button=inventory.button("Place",confirm,row,true)
+ inventory.button("Cancel",close,row)
+ placement_panel.hide()
  panel.hide()
  rod_button=inventory.button("Talk to Rod",func():
   if rod!=null and host.camera.global_position.distance_to(rod.global_position+Vector3.UP)<3.0 and chapter.meet_rod():rod.hide(),layer,true)
  rod_button.hide()
-func is_open() -> bool:return panel.visible
+func is_open() -> bool:return panel.visible or is_placing()
+func is_placing() -> bool:return not selected.is_empty() and editing_camera
+func blocks_movement() -> bool:return panel.visible
+func over_controls(p:Vector2) -> bool:return placement_panel.visible and placement_panel.get_global_rect().has_point(p)
 func restore_camera() -> void:
- if editing_camera:host.camera.global_transform=placement_camera;editing_camera=false
+ editing_camera=false
+ placement_panel.hide()
 func close() -> void:
  restore_camera()
  selected="";panel.hide();ghost.hide()
@@ -91,21 +107,47 @@ func begin(id:String) -> void:
  point.x=snappedf(point.x,.25);point.z=snappedf(point.z,.25);yaw=0
  if e.get("property","")==property and e.has("position"):
   point=Vector3(e.position[0],0,e.position[2]);yaw=int(e.yaw)
- clear()
- inventory.label("Move the preview in 0.25 m steps. Green is valid. Keep doors and walking routes clear.",list)
- var controls:=GridContainer.new();controls.columns=3;list.add_child(controls)
- for axis in [["Left",Vector3(-.25,0,0)],["Right",Vector3(.25,0,0)],["Forward",Vector3(0,0,-.25)],["Back",Vector3(0,0,.25)]]:
-  inventory.button(axis[0],func():point+=axis[1];preview(),controls)
- inventory.button("Rotate 90 degrees",func():yaw=posmod(yaw+90,360);preview(),controls)
- inventory.button("Place and lock",confirm,controls,true)
- inventory.button("Back to furniture",func():selected="";ghost.hide();render_list(),list)
- preview()
+ panel.hide();placement_panel.show()
+ if host.get("fp_player")!=null:Input.mouse_mode=Input.MOUSE_MODE_CAPTURED
+ aim();preview()
+func rotate_item() -> void:
+ yaw=posmod(yaw+90,360);preview()
+func aim() -> void:
+ var origin:Vector3=host.camera.global_position
+ var forward:Vector3=-host.camera.global_basis.z
+ var flat:=Vector3(forward.x,0,forward.z).normalized()
+ # Keep large items beyond the player, without moving or zooming the camera.
+ var size:Vector3=model.size_of(selected,yaw)
+ var nearest:float=maxf(1.5,maxf(size.x,size.z)*.5+.8)
+ var distance:float=3.25
+ if forward.y<-.05:distance=origin.y / -forward.y * Vector2(forward.x,forward.z).length()
+ distance=clampf(distance,nearest,5.5)
+ point=origin+flat*distance;point.y=0
+ point.x=snappedf(point.x,.25);point.z=snappedf(point.z,.25)
+func handle_placement_input(event:InputEvent) -> bool:
+ if not is_placing() or host.session_paused:return false
+ if not event.is_pressed() or event.is_echo():return false
+ var desktop:Node=host.get_node_or_null("/root/DesktopInput")
+ var accept:bool=desktop.pressed(event,"interact") if desktop!=null else event is InputEventKey and event.keycode==KEY_E
+ var cancel:bool=desktop.is_back(event) if desktop!=null else event is InputEventKey and event.keycode==KEY_ESCAPE
+ if event is InputEventJoypadButton:
+  accept=accept or event.button_index==JOY_BUTTON_A
+  cancel=cancel or event.button_index==JOY_BUTTON_B
+ if cancel:close();return true
+ if accept:confirm();return true
+ if (event is InputEventKey and event.keycode==KEY_R) or (event is InputEventJoypadButton and event.button_index==JOY_BUTTON_RIGHT_SHOULDER):rotate_item();return true
+ # Opening another activity would strand the preview or interact through it.
+ if desktop!=null:
+  for action in ["phone","backpack","visitor","tour"]:
+   if desktop.pressed(event,action):return true
+ elif event is InputEventKey and event.keycode in [KEY_P,KEY_I]:return true
+ return false
 func obstacle() -> String:
  var problem:String=model.validate(selected,property,point,yaw)
  if not problem.is_empty():return problem
  var size:Vector3=model.size_of(selected,yaw)
  var box:=AABB(point+Vector3(-size.x/2,.08,-size.z/2),Vector3(size.x,size.y-.08,size.z))
- if box.grow(.35).has_point(Vector3(placement_camera.origin.x,.5,placement_camera.origin.z)):return "Leave room for yourself to stand."
+ if box.grow(.35).has_point(Vector3(host.camera.global_position.x,.5,host.camera.global_position.z)):return "Leave room for yourself to stand."
  var shape:=BoxShape3D.new();shape.size=box.size
  var query:=PhysicsShapeQueryParameters3D.new();query.shape=shape;query.transform=Transform3D(Basis.IDENTITY,box.get_center());query.collision_mask=1
  var excluded:Array[RID]=[]
@@ -132,26 +174,27 @@ func preview() -> void:
  if selected.is_empty():return
  ghost.mesh.size=model.size_of(selected,yaw);ghost.position=point+Vector3.UP*ghost.mesh.size.y/2
  var problem:=obstacle();hint.text="Ready to place" if problem.is_empty() else problem
+ placement_hint.text=hint.text+"\nWalk / look to aim | R / RB: rotate | E / A: place" if host.get("fp_player")!=null else hint.text+"\nMove with joystick; drag to aim"
+ place_button.disabled=not problem.is_empty()
  var mat:=StandardMaterial3D.new();mat.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA;mat.albedo_color=Color(0.3,.9,.4,.35) if problem.is_empty() else Color(1,.25,.2,.35)
  ghost.material_override=mat;ghost.show()
 func confirm() -> void:
  if selected.is_empty():return
  var problem:=obstacle()
- if not problem.is_empty():hint.text=problem;return
- if model.place(selected,property,point,yaw):selected="";ghost.hide();render_list()
+ if not problem.is_empty():preview();return
+ if model.place(selected,property,point,yaw):close()
  else:hint.text=model.error
 func _process(_delta:float) -> void:
  if host==null:return
- if is_open():
-  if editing_camera and not selected.is_empty():
-   var eye:Vector3=point+Vector3(0,2.8,2)
-   for room in model.ROOMS[property].values():
-    if room.has_point(Vector2(point.x,point.z)):
-     eye.x=clampf(eye.x,room.position.x+.2,room.end.x-.2);eye.z=clampf(eye.z,room.position.y+.2,room.end.y-.2);break
-   host.camera.global_position=eye;host.camera.look_at(point+Vector3.UP*.35)
+ if is_placing():
+  if not host.session_paused:aim();preview()
   var screen:Vector2=host.get_viewport().get_visible_rect().size
-  panel.size=Vector2(minf(360,screen.x-24),minf(360 if not selected.is_empty() else 540,screen.y-96))
-  panel.position=Vector2(12,screen.y-panel.size.y-12 if screen.x<650 and not selected.is_empty() else 72)
+  placement_panel.size=Vector2(minf(440,screen.x-24),0)
+  placement_panel.position=Vector2((screen.x-placement_panel.size.x)/2,80)
+ elif panel.visible:
+  var screen:Vector2=host.get_viewport().get_visible_rect().size
+  panel.size=Vector2(minf(360,screen.x-24),minf(540,screen.y-96))
+  panel.position=Vector2(12,72)
  sync_world()
  tick_timer+=_delta
  if tick_timer>=.5:

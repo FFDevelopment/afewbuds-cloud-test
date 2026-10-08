@@ -418,7 +418,7 @@ func _process(_delta:float) -> void:
  if host.neighborhood.get("action")!=null and not host.neighborhood.action.has_meta("modern_interaction"):
   style_button(host.neighborhood.action,true);host.neighborhood.action.set_meta("modern_interaction",true)
  if is_open():_fit()
- var modal:bool=host._any_modal_open() or host.daily_report_pending or host.tutorial_active
+ var modal:bool=host._any_modal_open() or host.daily_report_pending or host.tutorial_active or furniture.is_placing()
  backpack_button.visible=not modal
  if phone_button!=null:
   phone_button.visible=not modal

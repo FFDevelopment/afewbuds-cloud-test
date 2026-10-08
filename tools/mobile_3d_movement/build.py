@@ -213,6 +213,11 @@ func _update_stamina_hud() -> void:
         '\tif blocked:\n\t\tpointer=-99\n\t\tpad.release()\n\t\treturn\n',
         '\tif blocked:\n\t\tpointer=-99\n\t\tpad.release()\n\t\t_stop_physics_walk()\n\t\treturn\n',1)
 
+    source=source.replace('func handle_input(event: InputEvent) -> void:\n','func handle_input(event: InputEvent) -> void:\n\tif host.inventory_system!=null and host.inventory_system.furniture.handle_placement_input(event):\n\t\thost.get_viewport().set_input_as_handled();return\n',1)
+    source=source.replace('func _over_ui(point: Vector2) -> bool:\n','func _over_ui(point: Vector2) -> bool:\n\tif host.inventory_system!=null and host.inventory_system.furniture.over_controls(point):return true\n',1)
+    source=source.replace('func _near_target() -> String:\n','func _near_target() -> String:\n\tif host.inventory_system!=null and host.inventory_system.furniture.is_placing():return ""\n',1)
+    source=source.replace('func _tap(point: Vector2) -> void:\n','func _tap(point: Vector2) -> void:\n\tif host.inventory_system!=null and host.inventory_system.furniture.is_placing():return\n',1)
+
     start=source.index('\tvar turn:=float(Input.is_physical_key_pressed(KEY_LEFT))')
     end=source.index('\thost.view_label.text="Apartment" if _indoors(host.camera.position) else "Neighborhood"',start)
     movement=r'''	var turn:=float(Input.is_physical_key_pressed(KEY_LEFT))-float(Input.is_physical_key_pressed(KEY_RIGHT))
@@ -851,7 +856,7 @@ def main():
     loader=re.sub(r'patch\.json\?v=\d+','patch.json?v=expansion1',loader)
     (ROOT/'shared/afb-runtime-mobile-3d-v1.js').write_text(loader,newline='\n')
 
-    release='0.7.9-beta.19-cloudtest.99-expansion.1'
+    release='0.7.9-beta.19-cloudtest.99-expansion.2'
     index=(ROOT/'index.html').read_text(encoding='utf-8')
     index=re.sub(r'([?&]v=)inventory\d+',r'\g<1>expansion1',index)
     index=index.replace('shared/afb-api.js\"','shared/afb-api.js?v=expansion1\"')

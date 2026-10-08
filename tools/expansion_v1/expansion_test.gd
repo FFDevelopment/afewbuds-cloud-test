@@ -47,6 +47,35 @@ func run():
  m.lock(chair,false);m.pack(chair);inv.furniture.sync_world()
  check(inv.furniture.rendered.size()==1,"Packing removes world instance")
  m.place(chair,"house",Vector3(28,0,-2),0)
+ var editor=inv.furniture
+ var movable:String=m.own("armchair")
+ game.camera.global_position=Vector3(29,2.16,1.5);game.camera.look_at(Vector3(29,0,-2))
+ var normal_camera:Transform3D=game.camera.global_transform
+ editor.open();editor.begin(movable)
+ check(editor.is_placing() and not game._any_modal_open(),"Placement allows normal walking and looking")
+ editor._process(.016)
+ check(game.camera.global_transform.is_equal_approx(normal_camera),"Placement never moves or zooms camera")
+ var aim_before:Vector3=editor.point
+ game.camera.position.x+=1;editor.aim()
+ check(editor.point.x>aim_before.x,"Preview follows player movement")
+ var clear_spots:=0
+ var problems:Dictionary={}
+ for x in range(26,33):
+  for z in range(-4,2):
+   editor.point=Vector3(x,0,z)
+   var problem:String=editor.obstacle()
+   if problem.is_empty():clear_spots+=1
+   else:problems[problem]=int(problems.get(problem,0))+1
+ print("PLACEMENT_SCAN: ",clear_spots," clear; ",problems)
+ check(clear_spots>0,"Actual furnished house has green placement spots")
+ editor.point=Vector3(28,0,-2)
+ check(not editor.obstacle().is_empty(),"Placement rejects existing furniture")
+ editor.point=Vector3(25,0,-2)
+ check(not editor.obstacle().is_empty(),"Placement rejects crossing room walls")
+ var move_end:Transform3D=game.camera.global_transform
+ editor.close()
+ check(game.camera.global_transform.is_equal_approx(move_end),"Cancel preserves new player viewpoint")
+ m.state.items.erase(movable)
  var story=inv.furniture.chapter
  game.advancement_stats.harvests=100;game.advancement_stats.grams_trimmed=1000;game.advancement_stats.bags_sealed=50;game.advancement_stats.sales=100;game.advancement_stats.dealer_sales=20
  story.tick()
@@ -62,6 +91,16 @@ func run():
  inv.furniture.sync_world()
  check(game.plant_visuals[0].get_node("PlantHitArea0").collision_layer==8,"Replaced tent restores plant interactions")
  check(m.powered_tent_count("house")==1,"Placed tent power belongs to its property")
+ m.lock("legacy_tent_0",false)
+ game.camera.global_position=Vector3(41.8,2.16,-8)
+ editor.open();editor.begin("legacy_tent_0")
+ var tent_spots:=0
+ for x in range(81,87):
+  for z in range(-25,-17):
+   editor.point=Vector3(x*.5,0,z*.5)
+   if editor.obstacle().is_empty():tent_spots+=1
+ check(tent_spots>0,"Actual house grow room has valid tent placement")
+ editor.close();m.lock("legacy_tent_0",true)
  game.advancement_stats.harvests+=3;story.tick()
  check(story.stage()==2,"House harvest milestone advances")
  game.advancement_stats.grams_trimmed+=30;game.advancement_stats.bags_sealed+=5;story.tick()
