@@ -1,8 +1,6 @@
 name: Build beta4 recovery preview
 
 on:
-  push:
-    branches: [recovery/public-beta4-plus-fixes]
   workflow_dispatch:
 
 permissions:
