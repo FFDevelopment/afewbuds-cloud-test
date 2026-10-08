@@ -115,12 +115,14 @@ func repair_utility_positions() -> void:
   var id:String="legacy_"+str(sku)
   if not state.items.has(id):continue
   var e:Dictionary=state.items[id]
-  if e.get("utility_layout_version",0)>=1:continue
+  if e.get("utility_layout_version",0)>=2:continue
   var p:Array=e.get("position",[])
-  # Repair only the old generated spawn, never a player's chosen placement.
-  if not e.get("player_placed",false) and e.get("property","") in ROOMS and p.size()==3 and Vector2(p[0],p[2]).distance_to(Vector2(-3.8,-5.3))<.02:
+  var previous:Vector2=Vector2(-3.2,-5.1) if sku=="water_kit" else Vector2(3.2,-5.1)
+  var old_spawn:bool=p.size()==3 and (Vector2(p[0],p[2]).distance_to(Vector2(-3.8,-5.3))<.02 or (e.get("utility_layout_version",0)==1 and Vector2(p[0],p[2]).distance_to(previous)<.02))
+  # Repair only known generated spawns, never a player's chosen placement.
+  if not e.get("player_placed",false) and e.get("property","") in ROOMS and old_spawn:
    e.position=utility_position(e.property,sku)
-  e.utility_layout_version=1
+  e.utility_layout_version=2
 func ensure_slots() -> void:
  var next:int=host.plant_slots.size()
  for e in state.items.values():

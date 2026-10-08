@@ -208,6 +208,14 @@ func run():
    check(not rect.intersects(m.bounds(shelf_id,shelf_at,int(shelf_entry.yaw)).grow(.4)),"Utility leaves clear access to original grow shelf")
   check(not utility_bounds[0].intersects(utility_bounds[1]),"Water and ventilation no longer overlap")
  check(inv.contents("apartment:supply")==stock_before and m.state.items.legacy_supply.sku==tier_before,"Repair retains shelf stock and purchased tier")
+ m.state.items.legacy_water_kit.property="apartment"
+ m.state.items.legacy_water_kit.position=[-3.2,0,-5.1]
+ m.state.items.legacy_water_kit.utility_layout_version=1
+ m.repair_utility_positions()
+ check(m.state.items.legacy_water_kit.position==m.utility_position("apartment","water_kit"),"Earlier automatic layout updates to the clear utility wall")
+ var repaired:Array=m.state.items.legacy_water_kit.position.duplicate()
+ m.repair_utility_positions()
+ check(m.state.items.legacy_water_kit.position==repaired,"Utility repair is idempotent")
  m.state.items.legacy_water_kit.position=[-3.8,0,-5.3]
  m.state.items.legacy_water_kit.player_placed=true
  m.state.items.legacy_water_kit.erase("utility_layout_version")
