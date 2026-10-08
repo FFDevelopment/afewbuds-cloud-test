@@ -1,6 +1,6 @@
 # Equipment items preview
 
-Paired experiment for cloud test Expansion 5 and desktop 0.16.0-equipment.2.
+Paired experiment for cloud test Expansion 6 and desktop 0.16.0-equipment.3.
 
 This update restores the original framed hidden wall stash and premium dealer locker, including their opening/closing animations after packing and replacement. It removes the extra floor shelf and adds the Backpack > Furniture & Equipment category. Existing starter tents, plants, equipment tiers and furniture become owned items; no repurchase is required.
 
@@ -14,6 +14,8 @@ This update restores the original framed hidden wall stash and premium dealer lo
 - Test progress uses the existing isolated preview saves. Production/main and live career uploads are unchanged.
 
 Cloud: https://ffdevelopment.github.io/afewbuds-cloud-test/expansion-preview/
-Desktop Windows: https://github.com/FFDevelopment/afewbuds-3d-prototype/releases/tag/v0.16.0-equipment.2
+Desktop Windows: https://github.com/FFDevelopment/afewbuds-3d-prototype/releases/tag/v0.16.0-equipment.3
 
 Large deliveries currently appear as boxes immediately; a delivery vehicle/timed courier sequence is not implemented. New catalog items use functional prototype models.
+
+Grow-model correction: normalize tent slot IDs after JSON load so pots and plants remain linked to their tents. Preserve the original grow supply shelf at every tier and copy procedural furniture without rerunning its construction script. Plant and shelf contents are retained.

@@ -153,5 +153,40 @@ func run():
  inv.open_container(m.container_of(dealer));await create_timer(.4).timeout
  check(is_equal_approx(locker.find_child("PremiumLeftDoorPivot",true,false).rotation_degrees.y,-102.0),"Locker animation survives pickup and replacement")
  inv.close()
+ # Exercise the actual JSON save boundary, not a second setup over the same objects.
+ var plants_before:String=JSON.stringify(game.plant_slots)
+ var supply_before:Dictionary=inv.contents("apartment:supply").duplicate(true)
+ game._save_game()
+ var disk:Dictionary=JSON.parse_string(FileAccess.get_file_as_string(game.SAVE_PATH))
+ game.location_state.furniture_v1=disk.location_state.furniture_v1
+ m.setup(game);editor.sync_world()
+ var slots_are_ints:=true
+ for asset in m.state.items.values():
+  for slot in asset.get("slots",[]):slots_are_ints=slots_are_ints and typeof(slot)==TYPE_INT
+ check(slots_are_ints,"Saved tent slot IDs normalize to integers on reload")
+ var visible_pots:=0
+ for slot in m.state.items.legacy_tent_0.slots:
+  var plant:Node3D=game.plant_visuals[slot]
+  if m.can_plant(slot) and plant.get_node("Pot").is_visible_in_tree():visible_pots+=1
+ check(visible_pots==3,"All three starter pots remain visible after saving and reloading")
+ check(JSON.stringify(game.plant_slots)==plants_before,"Reload repair does not alter plant contents")
+ var source_count:int=game.supply_shelf_ref.find_children("*","MeshInstance3D",true,false).size()
+ var shelf:Node3D=editor.equipment_world.rendered.legacy_supply.get_node("OriginalGrowSupplyShelf")
+ check(shelf.get_script()==null and shelf.find_children("*","MeshInstance3D",true,false).size()==source_count,"Grow shelf uses one finished original model without rebuilding")
+ for tier in [2,3]:
+  m.state.items.legacy_supply.sku="shelf_"+str(tier)
+  m.state.items.legacy_supply.upgrades["shelf_"+str(tier)]=true
+  editor.sync_world()
+  shelf=editor.equipment_world.rendered.legacy_supply.get_node("OriginalGrowSupplyShelf")
+  check(shelf.find_children("*","MeshInstance3D",true,false).size()==source_count,"Supply tier %d retains original shelf without a generic replacement"%tier)
+ check(not game.supply_shelf_ref.visible and inv.contents("apartment:supply")==supply_before,"Only owned supply shelf renders and its contents are preserved")
+ for i in 3:editor.sync_world()
+ check(editor.equipment_world.rendered.legacy_supply.get_node("OriginalGrowSupplyShelf").find_children("*","MeshInstance3D",true,false).size()==source_count,"Repeated world updates cannot duplicate the grow shelf")
+ var house_shelf:String=m.primary("house","supply")
+ var house_meshes:int=editor.equipment_world.rendered[house_shelf].find_children("*","MeshInstance3D",true,false).size()
+ var house_size:Vector3=m.size_of(house_shelf)
+ check(m.upgrade(house_shelf),"Empty house supply shelf upgrades its capacity in place")
+ editor.sync_world()
+ check(m.size_of(house_shelf)==house_size and editor.equipment_world.rendered[house_shelf].find_children("*","MeshInstance3D",true,false).size()==house_meshes,"House shelf retains its existing model and footprint when upgraded")
  print("EQUIPMENT_V2_RESULT: ","PASS" if failures==0 else "FAIL"," checks=",checks," failures=",failures)
  game.queue_free();await process_frame;quit(0 if failures==0 else 1)

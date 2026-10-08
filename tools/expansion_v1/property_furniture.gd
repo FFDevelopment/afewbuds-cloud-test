@@ -8,9 +8,9 @@ const CATALOG={
  "bench_1":{"name":"Packing Bench I","shop":"equipment","price":180,"size":[1.6,1.25,.85],"kind":"packing","tier":1,"weight":18},
  "bench_2":{"name":"Packing Bench II","shop":"equipment","price":450,"size":[1.8,1.25,.85],"kind":"packing","tier":2,"weight":22},
  "bench_3":{"name":"Packing Bench III","shop":"equipment","price":850,"size":[2.1,1.25,.9],"kind":"packing","tier":3,"weight":28},
- "shelf_1":{"name":"Grow Supply Shelf I","shop":"equipment","price":100,"size":[1.25,1.9,.5],"kind":"supply","tier":1,"weight":10},
- "shelf_2":{"name":"Grow Supply Shelf II","shop":"equipment","price":280,"size":[1.35,1.9,.55],"kind":"supply","tier":2,"weight":14},
- "shelf_3":{"name":"Grow Supply Shelf III","shop":"equipment","price":600,"size":[1.45,2.1,.6],"kind":"supply","tier":3,"weight":18},
+ "shelf_1":{"name":"Grow Supply Shelf I","shop":"equipment","price":100,"size":[1.56,2.315,.68],"kind":"supply","tier":1,"weight":10},
+ "shelf_2":{"name":"Grow Supply Shelf II","shop":"equipment","price":280,"size":[1.56,2.315,.68],"kind":"supply","tier":2,"weight":14},
+ "shelf_3":{"name":"Grow Supply Shelf III","shop":"equipment","price":600,"size":[1.56,2.315,.68],"kind":"supply","tier":3,"weight":18},
  "storage_1":{"name":"Storage Shelving I","shop":"equipment","price":140,"size":[1.25,1.9,.6],"kind":"storage","tier":1,"capacity":40,"weight":12},
  "storage_2":{"name":"Storage Shelving II","shop":"equipment","price":360,"size":[1.35,2,.65],"kind":"storage","tier":2,"capacity":80,"weight":16},
  "storage_3":{"name":"Storage Shelving III","shop":"equipment","price":900,"size":[1.5,2.1,.7],"kind":"storage","tier":3,"capacity":160,"weight":20},
@@ -110,6 +110,8 @@ func ensure_slots() -> void:
   if not e.has("slots"):
    e.slots=[]
    for i in int(CATALOG[e.sku].plants):e.slots.append(next);next+=1
+  # JSON numbers reload as floats; Array membership distinguishes float from int.
+  for index in range(e.slots.size()):e.slots[index]=int(e.slots[index])
   for slot in e.slots:
    while host.plant_slots.size()<=int(slot):host.plant_slots.append(host._empty_plant_slot())
 func is_tent(e:Dictionary) -> bool:return CATALOG.has(e.get("sku","")) and CATALOG[e.sku].has("plants")
@@ -249,9 +251,9 @@ func upgrade(id:String) -> bool:
  if host.cash<price:error="Not enough cash.";return false
  var old_sku:String=e.sku;var locked:bool=e.get("locked",false)
  var old_size:Array=e.get("size_override",[])
- e.erase("size_override")
+ if not sku.begins_with("shelf_"):e.erase("size_override")
  e.sku=sku;e.locked=false
- if e.get("property","") in ROOMS:
+ if e.get("property","") in ROOMS and not sku.begins_with("shelf_"):
   var p:Array=e.position;error=validate(id,e.property,Vector3(p[0],0,p[2]),int(e.yaw))
  if not error.is_empty():
   e.sku=old_sku;e.locked=locked

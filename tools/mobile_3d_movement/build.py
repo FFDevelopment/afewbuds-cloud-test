@@ -863,15 +863,15 @@ def main():
 
     loader=(ROOT/'shared/afb-runtime-kobi-v1.js').read_text()
     loader=loader.replace('kobi-v1','mobile-3d-v1').replace('AFB_RUNTIME_KOBI_V1','AFB_RUNTIME_MOBILE_3D_V1')
-    loader=re.sub(r'patch\.json\?v=(?:\d+|(?:inventory|expansion)\d+)','patch.json?v=expansion5',loader)
+    loader=re.sub(r'patch\.json\?v=(?:\d+|(?:inventory|expansion)\d+)','patch.json?v=expansion6',loader)
     (ROOT/'shared/afb-runtime-mobile-3d-v1.js').write_text(loader,newline='\n')
 
-    release='0.7.9-beta.19-cloudtest.99-expansion.5'
+    release='0.7.9-beta.19-cloudtest.99-expansion.6'
     index=(ROOT/'index.html').read_text(encoding='utf-8')
-    index=re.sub(r'([?&]v=)(?:inventory|expansion)\d+',r'\g<1>expansion5',index)
-    index=index.replace('shared/afb-api.js\"','shared/afb-api.js?v=expansion5\"')
+    index=re.sub(r'([?&]v=)(?:inventory|expansion)\d+',r'\g<1>expansion6',index)
+    index=index.replace('shared/afb-api.js\"','shared/afb-api.js?v=expansion6\"')
     index=index.replace('kobi-v1','mobile-3d-v1').replace('AFB_RUNTIME_KOBI_V1','AFB_RUNTIME_MOBILE_3D_V1')
-    index=re.sub(r'afb-runtime-mobile-3d-v1\.js\?v=(?:\d+|(?:inventory|expansion)\d+)','afb-runtime-mobile-3d-v1.js?v=expansion5',index)
+    index=re.sub(r'afb-runtime-mobile-3d-v1\.js\?v=(?:\d+|(?:inventory|expansion)\d+)','afb-runtime-mobile-3d-v1.js?v=expansion6',index)
     index=re.sub(r'0\.7\.9-beta\.19-cloudtest\.(?:98-kobi|99-mobile3d|99-inventory|99-expansion)\.\d+',release,index)
     index=re.sub(r'"fileSizes":\{[^}]*\\}',f'"fileSizes":{{"index-mobile-3d-v1.pck":{len(built)},"index.wasm":{(ROOT/"index.wasm").stat().st_size}}}',index,count=1)
     (ROOT/'index.html').write_text(index,encoding='utf-8',newline='\n')
