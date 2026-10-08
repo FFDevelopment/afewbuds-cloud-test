@@ -210,9 +210,9 @@ func validate(id:String,property:String,point:Vector3,yaw:int) -> String:
  var reason:=empty_reason(id)
  if not reason.is_empty():return reason
  if not point.is_finite() or absf(point.y)>.05 or yaw%90!=0:return "Place on the floor with quarter-turn rotation."
- var rect:=bounds(id,point,yaw).grow(.06);var room:=""
+ var rect:=bounds(id,point,yaw).grow(.015);var room:=""
  for key in ROOMS[property]:
-  if (ROOMS[property][key] as Rect2).grow(.35 if e.sku=="storage_5" else 0.0).encloses(rect):room=key;break
+  if (ROOMS[property][key] as Rect2).grow(.35 if e.sku=="storage_5" else 0.14).encloses(rect):room=key;break
  if room.is_empty():return "Keep the entire item inside one room and clear of doorways."
  if bool(CATALOG[e.sku].get("grow_only",false)) and room!="grow":return "Grow equipment can only be placed in grow rooms."
  for other in state.items:
