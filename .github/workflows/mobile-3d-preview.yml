@@ -140,7 +140,7 @@ jobs:
           path: public-baseline
           persist-credentials: false
 
-      - name: Stage exact public beta launcher with verified updated game
+      - name: Stage checksum-versioned public beta launcher and updated game
         run: |
           set -euo pipefail
           python3 tools/public_beta_parity/stage.py --public public-baseline --candidate "${RUNNER_TEMP}/mobile3d/candidate.pck" --output "${RUNNER_TEMP}/afb-public-copy"
