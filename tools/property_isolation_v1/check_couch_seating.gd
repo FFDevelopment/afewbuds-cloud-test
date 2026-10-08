@@ -55,6 +55,29 @@ func run() -> void:
     paths.append(str(sit.track_get_path(track)))
    print("NPC_SIT_TRACKS ",character," ",str(paths))
    check(sit.get_track_count()>=idle.get_track_count(),"Character "+character+" sit animation keeps relaxed idle upper-body tracks; sit "+str(sit.get_track_count())+" vs idle "+str(idle.get_track_count()))
+   var arm_count:int=0
+   var arms_match:bool=true
+   var bent_legs:Array[String]=[]
+   for it in range(idle.get_track_count()):
+    var key:String=str(idle.track_get_path(it)).to_lower()
+    var is_arm:bool=key.contains("upperarm") or key.contains("lowerarm") or key.contains("hand_")
+    if not is_arm:continue
+    if idle.track_get_key_count(it)==0:continue
+    arm_count+=1
+    var matches:bool=false
+    for st in range(sit.get_track_count()):
+     if sit.track_get_type(st)==idle.track_get_type(it) and sit.track_get_path(st)==idle.track_get_path(it) and sit.track_get_key_count(st)>0:
+      matches=sit.track_get_key_value(st,0)==idle.track_get_key_value(it,0)
+      break
+    if not matches:arms_match=false
+   for st in range(sit.get_track_count()):
+    var key:String=str(sit.track_get_path(st)).to_lower()
+    if key.contains("upperleg") or key.contains("lowerleg"):
+     bent_legs.append(str(sit.track_get_path(st)))
+   print("NPC_SIT_POSE_VERIFICATION ",character," arm_tracks=",arm_count," arms_match_idle=",arms_match," leg_tracks=",str(bent_legs))
+   check(arm_count>=4 and arms_match,"Character "+character+" has relaxed non-T-pose upper arms during sitting")
+   check(bent_legs.size()>=4,"Character "+character+" retains sitting thigh and knee tracks")
+
 
   avatar.queue_free()
  game.location_state.active_property="apartment"
