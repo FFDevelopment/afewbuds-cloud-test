@@ -820,6 +820,13 @@ def main():
 \t\t\tif track_type not in [Animation.TYPE_ROTATION_3D,Animation.TYPE_POSITION_3D,Animation.TYPE_SCALE_3D]:continue
 \t\t\tif idle.track_get_key_count(track)==0:continue
 \t\t\tvar track_path:NodePath=idle.track_get_path(track)
+\t\t\t# Imported sit clips explicitly key shoulder, forearm and hand joints
+\t\t\t# in an outstretched bind pose. Replace those keys with arms-down idle.
+\t\t\tvar arm_path:String=str(track_path).to_lower()
+\t\t\tif arm_path.contains("upperarm") or arm_path.contains("lowerarm") or arm_path.contains("hand_"):
+\t\t\t\tfor existing in range(completed.get_track_count()-1,-1,-1):
+\t\t\t\t\tif completed.track_get_type(existing)==track_type and completed.track_get_path(existing)==track_path:
+\t\t\t\t\t\tcompleted.remove_track(existing)
 \t\t\tvar already:bool=false
 \t\t\tfor existing in range(completed.get_track_count()):
 \t\t\t\tif completed.track_get_type(existing)==track_type and completed.track_get_path(existing)==track_path:
