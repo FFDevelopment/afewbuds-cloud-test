@@ -281,14 +281,9 @@ func show_relocation() -> void:
 	_clear()
 	label("PREPARE RELOCATION",30)
 	label("Agreement signed: %s" % agreement_name(),23)
-	label("MOVE WITH THE OPERATION",22)
-	label("✓ seeds and fertilizer
-✓ trimmed, bagged and stored product
-✓ Dealer Storage inventory
-✓ genetics unlocks
-✓ staff and dealers
-✓ purchased portable equipment progression",19)
-	label("Permanent apartment construction stays with the apartment. This first relocation preserves your career state instead of deleting or repurchasing existing progression.",19)
+	label("MOVE AT YOUR OWN PACE",22)
+	label("Your career, genetics and crew stay with you. Stock and furniture remain where you left them. Empty equipment, pick it up into your backpack, and place it at the new property. Order extra equipment to either property's curb.",19)
+	label("The apartment lease continues until you empty and release it in Real Estate.",19)
 	if str(state().get("agreement",""))=="lease":
 		label("OWNERSHIP EQUITY: $%d / $%d" % [int(state().get("equity_paid",0)),LEASE_TOTAL],21)
 	label("APARTMENT LEASE",23)
@@ -299,7 +294,7 @@ func show_relocation() -> void:
 
 func confirm_relocation() -> void:
 	if not bool(state().get("agreement_signed",false)) or bool(state().get("relocated",false)):return
-	if host.inventory_system!=null:host.inventory_system.relocate("apartment","house")
+	if host.inventory_system!=null and not host.inventory_system.relocate("apartment","house"):return
 	state()["relocated"]=true
 	state()["relocation_day"]=host.game_day
 	state()["keep_apartment"]=true

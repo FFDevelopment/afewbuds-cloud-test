@@ -10,8 +10,8 @@ func check(ok:bool,message:String):
  if not ok:failures+=1;push_error("FAIL: "+message)
  else:print("PASS: ",message)
 func stand(id:String):
- game.camera.position=inv.POSITIONS[id]+Vector3(0,.34,2)
- game.camera.look_at(inv.POSITIONS[id])
+ game.camera.position=inv.all_positions()[id]+Vector3(2 if inv.all_positions()[id].x<0 else -2,.34,0)
+ game.camera.look_at(inv.all_positions()[id])
 func empty_bag():
  game.location_state.carried_seeds={};game.location_state.carried_fertilizer=0
  game.location_state.property_storage=[];inv.state.backpack={}
@@ -105,7 +105,10 @@ func run():
   var rect:Rect2=inv.panel.get_global_rect();var screen:Vector2=root.get_visible_rect().size
   check(rect.position.x>=0 and rect.position.y>=0 and rect.end.x<=screen.x+1 and rect.end.y<=screen.y+1,"Empty panels fit viewport at "+str(dimensions))
  inv.close()
- game.dealer_locker_level=1
+ game.cash=10000
+ var locker:String=inv.furniture.model.own("dealer_1")
+ check(inv.furniture.model.place(locker,"apartment",Vector3(3.9,0,-2.2),90),"Place owned dealer locker for interaction checks")
+ inv.furniture.sync_world()
  for kind in ["supply","storage","dealer","packing"]:
   stand("apartment:"+kind)
   if not desktop:

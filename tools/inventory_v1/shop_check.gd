@@ -78,20 +78,18 @@ func run():
  stand("apartment:supply")
  check(not inv.upgrade_backpack(2),"Backpack upgrades cannot be bought remotely")
  empty_bag();stand("market:orders");game.supply_shelf_level=1
- var equipment:String="Grow Supply Shelf II"
- ops.order_equipment(equipment);paid_cash=game.cash
- check(inv.contents("market:orders").get("delivery|"+equipment)==1 and not inv.delivery_carried(equipment),"New paid equipment waits at shop pickup")
- game.camera.position=Vector3(3,1.64,4.35);game.camera.look_at(ops.APT_PC)
- ops.install(equipment)
- check(game.supply_shelf_level==1 and game.location_state.deliveries.has(equipment),"Computer cannot install equipment still at the shop")
- stand("market:orders")
- check(inv.transfer("market:orders","backpack","delivery|"+equipment,1).ok and inv.delivery_carried(equipment),"Paid equipment transfers into backpack with its receipt intact")
+ var equipment:String=inv.furniture.model.own("shelf_2","apartment");paid_cash=game.cash
+ var key:String="furniture|"+equipment
+ check(inv.contents("apartment:delivery").get(key)==1,"Paid equipment waits at the selected property curb")
+ check(not inv.transfer("apartment:delivery","backpack",key,1).ok,"Market cannot collect a distant property delivery")
+ game.camera.position=inv.furniture.model.CURBS.apartment+Vector3.UP*2.16
+ check(inv.transfer("apartment:delivery","backpack",key,1).ok,"Delivered equipment collects into backpack")
  stand("apartment:storage")
- check(inv.transfer("backpack","apartment:storage","delivery|"+equipment,1).ok and not inv.delivery_carried(equipment),"Uninstalled paid equipment can be stored without losing ownership")
- check(inv.transfer("apartment:storage","backpack","delivery|"+equipment,1).ok,"Stored paid equipment can be taken back")
+ check(inv.transfer("backpack","apartment:storage",key,1).ok,"Packed equipment can be stored without losing ownership")
+ check(inv.transfer("apartment:storage","backpack",key,1).ok,"Stored equipment can be taken back")
+ check(inv.furniture.model.place(equipment,"apartment",Vector3(2,0,-5.5),0) and game.cash==paid_cash,"Placement consumes owned item without charging again")
  game.camera.position=Vector3(3,1.64,4.35);game.camera.look_at(ops.APT_PC)
- ops.install(equipment)
- check(game.supply_shelf_level==2 and not game.location_state.deliveries.has(equipment) and game.cash==paid_cash,"Installing carried equipment consumes it without a second charge")
+ ops.computer("apartment")
  ops.manage("inventory");labels=[]
  for button in ops.ui.body.find_children("*","Button",true,false):labels.append(button.text)
  check(not labels.any(func(t):return "DEPOSIT" in t or "SUPPLIES: USE" in t),"Computer has no obsolete deposit-inventory controls")

@@ -11,7 +11,7 @@ func check(ok:bool,title:String) -> void:
 func frames(n:int=5):
  for i in n:await process_frame
 func stand(id:String):
- game.camera.position=inv.POSITIONS[id]+Vector3(0,1.0,1.0)
+ game.camera.position=inv.all_positions()[id]+Vector3(0,1.0,1.0)
 func run():
  var desktop:bool=ResourceLoader.exists("res://prototype/apartment.tscn")
  if desktop:
@@ -77,6 +77,7 @@ func run():
  check(inv.transfer("apartment:storage","backpack","equipment|Grow Tent upgrade",1).ok and inv.contents("backpack").get("equipment|Grow Tent upgrade")==2,"Taking matching paid equipment preserves both items")
  check(inv.contents("apartment:storage").cash==25 and not inv.contents("apartment:supply").has("cash"),"Containers never expose each other's contents")
  game.property_opportunity_state.acquired=true;game.property_opportunity_state.relocated=true
+ inv.furniture.sync_world()
  stand("house:storage")
  check(inv.transfer("backpack","house:storage","product|Purple Dream",2).ok,"House container has independent contents")
  check(inv.contents("house:storage").get("product|Purple Dream")==2 and game.products["Purple Dream"].stock==15,"House transfer cannot alter apartment stock")
@@ -102,9 +103,12 @@ func run():
   var rect:Rect2=inv.panel.get_global_rect()
   check(rect.position.x>=0 and rect.position.y>=0 and rect.end.x<=screen.x+1 and rect.end.y<=screen.y+1,"Inventory stays within viewport at "+str(dimensions))
  inv.close()
- inv.relocate("apartment","house");game.location_state.operation_contents_property="house"
- check(inv.contents("house:storage").get("product|Purple Dream")==17,"Relocation merges existing destination stock without loss")
- check(inv.contents("house:storage").get("cash")==25 and not inv.property_has_items("apartment"),"Relocation moves stash extras and empties old property containers")
+ check(not inv.relocate("apartment","house"),"Reserved orders block relocation without changing stock")
+ game.products["Purple Dream"].reserved=0
+ check(inv.relocate("apartment","house"),"Cleared reservations allow relocation")
+ game.location_state.operation_contents_property="house"
+ check(inv.contents("house:storage").get("product|Purple Dream")==2 and inv.contents("apartment:storage").get("product|Purple Dream")==15,"Relocation preserves stock at each physical property")
+ check(inv.contents("apartment:storage").get("cash")==25 and inv.property_has_items("apartment"),"Relocation leaves stash contents to be carried by the player")
  game.queue_free();await frames()
  print("INVENTORY_TEST_RESULT: ","PASS" if failures==0 else "FAIL"," checks=",checks," failures=",failures)
  quit(0 if failures==0 else 1)

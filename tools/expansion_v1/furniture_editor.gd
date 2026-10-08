@@ -1,5 +1,7 @@
 extends Node
 var chapter:RefCounted
+var equipment_world:Node
+var delivery_property:="backpack"
 var rod:Node3D
 var rod_button:Button
 var tick_timer:=0.0
@@ -28,6 +30,7 @@ func setup(owner:Node3D,inv:Node) -> void:
  host=owner;inventory=inv
  model=load("res://scripts/property_furniture.gd").new();model.setup(host)
  chapter=load("res://scripts/chapter_five.gd").new();chapter.setup(host,model)
+ equipment_world=load("res://scripts/equipment_world.gd").new();add_child(equipment_world);equipment_world.setup(self)
  layer=CanvasLayer.new();layer.layer=31;add_child(layer)
  panel=PanelContainer.new();panel.add_theme_stylebox_override("panel",inventory.ui_style("111713","617651"));layer.add_child(panel)
  var outer:=VBoxContainer.new();panel.add_child(outer)
@@ -67,33 +70,51 @@ func open() -> void:
  if host.neighborhood.location_ops.is_open():host.neighborhood.location_ops.close()
  panel.show();Input.mouse_mode=Input.MOUSE_MODE_VISIBLE;selected="";ghost.hide();render_list()
 func render_list() -> void:
- restore_camera()
- clear();hint.text="FURNITURE / PROPERTY STORAGE"
- inventory.label("Purchased furniture remains yours when packed. Unlock to move; placement locks it again.",list)
+ restore_camera();clear();hint.text="FURNITURE & EQUIPMENT"
+ inventory.label("Empty and unlock equipment before picking it up. Packed items go into your backpack with their upgrades intact.",list)
  for id in model.state.items:
   var e:Dictionary=model.state.items[id]
-  inventory.label(str(model.CATALOG[e.sku].name)+" - "+str(e.get("property","storage")).capitalize(),list)
+  inventory.label(model.item_name(id)+" · "+str(e.get("property","backpack")).capitalize(),list)
+  var reason:String=model.empty_reason(id)
+  if not reason.is_empty():inventory.label(reason,list,13)
   var row:=HBoxContainer.new();list.add_child(row)
-  inventory.button("Unlock" if e.get("locked",false) else "Lock",func():model.lock(id,not bool(e.get("locked",false)));render_list(),row)
-  inventory.button("Place / move",begin.bind(id),row).disabled=bool(e.get("locked",false))
-  inventory.button("Pack",func():
-   if model.pack(id):render_list()
-   else:hint.text=model.error,row).disabled=bool(e.get("locked",false))
+  if e.get("property","") in model.ROOMS:
+   inventory.button("Unlock" if e.get("locked",false) else "Lock",func():model.lock(id,not bool(e.get("locked",false)));render_list(),row)
+   inventory.button("Move",begin.bind(id),row).disabled=bool(e.get("locked",false)) or not reason.is_empty()
+   inventory.button("Pick up",func():
+    if model.pack(id):render_list()
+    else:hint.text=model.error,row).disabled=bool(e.get("locked",false)) or not reason.is_empty()
+  elif e.get("property","")=="backpack":inventory.button("Place",begin.bind(id),row)
+  var upgrade:String=model.next_upgrade(id)
+  if not upgrade.is_empty() and e.get("property","") in ["apartment","house","backpack"]:
+   inventory.button(model.upgrade_label(id),func():
+    if model.upgrade(id):render_list()
+    else:hint.text=model.error,list).disabled=not reason.is_empty()
 func shop(shop_id:String) -> void:
- open();clear();hint.text="UPGRADES / GROW TENTS" if shop_id=="grow" else "CENTRAL MARKET / FURNITURE"
+ open();clear();hint.text="CENTRAL MARKET / "+shop_id.to_upper()
+ inventory.label("Buy packed items or order a box to a property's curb. Select packed items in Backpack to place them.",list)
+ var choices:=HBoxContainer.new();list.add_child(choices)
+ for destination in ["backpack","apartment","house"]:
+  if destination!="backpack" and not model.controlled(destination):continue
+  inventory.button(("✓ " if delivery_property==destination else "")+destination.capitalize(),func():delivery_property=destination;shop(shop_id),choices)
  for sku in model.CATALOG:
   var item:Dictionary=model.CATALOG[sku]
   if item.shop!=shop_id:continue
-  inventory.label("%s - $%d"%[item.name,model.price_for(sku)],list,19)
-  inventory.label("Grow rooms only. Three plant slots." if sku=="grow_tent" else "Place in any usable room. Delivered to Property Storage.",list)
-  inventory.button("Buy "+str(item.name),func():
-   var id:String=model.own(sku)
+  inventory.label("%s · $%d · %d lb"%[item.name,model.price_for(sku),item.get("weight",8)],list,18)
+  if model.is_tent({"sku":sku}):inventory.label("%d plants · grow rooms only"%item.plants,list,14)
+  inventory.button("Buy / order",func():
+   var id:String=model.own(sku,delivery_property)
    if id.is_empty():hint.text=model.error
-   else:shop(shop_id);hint.text="Purchased - available in Property Storage.",list).disabled=host.cash<model.price_for(sku)
- if shop_id=="grow":
-  inventory.button("Back to Upgrades",func():close();host.neighborhood.location_ops.equipment(),list)
- else:
-  inventory.button("Back to Central Market",func():close();host.neighborhood.location_ops.market(),list)
+   else:shop(shop_id);hint.text="Packed item added to backpack." if delivery_property=="backpack" else "Delivery ready at the "+delivery_property+" curb.",list).disabled=host.cash<model.price_for(sku)
+ inventory.button("Back to market",func():close();host.neighborhood.location_ops.market(),list)
+ inventory.button("Sell packed equipment",sell_menu,list)
+func sell_menu() -> void:
+ open();clear();hint.text="MARKET BUYBACK · 50% OF EQUIPMENT VALUE"
+ for id in model.state.items:
+  if model.state.items[id].get("property","")!="backpack":continue
+  inventory.button("Sell %s · $%d"%[model.item_name(id),model.resale(id)],func():
+   if model.sell(id):sell_menu()
+   else:hint.text=model.error,list)
 func begin(id:String) -> void:
  restore_camera()
  placement_camera=host.camera.global_transform
@@ -101,7 +122,7 @@ func begin(id:String) -> void:
  property="house" if host.neighborhood.location_ops.placement_room("house",host.camera.global_position)!="" else "apartment"
  if not model.controlled(property):hint.text="Enter a property you hold before arranging furniture.";selected="";return
  var e:Dictionary=model.state.items[id]
- if model.live(id):hint.text="Harvest or clear the plants before moving this tent.";selected="";return
+ if not model.empty_reason(id).is_empty():hint.text=model.empty_reason(id);selected="";return
  editing_camera=true
  point=host.camera.global_position-host.camera.global_basis.z*2.0;point.y=0
  point.x=snappedf(point.x,.25);point.z=snappedf(point.z,.25);yaw=0
@@ -211,45 +232,7 @@ func tent_id(node:Node) -> String:
  if n.begins_with("Tent") or n.begins_with("GrowLightFixture") or n.begins_with("GrowLightGlow") or n.begins_with("GrowLightHang"):return "legacy_tent_0"
  return ""
 func sync_world() -> void:
- if known_tent_count!=host.grow_tent_count:
-  model.setup(host);known_tent_count=host.grow_tent_count
- # Capture before moving. Existing detailed meshes and upgrades are reused intact.
- for child in host.get_children():
-  if not child is Node3D:continue
-  var id:=tent_id(child)
-  if not id.is_empty() and not originals.has(child.get_instance_id()):
-   originals[child.get_instance_id()]={"node":child,"transform":child.transform,"id":id}
- for i in range(host.plant_visuals.size()):
-  var plant:Node3D=host.plant_visuals[i]
-  if not originals.has(plant.get_instance_id()):originals[plant.get_instance_id()]={"node":plant,"transform":plant.transform,"id":"legacy_tent_%d"%(i/3)}
- for e in originals.values():
-  var entry:Dictionary={}
-  for candidate in model.state.items.values():
-   if int(candidate.get("legacy_slot",-1))==int(str(e.id).trim_prefix("legacy_tent_")):entry=candidate;break
-  if entry.is_empty():continue
-  var ob:Node3D=e.node
-  var prop:String=entry.get("property","legacy")
-  if prop=="legacy":continue
-  ob.visible=prop!="storage"
-  for collider in ob.find_children("*","CollisionObject3D",true,false):
-   if not collider.has_meta("furniture_collision_layer"):collider.set_meta("furniture_collision_layer",collider.collision_layer)
-   collider.collision_layer=0 if prop=="storage" else int(collider.get_meta("furniture_collision_layer"))
-  if prop=="storage":continue
-  var slot:int=int(entry.legacy_slot)
-  var origin:=Vector3(0 if slot==0 else (-3.2 if slot==1 else 3.2),0,-9.14 if slot==0 else -9.28)
-  var pos:=Vector3(entry.position[0],entry.position[1],entry.position[2])
-  ob.transform=Transform3D(Basis(Vector3.UP,deg_to_rad(float(entry.yaw))),pos)*Transform3D(Basis.IDENTITY,-origin)*e.transform
- var next_stamp:=JSON.stringify(model.state.items)
- if next_stamp==stamp:return
- stamp=next_stamp
- for node in rendered.values():node.queue_free()
- rendered.clear()
- for id in model.state.items:
-  var entry:Dictionary=model.state.items[id]
-  if entry.sku=="grow_tent" or not entry.has("position") or entry.property=="storage":continue
-  var root:=Node3D.new();host.add_child(root);rendered[id]=root
-  root.position=Vector3(entry.position[0],0,entry.position[2]);root.rotation.y=deg_to_rad(float(entry.yaw))
-  build_prop(root,id,str(entry.sku))
+ if equipment_world!=null:equipment_world.sync()
 func piece(root:Node3D,id:String,pos:Vector3,size:Vector3,color:String) -> void:
  var mesh:=MeshInstance3D.new();mesh.mesh=BoxMesh.new();mesh.mesh.size=size
  var mat:=StandardMaterial3D.new();mat.albedo_color=Color(color);mat.roughness=.8;mesh.material_override=mat
@@ -258,11 +241,43 @@ func piece(root:Node3D,id:String,pos:Vector3,size:Vector3,color:String) -> void:
  var shape:=CollisionShape3D.new();shape.shape=BoxShape3D.new();shape.shape.size=size;body.add_child(shape)
 func build_prop(root:Node3D,id:String,sku:String) -> void:
  var s:Vector3=model.size_of(id)
- if sku in ["coffee_table","dining_table"]:
+ if sku.begins_with("bench_"):
+  piece(root,id,Vector3(0,s.y-.08,0),Vector3(s.x,.12,s.z),"92744d")
+  for x in [-1,1]:
+   for z in [-1,1]:piece(root,id,Vector3(x*(s.x/2-.1),s.y/2, z*(s.z/2-.1)),Vector3(.08,s.y,.08),"384344")
+  piece(root,id,Vector3(-.35,s.y,.05),Vector3(.4,.08,.35),"a5afad")
+  piece(root,id,Vector3(.35,s.y,.05),Vector3(.35,.06,.25),"465246")
+ elif sku.begins_with("shelf_") or sku.begins_with("storage_") or sku.begins_with("dealer_"):
+  for x in [-1,1]:piece(root,id,Vector3(x*(s.x/2-.04),s.y/2,0),Vector3(.08,s.y,s.z),"354443")
+  for i in range(4):piece(root,id,Vector3(0,.1+i*(s.y-.15)/3,0),Vector3(s.x,.07,s.z),"82917c")
+  piece(root,id,Vector3(0,s.y/2,-s.z/2+.03),Vector3(s.x,s.y,.06),"263231")
+ elif sku=="fridge":
+  piece(root,id,Vector3(0,s.y/2,0),s,"909e99")
+  piece(root,id,Vector3(0,s.y*.66,s.z*.5+.015),Vector3(s.x,.035,.025),"344440")
+  piece(root,id,Vector3(s.x*.3,s.y*.45,s.z*.5+.06),Vector3(.045,.45,.08),"d2dad3")
+ elif sku=="tv_console":
+  piece(root,id,Vector3(0,.3,0),Vector3(s.x,.6,s.z),"586a52")
+  piece(root,id,Vector3(0,1.25,0),Vector3(s.x*.9,1,.08),"162c28")
+ elif sku=="dining_chair":
+  piece(root,id,Vector3(0,.5,0),Vector3(.65,.12,.65),"74836d")
+  piece(root,id,Vector3(0,.3,0),Vector3(.35,.55,.35),"465340")
+  piece(root,id,Vector3(0,.85,-.27),Vector3(.65,.7,.08),"74836d")
+ elif sku in ["floor_lamp","grow_light"]:
+  piece(root,id,Vector3(0,.05,0),Vector3(.45,.1,.45),"394444")
+  piece(root,id,Vector3(0,s.y/2,0),Vector3(.06,s.y,.06),"64716b")
+  piece(root,id,Vector3(0,s.y-.1,0),Vector3(.5,.15,.45),"e9e7c9")
+ elif sku=="computer":
+  piece(root,id,Vector3(0,.85,0),Vector3(s.x,.1,s.z),"8b7353")
+  for x in [-1,1]:piece(root,id,Vector3(x*.6,.4,0),Vector3(.08,.8,.65),"344440")
+  piece(root,id,Vector3(0,1.2,-.15),Vector3(.85,.5,.06),"285d44")
+ elif sku in ["water_kit","ventilation"]:
+  piece(root,id,Vector3(0,s.y/2,0),s,"526466")
+  piece(root,id,Vector3(0,s.y*.6,s.z/2),Vector3(s.x*.6,s.y*.4,.025),"253532")
+ elif sku in ["coffee_table","dining_table"]:
   piece(root,id,Vector3(0,s.y-.04,0),Vector3(s.x,.08,s.z),"98734d")
   for x in [-1,1]:
    for z in [-1,1]:piece(root,id,Vector3(x*(s.x/2-.08),(s.y-.08)/2,z*(s.z/2-.08)),Vector3(.07,s.y-.08,.07),"313b36")
- elif sku=="bookcase":
+ elif sku in ["bookcase","wardrobe"]:
   for x in [-1,1]:piece(root,id,Vector3(x*(s.x/2-.035),s.y/2,0),Vector3(.07,s.y,s.z),"846345")
   for shelf in range(5):piece(root,id,Vector3(0,.07+shelf*.44,0),Vector3(s.x,.06,s.z),"a38260")
   piece(root,id,Vector3(0,s.y/2,-s.z/2+.015),Vector3(s.x,s.y,.03),"68513c")

@@ -3,6 +3,8 @@ extends Node
 var host:Node3D
 var inventory:Node
 var active:=false
+var station_id:=""
+var station_tier:=1
 var mode:=""
 var strain:=""
 var amount:=0
@@ -40,15 +42,18 @@ func start(item:String) -> void:
  if not host._tutorial_can_do(task):return
  var name:String=item.get_slice("|",1)
  if host.tutorial_active and name!=host.tutorial_harvest_strain:return
- var stock:Dictionary=host.untrimmed_inventory if category=="raw" else host.trimmed_inventory
- var available:int=int(stock.get(name,0))
+ station_id=inventory.container_id if inventory.container_kind(inventory.container_id)=="packing" else inventory.operation()+":packing"
+ var asset:String=inventory.furniture.model.container_item(station_id)
+ if asset.is_empty() or not inventory.reachable(station_id):return
+ station_tier=int(inventory.furniture.model.CATALOG[inventory.furniture.model.state.items[asset].sku].get("tier",1))
+ var available:int=int(inventory.contents(station_id).get(item,0))
  if available<=0:return
- mode=task;strain=name;amount=mini(available,10 if mode=="trim" else host._packing_batch_size());progress=0;tool_held=false;selected=0
+ mode=task;strain=name;amount=mini(available,10 if mode=="trim" else [4,6,12][clampi(station_tier-1,0,2)]);progress=0;tool_held=false;selected=0
  saved_camera=host.camera.global_transform;saved_fov=host.camera.fov;saved_aspect=host.camera.keep_aspect
  inventory.close();active=true;bar.show();Input.mouse_mode=Input.MOUSE_MODE_VISIBLE
  surface=Node3D.new();host.add_child(surface)
  var apartment:bool=inventory.operation()=="apartment"
- surface.position=Vector3(3.56,1.28,1.29) if apartment else Vector3(39.6,1.175,-4.2)
+ surface.position=inventory.all_positions()[station_id]
  surface.rotation.y=-PI/2 if apartment else 0
  # Reuse the bench's actual world-space position rather than rendering a second UI scene.
  prop("Scissors" if mode=="trim" else "Scoop",Vector3(-.34,.025,.18),Vector3(.2,.025,.05),"b5c3c0")
@@ -75,28 +80,28 @@ func use_selected() -> void:
    if progress>=amount:commit_trim();return
  else:
   if selected==0:tool_held=true
-  elif selected==1 and tool_held:progress=mini(amount,progress+host._packing_drop_size());tool_held=false
+  elif selected==1 and tool_held:progress=mini(amount,progress+(1 if station_tier==1 else host.rng.randi_range(1,2 if station_tier==2 else 4)));tool_held=false
   elif selected==2 and progress>=amount:commit_bag();return
  refresh()
 func commit_trim() -> void:
- var available:int=int(host.untrimmed_inventory.get(strain,0))
+ var available:int=int(inventory.contents(station_id).get("raw|"+strain,0))
  var moved:int=mini(amount,available)
  if moved<=0:close();return
- host.untrimmed_inventory[strain]=available-moved
- host._add_inventory(host.trimmed_inventory,strain,moved)
+ inventory.set_amount(station_id,"raw|"+strain,available-moved)
+ inventory.set_amount(station_id,"trimmed|"+strain,int(inventory.contents(station_id).get("trimmed|"+strain,0))+moved)
  host._increment_advancement_stat("grams_trimmed",moved);host._tutorial_record("trim",-1,strain)
  host._save_game();host.status_label.text="Trimmed %dg of %s."%[moved,strain]
  close()
 func commit_bag() -> void:
- var available:int=int(host.trimmed_inventory.get(strain,0))
+ var available:int=int(inventory.contents(station_id).get("trimmed|"+strain,0))
  # A worker may change stock while we work. Never seal a partial stale batch.
  if available<amount:host.status_label.text="Stock changed. Refill the bag from the remaining batch.";close();return
- host.trimmed_inventory[strain]=available-amount
- host._add_inventory(host.bagged_inventory,strain,amount)
+ inventory.set_amount(station_id,"trimmed|"+strain,available-amount)
+ inventory.set_amount(station_id,"product|"+strain,int(inventory.contents(station_id).get("product|"+strain,0))+amount)
  host._increment_advancement_stat("bags_sealed");host._tutorial_record("bag",-1,strain)
  host._save_game();host.status_label.text="Sealed %dg of %s."%[amount,strain]
- if host.bagging_level>=3 and not host.tutorial_active and int(host.trimmed_inventory.get(strain,0))>0:
-  amount=mini(int(host.trimmed_inventory[strain]),host._packing_batch_size());progress=0;tool_held=false;selected=0;refresh()
+ if station_tier>=3 and not host.tutorial_active and int(inventory.contents(station_id).get("trimmed|"+strain,0))>0:
+  amount=mini(int(inventory.contents(station_id).get("trimmed|"+strain,0)),[4,6,12][clampi(station_tier-1,0,2)]);progress=0;tool_held=false;selected=0;refresh()
  else:close()
 func refresh() -> void:
  if not active:return

@@ -1,3 +1,7 @@
+# Equipment items experiment
+
+See [equipment preview instructions](EQUIPMENT_PREVIEW.md) for the paired cloud and desktop test builds. The older baseline notes below describe production/main.
+
 # Inventory test build
 
 This branch is an isolated inventory experiment. See [preview instructions and save behavior](INVENTORY_PREVIEW.md).

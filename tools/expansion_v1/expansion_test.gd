@@ -32,21 +32,23 @@ func run():
  market.equipment()
  check(market.is_open(),"Upgrades category opens")
  market.market_grow_tents()
- check(inv.furniture.is_open() and inv.furniture.hint.text=="UPGRADES / GROW TENTS","Grow tents open under Upgrades")
+ check(inv.furniture.is_open() and inv.furniture.hint.text=="CENTRAL MARKET / GROW","Grow tents open as buyable items")
  market.market_furniture()
  check(inv.furniture.is_open() and "FURNITURE" in inv.furniture.hint.text,"Furniture category opens at Central Market")
  inv.furniture.close()
  var m=inv.furniture.model
  game.cash=10000;game.property_opportunity_state={"acquired":true,"first_entry":true,"relocated":true}
  game.location_state.operation_contents_property="house"
- var chair:String=m.own("armchair");var table:String=m.own("coffee_table")
- check(m.place(chair,"house",Vector3(28,0,-2),0),"Place purchased chair")
- check(m.place(table,"house",Vector3(30,0,-2),0),"Place purchased table")
+ inv.state.backpack_level=4
  inv.furniture.sync_world()
- check(inv.furniture.rendered.size()==2,"Placed furniture has physical world instances")
+ var chair:String=m.own("armchair");var table:String=m.own("coffee_table")
+ check(m.place(chair,"house",Vector3(26.5,0,0),0),"Place purchased chair")
+ check(m.place(table,"house",Vector3(31,0,0),0),"Place purchased table")
+ inv.furniture.sync_world()
+ check(inv.furniture.equipment_world.rendered.has(chair) and inv.furniture.equipment_world.rendered.has(table),"Placed furniture has physical world instances")
  m.lock(chair,false);m.pack(chair);inv.furniture.sync_world()
- check(inv.furniture.rendered.size()==1,"Packing removes world instance")
- m.place(chair,"house",Vector3(28,0,-2),0)
+ check(not inv.furniture.equipment_world.rendered.has(chair) and inv.furniture.equipment_world.rendered.has(table),"Packing removes world instance")
+ m.place(chair,"house",Vector3(26.5,0,0),0)
  var editor=inv.furniture
  var movable:String=m.own("armchair")
  game.camera.global_position=Vector3(29,2.16,1.5);game.camera.look_at(Vector3(29,0,-2))
@@ -68,7 +70,7 @@ func run():
    else:problems[problem]=int(problems.get(problem,0))+1
  print("PLACEMENT_SCAN: ",clear_spots," clear; ",problems)
  check(clear_spots>0,"Actual furnished house has green placement spots")
- editor.point=Vector3(28,0,-2)
+ editor.point=Vector3(26.5,0,0)
  check(not editor.obstacle().is_empty(),"Placement rejects existing furniture")
  editor.point=Vector3(25,0,-2)
  check(not editor.obstacle().is_empty(),"Placement rejects crossing room walls")
@@ -104,7 +106,7 @@ func run():
   editor.point=Vector3(-4.5,0,-7.5)
   check(not editor.obstacle().is_empty(),"Tent still cannot cross apartment wall")
   editor.close()
- check(m.place("legacy_tent_0","house",Vector3(41.8,0,-12),0),"Legacy tent placeable in house")
+ check(m.pack("legacy_tent_0") and m.place("legacy_tent_0","house",Vector3(41.8,0,-12),0),"Legacy tent carried and placed in house")
  inv.furniture.sync_world();m.lock("legacy_tent_0",false);m.pack("legacy_tent_0");inv.furniture.sync_world()
  check(game.plant_visuals[0].get_node("PlantHitArea0").collision_layer==0,"Packed tent disables plant interactions")
  check(m.powered_tent_count("house")==0,"Packed tent does not consume electricity")
@@ -138,6 +140,7 @@ func run():
  check(not story.meet_rod() and game.cash==cash,"Finale reward cannot be claimed twice")
  var packing=inv.packing
  game.untrimmed_inventory={"Street Green":8};game.trimmed_inventory={};game.bagged_inventory={}
+ game.camera.global_position=inv.all_positions()["house:packing"]+Vector3(0,.6,1.4)
  packing.start("raw|Street Green")
  check(packing.active and packing.targets.size()==3,"Packing uses objects in the world")
  packing.selected=1;packing.use_selected()

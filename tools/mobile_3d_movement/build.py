@@ -14,6 +14,8 @@ east=module('east_builder',ROOT/'tools/east_expansion_v1/build.py')
 
 def patch_neighborhood(source:str) -> str:
     # Placement previews and decorative meshes must never become walking proxies.
+    source=source.replace('func _collect_colliders(node: Node) -> void:\n','func _collect_colliders(node: Node) -> void:\n\tif node.get_meta("equipment_legacy",false) or node.has_meta("equipment_id"):return\n',1)
+    source=source.replace('func _collect_map_colliders(node: Node) -> void:\n','func _collect_map_colliders(node: Node) -> void:\n\tif node.get_meta("equipment_legacy",false) or node.has_meta("equipment_id"):return\n',1)
     collider_filter = 'if node is MeshInstance3D and node.is_visible_in_tree() and node.mesh != null:'
     assert collider_filter in source
     source = source.replace(collider_filter, collider_filter[:-1] + ' and not node.get_meta("no_collision",false):', 1)
@@ -753,12 +755,14 @@ def main():
     main_script=inventory_patch.patch_main(main_script)
     expansion_patch=module("expansion_patch",ROOT/"tools/expansion_v1/patch.py")
     main_script=expansion_patch.patch_main(main_script)
+    equipment_patch=module("equipment_patch",ROOT/"tools/equipment_v2/integrate.py")
+    main_script=equipment_patch.patch_story(equipment_patch.patch_growth(equipment_patch.finish_main(equipment_patch.patch_main(main_script))))
     main_script=main_script.replace('user://bud_empire_beta_save.json','user://afb_inventory_preview_save.json')
     save_hook='\tfile.store_string(JSON.stringify(data))\n\tfile.flush()\n\tlast_save_ok=file.get_error()==OK\n\tfile.close()'
     assert save_hook in main_script
     main_script=main_script.replace(save_hook,save_hook+'\n\tif OS.has_feature("web") and last_save_ok:\n\t\tJavaScriptBridge.eval("(()=>{const id=window.AFB_SAVE_SERIAL=(window.AFB_SAVE_SERIAL||0)+1;window.AFB_QUIT_SAVE_STATE=\'pending\';window.AFB_CLOUD.pushFromGame("+JSON.stringify(JSON.stringify(data))+").then(()=>{if(id===window.AFB_SAVE_SERIAL)window.AFB_QUIT_SAVE_STATE=\'saved\';}).catch(()=>{if(id===window.AFB_SAVE_SERIAL)window.AFB_QUIT_SAVE_STATE=\'failed\';});})();",true)',1)
     main_script=main_script.replace('brand_label.text = "AFewBuds"', 'if neighborhood != null and neighborhood.mobile_hud != null:\n\t\t\tneighborhood.mobile_hud.update_location()\n\t\telse: brand_label.text = load("res://scripts/districts.gd").heading(camera.position)')
-    neighborhood=patch_neighborhood(before['scripts/neighborhood.gd'].decode())
+    neighborhood=equipment_patch.patch_neighborhood(patch_neighborhood(before['scripts/neighborhood.gd'].decode()))
     neighborhood=neighborhood.replace('action.visible=not target.is_empty()', 'action.visible=not target.is_empty() and not (host.inventory_system!=null and host.inventory_system.native_station_target(target))')
     neighborhood=neighborhood.replace('func _open_station(id: String) -> void:\n', 'func _open_station(id: String) -> void:\n\tif host.inventory_system!=null and host.inventory_system.native_station_target(id):\n\t\thost.inventory_system.open_container(host.inventory_system.native_container(id))\n\t\treturn\n')
     station=patch_station((ROOT/'tools/police_station_v1/station.gd').read_text())
@@ -771,6 +775,7 @@ def main():
     crew=crew.replace('for i in range(host.phone_text_messages.size()):','for i in range(host.phone_text_messages.size()-1,-1,-1):')
     replacements={
         'scripts/main.gd':main_script.encode(),
+        'scripts/offline_plant_care.gd':equipment_patch.patch_offline(before['scripts/offline_plant_care.gd'].decode()).encode(),
         'scripts/neighborhood.gd':neighborhood.encode(),
         'scripts/police_station.gd':station.encode(),
         'scripts/interior_door.gd':door,
@@ -782,6 +787,7 @@ def main():
     updated=[]
     for n,b,f in entries:
         updated.append([n,replacements.get(n,b),f])
+    updated.append(["scripts/equipment_world.gd",(ROOT/"tools/equipment_v2/equipment_world.gd").read_bytes(),0])
     updated.append(['scripts/mobile_physics_player.gd',(HERE/'mobile_physics_player.gd').read_bytes(),0])
 
     updated.append(['scripts/districts.gd',(HERE/'districts.gd').read_bytes(),0])
@@ -797,7 +803,7 @@ def main():
     built=east.pack.rebuild(baseline,fb,updated)
     after={n:b for n,b,f in east.pack.parse(built)[1]}
     changed=[n for n in before if before[n]!=after[n]]
-    expected_changed={'scripts/mobile_hud.gd','scripts/crew_phone.gd','scripts/interior_door.gd','scripts/location_ops.gd','scripts/main.gd','scripts/neighborhood.gd','scripts/police_station.gd','scripts/property_opportunity.gd'}
+    expected_changed={'scripts/offline_plant_care.gd','scripts/mobile_hud.gd','scripts/crew_phone.gd','scripts/interior_door.gd','scripts/location_ops.gd','scripts/main.gd','scripts/neighborhood.gd','scripts/police_station.gd','scripts/property_opportunity.gd'}
     assert set(changed)==expected_changed,changed
     assert 'scripts/mobile_physics_player.gd' in after
 
@@ -857,15 +863,15 @@ def main():
 
     loader=(ROOT/'shared/afb-runtime-kobi-v1.js').read_text()
     loader=loader.replace('kobi-v1','mobile-3d-v1').replace('AFB_RUNTIME_KOBI_V1','AFB_RUNTIME_MOBILE_3D_V1')
-    loader=re.sub(r'patch\.json\?v=(?:\d+|(?:inventory|expansion)\d+)','patch.json?v=expansion3',loader)
+    loader=re.sub(r'patch\.json\?v=(?:\d+|(?:inventory|expansion)\d+)','patch.json?v=expansion4',loader)
     (ROOT/'shared/afb-runtime-mobile-3d-v1.js').write_text(loader,newline='\n')
 
-    release='0.7.9-beta.19-cloudtest.99-expansion.3'
+    release='0.7.9-beta.19-cloudtest.99-expansion.4'
     index=(ROOT/'index.html').read_text(encoding='utf-8')
-    index=re.sub(r'([?&]v=)(?:inventory|expansion)\d+',r'\g<1>expansion3',index)
-    index=index.replace('shared/afb-api.js\"','shared/afb-api.js?v=expansion3\"')
+    index=re.sub(r'([?&]v=)(?:inventory|expansion)\d+',r'\g<1>expansion4',index)
+    index=index.replace('shared/afb-api.js\"','shared/afb-api.js?v=expansion4\"')
     index=index.replace('kobi-v1','mobile-3d-v1').replace('AFB_RUNTIME_KOBI_V1','AFB_RUNTIME_MOBILE_3D_V1')
-    index=re.sub(r'afb-runtime-mobile-3d-v1\.js\?v=(?:\d+|(?:inventory|expansion)\d+)','afb-runtime-mobile-3d-v1.js?v=expansion3',index)
+    index=re.sub(r'afb-runtime-mobile-3d-v1\.js\?v=(?:\d+|(?:inventory|expansion)\d+)','afb-runtime-mobile-3d-v1.js?v=expansion4',index)
     index=re.sub(r'0\.7\.9-beta\.19-cloudtest\.(?:98-kobi|99-mobile3d|99-inventory|99-expansion)\.\d+',release,index)
     index=re.sub(r'"fileSizes":\{[^}]*\\}',f'"fileSizes":{{"index-mobile-3d-v1.pck":{len(built)},"index.wasm":{(ROOT/"index.wasm").stat().st_size}}}',index,count=1)
     (ROOT/'index.html').write_text(index,encoding='utf-8',newline='\n')

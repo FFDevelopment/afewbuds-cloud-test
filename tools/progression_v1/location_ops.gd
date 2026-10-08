@@ -115,6 +115,12 @@ func near(point: Vector3, range_limit: float=2.4) -> bool:
 	var offset: Vector3=point-host.camera.position
 	return offset.length()<range_limit and (-host.camera.global_basis.z).dot(offset.normalized())>0.3
 func target() -> String:
+	if host.inventory_system!=null and host.inventory_system.furniture!=null:
+		for e in host.inventory_system.furniture.model.state.items.values():
+			if e.sku=="floor_lamp" and e.get("property","") in ["apartment","house"] and e.has("position") and near(Vector3(e.position[0],1.3,e.position[2]),2.0):return "equipment_lamp"
+			if e.sku=="computer" and e.get("property","") in ["apartment","house"] and e.has("position") and near(Vector3(e.position[0],1.3,e.position[2]),3.1):return e.property+"_computer"
+		if near(CHECKOUT,2.7):return "market_checkout"
+		return ""
 	if world._indoors(host.camera.position) and near(APT_PC):
 		return "apartment_computer" if apartment_lease_active() else ""
 	var room: String=world.house_controls._inside_room(host.camera.position)
@@ -122,6 +128,7 @@ func target() -> String:
 	if room=="market_front" and near(CHECKOUT,2.7):return "market_checkout"
 	return ""
 func use(id: String) -> void:
+	if id=="equipment_lamp":host.inventory_system.furniture.equipment_world.toggle_lamp();return
 	match id:
 		"apartment_computer":computer("apartment")
 		"house_computer":computer("house")
@@ -181,6 +188,7 @@ func eligible(name: String) -> bool:
 	if name=="Bagging Bench III" and host.bagging_level<2:return false
 	return true
 func order_equipment(name: String) -> void:
+	if host.inventory_system!=null and host.inventory_system.furniture!=null:equipment();return
 	if target()!="market_checkout" or not eligible(name):return
 	var price: int=int(host.supply_catalog[name].get("cost",10))
 	if host.cash<price:return
@@ -263,28 +271,12 @@ func seeds() -> void:
 		market_card("seed|"+name,name,"$%d | 0.02 lb each\n%s" % [price,"Order for pickup" if host.grower_level>=level else "Unlocks at Level %d" % level],func():order_seed(name);seeds(),host.cash<price or host.grower_level<level or total(host.location_state.pickup_seeds)>=50)
 	ui.button("BACK TO CHECKOUT",market)
 func equipment() -> void:
-	clear("CENTRAL MARKET - UPGRADES");market_navigation()
-	market_card("equipment|Grow Tent upgrade","Grow Tents","Placeable tents for grow rooms. Delivered to Property Storage.",market_grow_tents)
-	if rent_overdue():ui.label("A property balance is overdue. Pay it in Phone → Real Estate or Bills to resume new equipment orders. Seeds, fertilizer and sales remain available.")
-	ui.label("Delivery location: %s. Collect paid orders into your backpack, then install them at the property computer." % active_property().to_upper())
-	if host.dealer_locker_level<4:
-		var level: int=host.dealer_locker_level+1
-		var dealer_name: String="Dealer Storage "+host._roman(level)
-		var price: int=host.DEALER_LOCKER_COST_BY_LEVEL[level]
-		b("%s · $%d" % [dealer_name,price],order_dealer,host.cash<price or host.location_state.deliveries.has(dealer_name) or rent_overdue())
-	for name in host.supply_catalog:
-		if name in ["Fertilizer Pack","Grow Tent Slot 2","Grow Tent Slot 3"]:continue
-		var data: Dictionary=host.supply_catalog[name]
-		var price: int=int(data.get("cost",10))
-		var title: String="%s · $%d · LEVEL %d" % [name,price,int(data.get("unlock",1))]
-		if host.location_state.deliveries.has(name):title+=" · PAID ORDER"
-		elif host._supply_is_purchased(name):title+=" · INSTALLED"
-		market_card("equipment|"+name,title,str(data.get("description","Order for pickup")),order_equipment.bind(name),not eligible(name) or host.cash<price)
-	var backpack_level:int=int(host.inventory_system.state.backpack_level)
-	if backpack_level<host.inventory_system.BACKPACK_LIMITS.size():
-		var backpack_price:int=host.inventory_system.BACKPACK_PRICES[backpack_level-1]
-		market_card("equipment|Backpack","Backpack upgrade","$%d | Carry up to %s" % [backpack_price,host.inventory_system.weight_text(host.inventory_system.BACKPACK_LIMITS[backpack_level])],host.inventory_system.upgrade_backpack.bind(backpack_level),host.cash<backpack_price)
-	ui.button("BACK TO CHECKOUT",market)
+	clear("CENTRAL MARKET - EQUIPMENT");market_navigation()
+	market_card("equipment|Grow Tent","Grow tents · 1 / 2 / 3 / 4 plants","Purchase packed tents and choose where to place them.",market_grow_tents)
+	market_card("equipment|Packing Bench","Stations & equipment","Buy basic or upgraded equipment; retain your old items.",func():host.inventory_system.furniture.shop("equipment"))
+	b("Furniture",market_furniture)
+	b("Sell packed equipment",func():host.inventory_system.furniture.sell_menu())
+
 func computer(property: String) -> void:
 	if property=="apartment" and not apartment_lease_active():
 		host.status_label.text="Apartment lease released. You no longer have access to this property."
@@ -432,8 +424,7 @@ func _apartment_power_rate() -> float:
 	if host.floor_lamp_on:rate+=host.POWER_LAMP_COST_PER_GAME_MINUTE
 	if host.grow_room_light_on:rate+=host.POWER_GROW_ROOM_LIGHT_COST_PER_GAME_MINUTE
 	if host.grow_lights_on:rate+=host.POWER_GROW_LIGHT_COST_PER_TENT_PER_GAME_MINUTE*float(host.inventory_system.furniture.model.powered_tent_count("apartment"))
-	if str(host.location_state.get("operation_assets_property","apartment"))=="apartment":
-		if host.ventilation_installed and host.ventilation_on:rate+=host.POWER_VENTILATION_COST_PER_GAME_MINUTE
+	rate+=host.inventory_system.furniture.model.utility_power("apartment")
 	return rate
 
 func _house_power_rate() -> float:
@@ -442,8 +433,7 @@ func _house_power_rate() -> float:
 	for room_id in ["living","packing","kitchen","bathroom","bedroom","cross_hall","grow"]:
 		if bool(host.house_control_state.get(room_id,true)):rate+=host.POWER_MAIN_LIGHT_COST_PER_GAME_MINUTE
 	if host.grow_lights_on:rate+=host.POWER_GROW_LIGHT_COST_PER_TENT_PER_GAME_MINUTE*float(host.inventory_system.furniture.model.powered_tent_count("house"))
-	if str(host.location_state.get("operation_assets_property","apartment"))=="house":
-		if host.ventilation_installed and host.ventilation_on:rate+=host.POWER_VENTILATION_COST_PER_GAME_MINUTE
+	rate+=host.inventory_system.furniture.model.utility_power("house")
 	return rate
 
 func track_power_usage(elapsed_game_minutes:float) -> void:
@@ -698,6 +688,7 @@ func _apartment_has_live_plants() -> bool:
 	return false
 
 func _apartment_paid_equipment_labels() -> Array[String]:
+	if host.inventory_system!=null and host.inventory_system.furniture!=null:return []
 	var items:Array[String]=[]
 	if host.grow_tent_count>1:items.append("Grow Tent Slots II-III")
 	if host.tent_level>1:items.append("Grow Tent upgrade")
@@ -743,6 +734,7 @@ func apartment_release_blockers() -> Array[String]:
 	return blockers
 
 func pack_apartment_paid_assets() -> void:
+	if host.inventory_system!=null and host.inventory_system.furniture!=null:host.inventory_system.furniture.open();return
 	if not apartment_lease_active() or not _has_alternate_property():return
 	var blockers:=_apartment_contents_blockers()
 	if not blockers.is_empty():
@@ -760,6 +752,7 @@ func pack_apartment_paid_assets() -> void:
 	host.status_label.text="Paid apartment equipment packed into Property Storage. Nothing you purchased was deleted."
 
 func install_property_storage_at(property:String) -> void:
+	if host.inventory_system!=null and host.inventory_system.furniture!=null:host.inventory_system.furniture.open();return
 	if property=="house" and not _property_controlled("house"):return
 	if property=="apartment" and not apartment_lease_active():return
 	var stored_assets:Array=host.location_state.get("property_storage",[])
@@ -932,16 +925,10 @@ func rent_ui(parent: VBoxContainer) -> void:
 
 
 func equipment_ui(parent: VBoxContainer) -> void:
-	var hint := Label.new();hint.text="Order equipment at Central Market, collect it into your backpack, then install it here. Delivery location: %s." % active_property().capitalize()
-	hint.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;parent.add_child(hint)
-	for name in host.location_state.deliveries:
-		if str(host.location_state.deliveries[name].get("kind",""))=="dealer":
-			var action := Button.new();action.text="INSTALL "+str(name);action.custom_minimum_size.y=54;action.disabled=not host.inventory_system.delivery_carried(str(name));action.pressed.connect(install.bind(str(name)));parent.add_child(action)
-	for name in host.supply_catalog:
-		if name=="Fertilizer Pack":continue
-		var row := Label.new();row.text=str(name)+(" · INSTALLED" if host._supply_is_purchased(name) else (" · PAID ORDER" if host.location_state.deliveries.has(name) else " · NOT INSTALLED"));row.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;parent.add_child(row)
-		if host.location_state.deliveries.has(name):
-			var action := Button.new();action.text="INSTALL "+str(name);action.custom_minimum_size.y=54;action.disabled=not host.inventory_system.delivery_carried(str(name));action.pressed.connect(install.bind(str(name)));parent.add_child(action)
+	_property_label(parent,"Owned equipment stays with you when packed. Upgrade an empty item, or buy and place a better replacement.")
+	_property_button(parent,"MANAGE OWNED EQUIPMENT",host.inventory_system.furniture.open)
+	_property_button(parent,"ORDER EQUIPMENT",func():host.inventory_system.furniture.shop("equipment"))
+	_property_button(parent,"ORDER GROW TENTS",market_grow_tents)
 
 func production() -> void:
 	var expected_target:String="house_computer" if computer_context=="house" else "apartment_computer"
@@ -955,6 +942,7 @@ func order_summary(parent: VBoxContainer) -> void:
 	note.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;parent.add_child(note)
 
 func order_dealer() -> void:
+	if host.inventory_system!=null and host.inventory_system.furniture!=null:host.inventory_system.furniture.shop("equipment");return
 	if target()!="market_checkout" or host.dealer_locker_level>=4 or rent_overdue():return
 	var level: int=host.dealer_locker_level+1
 	var name: String="Dealer Storage "+host._roman(level)
@@ -991,6 +979,10 @@ func phone_supplies() -> void:
 	buy.custom_minimum_size.y=76
 	buy.disabled=host.cash<45 or int(host.location_state.pickup_fertilizer)>45
 	buy.pressed.connect(order_fertilizer);host.phone_list.add_child(buy)
+
+	b("Order furniture / curbside delivery",func():host.inventory_system.furniture.shop("furniture"))
+	b("Order equipment / curbside delivery",func():host.inventory_system.furniture.shop("equipment"))
+	b("Order grow tents",market_grow_tents)
 
 func format_management() -> void:
 	for item in ui.body.find_children("*","Control",true,false):

@@ -9,6 +9,7 @@ var touch_start:=Vector2.ZERO
 var touch_last:=Vector2.ZERO
 var touch_dragged:=false
 var furniture:Node
+var equipment_positions:Dictionary={}
 var packing:Node
 var guide:Node
 var host:Node3D
@@ -108,11 +109,16 @@ func ensure_state() -> void:
 
 func operation() -> String:return str(host.location_state.get("operation_contents_property","apartment"))
 func title(id:String) -> String:
+ if id.ends_with(":delivery"):return id.get_slice(":",0).capitalize()+" · Curbside Delivery"
+ if furniture!=null and furniture.model!=null:
+  var asset:String=furniture.model.container_item(id)
+  if not asset.is_empty():return id.get_slice(":",0).capitalize()+" · "+furniture.model.item_name(asset)
  if id=="market:orders":return "Central Market · Order Pickup"
  if id=="backpack":return "BACKPACK"
- return id.get_slice(":",0).capitalize()+" · "+str({"supply":"Grow Shelf","storage":"Storage / Stash","dealer":"Dealer Storage","packing":"Packing Bench"}.get(id.get_slice(":",1),"Storage"))
+ return id.get_slice(":",0).capitalize()+" · "+str({"supply":"Grow Shelf","storage":"Storage / Stash","dealer":"Dealer Storage","packing":"Packing Bench"}.get(container_kind(id),"Storage"))
 func category(item:String) -> String:return item.get_slice("|",0)
 func item_name(item:String) -> String:
+ if category(item)=="furniture" and furniture.model.state.items.has(item.get_slice("|",1)):return furniture.model.item_name(item.get_slice("|",1))+" · Packed"
  if item=="cash":return "Cash"
  if item=="fertilizer":return "Fertilizer"
  return item.get_slice("|",1)+str({"seed":" · Seeds","raw":" · Untrimmed","trimmed":" · Trimmed","product":" · Packaged","equipment":" · Packed equipment","delivery":" · Paid equipment"}.get(category(item),""))
@@ -131,13 +137,17 @@ func delivery_carried(name:String) -> bool:
 func contents(id:String) -> Dictionary:
  ensure_state()
  var result:Dictionary={}
+ if furniture!=null and furniture.model!=null:
+  for asset in furniture.model.state.items:
+   if furniture.model.state.items[asset].get("property","")==id:result["furniture|"+asset]=1
+ if id.ends_with(":delivery"):return result
  if id=="market:orders":
   _append_map(result,host.location_state.get("pickup_seeds",{}),"seed")
   if int(host.location_state.get("pickup_fertilizer",0))>0:result.fertilizer=int(host.location_state.pickup_fertilizer)
   _add_deliveries(result,id)
   return result
  if id=="backpack":
-  result=state.backpack.duplicate(true)
+  result.merge(state.backpack.duplicate(true))
   _add_deliveries(result,id)
   _append_map(result,host.location_state.get("carried_seeds",{}),"seed")
   if int(host.location_state.get("carried_fertilizer",0))>0:result.fertilizer=int(host.location_state.carried_fertilizer)
@@ -147,10 +157,10 @@ func contents(id:String) -> Dictionary:
    result[key]=int(result.get(key,0))+1
   return result
  if not state.containers.has(id):return result
- result=state.containers[id].duplicate(true)
+ result.merge(state.containers[id].duplicate(true))
  _add_deliveries(result,id)
- if id.get_slice(":",0)!=operation():return result
- match id.get_slice(":",1):
+ if not primary_container(id):return result
+ match container_kind(id):
   "supply":
    _append_map(result,host.seed_inventory,"seed")
    if host.fertilizer_units>0:result.fertilizer=host.fertilizer_units
@@ -164,6 +174,10 @@ func contents(id:String) -> Dictionary:
    _append_map(result,host.bagged_inventory,"product")
  return result
 func set_amount(id:String,item:String,n:int) -> void:
+ if category(item)=="furniture":
+  var asset:String=item.get_slice("|",1)
+  if furniture.model.state.items.has(asset):furniture.model.state.items[asset].property=id if n>0 else "transfer"
+  return
  var kind:=category(item)
  var name:=item.get_slice("|",1)
  n=maxi(0,n)
@@ -188,8 +202,8 @@ func set_amount(id:String,item:String,n:int) -> void:
   if n==0:state.backpack.erase(item)
   else:state.backpack[item]=n
   return
- if id.get_slice(":",0)==operation():
-  match id.get_slice(":",1):
+ if primary_container(id):
+  match container_kind(id):
    "supply":
     if kind=="seed":host.seed_inventory[name]=n;return
     if item=="fertilizer":host.fertilizer_units=n;return
@@ -206,27 +220,36 @@ func set_amount(id:String,item:String,n:int) -> void:
 func group(item:String) -> String:
  if category(item) in ["product","raw","trimmed"]:return "grams"
  if category(item)=="seed":return "seeds"
- if category(item) in ["equipment","delivery"]:return "equipment"
+ if category(item) in ["equipment","delivery","furniture"]:return "equipment"
  return item
 func accepts(id:String,item:String) -> bool:
  if id=="backpack":return true
- if id=="market:orders":return false
- var kind:=id.get_slice(":",1)
+ if id=="market:orders" or id.ends_with(":delivery"):return false
+ var kind:=container_kind(id)
  if kind=="supply":return group(item) in ["seeds","fertilizer"]
  if kind=="dealer":return category(item)=="product"
  if kind=="packing":return group(item)=="grams"
  return kind=="storage" and (category(item)=="product" or item=="cash" or group(item)=="equipment")
 func capacity(id:String,item:String) -> int:
+ if furniture!=null and id!="backpack":
+  var asset:String=furniture.model.container_item(id)
+  if not asset.is_empty():
+   var spec:Dictionary=furniture.model.CATALOG[furniture.model.state.items[asset].sku]
+   var kind:String=spec.get("kind","");var tier:int=int(spec.get("tier",1))
+   if kind=="supply":return [12,24,48][clampi(tier-1,0,2)] if group(item)=="seeds" else [20,40,80][clampi(tier-1,0,2)]
+   if kind=="packing":return 2000
+   return 12 if group(item)=="equipment" else int(spec.get("capacity",40))
  if item=="cash":return 2000000000
  var key:=group(item)
  if id=="backpack":return int(backpack_limit()/maxi(1,unit_weight(item)))
- match id.get_slice(":",1):
+ match container_kind(id):
   "supply":return host._supply_seed_capacity() if key=="seeds" else host._supply_fertilizer_capacity()
   "dealer":return host._dealer_locker_capacity()
   "storage":return 12 if key=="equipment" else host._storage_capacity()
   "packing":return 2000
  return 0
 func unit_weight(item:String) -> int:
+ if category(item)=="furniture" and furniture.model.state.items.has(item.get_slice("|",1)):return int(furniture.model.CATALOG[furniture.model.state.items[item.get_slice("|",1)].sku].get("weight",8))*POUND
  if item=="cash":return 0
  if category(item)=="seed":return 45359237 # Exactly 0.02 lb
  if item=="fertilizer":return POUND # Five individual fertilizer items per 5 lb pack
@@ -275,30 +298,27 @@ func available(id:String,item:String) -> int:
  var value:int=int(contents(id).get(item,0))
  if id==operation()+":storage" and category(item)=="product":
   value=mini(value,host._available_amount(item.get_slice("|",1)))
+ elif id.ends_with(":storage") and category(item)=="product":
+  value-=int(state.get("product_metadata",{}).get(id.get_slice(":",0),{}).get(item.get_slice("|",1),{}).get("reserved",0))
  return maxi(0,value)
 func controlled(id:String) -> bool:
  if id in ["backpack","market:orders"]:return true
  return host.neighborhood.location_ops._property_controlled(id.get_slice(":",0))
 func reachable(id:String) -> bool:
- if not POSITIONS.has(id) or not controlled(id):return false
+ if not controlled(id):return false
+ var positions:Dictionary=all_positions()
+ if not positions.has(id):return false
  var position:Vector3=host.camera.global_position
  if host.neighborhood.get("in_station")==true:position=host.neighborhood.walk_position
- return position.distance_to(POSITIONS[id])<=3.1
+ return position.distance_to(positions[id])<=3.1
 func near_container() -> String:
- if not host.has_method("_use_target"):
-  var native:String=host.neighborhood._near_target()
-  if native_station_target(native):
-   var id:String=native_container(native)
-   return id if reachable(id) and (not id.ends_with(":dealer") or host.dealer_locker_level>0) else ""
-  if not native.is_empty():return ""
- var best:=""
- var distance:=3.1
- for id in POSITIONS:
+ var best:="";var distance:=3.1
+ var positions:Dictionary=all_positions()
+ for id in positions:
   if not controlled(id):continue
-  if id.ends_with(":dealer") and host.dealer_locker_level==0:continue
-  var delta:Vector3=POSITIONS[id]-host.camera.global_position
-  if delta.length()<distance and (-host.camera.global_basis.z).dot(delta.normalized())>.65:
-   if host.neighborhood.has_method("_door_line_clear") and not host.neighborhood._door_line_clear(POSITIONS[id]):continue
+  var delta:Vector3=positions[id]-host.camera.global_position
+  if delta.length()<distance and (-host.camera.global_basis.z).dot(delta.normalized())>.55:
+   if host.neighborhood.has_method("_door_line_clear") and not host.neighborhood._door_line_clear(positions[id]):continue
    best=id;distance=delta.length()
  return best
 func transfer(source:String,destination:String,item:String,amount:int,expected_revision:int=-1) -> Dictionary:
@@ -334,29 +354,43 @@ func transfer(source:String,destination:String,item:String,amount:int,expected_r
  busy=false
  return {"ok":true,"reason":"%s %s." % ["Stored" if source=="backpack" else "Took",units(item,amount)]}
 func property_has_items(property:String) -> bool:
- for kind in KINDS:
-  for n in contents(property+":"+kind).values():
+ var ids:Array=[]
+ for kind in KINDS:ids.append(property+":"+kind)
+ for id in state.containers:
+  if id.begins_with(property+":") and id not in ids:ids.append(id)
+ ids.append(property+":delivery")
+ for id in ids:
+  for n in contents(id).values():
    if int(n)>0:return true
  return false
-func relocate(old_property:String,new_property:String) -> void:
- # Fold destination stock into the operation before its owner changes.
- # This also preserves supplies previously left in a retained house container.
+func relocate(old_property:String,new_property:String) -> bool:
+ # Changing the active operation never teleports stock or furniture.
+ # Snapshot the old adapters, then activate the destination's own containers.
  ensure_state()
- for receipt in host.location_state.get("deliveries",{}).values():
-  var held_at:String=str(receipt.get("inventory_container",""))
-  if held_at.begins_with(old_property+":"):receipt.inventory_container=held_at.replace(old_property+":",new_property+":")
+ if old_property==new_property:return true
+ for product in host.products.values():
+  if int(product.get("reserved",0))>0:
+   host.status_label.text="Finish or cancel reserved product orders before changing the active operation."
+   return false
+ if not state.has("product_metadata"):state["product_metadata"]={}
+ state.product_metadata[old_property]=host.products.duplicate(true)
+ var destination:Dictionary={}
  for kind in KINDS:
-  var old_id:String=old_property+":"+kind
-  var new_id:String=new_property+":"+kind
-  var merged:Dictionary=state.containers[new_id].duplicate(true)
-  for item in state.containers[old_id]:merged[item]=int(merged.get(item,0))+int(state.containers[old_id][item])
-  state.containers[old_id]={}
-  state.containers[new_id]={}
-  for item in merged:
-   var native:bool=(kind=="supply" and group(item) in ["seeds","fertilizer"]) or (kind in ["storage","dealer"] and category(item)=="product") or (kind=="packing" and group(item)=="grams")
-   if native:set_amount(old_id,item,int(contents(old_id).get(item,0))+int(merged[item]))
-   else:state.containers[new_id][item]=merged[item]
+  destination[kind]=contents(new_property+":"+kind).duplicate(true)
+  state.containers[old_property+":"+kind]=contents(old_property+":"+kind).duplicate(true)
+  state.containers[new_property+":"+kind]={}
+ host.seed_inventory={};host.fertilizer_units=0;host.locker_weed={}
+ host.untrimmed_inventory={};host.trimmed_inventory={};host.bagged_inventory={}
+ var known:Dictionary=host.products.duplicate(true)
+ host.products=state.product_metadata.get(new_property,known).duplicate(true)
+ for data in host.products.values():
+  data.stock=0
+  if not state.product_metadata.has(new_property):data.reserved=0
+ host.location_state.operation_contents_property=new_property
+ for kind in KINDS:
+  for item in destination[kind]:set_amount(new_property+":"+kind,item,int(destination[kind][item]))
  revision+=1
+ return true
 func is_open() -> bool:return overlay!=null and overlay.visible
 func open_backpack() -> void:
  if host._any_modal_open() and not is_open():return
@@ -407,8 +441,8 @@ func sync_station_prompt(nearby:String) -> void:
   var world:Node=host.neighborhood
   if world.get("action")!=null:
    var target:String=world._near_target()
-   if native_station_target(target) or (not nearby.is_empty() and target.is_empty()):world.action.hide()
-   elif not target.is_empty():nearby_button.hide()
+   if not nearby.is_empty() or native_station_target(target):world.action.hide()
+   elif not target.is_empty() and nearby.is_empty():nearby_button.hide()
  if nearby_button.visible:host.contextual_button.hide()
 func _process(_delta:float) -> void:
  if host==null:return
@@ -451,7 +485,7 @@ func label(text:String,parent:Node,size:int=17) -> Label:
  var l:=Label.new();l.text=text;l.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
  l.add_theme_font_size_override("font_size",size);l.add_theme_color_override("font_color",Color("f4f0df"));parent.add_child(l);return l
 func art(item:String) -> Texture2D:
- var key:String={"seed":"seeds","fertilizer":"fertilizer","equipment":"equipment","delivery":"equipment","cash":"cash","product":"product","raw":"jar","trimmed":"jar"}.get(category(item),"equipment")
+ var key:String={"seed":"seeds","fertilizer":"fertilizer","equipment":"equipment","delivery":"equipment","furniture":"equipment","cash":"cash","product":"product","raw":"jar","trimmed":"jar"}.get(category(item),"equipment")
  if art_cache.has(key):return art_cache[key]
  var path:String="res://assets/inventory/"+key+".png"
  if ResourceLoader.exists(path,"Texture2D"):
@@ -469,6 +503,7 @@ func art_rect(item:String,parent:Node,size:Vector2) -> TextureRect:
  picture.size_flags_horizontal=Control.SIZE_EXPAND_FILL;picture.size_flags_vertical=Control.SIZE_EXPAND_FILL
  picture.mouse_filter=Control.MOUSE_FILTER_IGNORE;parent.add_child(picture);return picture
 func short_name(item:String) -> String:
+ if category(item)=="furniture":return item_name(item)
  var name:String=item.get_slice("|",1) if item.contains("|") else item_name(item)
  if category(item)=="seed":name+=" Seeds"
  if category(item)=="product":name+=" Pack"
@@ -679,7 +714,7 @@ func reveal_selection(scroll:ScrollContainer,card:Control) -> void:
  await get_tree().process_frame
  if is_instance_valid(scroll) and is_instance_valid(card):scroll.ensure_control_visible(card)
 func packing_allowed() -> bool:
- return container_id==operation()+":packing" and selected_source==container_id and category(selected) in ["raw","trimmed"] and available(container_id,selected)>0
+ return container_kind(container_id)=="packing" and reachable(container_id) and not furniture.model.container_item(container_id).is_empty()
 func process_selected() -> void:
  if not packing_allowed() or not reachable(container_id):return
  packing_return=container_id
@@ -699,13 +734,21 @@ func render_inspector() -> void:
  var owned:int=int(contents(selected_source).get(selected,0))
  label("Owned: "+units(selected,owned),text_box,15)
  label("Weightless" if selected=="cash" else ("1 g" if group(selected)=="grams" else weight_text(unit_weight(selected)))+" each",text_box,14).modulate=Color("b6c1ae")
- if container_id.ends_with(":packing") and selected_source==container_id and category(selected) in ["raw","trimmed"]:
+ if container_kind(container_id)=="packing" and selected_source==container_id and category(selected) in ["raw","trimmed"]:
   packing_action=button("Trim by hand" if category(selected)=="raw" else "Bag by hand",process_selected,text_box,true)
   packing_action.disabled=not packing_allowed()
   if not packing_allowed():label("Processing is available at your active operation's bench.",text_box,13)
+ if category(selected)=="furniture" and selected_source=="backpack":
+  var asset:String=selected.get_slice("|",1)
+  button("Place item",func():close();furniture.begin(asset),text_box,true)
+  if reachable("market:orders"):
+   button("Sell to market · $%d"%furniture.model.resale(asset),func():
+    if furniture.model.sell(asset):selected="";render()
+    else:notice.text=furniture.model.error,text_box)
  if container_id.is_empty():
   var hint:String="Open a nearby container to store this item."
-  if category(selected)=="delivery":hint="Install at your active property computer."
+  if category(selected)=="furniture":hint="Place your item in a property you hold."
+  elif category(selected)=="delivery":hint="Install at your active property computer."
   elif category(selected)=="equipment":hint="Owned equipment · manage it in Real Estate."
   elif selected=="cash":hint="Cash never uses backpack capacity."
   label(hint,text_box,13).modulate=Color("b6c1ae")
@@ -776,3 +819,32 @@ func collect_all_clicked() -> void:
  selected="";selected_source="";render()
  notice.text=str(result.reason)
  host.status_label.text=str(result.reason)
+
+func container_kind(id:String) -> String:return id.get_slice(":",1).get_slice("@",0)
+func primary_container(id:String) -> bool:return id==operation()+":"+container_kind(id)
+func all_positions() -> Dictionary:
+ var result:Dictionary={"market:orders":POSITIONS["market:orders"]}
+ if furniture==null or furniture.model==null:return POSITIONS.duplicate()
+ for property in furniture.model.CURBS:
+  if not contents(property+":delivery").is_empty():result[property+":delivery"]=furniture.model.CURBS[property]+Vector3.UP
+ for asset in furniture.model.state.items:
+  var e:Dictionary=furniture.model.state.items[asset]
+  if e.get("property","") not in furniture.model.ROOMS or not e.has("position"):continue
+  var id:String=furniture.model.container_of(asset)
+  if id.is_empty():continue
+  result[id]=Vector3(e.position[0],1.2,e.position[2])
+ return result
+func equipment_harvest(slot:int,strain:String,amount:int) -> bool:
+ var property:String=furniture.model.slot_property(slot)
+ var target:String=property+":packing"
+ if furniture.model.primary(property,"packing").is_empty():target="backpack"
+ var item:String="raw|"+strain
+ if amount>free_space(target,item):return false
+ set_amount(target,item,int(contents(target).get(item,0))+amount)
+ revision+=1
+ return true
+func worker_equipment_ready() -> bool:
+ if furniture==null:return true
+ for kind in ["packing","supply","storage"]:
+  if furniture.model.primary(operation(),kind).is_empty():return false
+ return true

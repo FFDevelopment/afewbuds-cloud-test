@@ -58,6 +58,7 @@ func run():
  var price:int=game._effective_price(strain)
  for level in [1,2,3]:
   game.bagging_level=level
+  inv.furniture.model.state.items.legacy_packing.sku="bench_"+str(level)
   check(game._effective_price(strain)==price,"Bench level %d does not change product price" % level)
   game.trimmed_inventory={strain:13};game.bagged_inventory={};game._start_bag_minigame(strain)
   for frame in 3:await process_frame

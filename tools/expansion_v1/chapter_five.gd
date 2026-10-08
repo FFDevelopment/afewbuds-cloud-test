@@ -32,7 +32,7 @@ func tick() -> void:
 func placed(tents:bool) -> int:
  var total:=0
  for e in furniture.state.items.values():
-  if e.get("property","")=="house" and bool(e.get("locked",false)) and (e.sku=="grow_tent")==tents:total+=1
+  if e.get("player_placed",false) and e.get("property","")=="house" and bool(e.get("locked",false)) and furniture.is_tent(e)==tents:total+=1
  return total
 func ready() -> bool:
  if not state.has("baseline") or complete():return false
