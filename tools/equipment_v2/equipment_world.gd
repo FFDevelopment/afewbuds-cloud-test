@@ -41,8 +41,22 @@ func capture() -> void:
 func hide_original(node:Node3D) -> void:
  node.hide();node.set_meta("no_collision",true)
  for body in node.find_children("*","CollisionObject3D",true,false):body.collision_layer=0
+# Static label nodes belong to the hidden original apartment fixtures, not
+# the player-owned items. Keep the room's climate/readout signage intact.
+func hide_orphan_station_tags() -> void:
+ for child in host.get_children():
+  if not child is Label3D:continue
+  var label_node:Label3D=child as Label3D
+  var name:String=str(label_node.name)
+  var words:String=label_node.text.to_upper()
+  if name in ["PackingScaleText","BenchIIIWorldLabel","StorageWorldLabel","DealerBasicLogo","DealerBasicTag"] or words.begins_with("GROW TENT "):
+   label_node.hide()
+  elif words=="PACKING BENCH" or words=="BAGGING BENCH III" or words.begins_with("STORAGE   |") or words=="DEALER\\nSTORAGE" or words=="DEALER\\nSTOCK\\nLOCKER":
+   label_node.hide()
+
 func sync() -> void:
  capture()
+ hide_orphan_station_tags()
  for original in originals.values():hide_original(original.node)
  for name in ["FP_Bench","FP_Storage","FP_Locker","FP_Supply","FP_ApartmentComputer","FP_HouseComputer","FP_Couch"]:
   var target:Node=host.get_node_or_null(name)
