@@ -83,6 +83,27 @@ func run():
  check(not story.ready(),"Old career harvest totals do not complete new chapter")
  for i in range(game.plant_slots.size()):game.plant_slots[i]=game._empty_plant_slot()
  m.lock("legacy_tent_0",false)
+ if not desktop:
+  # Exercise the live apartment collider refresh with the preview visible.
+  # A static house-only scan misses a ghost becoming its own walking obstacle.
+  game.camera.global_position=Vector3(0,2.16,-5)
+  editor.open();editor.begin("legacy_tent_0")
+  editor.point=Vector3(0,0,-7.5);editor.preview()
+  check(editor.obstacle().is_empty(),"Clear apartment tent position starts green")
+  for refresh in range(3):
+   game.neighborhood.interior_obstacles.clear()
+   game.neighborhood._collect_colliders(game)
+   game.neighborhood._rebuild_physics_obstacles(true)
+   await physics_frame
+   editor.preview()
+   check(editor.obstacle().is_empty() and not editor.place_button.disabled,"Tent preview stays green after live collision refresh %d"%refresh)
+  editor.confirm()
+  check(not editor.is_placing() and m.state.items.legacy_tent_0.property=="apartment","Green apartment tent can actually be placed")
+  m.lock("legacy_tent_0",false)
+  editor.open();editor.begin("legacy_tent_0")
+  editor.point=Vector3(-4.5,0,-7.5)
+  check(not editor.obstacle().is_empty(),"Tent still cannot cross apartment wall")
+  editor.close()
  check(m.place("legacy_tent_0","house",Vector3(41.8,0,-12),0),"Legacy tent placeable in house")
  inv.furniture.sync_world();m.lock("legacy_tent_0",false);m.pack("legacy_tent_0");inv.furniture.sync_world()
  check(game.plant_visuals[0].get_node("PlantHitArea0").collision_layer==0,"Packed tent disables plant interactions")
