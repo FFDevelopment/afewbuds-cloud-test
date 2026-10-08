@@ -781,6 +781,12 @@ def main():
     crew=crew.replace('host.phone_scroll.scroll_vertical=int(host.phone_scroll.get_v_scroll_bar().max_value)','host.phone_scroll.scroll_vertical=0')
     crew=crew.replace('for i in range(host.phone_text_messages.size()):','for i in range(host.phone_text_messages.size()-1,-1,-1):')
     crew=property_patch.patch_crew(crew)
+    # The apartment dealer/production crew must follow the currently placed couch.
+    from pathlib import Path as _Path
+    seating_edits = json.loads((_Path(__file__).resolve().parent / "crew_seating_replacements.json").read_text())
+    for edit in seating_edits:
+        assert edit["old"] in crew, "Couch seating baseline drift"
+        crew = crew.replace(edit["old"], edit["new"], 1)
     interiors=before['scripts/interiors.gd'].decode()
     shelf_body='func shelf(at: Vector3, width: float, depth: float, stocked: bool = true) -> void:\n\tvar body := StaticBody3D.new()'
     assert shelf_body in interiors
