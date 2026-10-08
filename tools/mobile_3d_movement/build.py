@@ -816,7 +816,7 @@ def main():
 \t\tvar completed: Animation=sit.duplicate(true)
 \t\tvar added:int=0
 \t\tfor track in range(idle.get_track_count()):
-\t\t\tvar track_type:Animation.TrackType=idle.track_get_type(track)
+\t\t\tvar track_type:int=idle.track_get_type(track)
 \t\t\tif track_type not in [Animation.TYPE_ROTATION_3D,Animation.TYPE_POSITION_3D,Animation.TYPE_SCALE_3D]:continue
 \t\t\tif idle.track_get_key_count(track)==0:continue
 \t\t\tvar track_path:NodePath=idle.track_get_path(track)
