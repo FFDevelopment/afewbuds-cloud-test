@@ -322,3 +322,12 @@ def patch_story(s):
     for key in ['grow_tent_count','bagging_level','dealer_locker_level']:
         chunk=chunk.replace(key+' >=','maxi('+key+',int(location_state.get("furniture_v1",{}).get("progress",{}).get("'+key+'",0))) >=')
     return s[:a]+chunk+s[z:]
+
+def restore_cabinet_hooks(s):
+ for fn in ['_sync_storage_furniture','_sync_dealer_locker_visual']:
+  sig='func '+fn+'() -> void:\n'
+  s=s.replace(sig,sig+'\tif inventory_system!=null and inventory_system.furniture!=null and inventory_system.furniture.equipment_world!=null:\n\t\tinventory_system.furniture.sync_world();return\n',1)
+ for fn,kind in [('_set_hidden_stash_open','storage'),('_set_premium_dealer_locker_open','dealer')]:
+  sig='func '+fn+'(opened: bool) -> void:\n'
+  s=s.replace(sig,sig+'\tif inventory_system!=null and inventory_system.furniture!=null and inventory_system.furniture.equipment_world!=null:\n\t\tvar target:String=inventory_system.container_id\n\t\tif target.is_empty():target=inventory_system.operation()+":'+kind+'"\n\t\tinventory_system.furniture.equipment_world.animate_container(target,opened);return\n',1)
+ return s

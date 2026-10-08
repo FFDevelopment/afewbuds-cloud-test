@@ -1,6 +1,8 @@
 # Equipment items preview
 
-Paired experiment for cloud test and desktop 3D prototype. Existing starter tents, plants, equipment tiers and furniture become owned items; no repurchase is required.
+Paired experiment for cloud test Expansion 5 and desktop 0.16.0-equipment.2.
+
+This update restores the original framed hidden wall stash and premium dealer locker, including their opening/closing animations after packing and replacement. It removes the extra floor shelf and adds the Backpack > Furniture & Equipment category. Existing starter tents, plants, equipment tiers and furniture become owned items; no repurchase is required.
 
 - Open Central Market > Upgrades for grow tents and equipment, or Furniture for household items. Tents hold 1, 2, 3 or 4 plants. Extra tents must be bought and placed; slot upgrades no longer spawn tents.
 - Choose Backpack or an owned property's curb as the delivery destination. Boxes are ready immediately in this prototype. Stand beside a delivery to transfer its items into the backpack.
@@ -12,6 +14,6 @@ Paired experiment for cloud test and desktop 3D prototype. Existing starter tent
 - Test progress uses the existing isolated preview saves. Production/main and live career uploads are unchanged.
 
 Cloud: https://ffdevelopment.github.io/afewbuds-cloud-test/expansion-preview/
-Desktop Windows: https://github.com/FFDevelopment/afewbuds-3d-prototype/releases/tag/v0.16.0-equipment.1
+Desktop Windows: https://github.com/FFDevelopment/afewbuds-3d-prototype/releases/tag/v0.16.0-equipment.2
 
 Large deliveries currently appear as boxes immediately; a delivery vehicle/timed courier sequence is not implemented. New catalog items use functional prototype models.

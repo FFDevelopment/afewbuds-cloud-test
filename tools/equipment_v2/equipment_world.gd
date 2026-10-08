@@ -6,6 +6,7 @@ var originals:Dictionary={}
 var rendered:Dictionary={}
 var stamp:=""
 var seated_id:=""
+var cabinet_tweens:Dictionary={}
 func setup(owner:Node) -> void:
  editor=owner;host=editor.host;model=editor.model
  capture()
@@ -18,7 +19,9 @@ func group_for(node:Node) -> String:
  if n.begins_with("FloorLamp"):return "floor_lamp"
  if n.begins_with("Bench") or n.begins_with("Packing") or n.begins_with("Scale") or n.begins_with("TrayRim") or n.begins_with("TrimTray") or n.begins_with("Baggie") or n.begins_with("HeatSealer"):return "packing"
  if node==host.supply_shelf_ref:return "supply"
- if n.begins_with("Locker") or n.begins_with("PremiumDealer"):return "dealer"
+ if n=="PremiumDealerStorage":return "premium_locker"
+ if n.begins_with("Locker") or n in ["DealerBasicLogo","DealerBasicTag"]:return "dealer"
+ if n=="HiddenWallStash":return "wall_stash"
  if n.begins_with("Storage") or n.begins_with("Shelf") or n.begins_with("HiddenStash"):return "storage"
  return ""
 func capture() -> void:
@@ -45,6 +48,7 @@ func sync() -> void:
   var target:Node=host.get_node_or_null(name)
   if target is CollisionObject3D:target.collision_layer=0
  if host.floor_lamp_light_ref!=null:host.floor_lamp_light_ref.hide()
+ repair_cabinet_records()
  measure_templates()
  model.ensure_slots()
  while host.plant_visuals.size()<host.plant_slots.size():
@@ -66,7 +70,7 @@ func sync() -> void:
    var root:=Node3D.new();root.name="Owned_"+id;root.set_meta("equipment_id",id);host.add_child(root);rendered[id]=root
    root.position=Vector3(e.position[0],0,e.position[2]);root.rotation.y=deg_to_rad(float(e.get("yaw",0)))
    if model.is_tent(e):tent(root,id)
-   elif not clone_legacy(root,id,e):editor.build_prop(root,id,e.sku)
+   elif not clone_cabinet(root,id,e) and not clone_legacy(root,id,e):editor.build_prop(root,id,e.sku)
    if not model.station_kind(id).is_empty():
     label(root,model.item_name(id),Vector3(0,model.size_of(id).y+.2,0))
     interaction(root,id,model.container_of(id),model.size_of(id))
@@ -190,7 +194,7 @@ func capture_house() -> void:
 func measure_templates() -> void:
  for id in model.state.items:
   var e:Dictionary=model.state.items[id]
-  if not e.has("legacy_group") or e.get("template_measured",false):continue
+  if e.sku in ["storage_5","dealer_3","dealer_4"] or not e.has("legacy_group") or e.get("template_measured",false):continue
   var combined:=AABB();var found:=false
   for record in originals.values():
    if record.group!=e.legacy_group or not record.visible:continue
@@ -234,3 +238,54 @@ func seat_eye() -> Vector3:
  return host.neighborhood.bench_seating.eyes(at,yaw,load("res://scripts/scale_policy.gd").SEAT_HEIGHT)
 func toggle_lamp() -> void:
  host.floor_lamp_on=not host.floor_lamp_on;host._update_day_night_visuals();host._save_game();sync()
+
+# Reuse the approved meshes, artwork and real hinges instead of the generic shelf.
+func clone_cabinet(root:Node3D,id:String,e:Dictionary) -> bool:
+ var source:Node3D
+ var turn:=0.0
+ if e.sku=="storage_5":
+  source=host.hidden_stash_interior_root
+  turn=-PI/2
+ elif e.sku in ["dealer_3","dealer_4"]:
+  source=host.premium_dealer_locker_root
+  turn=PI/2
+ else:return false
+ if source==null:return false
+ var copy:Node3D=source.duplicate()
+ for body in copy.find_children("*","CollisionObject3D",true,false):body.free()
+ copy.name="OriginalCabinet";copy.set_meta("equipment_legacy",false);copy.set_meta("equipment_id",id);copy.set_meta("furniture_id",id)
+ root.add_child(copy)
+ copy.transform=Transform3D(Basis(Vector3.UP,turn),Vector3.ZERO)*Transform3D(source.basis,Vector3.ZERO)
+ copy.show()
+ for pivot_name in ["HiddenStashFramePivot","PremiumLeftDoorPivot","PremiumRightDoorPivot"]:
+  var pivot:Node3D=copy.find_child(pivot_name,true,false)
+  if pivot!=null:pivot.rotation.y=0
+ colliders(copy,id)
+ return true
+
+func repair_cabinet_records() -> void:
+ for id in model.state.items:
+  var e:Dictionary=model.state.items[id]
+  if e.sku not in ["storage_5","dealer_3","dealer_4"]:continue
+  if e.get("cabinet_model_version",0)==1:continue
+  e.erase("size_override");e.erase("visual_anchor");e.template_measured=true
+  if not e.get("player_placed",false) and e.get("property","")=="apartment":
+   if e.sku=="storage_5":e.position=[-4.69,0,-.3];e.yaw=90
+   else:e.position=[4.5,0,-2.2];e.yaw=270
+  e.cabinet_model_version=1
+
+func animate_container(container:String,opened:bool) -> void:
+ var id:String=model.container_item(container)
+ if id.is_empty() or not rendered.has(id):return
+ var sku:String=model.state.items[id].sku
+ var angles:Dictionary={}
+ if sku=="storage_5":angles={"HiddenStashFramePivot":-92.0};host.hidden_stash_frame_open=opened
+ elif sku in ["dealer_3","dealer_4"]:
+  angles={"PremiumLeftDoorPivot":-102.0,"PremiumRightDoorPivot":102.0};host.premium_dealer_locker_open=opened
+ else:return
+ if cabinet_tweens.has(id) and cabinet_tweens[id].is_running():cabinet_tweens[id].kill()
+ var tween:=create_tween().set_parallel(true)
+ cabinet_tweens[id]=tween
+ for name in angles:
+  var pivot:Node3D=rendered[id].find_child(name,true,false)
+  if pivot!=null:tween.tween_property(pivot,"rotation:y",deg_to_rad(float(angles[name])) if opened else 0.0,.32)

@@ -402,12 +402,10 @@ func open_container(kind:String) -> void:
  if not reachable(id):host.status_label.text="Walk up to the "+title(id)+" to open it.";return
  if id.ends_with(":dealer") and host.dealer_locker_level==0:host.status_label.text="Unlock Dealer Storage first.";return
  container_id=id;adding=id=="market:orders";selected="";selected_source="";filter_kind="All"
- if id.ends_with(":storage") and host.storage_level>=5:host._set_hidden_stash_open(true)
- if id.ends_with(":dealer") and host.dealer_locker_level>=3:host._set_premium_dealer_locker_open(true)
+ furniture.equipment_world.animate_container(id,true)
  overlay.show();Input.mouse_mode=Input.MOUSE_MODE_VISIBLE;render()
 func close() -> void:
- if container_id.ends_with(":storage") and host.storage_level>=5:host._set_hidden_stash_open(false)
- if container_id.ends_with(":dealer") and host.dealer_locker_level>=3:host._set_premium_dealer_locker_open(false)
+ furniture.equipment_world.animate_container(container_id,false)
  overlay.hide();selected="";container_id="";adding=false
  if host.get("fp_player")!=null and not host.session_paused:Input.mouse_mode=Input.MOUSE_MODE_CAPTURED
 func _unhandled_key_input(event:InputEvent) -> void:
@@ -517,7 +515,7 @@ func filter_matches(item:String) -> bool:
  match filter_kind:
   "Seeds":return category(item)=="seed"
   "Supplies":return item=="fertilizer" or (not container_id.ends_with(":supply") and category(item)=="seed")
-  "Equipment":return group(item)=="equipment"
+  "Furniture & Equipment":return group(item)=="equipment"
   "Products":return group(item)=="grams"
  return true
 func go_back() -> void:
@@ -550,8 +548,8 @@ func build_ui() -> void:
  heading=label("Backpack",top,25);heading.size_flags_horizontal=Control.SIZE_EXPAND_FILL
  close_button=button("×",close,top);close_button.custom_minimum_size.x=40
  filter_bar=HBoxContainer.new();filter_bar.add_theme_constant_override("separation",6);root.add_child(filter_bar)
- for value in ["All","Supplies","Seeds","Equipment","Products"]:
-  var tab:=button(value,set_filter.bind(value),filter_bar);tab.size_flags_horizontal=Control.SIZE_EXPAND_FILL;tab.add_theme_font_size_override("font_size",14);tab.custom_minimum_size.y=32
+ for value in ["All","Supplies","Seeds","Furniture & Equipment","Products"]:
+  var tab:=button(value,set_filter.bind(value),filter_bar);tab.size_flags_horizontal=Control.SIZE_EXPAND_FILL;tab.add_theme_font_size_override("font_size",14);tab.custom_minimum_size.y=44;tab.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;tab.custom_minimum_size.x=0
  preview_note=label("PERSONAL INVENTORY",root,12);preview_note.modulate=Color("a4ae9a")
  body_layout=BoxContainer.new();body_layout.size_flags_vertical=Control.SIZE_EXPAND_FILL;body_layout.add_theme_constant_override("separation",12);root.add_child(body_layout)
  columns=BoxContainer.new();columns.size_flags_horizontal=Control.SIZE_EXPAND_FILL;columns.size_flags_vertical=Control.SIZE_EXPAND_FILL;columns.add_theme_constant_override("separation",12);body_layout.add_child(columns)
@@ -601,7 +599,7 @@ func render() -> void:
  heading.add_theme_font_size_override("font_size",20 if compact else 25)
  filter_bar.visible=container_id.is_empty() or not adding
  for tab in filter_bar.get_children():
-  tab.visible=tab.text in (["All","Supplies","Seeds"] if container_id.ends_with(":supply") else ["All","Supplies","Equipment","Products"])
+  tab.visible=tab.text in (["All","Supplies","Seeds"] if container_id.ends_with(":supply") else ["All","Supplies","Furniture & Equipment","Products"])
   style_button(tab,tab.text==filter_kind)
  inspector.visible=not adding and not selected.is_empty()
  if container_id.is_empty():render_inventory("backpack")
@@ -710,7 +708,8 @@ func render_inventory(id:String) -> void:
   empty.size_flags_horizontal=Control.SIZE_EXPAND_FILL
   empty.custom_minimum_size.x=180
   empty.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
-func reveal_selection(scroll:ScrollContainer,card:Control) -> void:
+func reveal_selection(scroll,card) -> void:
+ if not is_instance_valid(scroll) or not is_instance_valid(card):return
  await get_tree().process_frame
  await get_tree().process_frame
  if is_instance_valid(scroll) and is_instance_valid(card):scroll.ensure_control_visible(card)
@@ -741,6 +740,9 @@ func render_inspector() -> void:
   if not packing_allowed():label("Walk up to this bench to process its stock.",text_box,13)
  if category(selected)=="furniture" and selected_source=="backpack":
   var asset:String=selected.get_slice("|",1)
+  var spec:Dictionary=furniture.model.CATALOG[furniture.model.state.items[asset].sku]
+  if spec.has("tier"):label("Tier "+str(spec.tier),text_box,14)
+  elif spec.has("plants"):label(str(spec.plants)+" plant capacity",text_box,14)
   button("Place item",func():close();furniture.begin(asset),text_box,true)
   if reachable("market:orders"):
    button("Sell to market · $%d"%furniture.model.resale(asset),func():

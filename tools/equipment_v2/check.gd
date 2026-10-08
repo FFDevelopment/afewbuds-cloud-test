@@ -103,5 +103,55 @@ func run():
  check(m.state.items==saved_items and game.plant_slots==saved_plants,"Item IDs, upgrades, deliveries and plants survive reload")
  var slots:Array=m.state.items.legacy_tent_0.slots
  check(slots==[0,1,2],"Legacy plants retain their original indices")
+ # Existing custom assets must survive the equipment inventory conversion.
+ inv.state.backpack_level=4
+ var stash_stock:Dictionary=inv.contents("apartment:storage").duplicate(true)
+ m.state.items.legacy_storage.sku="storage_5"
+ editor.sync_world()
+ var stash:Node3D=editor.equipment_world.rendered.legacy_storage
+ check(stash.find_child("HiddenStashArtwork",true,false)!=null,"Wall stash keeps original framed artwork")
+ check(not game.hidden_stash_interior_root.visible,"Old fixed stash is hidden; only owned model renders")
+ check(stash.get_node_or_null("OriginalCabinet")!=null and stash.get_child_count()==3,"Wall stash has no generic floor shelf")
+ var lowest:=100.0
+ for mesh in stash.find_children("*","MeshInstance3D",true,false):
+  if mesh.mesh!=null:lowest=minf(lowest,(mesh.global_transform*mesh.get_aabb()).position.y)
+ check(lowest>1.0,"Original stash remains raised on the wall")
+ check(inv.contents("apartment:storage")==stash_stock,"Restoring stash model preserves all stored items")
+ game.camera.global_position=inv.all_positions()["apartment:storage"]+Vector3(1.5,.5,0)
+ inv.open_container("apartment:storage")
+ await create_timer(.4).timeout
+ var frame:Node3D=stash.find_child("HiddenStashFramePivot",true,false)
+ check(is_equal_approx(frame.rotation_degrees.y,-92.0),"Opening owned stash swings artwork open")
+ inv.close();await create_timer(.4).timeout
+ check(is_zero_approx(frame.rotation.y),"Closing stash returns artwork to wall")
+ var dealer:String=m.own("dealer_3")
+ check(not dealer.is_empty() and m.place(dealer,"apartment",Vector3(4.1,0,-2.2),270),"Premium locker can be bought and placed")
+ editor.sync_world()
+ var locker:Node3D=editor.equipment_world.rendered[dealer]
+ check(locker.find_child("PremiumKeypad",true,false)!=null,"Premium locker preserves original model and keypad")
+ game.camera.global_position=inv.all_positions()[m.container_of(dealer)]+Vector3(-1.5,.5,0)
+ inv.open_container(m.container_of(dealer));await create_timer(.4).timeout
+ var left:Node3D=locker.find_child("PremiumLeftDoorPivot",true,false)
+ var right:Node3D=locker.find_child("PremiumRightDoorPivot",true,false)
+ check(is_equal_approx(left.rotation_degrees.y,-102.0) and is_equal_approx(right.rotation_degrees.y,102.0),"Owned locker doors swing in opposite directions")
+ inv.close();await create_timer(.4).timeout
+ check(is_zero_approx(left.rotation.y) and is_zero_approx(right.rotation.y),"Both locker doors close")
+ m.lock(dealer,false)
+ check(m.pack(dealer),"Empty premium locker packs without losing its tier")
+ editor.sync_world();inv.open_backpack();inv.set_filter("Furniture & Equipment")
+ check(inv.filter_matches("furniture|"+dealer) and not inv.filter_matches("cash") and not inv.filter_matches("raw|Street Green"),"Furniture & Equipment section groups packed assets separately")
+ inv.select_item("backpack","furniture|"+dealer)
+ var place_found:=false
+ for button in inv.inspector.find_children("*","Button",true,false):
+  if button.text=="Place item":place_found=true
+ check(place_found,"Packed furniture section exposes Place action")
+ inv.close()
+ check(m.place(dealer,"apartment",Vector3(3.8,0,-2.2),270),"Premium locker places again after pickup")
+ editor.sync_world()
+ locker=editor.equipment_world.rendered[dealer]
+ game.camera.global_position=inv.all_positions()[m.container_of(dealer)]+Vector3(-1.5,.5,0)
+ inv.open_container(m.container_of(dealer));await create_timer(.4).timeout
+ check(is_equal_approx(locker.find_child("PremiumLeftDoorPivot",true,false).rotation_degrees.y,-102.0),"Locker animation survives pickup and replacement")
+ inv.close()
  print("EQUIPMENT_V2_RESULT: ","PASS" if failures==0 else "FAIL"," checks=",checks," failures=",failures)
  game.queue_free();await process_frame;quit(0 if failures==0 else 1)
