@@ -40,7 +40,7 @@ const ROOMS={
  "house":{"living":Rect2(25.4,-4.6,7.65,7.15),"packing":Rect2(37,-4.6,7.6,7.15),"kitchen":Rect2(25.4,-13.55,5.5,6.1),"bathroom":Rect2(31.7,-13.55,2.05,6.1),"bedroom":Rect2(34.65,-13.55,3.5,6.1),"grow":Rect2(39.05,-13.55,5.55,6.1)}}
 # Front grow-room corners keep migrated utility units clear of shelves and tents.
 const UTILITY_POSITIONS={
- "apartment":{"water_kit":Vector3(-3.2,0,-5.1),"ventilation":Vector3(3.2,0,-5.1)},
+ "apartment":{"water_kit":Vector3(3.8,0,-5.1),"ventilation":Vector3(3.8,0,-6.4)},
  "house":{"water_kit":Vector3(39.65,0,-8.2),"ventilation":Vector3(40.65,0,-8.2)}}
 const CURBS={"apartment":Vector3(-2,0,7.2),"house":Vector3(34.8,0,4.8)}
 var host:Node
