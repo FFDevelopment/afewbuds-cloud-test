@@ -716,8 +716,11 @@ func packing_allowed() -> bool:
  return container_kind(container_id)=="packing" and reachable(container_id) and not furniture.model.container_item(container_id).is_empty()
 func process_selected() -> void:
  if not packing_allowed() or not reachable(container_id):return
+ var chosen:String=selected
  packing_return=container_id
- packing.start(selected)
+ close()
+ if category(chosen)=="raw":host._start_trim_minigame(chosen.get_slice("|",1))
+ elif category(chosen)=="trimmed":host._start_bag_minigame(chosen.get_slice("|",1))
 func return_to_packing() -> void:
  host.bagging_panel.hide()
  var id:String=packing_return if not packing_return.is_empty() else operation()+":packing"
