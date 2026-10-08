@@ -134,6 +134,47 @@ func run() -> void:
  game.production_worker_pending_action="trim"
  step_worker(game,crew,2)
  check(not bool(worker.get_meta("seated",false)),"Work assignment never leaves worker seated")
+ # Every imported production character must stand normally when the final
+ # work station is reached. A stale route waypoint must not keep "walk" playing.
+ for person in ["Malik","Rod","Kobi"]:
+  game.production_worker_friend_name=person
+  for work_station in ["workbench","grow","storage","entry"]:
+   var goal:Vector3=game._production_worker_station_position(work_station)
+   game.production_worker_pending_action="trim"
+   game.production_worker_task="Working at "+work_station
+   game.production_worker_target_position=goal
+   worker.position=goal
+   worker.set_meta("seated",false)
+   # Reproduce the old bug: the next cached waypoint is elsewhere.
+   game.production_worker_route_valid=true
+   game.production_worker_route_destination=goal
+   game.production_worker_route_index=0
+   game.production_worker_route_points.clear()
+   game.production_worker_route_points.append(goal+Vector3(1.5,0,0))
+   crew.update_malik()
+   var avatar:Node3D=crew.malik_worker
+   var stood:bool=avatar!=null
+   if avatar!=null:
+    for anim_player in avatar.find_children("*","AnimationPlayer",true,false):
+     stood=stood and str(anim_player.current_animation).ends_with("idle")
+   check(stood,person+" stands at "+work_station+" without looping walk when navigation cache is stale")
+   # Still walk on the way to the NEXT task: no permanent idle lock.
+   worker.position=goal+Vector3(2,0,1)
+   game._reset_production_worker_navigation()
+   crew.update_malik()
+   var walking:bool=avatar!=null
+   if avatar!=null:
+    for anim_player in avatar.find_children("*","AnimationPlayer",true,false):
+     walking=walking and str(anim_player.current_animation).ends_with("walk")
+   check(walking,person+" resumes walk when travelling toward "+work_station)
+   worker.position=goal
+   game._reset_production_worker_navigation()
+   crew.update_malik()
+   var stopped:bool=avatar!=null
+   if avatar!=null:
+    for anim_player in avatar.find_children("*","AnimationPlayer",true,false):
+     stopped=stopped and str(anim_player.current_animation).ends_with("idle")
+   check(stopped,person+" returns to standing idle upon arrival at "+work_station)
  model.state.items["legacy_sofa"]=old_couch
  game.queue_free()
  await process_frame
