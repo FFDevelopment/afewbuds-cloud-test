@@ -443,7 +443,7 @@ body {
 
 		<script src="shared/config.js"></script>
 		<script src="shared/afb-api.js?v=expansion1"></script>
-		<script src="shared/afb-cloud-accountsync10.js?v=expansion1"></script>
+		<script src="shared/afb-expansion-save.js?v=expansion1"></script>
 		<script src="index-accountsync10.js?v=0.7.9-beta.19-accountsync10"></script>
 		<script src="shared/afb-runtime-mobile-3d-v1.js?v=expansion1"></script>
 		<script>
@@ -535,7 +535,7 @@ async function afbValidateStoredSession() {
 		const verified = afbNormalizeSession(await AFB_API.rpc('afb_validate_session', {p_session_token:saved.session_token}));
 		if (!verified || !verified.username) throw new Error('session_invalid');
 		const merged = Object.assign({}, saved, verified, {session_token:saved.session_token});
-		AFB_API.savePlayerSession(merged, !!localStorage.getItem('afb_inventory_preview_session'));
+		AFB_API.savePlayerSession(merged, !!localStorage.getItem('afb_expansion_session'));
 		return merged;
 	} catch (_) {
 		AFB_API.clearPlayerSession();
@@ -879,7 +879,7 @@ function afbAccountMessage(id, text, bad=false) {
 	el.classList.toggle('bad',!!bad);
 }
 function afbAccountRemembered() {
-	return !!localStorage.getItem('afb_inventory_preview_session');
+	return !!localStorage.getItem('afb_expansion_session');
 }
 async function afbAccountLoadProfile() {
 	const modal=document.getElementById('afb-account-settings-modal');

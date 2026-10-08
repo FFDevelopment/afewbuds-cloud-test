@@ -18,6 +18,14 @@ func run():
  game.tutorial_panel.hide();game.pause_overlay.hide();game.daily_report_panel.hide()
  var inv=game.inventory_system;inv.set_process(false);inv.guide.state.active=false;inv.guide.state.completed=true
  inv.furniture.set_process(false)
+ var camera_before:Transform3D=game.camera.global_transform
+ game.camera.global_position=Vector3(0,2.16,7)
+ game.peephole_checked=false;game._open_peephole()
+ check(not game.peephole_panel.visible and not game.peephole_checked,"Peephole cannot be used outside apartment")
+ game.camera.global_position=Vector3(0,2.16,5)
+ game._open_peephole()
+ check(game.peephole_panel.visible and game.peephole_checked,"Peephole still works inside apartment")
+ game._close_peephole();game.camera.global_transform=camera_before
  var market=game.neighborhood.location_ops
  market.market()
  check(market.is_open(),"Central Market opens with platform adapter")

@@ -1,6 +1,6 @@
 {
   "branch": "experiment/chapter5-furniture",
-  "status": "Source checkpoint; not published or ready for public promotion",
+  "status": "Playable test candidate; isolated local saves; not for public-beta promotion",
   "implemented": [
     "Central Market Furniture category; grow tents nested under Upgrades",
     "Purchased furniture placement, packing and locks; tents grow-room-only",
@@ -13,8 +13,7 @@
     "Verify all plant actions and water billing across tents placed in multiple properties",
     "Complete furniture art and placement usability review",
     "Build and validate Diddy, Tyler and Jeremias 3D models; current assets are concept references",
-    "Dedicated shops/map expansion postponed; Central Market carries catalog",
-    "Isolate preview saves and package downloadable/playable test releases"
+    "Dedicated shops/map expansion postponed; Central Market carries catalog"
   ],
   "public_beta_changed": false,
   "login_issue": "Separate desktop session issue under investigation; awaiting phone test result"

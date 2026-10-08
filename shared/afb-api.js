@@ -101,19 +101,19 @@
   }
 
   function savePlayerSession(value, remember) {
-    const key = 'afb_inventory_preview_session';
+    const key = 'afb_expansion_session';
     localStorage.removeItem(key);
     sessionStorage.removeItem(key);
     (remember ? localStorage : sessionStorage).setItem(key, JSON.stringify(value));
   }
   function getPlayerSession() {
-    const raw = localStorage.getItem('afb_inventory_preview_session') || sessionStorage.getItem('afb_inventory_preview_session');
+    const raw = localStorage.getItem('afb_expansion_session') || sessionStorage.getItem('afb_expansion_session');
     if (!raw) return null;
     try { return JSON.parse(raw); } catch (_) { return null; }
   }
   function clearPlayerSession() {
-    localStorage.removeItem('afb_inventory_preview_session');
-    sessionStorage.removeItem('afb_inventory_preview_session');
+    localStorage.removeItem('afb_expansion_session');
+    sessionStorage.removeItem('afb_expansion_session');
   }
 
   function deviceId() {
