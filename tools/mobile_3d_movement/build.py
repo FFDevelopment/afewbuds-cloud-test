@@ -803,6 +803,13 @@ def main():
     crew=crew.replace('host.phone_scroll.scroll_vertical=int(host.phone_scroll.get_v_scroll_bar().max_value)','host.phone_scroll.scroll_vertical=0')
     crew=crew.replace('for i in range(host.phone_text_messages.size()):','for i in range(host.phone_text_messages.size()-1,-1,-1):')
     crew=property_patch.patch_crew(crew)
+    # Preserve navigation behavior, but only loop walk while physically in transit.
+    # The imported NPCs must stand with their regular idle pose at every
+    # production workstation, even when the route cache has not advanced.
+    original_worker_animation = "var wanted: String=\"sit\" if bool(worker.get_meta(\"seated\",false)) and host.production_worker_pending_action.is_empty() else (\"walk\" if host.packing_employee_active and worker.position.distance_to(host._production_worker_navigation_target())>0.10 else \"idle\")"
+    assert crew.count(original_worker_animation)==1, "NPC animation switching source drift"
+    crew=crew.replace("func update_malik() -> void:\n","func production_worker_animation(worker: Node3D) -> String:\n\\tif bool(worker.get_meta(\"seated\",false)) and host.production_worker_pending_action.is_empty():return \"sit\"\n\\tif not host.packing_employee_active:return \"idle\"\n\\t# After arriving at a station, stand naturally until work animations exist.\n\\t# Use the FINAL station target, not stale intermediate path waypoints.\n\\tvar goal: Vector3=host.production_worker_target_position\n\\tvar horizontal_distance: float=Vector2(worker.position.x-goal.x,worker.position.z-goal.z).length()\n\\tif horizontal_distance<=0.20:return \"idle\"\n\\tvar next_waypoint: Vector3=host._production_worker_navigation_target()\n\\tvar to_waypoint: float=Vector2(worker.position.x-next_waypoint.x,worker.position.z-next_waypoint.z).length()\n\\treturn \"walk\" if to_waypoint>0.10 else \"idle\"\n\n"+"func update_malik() -> void:\n",1)
+    crew=crew.replace(original_worker_animation,'var wanted: String=production_worker_animation(worker)',1)
     # Imported GLB sit animations contain only lower-body tracks (11 vs idle's 36).
     # Restore unkeyed upper-body joint poses from the character's relaxed idle
     # frame, while retaining every original sitting hip/leg keyframe.
