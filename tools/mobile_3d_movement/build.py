@@ -742,6 +742,8 @@ def main():
     main_script=patch_progression_main(before['scripts/main.gd'].decode())
     inventory_patch=module('inventory_patch',ROOT/'tools/inventory_v1/patch.py')
     main_script=inventory_patch.patch_main(main_script)
+    expansion_patch=module("expansion_patch",ROOT/"tools/expansion_v1/patch.py")
+    main_script=expansion_patch.patch_main(main_script)
     main_script=main_script.replace('user://bud_empire_beta_save.json','user://afb_inventory_preview_save.json')
     save_hook='\tfile.store_string(JSON.stringify(data))\n\tfile.flush()\n\tlast_save_ok=file.get_error()==OK\n\tfile.close()'
     assert save_hook in main_script
@@ -778,6 +780,8 @@ def main():
     updated.append(['scripts/container_inventory.gd',(ROOT/'tools/inventory_v1/container_inventory.gd').read_bytes(),0])
     updated.append(['scripts/session_menu.gd',(ROOT/'tools/inventory_v1/session_menu.gd').read_bytes(),0])
     updated.append(['scripts/first_day_guide.gd',(ROOT/'tools/inventory_v1/first_day_guide.gd').read_bytes(),0])
+    for name in ["property_furniture","furniture_editor","chapter_five","physical_packing"]:
+        updated.append(["scripts/"+name+".gd",(ROOT/"tools/expansion_v1"/(name+".gd")).read_bytes(),0])
     inventory_art=sorted((ROOT/"assets/inventory").glob("*.png"))
     assert len(inventory_art)==6
     for asset in inventory_art:updated.append(["assets/inventory/"+asset.name,asset.read_bytes(),0])
@@ -844,16 +848,16 @@ def main():
 
     loader=(ROOT/'shared/afb-runtime-kobi-v1.js').read_text()
     loader=loader.replace('kobi-v1','mobile-3d-v1').replace('AFB_RUNTIME_KOBI_V1','AFB_RUNTIME_MOBILE_3D_V1')
-    loader=re.sub(r'patch\.json\?v=\d+','patch.json?v=inventory11',loader)
+    loader=re.sub(r'patch\.json\?v=\d+','patch.json?v=expansion1',loader)
     (ROOT/'shared/afb-runtime-mobile-3d-v1.js').write_text(loader,newline='\n')
 
-    release='0.7.9-beta.19-cloudtest.99-inventory.11'
+    release='0.7.9-beta.19-cloudtest.99-expansion.1'
     index=(ROOT/'index.html').read_text(encoding='utf-8')
-    index=re.sub(r'([?&]v=)inventory\d+',r'\g<1>inventory11',index)
-    index=index.replace('shared/afb-api.js\"','shared/afb-api.js?v=inventory11\"')
+    index=re.sub(r'([?&]v=)inventory\d+',r'\g<1>expansion1',index)
+    index=index.replace('shared/afb-api.js\"','shared/afb-api.js?v=expansion1\"')
     index=index.replace('kobi-v1','mobile-3d-v1').replace('AFB_RUNTIME_KOBI_V1','AFB_RUNTIME_MOBILE_3D_V1')
-    index=re.sub(r'afb-runtime-mobile-3d-v1\.js\?v=\d+','afb-runtime-mobile-3d-v1.js?v=inventory11',index)
-    index=re.sub(r'0\.7\.9-beta\.19-cloudtest\.(?:98-kobi|99-mobile3d|99-inventory)\.\d+',release,index)
+    index=re.sub(r'afb-runtime-mobile-3d-v1\.js\?v=\d+','afb-runtime-mobile-3d-v1.js?v=expansion1',index)
+    index=re.sub(r'0\.7\.9-beta\.19-cloudtest\.(?:98-kobi|99-mobile3d|99-inventory|99-expansion)\.\d+',release,index)
     index=re.sub(r'"fileSizes":\{[^}]*\\}',f'"fileSizes":{{"index-mobile-3d-v1.pck":{len(built)},"index.wasm":{(ROOT/"index.wasm").stat().st_size}}}',index,count=1)
     (ROOT/'index.html').write_text(index,encoding='utf-8',newline='\n')
 
@@ -861,7 +865,7 @@ def main():
     version['release_id']=release
     version['paused_heat_decay']='100 Heat over 180 real minutes'
     version['mobile_3d_movement']={
-        'branch':'experiment/container-inventory',
+        'branch':'experiment/chapter5-furniture',
         'player':'CharacterBody3D capsule',
         'input':'touch joystick + drag look; full forward stick sprints; Shift+forward sprints on keyboard',
         'physics':'gravity, floor snap, cached StaticBody3D world proxies, physical doors and police stair ramp',
@@ -887,7 +891,7 @@ def main():
         'target_sha256':hashlib.sha256(built).hexdigest(),
         'target_bytes':len(built),
         'changed_existing_entries':changed,
-        'added_entries':['scripts/mobile_physics_player.gd','scripts/districts.gd','scripts/container_inventory.gd','scripts/first_day_guide.gd','scripts/session_menu.gd']+['assets/inventory/'+asset.name for asset in inventory_art],
+        'added_entries':['scripts/mobile_physics_player.gd','scripts/districts.gd','scripts/container_inventory.gd','scripts/first_day_guide.gd','scripts/session_menu.gd','scripts/property_furniture.gd','scripts/furniture_editor.gd','scripts/chapter_five.gd','scripts/physical_packing.gd']+['assets/inventory/'+asset.name for asset in inventory_art],
         'unchanged_entries':len(before)-len(changed),
         'reconstruction_verified':True
     }

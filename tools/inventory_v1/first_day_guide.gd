@@ -30,7 +30,7 @@ func controls() -> String:
  return "Move with the left stick; right stick to look. L3 toggles forward sprint. %s: interact; %s: phone; %s: backpack. D-pad navigates menus; A/Cross selects." % [input.label("interact"),input.label("phone"),input.label("backpack")] if input.controller_active else "Use %s/%s/%s/%s to move and the mouse to look. Hold %s while moving forward to sprint. %s: interact; %s: phone; %s: backpack." % [input.label("forward"),input.label("left"),input.label("backward"),input.label("right"),input.label("sprint"),input.label("interact"),input.label("phone"),input.label("backpack")]
 func hint(index:int) -> String:
  var input:Node=get_tree().root.get_node_or_null("DesktopInput")
- var grab:String="Hold the scissors or bud with your finger and drag" if input==null else ("Hold A/Cross and move the left stick" if input.controller_active else "Hold the left mouse button and drag")
+ var grab:String="Tap the objects on the bench" if input==null else ("Select objects with D-pad and use A/Cross" if input.controller_active else "Click the objects on the bench")
  var hints:Array[String]=[
   controls(),
   ("Open the Phone icon. Use PAUSE at the bottom to open Resume, Settings, Help and Save & Quit." if input==null else "Open the Phone icon. Story tracks milestones and Real Estate manages properties. Open Pause > Help to resume this guide."),
@@ -42,8 +42,8 @@ func hint(index:int) -> String:
   "Interact with the seedling and choose Water. Water usage is charged to this property's bill.",
   "Choose Fertilize on the growing plant. One carried fertilizer is used before stored supplies. You cannot fertilize a ready, dead or already fully boosted plant.",
   "Your first planted crop ripens as soon as you water and fertilize it during this lesson. Select that pot and Harvest, then take the crop to the packing bench. Later crops grow over real time.",
-  "Open the packing bench and select untrimmed product, then Trim by hand. "+grab+" across each bud.",
-  "Select trimmed product at the bench, then Bag by hand. "+grab+"; release over the bag. Seal at the target weight. Better benches handle more per drop without increasing sale value.",
+  "Open the packing bench and select untrimmed product, then Trim by hand. "+grab+": pick up the scissors, then trim the batch.",
+  "Select trimmed product at the bench, then Bag by hand. "+grab+": scoop, fill the bag on the scale, then use the sealer at the target weight. Better benches handle more per drop without increasing sale value.",
   "At the packing bench select packaged product, choose an amount, and Take. Product weighs exactly 1g per gram; check your remaining backpack space.",
   "Open Storage and choose Add Stock. Store some packaged product. Take it back when needed; reserved orders remain protected. Keep some in your backpack for a sale.",
   "Use the property computer for products, genetics, staff and equipment. Swipe or scroll long pages; Back and Close remain visible. The phone's Real Estate app handles property agreements.",

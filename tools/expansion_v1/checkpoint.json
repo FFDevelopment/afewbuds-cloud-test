@@ -1,0 +1,21 @@
+{
+  "branch": "experiment/chapter5-furniture",
+  "status": "Source checkpoint; not published or ready for public promotion",
+  "implemented": [
+    "Central Market Furniture category; grow tents nested under Upgrades",
+    "Purchased furniture placement, packing and locks; tents grow-room-only",
+    "Chapter 5 six milestones and Rod finale",
+    "Object-based trimming/bagging with controller input and continuous bench III batching",
+    "Packed tent interactions disabled and per-property electricity excludes packed tents"
+  ],
+  "pending": [
+    "Migrate existing decorative furniture into movable ownership",
+    "Verify all plant actions and water billing across tents placed in multiple properties",
+    "Complete furniture art and placement usability review",
+    "Build and validate Diddy, Tyler and Jeremias 3D models; current assets are concept references",
+    "Dedicated shops/map expansion postponed; Central Market carries catalog",
+    "Isolate preview saves and package downloadable/playable test releases"
+  ],
+  "public_beta_changed": false,
+  "login_issue": "Separate desktop session issue under investigation; awaiting phone test result"
+}

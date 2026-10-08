@@ -202,6 +202,12 @@ func run() -> void:
 	var old_apartment_balance:int=ops.apartment_balance()
 	var old_power_due:int=ops.property_utility_due("apartment","power")
 	var old_water_due:int=ops.property_utility_due("apartment","water")
+	var furniture=game.inventory_system.furniture.model
+	check(not ops.apartment_release_blockers().is_empty(),"Placed furniture blocks lease release")
+	for i in range(game.plant_slots.size()):game.plant_slots[i]=game._empty_plant_slot()
+	for id in furniture.state.items:
+		furniture.lock(id,false)
+		check(furniture.pack(id),"Paid furniture can be packed without losing ownership")
 	check(ops.apartment_release_blockers().is_empty(),"Cleared apartment with another property can be released",ops.apartment_release_blockers())
 	ops.request_apartment_release()
 	check(ops.apartment_release_confirm,"Real Estate release requires explicit confirmation")
@@ -324,6 +330,7 @@ func run() -> void:
 	game.phone_open=false
 	game.phone_panel.hide()
 
+	furniture=null
 	game.queue_free()
 	await frames()
 	print("PROGRESSION_V1_TEST_RESULT: ","PASS" if failures==0 else "FAIL"," checks=",checks," failures=",failures)

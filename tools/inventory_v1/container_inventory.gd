@@ -8,6 +8,8 @@ var touch_index:=-1
 var touch_start:=Vector2.ZERO
 var touch_last:=Vector2.ZERO
 var touch_dragged:=false
+var furniture:Node
+var packing:Node
 var guide:Node
 var host:Node3D
 var state:Dictionary
@@ -68,6 +70,8 @@ func setup(owner:Node3D) -> void:
  ensure_state()
  build_ui()
  guide=load("res://scripts/first_day_guide.gd").new();add_child(guide);guide.setup(host,self)
+ packing=load("res://scripts/physical_packing.gd").new();add_child(packing);packing.setup(host,self)
+ furniture=load("res://scripts/furniture_editor.gd").new();add_child(furniture);furniture.setup(host,self)
  session_menu=load("res://scripts/session_menu.gd").new();add_child(session_menu);session_menu.setup(host,self)
  if host.neighborhood.get("action")!=null:style_button(host.neighborhood.action,true)
  for work_panel in [host.trim_panel,host.bag_minigame_panel]:
@@ -380,6 +384,8 @@ func _unhandled_key_input(event:InputEvent) -> void:
   get_viewport().set_input_as_handled()
  elif event.physical_keycode==KEY_ESCAPE and is_open():close();get_viewport().set_input_as_handled()
 func pause_inventory() -> void:
+ if packing!=null and packing.is_open():packing.close(false)
+ if furniture!=null and furniture.is_open():furniture.close()
  if is_open():
   resume_container=container_id if container_id.ends_with(":dealer") else ""
   close()
@@ -676,13 +682,8 @@ func packing_allowed() -> bool:
  return container_id==operation()+":packing" and selected_source==container_id and category(selected) in ["raw","trimmed"] and available(container_id,selected)>0
 func process_selected() -> void:
  if not packing_allowed() or not reachable(container_id):return
- var item:String=selected
  packing_return=container_id
- close()
- if category(item)=="raw":host._start_trim_minigame(item.get_slice("|",1))
- else:host._start_bag_minigame(item.get_slice("|",1))
- Input.mouse_mode=Input.MOUSE_MODE_VISIBLE
- if not host.trim_panel.visible and not host.bag_minigame_panel.visible:return_to_packing()
+ packing.start(selected)
 func return_to_packing() -> void:
  host.bagging_panel.hide()
  var id:String=packing_return if not packing_return.is_empty() else operation()+":packing"

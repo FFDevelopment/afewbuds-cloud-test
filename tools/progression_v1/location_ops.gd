@@ -136,7 +136,8 @@ func clear(title: String) -> void:
 		ui.panel.add_theme_stylebox_override("panel",host.inventory_system.ui_style("111713","566052",18))
 	ui.overlay.show();ui.resize()
 	world.pad.release();world.pointer=-99
-func close() -> void:ui.overlay.hide();management_app=""
+func close() -> void:
+	ui.overlay.hide();management_app=""
 func b(text: String, callback: Callable, disabled: bool=false) -> void:
 	var item := Button.new()
 	item.text=text;item.custom_minimum_size.y=54
@@ -220,13 +221,18 @@ func market() -> void:
 	b("ORDER PICKUP",pickup,host.inventory_system.contents("market:orders").is_empty())
 	market_card("seed|Street Green","Seeds","Parent strains for planting and breeding.",seeds)
 	market_card("fertilizer","Supplies","Fertilizer and everyday growing supplies.",supplies)
-	market_card("equipment|Grow Tent upgrade","Upgrades","Equipment and larger backpacks.",equipment)
+	market_card("equipment|Grow Tent upgrade","Upgrades","Grow tents, equipment and larger backpacks.",equipment)
+	market_card("equipment|Storage Shelving II","Furniture","Furnish your properties. Delivered to Property Storage.",market_furniture)
 	ui.button("CLOSE",close)
+func market_furniture() -> void:
+	host.inventory_system.furniture.shop("furniture")
+func market_grow_tents() -> void:
+	host.inventory_system.furniture.shop("grow")
 func market_navigation() -> void:
 	ui.label("Cash: $%d  |  %s" % [host.cash,host.inventory_system.backpack_summary()],16)
-	var row:=HBoxContainer.new();row.add_theme_constant_override("separation",6);ui.body.add_child(row)
-	for category_name in ["Seeds","Supplies","Upgrades"]:
-		var callback:Callable={"Seeds":seeds,"Supplies":supplies,"Upgrades":equipment}[category_name]
+	var row:=GridContainer.new();row.columns=2;row.add_theme_constant_override("h_separation",6);row.add_theme_constant_override("v_separation",6);ui.body.add_child(row)
+	for category_name in ["Seeds","Supplies","Upgrades","Furniture"]:
+		var callback:Callable={"Seeds":seeds,"Supplies":supplies,"Upgrades":equipment,"Furniture":market_furniture}[category_name]
 		var tab:Button=host.inventory_system.button(category_name,callback,row)
 		tab.size_flags_horizontal=Control.SIZE_EXPAND_FILL;tab.add_theme_font_size_override("font_size",16)
 func market_card(item:String,title:String,detail:String,callback:Callable,disabled:bool=false) -> void:
@@ -258,6 +264,7 @@ func seeds() -> void:
 	ui.button("BACK TO CHECKOUT",market)
 func equipment() -> void:
 	clear("CENTRAL MARKET - UPGRADES");market_navigation()
+	market_card("equipment|Grow Tent upgrade","Grow Tents","Placeable tents for grow rooms. Delivered to Property Storage.",market_grow_tents)
 	if rent_overdue():ui.label("A property balance is overdue. Pay it in Phone → Real Estate or Bills to resume new equipment orders. Seeds, fertilizer and sales remain available.")
 	ui.label("Delivery location: %s. Collect paid orders into your backpack, then install them at the property computer." % active_property().to_upper())
 	if host.dealer_locker_level<4:
@@ -266,7 +273,7 @@ func equipment() -> void:
 		var price: int=host.DEALER_LOCKER_COST_BY_LEVEL[level]
 		b("%s · $%d" % [dealer_name,price],order_dealer,host.cash<price or host.location_state.deliveries.has(dealer_name) or rent_overdue())
 	for name in host.supply_catalog:
-		if name=="Fertilizer Pack":continue
+		if name in ["Fertilizer Pack","Grow Tent Slot 2","Grow Tent Slot 3"]:continue
 		var data: Dictionary=host.supply_catalog[name]
 		var price: int=int(data.get("cost",10))
 		var title: String="%s · $%d · LEVEL %d" % [name,price,int(data.get("unlock",1))]
@@ -424,8 +431,8 @@ func _apartment_power_rate() -> float:
 	if host.main_ceiling_light_on:rate+=host.POWER_MAIN_LIGHT_COST_PER_GAME_MINUTE
 	if host.floor_lamp_on:rate+=host.POWER_LAMP_COST_PER_GAME_MINUTE
 	if host.grow_room_light_on:rate+=host.POWER_GROW_ROOM_LIGHT_COST_PER_GAME_MINUTE
+	if host.grow_lights_on:rate+=host.POWER_GROW_LIGHT_COST_PER_TENT_PER_GAME_MINUTE*float(host.inventory_system.furniture.model.powered_tent_count("apartment"))
 	if str(host.location_state.get("operation_assets_property","apartment"))=="apartment":
-		if host.grow_lights_on:rate+=host.POWER_GROW_LIGHT_COST_PER_TENT_PER_GAME_MINUTE*float(clampi(host.grow_tent_count,1,3))
 		if host.ventilation_installed and host.ventilation_on:rate+=host.POWER_VENTILATION_COST_PER_GAME_MINUTE
 	return rate
 
@@ -434,8 +441,8 @@ func _house_power_rate() -> float:
 	var rate:float=host.POWER_BASE_COST_PER_GAME_MINUTE if active_property()=="house" else 0.0
 	for room_id in ["living","packing","kitchen","bathroom","bedroom","cross_hall","grow"]:
 		if bool(host.house_control_state.get(room_id,true)):rate+=host.POWER_MAIN_LIGHT_COST_PER_GAME_MINUTE
+	if host.grow_lights_on:rate+=host.POWER_GROW_LIGHT_COST_PER_TENT_PER_GAME_MINUTE*float(host.inventory_system.furniture.model.powered_tent_count("house"))
 	if str(host.location_state.get("operation_assets_property","apartment"))=="house":
-		if host.grow_lights_on:rate+=host.POWER_GROW_LIGHT_COST_PER_TENT_PER_GAME_MINUTE*float(clampi(host.grow_tent_count,1,3))
 		if host.ventilation_installed and host.ventilation_on:rate+=host.POWER_VENTILATION_COST_PER_GAME_MINUTE
 	return rate
 
@@ -499,6 +506,7 @@ func pay_property_utility(property:String,kind:String) -> void:
 	if amount<=0 or host.cash<amount:return
 	host.cash-=amount
 	state[key]=0
+	if property=="house":host.location_state["house_bills_paid"]=int(host.location_state.get("house_bills_paid",0))+1
 	host._increment_advancement_stat("power_bills_paid" if kind=="power" else "water_bills_paid")
 	host._record_daily_expense(("%s electricity" if kind=="power" else "%s water") % property.capitalize(),amount)
 	_sync_legacy_utility_totals()
@@ -724,6 +732,7 @@ func _apartment_contents_blockers() -> Array[String]:
 
 func apartment_release_blockers() -> Array[String]:
 	var blockers:Array[String]=[]
+	if host.inventory_system!=null and host.inventory_system.furniture!=null and host.inventory_system.furniture.model.property_has_furniture("apartment"):blockers.append("Pack your placed apartment furniture first.")
 	if not _has_alternate_property():blockers.append("Acquire and move into another property first.")
 	if not apartment_lease_active():return blockers
 	if world._indoors(host.camera.position):blockers.append("Leave the apartment before releasing its lease.")
@@ -832,6 +841,7 @@ func _property_button(parent:VBoxContainer,text_value:String,callback:Callable,d
 	return item
 
 func real_estate_ui(parent:VBoxContainer) -> void:
+	_property_button(parent,"ARRANGE FURNITURE / PROPERTY STORAGE",host.inventory_system.furniture.open)
 	_property_label(parent,"PROPERTY PORTFOLIO",24)
 	_property_label(parent,"Active operation: %s" % active_property().capitalize(),18)
 	utility_bills_ui(parent)
