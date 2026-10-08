@@ -43,8 +43,20 @@ func hide_original(node:Node3D) -> void:
  node.hide();node.set_meta("no_collision",true)
  if node is CollisionObject3D:node.collision_layer=0
  for body in node.find_children("*","CollisionObject3D",true,false):body.collision_layer=0
+func hide_orphan_station_tags() -> void:
+ for child in host.get_children():
+  if not child is Label3D:continue
+  var label_node:Label3D=child as Label3D
+  var name:String=str(label_node.name)
+  var words:String=label_node.text.to_upper()
+  if name in ["PackingScaleText","BenchIIIWorldLabel","StorageWorldLabel","DealerBasicLogo","DealerBasicTag"] or words.begins_with("GROW TENT "):
+   label_node.hide()
+  elif words=="PACKING BENCH" or words=="BAGGING BENCH III" or words.begins_with("STORAGE   |") or words=="DEALER\\nSTORAGE" or words=="DEALER\\nSTOCK\\nLOCKER":
+   label_node.hide()
+
 func sync() -> void:
  capture()
+ hide_orphan_station_tags()
  for original in originals.values():hide_original(original.node)
  for name in ["FP_Bench","FP_Storage","FP_Locker","FP_Supply","FP_ApartmentComputer","FP_HouseComputer","FP_Couch"]:
   var target:Node=host.get_node_or_null(name)
@@ -62,6 +74,7 @@ func sync() -> void:
   stamp=next_stamp
   for node in rendered.values():node.free()
   rendered.clear()
+  packing_visual_signatures.clear()
   for id in model.state.items:
    var e:Dictionary=model.state.items[id]
    if str(e.get("property","")).ends_with(":delivery"):
@@ -305,6 +318,72 @@ func clone_supply(root:Node3D,id:String,e:Dictionary) -> bool:
  copy.transform=Transform3D(Basis(Vector3.UP,PI),Vector3(0,source.position.y,0))
  copy.show();colliders(copy,id)
  return true
+
+# Dynamic visuals for every placed packing bench, independent of the hidden
+# apartment template. Reads property-scoped stock rather than global adapters.
+var packing_visual_signatures:Dictionary={}
+func sync_packing_displays() -> void:
+ for id in rendered:
+  if not model.state.items.has(id):continue
+  var e:Dictionary=model.state.items[id]
+  if not str(e.get("sku","")).begins_with("bench_"):continue
+  if e.get("property","") not in model.ROOMS:continue
+  var root:Node3D=rendered[id]
+  if not is_instance_valid(root):continue
+  var station:String=model.container_of(id)
+  var stock:Dictionary=editor.inventory.contents(station)
+  var trimmed:int=0
+  var raw:int=0
+  var names:Array[String]=[]
+  for item in stock:
+   var key:String=str(item)
+   if key.begins_with("trimmed|"):
+    trimmed+=maxi(0,int(stock[item]))
+    if int(stock[item])>0:names.append(key.get_slice("|",1))
+   elif key.begins_with("raw|"):
+    raw+=maxi(0,int(stock[item]))
+  var signature:String="%d:%d:%s"%[trimmed,raw,",".join(names)]
+  if packing_visual_signatures.get(id,"")==signature:continue
+  packing_visual_signatures[id]=signature
+  var old:Node=root.get_node_or_null("PackingDisplayVisuals")
+  if old!=null:old.free()
+  var display:=Node3D.new()
+  display.name="PackingDisplayVisuals"
+  display.set_meta("no_collision",true)
+  root.add_child(display)
+  var size:Vector3=model.size_of(id)
+  var plate:=MeshInstance3D.new()
+  var plate_mesh:=BoxMesh.new()
+  plate_mesh.size=Vector3(.46,.035,.32)
+  plate.mesh=plate_mesh
+  plate.position=Vector3(0,size.y+.012,0)
+  display.add_child(plate)
+  var screen:=Label3D.new()
+  screen.text="TRIMMED %.1f g"%float(trimmed)
+  screen.font_size=30
+  screen.pixel_size=.0032
+  screen.position=Vector3(0,size.y+.27,.01)
+  screen.billboard=BaseMaterial3D.BILLBOARD_ENABLED
+  display.add_child(screen)
+  if trimmed<=0:continue
+  var shown:int=mini(16,maxi(2,ceili(sqrt(float(trimmed))*2.0)))
+  for n in range(shown):
+   var bud:=MeshInstance3D.new()
+   bud.name="TrimmedBud%d"%n
+   var mesh:=SphereMesh.new()
+   mesh.radius=.5
+   mesh.height=1.0
+   mesh.radial_segments=10
+   mesh.rings=6
+   var material:=StandardMaterial3D.new()
+   material.albedo_color=Color("71944c") if n%3!=0 else Color("557b41")
+   material.roughness=.85
+   mesh.material=material
+   bud.mesh=mesh
+   bud.position=Vector3(-.17+float(n%4)*.11,size.y+.075+float(n/4)*.023,-.105+float((n/4)%4)*.065)
+   bud.scale=Vector3(.095,.072,.078)
+   bud.set_meta("no_collision",true)
+   display.add_child(bud)
 
 func sync_supply_labels() -> void:
  for id in rendered:
