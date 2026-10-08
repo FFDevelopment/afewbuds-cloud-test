@@ -231,6 +231,7 @@ func accepts(id:String,item:String) -> bool:
  if kind=="packing":return group(item)=="grams"
  return kind=="storage" and (category(item)=="product" or item=="cash" or group(item)=="equipment")
 func capacity(id:String,item:String) -> int:
+ if item=="cash":return 2000000000
  if furniture!=null and id!="backpack":
   var asset:String=furniture.model.container_item(id)
   if not asset.is_empty():
@@ -737,7 +738,7 @@ func render_inspector() -> void:
  if container_kind(container_id)=="packing" and selected_source==container_id and category(selected) in ["raw","trimmed"]:
   packing_action=button("Trim by hand" if category(selected)=="raw" else "Bag by hand",process_selected,text_box,true)
   packing_action.disabled=not packing_allowed()
-  if not packing_allowed():label("Processing is available at your active operation's bench.",text_box,13)
+  if not packing_allowed():label("Walk up to this bench to process its stock.",text_box,13)
  if category(selected)=="furniture" and selected_source=="backpack":
   var asset:String=selected.get_slice("|",1)
   button("Place item",func():close();furniture.begin(asset),text_box,true)
