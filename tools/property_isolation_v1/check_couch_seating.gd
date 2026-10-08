@@ -46,6 +46,16 @@ func run() -> void:
     if key.to_lower().contains("leg") or key.to_lower().contains("thigh") or key.to_lower().contains("hip") or key.to_lower().contains("knee"):
      bones.append(key)
   print("NPC_SITTING_DIAGNOSTIC ",character," animations=",JSON.stringify(animations)," bones=",str(bones))
+  for player in avatar.find_children("*","AnimationPlayer",true,false):
+   var idle:Animation=player.get_animation("idle")
+   var sit:Animation=player.get_animation("sit")
+   if idle==null or sit==null:continue
+   var paths:Array[String]=[]
+   for track in range(sit.get_track_count()):
+    paths.append(str(sit.track_get_path(track)))
+   print("NPC_SIT_TRACKS ",character," ",str(paths))
+   check(sit.get_track_count()>=idle.get_track_count(),"Character "+character+" sit animation keeps relaxed idle upper-body tracks; sit "+str(sit.get_track_count())+" vs idle "+str(idle.get_track_count()))
+
   avatar.queue_free()
  game.location_state.active_property="apartment"
  game.location_state.operation_contents_property="apartment"
