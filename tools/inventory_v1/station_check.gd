@@ -38,20 +38,43 @@ func run():
  inv.select_item("apartment:packing","raw|"+strain)
  check(inv.packing_action!=null and not inv.packing_action.disabled,"Raw harvest exposes Trim by hand")
  inv.packing_action.pressed.emit()
- check(inv.packing.active and not inv.is_open(),"Trim opens physical work area without inventory overlay")
- inv.packing.selected=0;inv.packing.use_selected();inv.packing.selected=1
- for i in range(3):inv.packing.use_selected()
- check(int(game.trimmed_inventory.get(strain,0))==3 and int(game.untrimmed_inventory.get(strain,0))==0,"Trimming conserves the harvested three grams")
- check(inv.is_open() and not game.bagging_panel.visible,"Finishing trim returns to modern bench")
+ check(game.trim_panel.visible and not inv.is_open(),"Basic bench opens the original scissors minigame")
+ game._complete_trim_minigame()
+ check(int(game.trimmed_inventory.get(strain,0))==3 and int(game.untrimmed_inventory.get(strain,0))==0,"Basic scissors trim conserves the selected three grams")
+ game._close_trim_minigame()
+ check(inv.is_open(),"Finishing trim returns to the property-local packing inventory")
  inv.select_item("apartment:packing","trimmed|"+strain)
- check(inv.packing_action!=null and not inv.packing_action.disabled,"Trimmed product exposes Bag by hand")
+ check(inv.packing_action!=null and not inv.packing_action.disabled,"Trimmed buds expose the original bag minigame")
  inv.packing_action.pressed.emit()
- check(inv.packing.active and not inv.is_open(),"Bagging opens physical work area")
- while inv.packing.progress<inv.packing.amount:
-  inv.packing.selected=0;inv.packing.use_selected();inv.packing.selected=1;inv.packing.use_selected()
- inv.packing.selected=2;inv.packing.use_selected()
- check(int(game.bagged_inventory.get(strain,0))==3 and int(game.trimmed_inventory.get(strain,0))==0,"Sealing transfers exactly three grams to packaged bench stock")
- check(inv.is_open() and not game.bagging_panel.visible,"Sealing returns to the modern bench")
+ check(game.bag_minigame_panel.visible and game.bag_target_units==3,"Basic bench fills smaller three-gram bags")
+ game.bag_current_units=game.bag_target_units
+ game._seal_current_bag()
+ check(int(game.bagged_inventory.get(strain,0))==3 and int(game.trimmed_inventory.get(strain,0))==0,"Basic sealing transfers exactly three grams")
+ check(inv.is_open(),"Sealed bag returns to bench inventory")
+ # Upgraded bench trims the complete selected strain and keeps bagging 7g + remainder.
+ inv.furniture.model.state.items.legacy_packing.sku="bench_2"
+ inv.furniture.equipment_world.sync_levels()
+ game.untrimmed_inventory={strain:15}
+ game.trimmed_inventory={}
+ inv.select_item("apartment:packing","raw|"+strain)
+ inv.packing_action.pressed.emit()
+ check(game.trim_panel.visible and game.trim_harvest_amount==15,"Bench II scissors cover every gram of the selected strain")
+ game._complete_trim_minigame()
+ game._close_trim_minigame()
+ check(int(game.trimmed_inventory.get(strain,0))==15,"Upgraded trim completes all 15g after its scissors interaction")
+ inv.select_item("apartment:packing","trimmed|"+strain)
+ inv.packing_action.pressed.emit()
+ var targets:Array[int]=[]
+ for i in 3:
+  targets.append(game.bag_target_units)
+  game.bag_current_units=game.bag_target_units
+  game._seal_current_bag()
+ check(targets==[7,7,1],"Upgraded bags run 7g, 7g and remaining 1g")
+ check(int(game.trimmed_inventory.get(strain,0))==0 and int(game.bagged_inventory.get(strain,0))==18,"No grams lost or duplicated through both tiers")
+ # Revert the upgraded fixture before testing basic transfers.
+ game.bagged_inventory={strain:3}
+ inv.furniture.model.state.items.legacy_packing.sku="bench_1"
+ inv.furniture.equipment_world.sync_levels()
  inv.select_item("apartment:packing","product|"+strain)
  check(inv.packing_action==null,"Packaged product does not offer reprocessing")
  var r=inv.transfer("apartment:packing","backpack","product|"+strain,3)
