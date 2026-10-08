@@ -35,7 +35,7 @@ def digest(data):
 
 def game_contents(data):
     spec = importlib.util.spec_from_file_location(
-        "afb_pack", ROOT / "tools/east_expansion_v1/pack.py"
+        "afb_pack", ROOT / "tools/build_neighborhood96.py"
     )
     assert spec is not None and spec.loader is not None
     mod = importlib.util.module_from_spec(spec)
