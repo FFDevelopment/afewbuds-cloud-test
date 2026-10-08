@@ -25,7 +25,7 @@ def patch_main(s):
     s=tutorial.patch_main(s)
     spec=importlib.util.spec_from_file_location("inventory_session",Path(__file__).with_name("session_patch.py"))
     session=importlib.util.module_from_spec(spec);spec.loader.exec_module(session)
-    return session.patch_main(s)
+    return restore_packing_minigames(session.patch_main(s))
 
 def patch_stations(s):
     s=s.replace('func _open_bagging_panel() -> void:\n','func _open_bagging_panel() -> void:\n\tif inventory_system!=null:\n\t\tinventory_system.open_container("packing")\n\t\treturn\n',1)
@@ -36,3 +36,39 @@ def patch_stations(s):
         body=body.replace('\tbagging_panel.visible = true\n\t_refresh_bagging_panel()', '\tif inventory_system!=null:\n\t\tinventory_system.return_to_packing()\n\telse:\n\t\tbagging_panel.visible = true\n\t\t_refresh_bagging_panel()')
         s=s[:start]+body+s[end:]
     return s
+
+def restore_packing_minigames(source):
+    """Maintain the original mouse/touch scissors game across every bench.
+    Tier I works small batches; upgraded stations trim the selected strain
+    and bag a continuous sequence of 7g, then the final remainder."""
+    def replace(old, new):
+        nonlocal source
+        assert source.count(old) == 1, "packing source drift: " + old[:65]
+        source = source.replace(old, new, 1)
+    tier = '''func _current_packing_bench_tier() -> int:
+\tif inventory_system != null and inventory_system.furniture != null:
+\t\tvar packing_id: String = str(inventory_system.packing_return)
+\t\tif packing_id.is_empty():
+\t\t\tpacking_id = str(inventory_system.operation()) + ":packing"
+\t\tvar model: RefCounted = inventory_system.furniture.model
+\t\tvar asset: String = model.container_item(packing_id)
+\t\tif not asset.is_empty() and model.state.items.has(asset):
+\t\t\tvar sku: String = str(model.state.items[asset].get("sku", "bench_1"))
+\t\t\treturn maxi(1, int(model.CATALOG.get(sku, {}).get("tier", 1)))
+\treturn maxi(1, bagging_level)
+
+'''
+    replace("func _packing_drop_size() -> int:\n", tier + "func _packing_drop_size() -> int:\n")
+    replace("return 1 if tutorial_active else [1,2,4][clampi(bagging_level-1,0,2)]",
+            "return 1 if tutorial_active else [1,2,4][clampi(_current_packing_bench_tier()-1,0,2)]")
+    replace("return 3 if tutorial_active else [3,6,12][clampi(bagging_level-1,0,2)]",
+            "return 3 if tutorial_active or _current_packing_bench_tier() < 2 else 7")
+    replace("trim_harvest_amount = amount\n\ttrim_total_units = mini(amount, 10)",
+            "trim_harvest_amount = amount if _current_packing_bench_tier() >= 2 and not tutorial_active else mini(amount, 10)\n\ttrim_total_units = mini(trim_harvest_amount, 10)")
+    replace("if bagging_level >= 3 and not tutorial_active and remaining > 0:",
+            "if _current_packing_bench_tier() >= 2 and not tutorial_active and remaining > 0:")
+    replace("var moved: int = mini(available, bag_target_units)\n\tif moved <= 0:\n\t\treturn",
+            'if available < bag_target_units:\n\t\tstatus_label.text = "Packing stock changed. Reopen this strain to weigh the available amount."\n\t\t_close_bag_minigame()\n\t\treturn\n\tvar moved: int = bag_target_units')
+    replace("\t_sync_packing_bench_visuals()\n\t_update_room_status_panel()",
+            "\t_sync_packing_bench_visuals()\n\tif inventory_system != null and inventory_system.furniture != null and inventory_system.furniture.equipment_world != null:\n\t\tinventory_system.furniture.equipment_world.sync_packing_displays()\n\t_update_room_status_panel()")
+    return source
