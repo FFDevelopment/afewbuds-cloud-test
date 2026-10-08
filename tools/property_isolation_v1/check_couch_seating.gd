@@ -32,6 +32,21 @@ func run() -> void:
  check(not game._simulation_blocked(),"NPC test simulation is unpaused and guide is inactive")
  var model:RefCounted=inv.furniture.model
  var crew:RefCounted=game.neighborhood.location_ops.crew
+ for character in ["Kobi","Malik","Rod"]:
+  var avatar:Node3D=crew.character_instance(character)
+  var animations:Array=[]
+  for player in avatar.find_children("*","AnimationPlayer",true,false):
+   for clip in player.get_animation_list():
+    var anim:Animation=player.get_animation(clip)
+    animations.append({"name":clip,"length":anim.length if anim!=null else -1.0,"tracks":anim.get_track_count() if anim!=null else -1})
+  var bones:Array[String]=[]
+  for rig in avatar.find_children("*","Skeleton3D",true,false):
+   for index in range(rig.get_bone_count()):
+    var key:String=rig.get_bone_name(index)
+    if key.to_lower().contains("leg") or key.to_lower().contains("thigh") or key.to_lower().contains("hip") or key.to_lower().contains("knee"):
+     bones.append(key)
+  print("NPC_SITTING_DIAGNOSTIC ",character," animations=",JSON.stringify(animations)," bones=",str(bones))
+  avatar.queue_free()
  game.location_state.active_property="apartment"
  game.location_state.operation_contents_property="apartment"
  check(model.state.items.has("legacy_sofa"),"Original public couch exists in furniture inventory")
