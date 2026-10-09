@@ -1031,6 +1031,12 @@ func production() -> void:
 	if computer_context=="house":
 		clear("HOUSE — PRODUCTION & POWER")
 		ui.label("House equipment and utilities are separate from apartment switches.")
+		var house_grow=world.house_controls.grow_snapshot()
+		ui.label(world.house_controls.grow_summary())
+		if int(house_grow.tents)>0:
+			b("TURN "+("OFF" if bool(host.house_control_state.get("grow_lights",false)) else "ON")+" HOUSE TENT LIGHTS",toggle_computer_house_grow_lights)
+		else:
+			ui.label("No grow tents placed in the house. Purchase and place a tent in its grow room first.")
 		var house_utility:Dictionary=utility_state("house")
 		ui.label("Power due: $%d · Water due: $%d" % [int(house_utility.get("power_due",0)),int(house_utility.get("water_due",0))])
 		for room in ["living","packing","kitchen","bathroom","bedroom","cross_hall","grow"]:
@@ -1041,6 +1047,10 @@ func production() -> void:
 	close();world.in_station=true
 	world.walk_position=host.camera.position;world.walk_rotation=host.camera.rotation
 	host._open_system_control_panel()
+func toggle_computer_house_grow_lights() -> void:
+	if computer_context!="house" or not _property_controlled("house"):return
+	world.house_controls.toggle_house_grow_lights()
+	production()
 func toggle_house_room(room:String) -> void:
 	if computer_context!="house" or not _property_controlled("house"):return
 	host.house_control_state[room]=not bool(host.house_control_state.get(room,true))
