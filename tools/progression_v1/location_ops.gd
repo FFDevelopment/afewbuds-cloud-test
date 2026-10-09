@@ -434,14 +434,15 @@ func property_home() -> void:
 	if computer_context=="apartment":crew.computer_controls()
 func business_extras() -> void:
 	if computer_context=="apartment":crew.computer_controls()
-	for name in host.location_state.deliveries:b("INSTALL "+str(name),install.bind(str(name)),not host.inventory_system.delivery_carried(str(name)))
+	for name in host.location_state.deliveries:
+		if str(host.location_state.deliveries[name].get("property",""))==computer_context:b("INSTALL "+str(name),install.bind(str(name)),not host.inventory_system.delivery_carried(str(name)))
 	var grid: GridContainer=host._phone_category_grid()
 	for app in ["employees","upgrades","products","genetics"]:
 		var title: String={"employees":"Employees","upgrades":"Upgrades","products":"Storage","genetics":"Genetics"}[app]
-		host._add_phone_app_tile(grid,"",title,active_property().capitalize()+" operation",app)
+		host._add_phone_app_tile(grid,"",title,computer_context.capitalize()+" operation",app)
 	b("PRODUCTION & UTILITIES",production)
 func management_allowed() -> bool:
-	return (computer_context=="apartment" and target()=="apartment_computer") or (computer_context=="house" and target()=="house_computer")
+	return is_open() and computer_context in ["apartment","house"] and _property_controlled(computer_context)
 func supply_intercept(name: String) -> bool:
 	if installing:return false
 	# The guided starter purchase stays with the tutorial; regular restocking moves to the market.
