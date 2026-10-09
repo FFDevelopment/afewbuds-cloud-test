@@ -759,6 +759,8 @@ def main():
     main_script=equipment_patch.restore_cabinet_hooks(equipment_patch.patch_story(equipment_patch.patch_growth(equipment_patch.finish_main(equipment_patch.patch_main(main_script)))))
     property_patch=module("property_isolation_patch",ROOT/"tools/property_isolation_v1/patch.py")
     main_script=property_patch.patch_main(main_script)
+    reward_contact_patch=module("reward_contact_patch",ROOT/"tools/reward_contact_v1/patch.py")
+    main_script=reward_contact_patch.patch_main(main_script)
     grow_status_patch=module("house_grow_status_patch",ROOT/"tools/property_isolation_v1/grow_status_patch.py")
     main_script=grow_status_patch.apply(main_script)
     # Idle production workers follow the current apartment couch, not its old anchor.
@@ -805,6 +807,7 @@ def main():
     crew=crew.replace('host.phone_scroll.scroll_vertical=int(host.phone_scroll.get_v_scroll_bar().max_value)','host.phone_scroll.scroll_vertical=0')
     crew=crew.replace('for i in range(host.phone_text_messages.size()):','for i in range(host.phone_text_messages.size()-1,-1,-1):')
     crew=property_patch.patch_crew(crew)
+    crew=reward_contact_patch.patch_crew(crew)
     # Preserve navigation behavior, but only loop walk while physically in transit.
     # The imported NPCs must stand with their regular idle pose at every
     # production workstation, even when the route cache has not advanced.
