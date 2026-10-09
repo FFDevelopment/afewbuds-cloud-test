@@ -97,7 +97,7 @@ func import_definitions(items: Dictionary) -> bool:
 	var staged: RefCounted = get_script().new()
 	staged.setup(definitions)
 	for key in items:
-		if not staged.register_definition(str(key), items[key]):
+		if not items[key] is Dictionary or not staged.register_definition(str(key), items[key]):
 			return false
 	for key in items:
 		definitions[str(key)] = staged.get_definition(str(key))
