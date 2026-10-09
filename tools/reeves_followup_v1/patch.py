@@ -25,10 +25,6 @@ func _reeves_remaining_balance() -> int:''', "friendly helper")
         "contact eligibility")
 
     s = once(s,
-        'func _open_reeves_visit() -> void:\n\tif customer_patience_timer != null:',
-        'func _open_reeves_visit() -> void:\n\tif customer_patience_timer != null:',
-        "visit entrypoint")
-    s = once(s,
         '''func _open_reeves_visit() -> void:
 \tif customer_patience_timer != null:
 \t\tcustomer_patience_timer.stop()
