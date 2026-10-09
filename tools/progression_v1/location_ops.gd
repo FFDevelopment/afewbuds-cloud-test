@@ -198,13 +198,12 @@ func order_equipment(name: String) -> void:
 	host.location_state.deliveries[name]={"property":active_property(),"paid":price,"collected":false}
 	host._update_cash_ui();host._save_game();equipment()
 func install(name: String) -> void:
-	var expected_target:String="house_computer" if active_property()=="house" else "apartment_computer"
-	if target()!=expected_target or not host.location_state.deliveries.has(name):return
+	if computer_context not in ["apartment","house"] or not _property_controlled(computer_context) or not host.location_state.deliveries.has(name):return
 	if not host.inventory_system.delivery_carried(name):
 		host.status_label.text="Collect this paid equipment into your backpack before installing it."
 		return
 	var delivery: Dictionary=host.location_state.deliveries[name]
-	if str(delivery.get("property",""))!=active_property():return
+	if str(delivery.get("property",""))!=computer_context:return
 	if host._supply_is_purchased(name):return
 	if str(delivery.get("kind",""))=="dealer":
 		installing=true;host._buy_dealer_locker_upgrade();installing=false
@@ -310,7 +309,7 @@ func manage(app: String) -> void:
 		"employees":computer_employees()
 		"products":host._build_products_app()
 		"genetics":host._build_genetics_app()
-		"upgrades":host._build_upgrades_app()
+		"upgrades":computer_upgrades()
 		"bills":computer_bills()
 	host.phone_list=previous_list
 	b("REFRESH",manage.bind(app))
@@ -396,6 +395,20 @@ func toggle_computer_worker() -> void:
 	if crew.assignment(host._critical_production_sender())!=computer_context:return
 	host._toggle_packing_employee()
 	manage("employees")
+func computer_upgrades() -> void:
+	var property:String=computer_context
+	ui.label(property.to_upper()+" OWNED EQUIPMENT",22)
+	if host.inventory_system==null or host.inventory_system.furniture==null:return
+	var model:RefCounted=host.inventory_system.furniture.model
+	var count:int=0
+	for id in model.state.items:
+		var item:Dictionary=model.state.items[id]
+		if str(item.get("property",""))!=property:continue
+		count+=1
+		ui.label(model.item_name(id)+" · "+("LOCKED" if bool(item.get("locked",false)) else "AVAILABLE"))
+	if count==0:ui.label("No equipment or furniture is installed at this property. Apartment equipment stays at the apartment.")
+	b("ARRANGE "+property.to_upper()+" FURNITURE & EQUIPMENT",func():close();host.inventory_system.furniture.open_property(property))
+	ui.label("Buy additional equipment at Central Market. Purchases must be delivered or carried to this property.")
 func computer_bills() -> void:
 	var property:String=computer_context
 	var due:Dictionary=utility_state(property)
@@ -416,7 +429,8 @@ func property_home() -> void:
 	b("EQUIPMENT · Upgrades & installation",manage.bind("upgrades"))
 	if host.location_state.deliveries.size()>0:
 		ui.label("PAID EQUIPMENT · Collect at market before installation")
-		for name in host.location_state.deliveries:b("INSTALL "+str(name),install.bind(str(name)),not host.inventory_system.delivery_carried(str(name)))
+		for name in host.location_state.deliveries:
+			if str(host.location_state.deliveries[name].get("property",""))==computer_context:b("INSTALL "+str(name),install.bind(str(name)),not host.inventory_system.delivery_carried(str(name)))
 	if computer_context=="apartment":crew.computer_controls()
 func business_extras() -> void:
 	if computer_context=="apartment":crew.computer_controls()
