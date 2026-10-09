@@ -146,6 +146,7 @@ func clear(title: String) -> void:
 	world.pad.release();world.pointer=-99
 func close() -> void:
 	ui.overlay.hide();management_app=""
+	
 func b(text: String, callback: Callable, disabled: bool=false) -> void:
 	var item := Button.new()
 	item.text=text;item.custom_minimum_size.y=54
@@ -305,11 +306,11 @@ func manage(app: String) -> void:
 		"operations":operations_home()
 		"inventory":inventory_home()
 		"property":property_home()
-		"employees":host._build_employees_app()
+		"employees":computer_employees()
 		"products":host._build_products_app()
 		"genetics":host._build_genetics_app()
 		"upgrades":host._build_upgrades_app()
-		"bills":host._build_bills_app()
+		"bills":computer_bills()
 	host.phone_list=previous_list
 	b("REFRESH",manage.bind(app))
 	if app=="business":ui.button("CLOSE COMPUTER",close)
@@ -319,19 +320,93 @@ func manage(app: String) -> void:
 		ui.button("CLOSE COMPUTER",close)
 	format_management()
 	rendering_management=false
+func computer_staff_names(property:String) -> Array[String]:
+	var names:Array[String]=[]
+	for name in crew.roster():
+		if crew.role(name)!="" and crew.assignment(name)==property and not names.has(name):names.append(name)
+	names.sort()
+	return names
+func computer_staff_payroll(property:String) -> int:
+	var total:int=0
+	for name in computer_staff_names(property):
+		if crew.role(name)=="production" and host.packing_employee_active:total+=host.PACKER_DAILY_WAGE
+	return total
+func computer_stock_total(property:String,kind:String,prefix:String) -> int:
+	if host.inventory_system==null:return 0
+	var amount:int=0
+	for key in host.inventory_system.contents(property+":"+kind):
+		if str(key).begins_with(prefix):amount+=maxi(0,int(host.inventory_system.contents(property+":"+kind)[key]))
+	return amount
+func computer_due(property:String) -> int:
+	var state:Dictionary=utility_state(property)
+	return int(state.get("power_due",0))+int(state.get("water_due",0))+(house_balance() if property=="house" else apartment_balance())
 func business_home() -> void:
-	var state: String="LAYING LOW" if host.lay_low_active else ("OPEN" if host.business_open else "AWAY")
-	ui.label("STOREFRONT · "+state,22)
-	ui.label("Crew: %d · Dealer stock: %dg · Outstanding bills: $%d" % [host._staff_count(),host._dealer_locker_total(),host.power_bill_due+host.water_bill_due+host.dealer_balance_due+balance()])
+	var property:String=computer_context
+	var staff:Array[String]=computer_staff_names(property)
+	ui.label(property.to_upper()+" OPERATION · PROPERTY-LOCAL DATA",22)
+	ui.label("Assigned staff: %d · Packing: %dg raw / %dg trimmed / %dg bagged" % [staff.size(),computer_stock_total(property,"packing","raw|"),computer_stock_total(property,"packing","trimmed|"),computer_stock_total(property,"packing","product|")])
+	ui.label("Storage: %dg · Dealer locker: %dg · Property bills: $%d" % [computer_stock_total(property,"storage","product|"),computer_stock_total(property,"dealer","product|"),computer_due(property)])
+	if property=="house":ui.label("The house has its own stock, equipment, workers and utility account. Apartment door traffic and apartment staff do not transfer here automatically.")
+	else:ui.label("Apartment storefront: "+("LAYING LOW" if host.lay_low_active else ("OPEN" if host.business_open else "AWAY")))
 	b("OPERATIONS · Staff, production & power",manage.bind("operations"))
 	b("INVENTORY · Products & genetics",manage.bind("inventory"))
 	b("PROPERTY & BILLS · Storefront, rent & equipment",manage.bind("property"))
 	if host.location_state.deliveries.size()>0:ui.label("%d paid equipment orders · Collect into your backpack before installation." % host.location_state.deliveries.size())
 func operations_home() -> void:
-	ui.label("CREW · %d staff · Door manager: %s" % [host._staff_count(),crew.manager() if not crew.manager().is_empty() else "None assigned"])
+	var property:String=computer_context
+	ui.label(property.to_upper()+" CREW · %d assigned" % computer_staff_names(property).size())
+	if property=="apartment":ui.label("Apartment door manager: "+(crew.manager() if not crew.manager().is_empty() else "None assigned"))
+	else:ui.label("The apartment door manager does not operate the house. Assign staff to the house separately.")
 	b("EMPLOYEES · Hiring, duty & assignments",manage.bind("employees"))
 	b("PRODUCTION & POWER · Lights, ventilation & equipment",production)
 	b("CONTACTS · Crew messages & commands",func():close();host._open_phone_app("clients");host.phone_open=true;host.phone_panel.show())
+func computer_employees() -> void:
+	var property:String=computer_context
+	var local:Array[String]=computer_staff_names(property)
+	ui.label(property.to_upper()+" STAFF · "+str(local.size())+" assigned",22)
+	ui.label("Crew positions are shared until transferred. Hired staff and pay remain in your career, but assignments and work stock are tied to one property.")
+	for name in local:
+		var role_name:String=crew.role(name)
+		ui.label(name+" · "+role_name.capitalize()+" · "+("ON DUTY" if host.packing_employee_active else "OFF DUTY") if role_name=="production" else name+" · "+role_name.capitalize())
+		b("MOVE "+name.to_upper()+" TO "+("HOUSE" if property=="apartment" else "APARTMENT"),move_computer_staff.bind(name,"house" if property=="apartment" else "apartment"))
+	if local.is_empty():ui.label("No workers are assigned to this property. Apartment staff are not shown here.")
+	var other:String="house" if property=="apartment" else "apartment"
+	for name in computer_staff_names(other):
+		b("ASSIGN "+name.to_upper()+" TO "+property.to_upper(),move_computer_staff.bind(name,property))
+	if not host.packing_employee_hired:
+		b("HIRE PRODUCTION WORKER FOR "+property.to_upper(),hire_computer_worker.bind(property),host.grower_level<5 or host.cash<host.PACKER_HIRE_COST)
+	elif computer_staff_names(property).has(host._critical_production_sender()):
+		b("SEND PRODUCTION WORKER HOME" if host.packing_employee_active else "PUT PRODUCTION WORKER ON DUTY",toggle_computer_worker)
+	if property=="apartment":
+		ui.label("Apartment storefront sales and door coverage are managed here.")
+		b("APARTMENT DEALER / DOOR CONTROLS",crew.computer_controls)
+	else:
+		ui.label("House production work uses house supplies. Apartment-only door coverage cannot be controlled from here.")
+func move_computer_staff(name:String,property:String) -> void:
+	if not _property_controlled(property):return
+	crew.assign(name,property)
+	manage("employees")
+func hire_computer_worker(property:String) -> void:
+	if not _property_controlled(property):return
+	host._hire_packing_employee()
+	if host.packing_employee_hired:crew.assign(host._critical_production_sender(),property)
+	manage("employees")
+func toggle_computer_worker() -> void:
+	if crew.assignment(host._critical_production_sender())!=computer_context:return
+	host._toggle_packing_employee()
+	manage("employees")
+func computer_bills() -> void:
+	var property:String=computer_context
+	var due:Dictionary=utility_state(property)
+	ui.label(property.to_upper()+" PROPERTY BILLS",22)
+	ui.label("Power: $%d · Water: $%d" % [int(due.get("power_due",0)),int(due.get("water_due",0))])
+	if property=="house":
+		ui.label("House agreement balance: $%d" % house_balance())
+		if house_balance()>0:b("PAY HOUSE AGREEMENT · $%d" % house_balance(),pay_house_payment,host.cash<house_balance())
+	else:
+		ui.label("Apartment rent balance: $%d" % apartment_balance())
+		if apartment_balance()>0:b("PAY APARTMENT RENT · $%d" % apartment_balance(),pay_apartment_rent,host.cash<apartment_balance())
+	b("MANAGE PROPERTY & UTILITIES ON PHONE",func():close();host._open_phone_app("realestate");host.phone_open=true;host.phone_panel.show())
 func inventory_home() -> void:
 	b("STORAGE · Stock, prices & listings",manage.bind("products"))
 	b("GENETICS · Hybrid recipes & seeds",manage.bind("genetics"))
@@ -341,9 +416,9 @@ func property_home() -> void:
 	if host.location_state.deliveries.size()>0:
 		ui.label("PAID EQUIPMENT · Collect at market before installation")
 		for name in host.location_state.deliveries:b("INSTALL "+str(name),install.bind(str(name)),not host.inventory_system.delivery_carried(str(name)))
-	crew.computer_controls()
+	if computer_context=="apartment":crew.computer_controls()
 func business_extras() -> void:
-	crew.computer_controls()
+	if computer_context=="apartment":crew.computer_controls()
 	for name in host.location_state.deliveries:b("INSTALL "+str(name),install.bind(str(name)),not host.inventory_system.delivery_carried(str(name)))
 	var grid: GridContainer=host._phone_category_grid()
 	for app in ["employees","upgrades","products","genetics"]:
@@ -938,9 +1013,25 @@ func equipment_ui(parent: VBoxContainer) -> void:
 func production() -> void:
 	var expected_target:String="house_computer" if computer_context=="house" else "apartment_computer"
 	if target()!=expected_target:return
+	if computer_context=="house":
+		clear("HOUSE — PRODUCTION & POWER")
+		ui.label("House equipment and utilities are separate from apartment switches.")
+		var house_utility:Dictionary=utility_state("house")
+		ui.label("Power due: $%d · Water due: $%d" % [int(house_utility.get("power_due",0)),int(house_utility.get("water_due",0))])
+		for room in ["living","packing","kitchen","bathroom","bedroom","cross_hall","grow"]:
+			var active:bool=bool(host.house_control_state.get(room,true))
+			b("HOUSE "+room.to_upper()+" LIGHT · "+("ON" if active else "OFF"),toggle_house_room.bind(room))
+		b("BACK TO HOUSE OPERATIONS",manage.bind("operations"))
+		return
 	close();world.in_station=true
 	world.walk_position=host.camera.position;world.walk_rotation=host.camera.rotation
 	host._open_system_control_panel()
+func toggle_house_room(room:String) -> void:
+	if computer_context!="house" or not _property_controlled("house"):return
+	host.house_control_state[room]=not bool(host.house_control_state.get(room,true))
+	if world.house_controls.switches.has(room):world.house_controls._set_light(room,bool(host.house_control_state[room]))
+	host._save_game()
+	production()
 func order_summary(parent: VBoxContainer) -> void:
 	var note := Label.new()
 	note.text="CENTRAL MARKET: %d seed(s), %d fertilizer ready for pickup.\nCARRIED: %d seed(s), %d fertilizer. Store carried supplies at the grow shelf using Add Stock." % [total(host.location_state.pickup_seeds),int(host.location_state.pickup_fertilizer),total(host.location_state.carried_seeds),int(host.location_state.carried_fertilizer)]
