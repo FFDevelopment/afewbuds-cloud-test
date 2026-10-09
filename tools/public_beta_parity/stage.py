@@ -25,7 +25,7 @@ REQUIRED_UI = (
 ALLOWED_SCRIPT_CHANGES = {
     "scripts/main.gd", "scripts/crew_phone.gd",
     "scripts/equipment_world.gd", "scripts/container_inventory.gd",
-    "scripts/property_furniture.gd",
+    "scripts/property_furniture.gd", "scripts/location_ops.gd",
 }
 
 
@@ -61,6 +61,9 @@ def verify_game(public_bytes, candidate_bytes):
         assert marker in editor, f"Missing public furniture control: {marker}"
     assert "func process_selected()" in new["scripts/container_inventory.gd"].decode(), "Inventory not present"
     assert "func idle_couch()" in new["scripts/crew_phone.gd"].decode(), "Relocated couch handling missing"
+    assert "func computer_staff_names(" in new["scripts/location_ops.gd"].decode(), "House staff isolation missing"
+    assert "func computer_employees(" in new["scripts/location_ops.gd"].decode(), "Per-property employees missing"
+    assert "func computer_due(" in new["scripts/location_ops.gd"].decode(), "Per-property utility bills missing"
     assert "func sync_packing_displays()" in new["scripts/equipment_world.gd"].decode(), "3D scale stock missing"
     prop = new["scripts/property_furniture.gd"].decode()
     assert 'bounds(id,point,yaw).grow(.015)' in prop, "Wall placement tolerance missing"
