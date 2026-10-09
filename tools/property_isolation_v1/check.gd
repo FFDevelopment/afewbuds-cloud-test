@@ -194,6 +194,27 @@ func run():
  var house_slot:int=int(model.state.items.isolation_house_tent.slots[0])
  game.plant_slots[house_slot]=game._empty_plant_slot()
  game.plant_slots[house_slot].stage=1;game.plant_slots[house_slot].strain=strain;game.plant_slots[house_slot].water=0;game.plant_slots[house_slot].fertilizer=0
+ var house_grow=game.neighborhood.house_controls
+ var grow_status:Dictionary=house_grow.grow_snapshot()
+ check(int(grow_status.tents)==1 and int(grow_status.capacity)==1 and int(grow_status.active)==1 and int(grow_status.dry)==1,"House grow panel reads placed tent, assigned pot and dry plant")
+ check(house_grow.title("switch_grow_lights").contains("1 TENT"),"House panel no longer reports missing equipment when house tent is installed")
+ check(house_grow.grow_panel_label!=null and house_grow.grow_panel_label.text.contains("PLANTS 1/1"),"House wall grow panel displays live 1/1 plant count")
+ var apartment_light_before:bool=game.grow_lights_on
+ var house_light_before:bool=bool(game.house_control_state.get("grow_lights",false))
+ var house_growth_before:float=float(model.growth_settings(house_slot,game._plant_growth_settings(false,house_slot),false).light_factor)
+ check(house_grow.toggle_house_grow_lights(),"House panel can turn installed house tent lighting on or off")
+ var house_light_after:bool=bool(game.house_control_state.get("grow_lights",false))
+ var house_growth_after:float=float(model.growth_settings(house_slot,game._plant_growth_settings(false,house_slot),false).light_factor)
+ check(house_light_before!=house_light_after and game.grow_lights_on==apartment_light_before,"House grow light switch changes house lighting without touching apartment")
+ check(absf(house_growth_after-house_growth_before)>.05,"House plant growth reacts to actual house light state")
+ var house_bulb=inv.furniture.equipment_world.rendered["isolation_house_tent"].get_node_or_null("TentGrowLight")
+ check(house_bulb!=null and house_bulb.visible==house_light_after,"Placed house tent's real light follows house grow panel switch")
+ model.state.items["isolation_house_tent"].property="backpack"
+ house_grow.refresh_grow_panel()
+ check(int(house_grow.grow_snapshot().tents)==0 and house_grow.title("switch_grow_lights").contains("NO TENTS"),"Picking up house tent leaves zero installed tents on panel")
+ check(not house_grow.toggle_house_grow_lights(),"House panel refuses light toggles without an installed tent")
+ model.state.items["isolation_house_tent"].property="house"
+ inv.furniture.equipment_world.sync()
  game.production_worker_pending_action="";game.production_worker_pending_slot=-1
  game._assign_production_worker_task()
  check(game.production_worker_pending_slot!=house_slot,"Apartment worker never selects an unattended house plant")
