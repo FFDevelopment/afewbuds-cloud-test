@@ -1,4 +1,4 @@
-name: Deploy exact public beta4 baseline with tested fixes
+name: Validate latest AFewBuds mobile beta parity
 
 on:
   push:
