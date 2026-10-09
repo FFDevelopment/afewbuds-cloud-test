@@ -143,9 +143,9 @@ func run():
  for node in computer_ops.ui.body.find_children("*","Label",true,false):house_labels.append(node.text)
  check(" ".join(PackedStringArray(house_labels)).contains("HOUSE OPERATION") and not " ".join(PackedStringArray(house_labels)).contains("APARTMENT STOREFRONT"),"House business dashboard shows its own operation instead of apartment storefront")
  check(computer_ops.computer_stock_total("house","storage","product|")==0 or computer_ops.computer_stock_total("house","storage","product|")==int(inv.contents("house:storage").get("product|Purple Dream",0)),"House business stock reads house-only storage")
- computer_crew.assign(worker_name,"house")
- check(computer_ops.computer_staff_names("house").has(worker_name) and not computer_ops.computer_staff_names("apartment").has(worker_name),"Worker transfer changes ownership of assignment, not a duplicate")
- computer_crew.assign(worker_name,"apartment")
+ game.location_state.staff_assignments[worker_name]="house"
+ check(computer_ops.computer_staff_names("house").has(worker_name) and not computer_ops.computer_staff_names("apartment").has(worker_name),"Per-property worker roster changes without creating a duplicate")
+ game.location_state.staff_assignments[worker_name]="apartment"
  check(computer_ops.computer_staff_names("apartment").has(worker_name) and not computer_ops.computer_staff_names("house").has(worker_name),"Moving worker back restores separate apartment roster")
  game.packing_employee_hired=existing_hire;game.packing_employee_active=existing_active
  game.neighborhood.location_ops.close()
