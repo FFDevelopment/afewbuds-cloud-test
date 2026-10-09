@@ -78,6 +78,18 @@ func run()->void:
  game.advancement_stats["contact_calls"]=0
  crew.open_thread("Agent Reeves");crew.show_actions()
  check(has_button(game.phone_list,"ASK REEVES TO REDUCE HEAT"),"Paid-off Reeves still offers heat assistance below the old heat threshold")
+ game.heat=0.0
+ crew.show_actions()
+ check(has_button(game.phone_list,"ASK REEVES TO REDUCE HEAT"),"At zero Heat Reeves still displays the disabled favor option")
+ var visible_zero_hint:bool=false
+ for node in game.phone_list.find_children("*","Label",true,false):
+  if str(node.text).contains("Heat is 0"):visible_zero_hint=true
+ check(visible_zero_hint,"Zero-Heat contact explains why no reduction can be purchased")
+ var zero_cash:int=game.cash
+ var zero_calls:int=game.corrupt_contact_calls
+ crew.reeves_message("help")
+ check(game.cash==zero_cash and game.corrupt_contact_calls==zero_calls,"Zero Heat cannot charge money or earn an unperformed heat-reduction milestone")
+ game.heat=24.0
  var settled_calls:int=game.corrupt_contact_calls
  var settled_cash:int=game.cash
  crew.reeves_message("help")
