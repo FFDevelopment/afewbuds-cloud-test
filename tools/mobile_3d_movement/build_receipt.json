@@ -1,7 +1,7 @@
 {
   "baseline_sha256": "bbc788e5d4dd19b59af7dd2824f34943361d901d08ae5b5c25f8e7c6b9a75410",
-  "target_sha256": "14e3fdc4181c72f2cfc8c883d334f7993a67dcc9bd9de244afb04257cfc77e56",
-  "target_bytes": 48774636,
+  "target_sha256": "08d6798712f3dceacf3a5bb362291deb3a33463d970731a25dfb76c499c88ee0",
+  "target_bytes": 48782796,
   "changed_existing_entries": [
     "scripts/main.gd",
     "scripts/offline_plant_care.gd",
