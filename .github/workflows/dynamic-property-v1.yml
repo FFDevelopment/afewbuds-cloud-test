@@ -15,11 +15,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: FFDevelopment/afewbuds-3d-prototype
-          ref: 8dc49a4815e4a893d0f7b47394b554eaa1ba08e0
+          ref: c432ac155a712701c262a885625cd29214f7b0e8
           path: afb-shared-core
           persist-credentials: false
       - name: Ensure mobile and desktop share identical property logic
-        run: cmp tools/dynamic_property_v1/property_registry.gd afb-shared-core/game/scripts/property_registry.gd
+        run: |
+          cmp tools/dynamic_property_v1/property_registry.gd afb-shared-core/game/scripts/property_registry.gd
+          cmp tools/item_registry_v1/item_registry.gd afb-shared-core/game/scripts/item_registry.gd
       - name: Assemble mobile gameplay candidate
         run: python3 tools/mobile_3d_movement/build.py --output-dir "${RUNNER_TEMP}/dynamic-property"
       - name: Install Godot 4.7.2
@@ -35,7 +37,7 @@ jobs:
         run: |
           set -euo pipefail
           GODOT=/tmp/godot/Godot_v4.7.2-stable_linux.x86_64
-          for spec in "tools/dynamic_property_v1/check.gd|DYNAMIC_PROPERTY_REGISTRY_RESULT: PASS" "tools/property_isolation_v1/check.gd|PROPERTY_ISOLATION_RESULT: PASS" "tools/mobile_3d_movement/check.gd|MOBILE_3D_TEST_RESULT: PASS" "tools/progression_v1/check.gd|PROGRESSION_V1_TEST_RESULT: PASS" "tools/reward_contact_v1/check.gd|REWARD_CONTACT_RESULT: PASS" "tools/inventory_v1/check.gd|INVENTORY_TEST_RESULT: PASS" "tools/equipment_v2/check.gd|EQUIPMENT_V2_RESULT: PASS"; do
+          for spec in "tools/dynamic_property_v1/check.gd|DYNAMIC_PROPERTY_REGISTRY_RESULT: PASS" "tools/item_registry_v1/check.gd|ITEM_REGISTRY_RESULT: PASS" "tools/property_isolation_v1/check.gd|PROPERTY_ISOLATION_RESULT: PASS" "tools/mobile_3d_movement/check.gd|MOBILE_3D_TEST_RESULT: PASS" "tools/progression_v1/check.gd|PROGRESSION_V1_TEST_RESULT: PASS" "tools/reward_contact_v1/check.gd|REWARD_CONTACT_RESULT: PASS" "tools/inventory_v1/check.gd|INVENTORY_TEST_RESULT: PASS" "tools/equipment_v2/check.gd|EQUIPMENT_V2_RESULT: PASS"; do
             script="${spec%%|*}"
             marker="${spec#*|}"
             XDG_DATA_HOME="$(mktemp -d)" timeout 180s "${GODOT}" --headless --path "${RUNNER_TEMP}/dynamic-property/candidate" --script "${GITHUB_WORKSPACE}/${script}" 2>&1 | tee /tmp/game-test.log
