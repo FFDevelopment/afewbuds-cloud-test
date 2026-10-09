@@ -71,6 +71,40 @@ func run()->void:
  check(game.corrupt_contact_calls==calls_before+1 and game.cash<cash_before and game.heat<heat_before,"Paid Reeves text uses existing cost and heat consequences")
  game._build_heat_app()
  check(not has_button(game.phone_list,"PAY REEVES"),"Reeves contact actions no longer appear inside Heat dashboard")
+ # A player who settled Reeves before Make the Call was introduced must still be able to earn it.
+ game.reeves_met=true;game.reeves_arrangement_active=false;game.reeves_arrangement_ended=true
+ game.reeves_total_paid=game.REEVES_TOTAL_OBLIGATION;game.reeves_relationship=70
+ game.corrupt_contact_unlocked=true;game.heat=24.0;game.cash=10000
+ game.advancement_stats["contact_calls"]=0
+ crew.open_thread("Agent Reeves");crew.show_actions()
+ check(has_button(game.phone_list,"ASK REEVES TO REDUCE HEAT"),"Paid-off Reeves still offers heat assistance below the old heat threshold")
+ game.heat=0.0
+ crew.show_actions()
+ check(has_button(game.phone_list,"ASK REEVES TO REDUCE HEAT"),"At zero Heat Reeves still displays the disabled favor option")
+ var visible_zero_hint:bool=false
+ for node in game.phone_list.find_children("*","Label",true,false):
+  if str(node.text).contains("Heat is 0"):visible_zero_hint=true
+ check(visible_zero_hint,"Zero-Heat contact explains why no reduction can be purchased")
+ var zero_cash:int=game.cash
+ var zero_calls:int=game.corrupt_contact_calls
+ crew.reeves_message("help")
+ check(game.cash==zero_cash and game.corrupt_contact_calls==zero_calls,"Zero Heat cannot charge money or earn an unperformed heat-reduction milestone")
+ game.heat=24.0
+ var settled_calls:int=game.corrupt_contact_calls
+ var settled_cash:int=game.cash
+ crew.reeves_message("help")
+ check(game.corrupt_contact_calls==settled_calls+1 and game.cash<settled_cash and int(game.advancement_stats.get("contact_calls",0))==1,"Post-payoff favor increments Make the Call milestone without restoring debt")
+ check(game._reeves_remaining_balance()==0 and not game.reeves_arrangement_active and game.reeves_arrangement_ended,"Paid-off relationship stays debt free")
+ game.customer_waiting=false;game.reeves_visit_pending=false
+ crew.reeves_message("meeting")
+ check(game.reeves_visit_pending and game.reeves_visit_reason=="friendly_checkin","Contact meeting schedules friendly doorstep check-in")
+ game.reeves_visit_pending=false
+ game.reeves_visit_reason="friendly_checkin"
+ game._start_reeves_door_visit("friendly_checkin")
+ game._open_reeves_visit()
+ check(game.sale_title.text.contains("PRIVATE CHECK-IN") and game.sale_primary_button.text.contains("REDUCE HEAT"),"Friendly visit offers optional paid heat reduction without new protection payment")
+ game._reeves_secondary_action()
+ check(not game.customer_waiting and game.reeves_arrangement_ended,"Just Talk ends visit without undoing payoff")
  game.seed_inventory=original_seeds
  game.advancement_stats["grams_stored"]=old_grams
  game.advancement_stats["hybrids_created"]=old_hybrids
