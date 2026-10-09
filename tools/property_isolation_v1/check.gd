@@ -209,6 +209,32 @@ func run():
  check(absf(house_growth_after-house_growth_before)>.05,"House plant growth reacts to actual house light state")
  var house_bulb=inv.furniture.equipment_world.rendered["isolation_house_tent"].get_node_or_null("TentGrowLight")
  check(house_bulb!=null and house_bulb.visible==house_light_after,"Placed house tent's real light follows house grow panel switch")
+ # Independently installed ventilation: no unit means no house air toggle or
+ # growth benefit, even if apartment ventilation happens to be turned on.
+ var apartment_vent_before:bool=game.ventilation_on
+ var apartment_power_before:float=game.neighborhood.location_ops._apartment_power_rate()
+ check(not bool(house_grow.grow_snapshot().ventilation) and not house_grow.toggle_house_ventilation(),"House ventilation reports not installed and refuses to turn on with no physical unit")
+ model.state.items["isolation_house_vent"]={"sku":"ventilation","property":"backpack","locked":false,"condition":100,"upgrades":{}}
+ check(model.place("isolation_house_vent","house",Vector3(43.8,0,-11.2),0),"Place separate ventilation unit in the house grow room: "+model.error)
+ inv.furniture.equipment_world.sync()
+ var installed_air:Dictionary=house_grow.grow_snapshot()
+ check(bool(installed_air.ventilation) and not bool(installed_air.ventilation_on),"House control panel detects placed ventilation but starts with it switched off")
+ check(house_grow.grow_panel_label.text.contains("AIR OFF"),"House wall panel shows installed but off ventilation")
+ var fan_growth_off:float=float(model.growth_settings(house_slot,game._plant_growth_settings(false,house_slot),false).ventilation_factor)
+ var fan_rate_off:float=model.utility_power("house")
+ check(house_grow.toggle_house_ventilation(),"House wall panel can start its own installed ventilation")
+ var fan_growth_on:float=float(model.growth_settings(house_slot,game._plant_growth_settings(false,house_slot),false).ventilation_factor)
+ var fan_rate_on:float=model.utility_power("house")
+ check(bool(house_grow.grow_snapshot().ventilation_on) and house_grow.grow_panel_label.text.contains("AIR ON"),"House panel displays actively running ventilation")
+ check(fan_growth_on>fan_growth_off and fan_rate_on>fan_rate_off,"House fan improves house crop growth and adds only house utility cost while running")
+ check(game.ventilation_on==apartment_vent_before and absf(game.neighborhood.location_ops._apartment_power_rate()-apartment_power_before)<.0001,"House ventilation does not change apartment ventilation or power")
+ check(house_grow.toggle_house_ventilation() and not bool(house_grow.grow_snapshot().ventilation_on),"House ventilation can turn off independently")
+ model.state.items["isolation_house_vent"].property="backpack"
+ model.state.items["isolation_house_vent"].erase("position")
+ inv.furniture.equipment_world.sync()
+ check(not bool(house_grow.grow_snapshot().ventilation) and not bool(house_grow.grow_snapshot().ventilation_on),"Packing the house ventilation unit instantly removes it from live grow panel")
+ check(absf(model.utility_power("house")-fan_rate_off)<.0001,"Packed ventilation no longer consumes house electricity")
+ model.state.items.erase("isolation_house_vent")
  model.state.items["isolation_house_tent"].property="backpack"
  house_grow.refresh_grow_panel()
  check(int(house_grow.grow_snapshot().tents)==0 and house_grow.title("switch_grow_lights").contains("NO TENTS"),"Picking up house tent leaves zero installed tents on panel")
