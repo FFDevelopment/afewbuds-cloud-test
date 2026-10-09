@@ -44,12 +44,20 @@ func register_grow(lamps: Array, fixtures: Array) -> void:
 	rocker.layers=2
 	rocker.set_meta("no_collision",true)
 	switches["grow_lights"]={"lamps":lamps,"fixtures":fixtures,"at":at,"rocker":rocker}
+	# This is a second, independent wall-panel control. A house ventilation
+	# unit must be placed inside the HOUSE grow room before it can run.
+	var air_at:Vector3=at+Vector3(0,-0.28,0)
+	var air_rocker:MeshInstance3D=world._interior_piece("HouseGrowVentilationRocker",air_at+Vector3(0.08,0,0),Vector3(0.035,0.14,0.15),"81918b")
+	air_rocker.layers=2
+	air_rocker.set_meta("no_collision",true)
+	switches["grow_ventilation"]={"at":air_at,"rocker":air_rocker}
 	_set_light("grow_lights",bool(states.get("grow_lights",false)))
+	_sync_house_ventilation()
 
 func grow_snapshot() -> Dictionary:
 	# Placed HOUSE tents drive this panel. Legacy fixture arrays can be empty
 	# even when the player owns fully usable tents with planted slots.
-	var data:Dictionary={"tents":0,"capacity":0,"active":0,"ready":0,"dry":0,"dead":0,"ventilation":false}
+	var data:Dictionary={"tents":0,"capacity":0,"active":0,"ready":0,"dry":0,"dead":0,"ventilation":false,"ventilation_on":false}
 	if host.inventory_system==null or host.inventory_system.furniture==null:return data
 	var model:RefCounted=host.inventory_system.furniture.model
 	if model==null:return data
@@ -68,18 +76,37 @@ func grow_snapshot() -> Dictionary:
 			if bool(plant.get("dead",false)):data.dead+=1
 			elif int(plant.get("stage",-1))>=host.STAGES.size()-1 or float(plant.get("growth",0.0))>=100.0:data.ready+=1
 			elif float(plant.get("water",0.0))<=25.0:data.dry+=1
+	data.ventilation_on=bool(data.ventilation) and bool(states.get("grow_ventilation",false))
 	return data
 
 func grow_summary() -> String:
 	var status:Dictionary=grow_snapshot()
-	var air:String="INSTALLED" if status.ventilation else "NOT INSTALLED"
+	var air:String=("RUNNING" if status.ventilation_on else "OFF") if status.ventilation else "NOT INSTALLED"
 	return "HOUSE GROW · %d TENT(S) · %d/%d PLANTS · %d READY · %d DRY · %d DEAD · LIGHTS %s · AIR %s" % [status.tents,status.active,status.capacity,status.ready,status.dry,status.dead,"ON" if bool(states.get("grow_lights",false)) else "OFF",air]
 
 func refresh_grow_panel() -> void:
 	if grow_panel_label==null:return
 	var status:Dictionary=grow_snapshot()
-	grow_panel_label.text="HOUSE GROW   %d TENT(S)\nPLANTS %d/%d   READY %d\nLIGHTS %s   AIR %s" % [status.tents,status.active,status.capacity,status.ready,"ON" if bool(states.get("grow_lights",false)) else "OFF","YES" if status.ventilation else "NO"]
+	grow_panel_label.text="HOUSE GROW   %d TENT(S)\nPLANTS %d/%d   READY %d\nLIGHTS %s   AIR %s" % [status.tents,status.active,status.capacity,status.ready,"ON" if bool(states.get("grow_lights",false)) else "OFF",("ON" if status.ventilation_on else "OFF") if status.ventilation else "NOT INSTALLED"]
 	grow_panel_label.modulate=Color("f0d18d") if status.dry>0 or status.dead>0 else Color("d4f5d2")
+
+func _sync_house_ventilation() -> void:
+	if not switches.has("grow_ventilation"):return
+	var live:bool=bool(grow_snapshot().ventilation_on)
+	switches["grow_ventilation"].rocker.material_override=world._material("80d1ab" if live else "766b60")
+
+func toggle_house_ventilation() -> bool:
+	if not bool(grow_snapshot().ventilation):
+		host.status_label.text="No ventilation unit is installed in the house grow room. Place a ventilation unit from Backpack first."
+		refresh_grow_panel()
+		return false
+	states["grow_ventilation"]=not bool(states.get("grow_ventilation",false))
+	host.house_control_state=states.duplicate(true)
+	_sync_house_ventilation()
+	refresh_grow_panel()
+	host._save_game()
+	host.status_label.text=grow_summary()
+	return true
 
 func toggle_house_grow_lights() -> bool:
 	if grow_snapshot().tents<=0:
@@ -138,7 +165,7 @@ func nearby() -> String:
 	var nearest := ""
 	var nearest_distance := 2.5
 	for id in switches:
-		if (id==room or (id=="grow_lights" and room=="grow") or (id=="market_front" and room=="market_stock")) and (not id.begins_with("market_") or room=="market_stock") and _reachable(switches[id].at):
+		if (id==room or (id in ["grow_lights","grow_ventilation"] and room=="grow") or (id=="market_front" and room=="market_stock")) and (not id.begins_with("market_") or room=="market_stock") and _reachable(switches[id].at):
 			var offset: Vector3=switches[id].at-host.camera.position
 			var distance: float=offset.length()+(1.0-(-host.camera.global_basis.z).dot(offset.normalized()))*2.0
 			if distance<nearest_distance:
@@ -156,6 +183,10 @@ func nearby() -> String:
 func title(target: String) -> String:
 	if target.begins_with("switch_"):
 		var id := target.trim_prefix("switch_")
+		if id=="grow_ventilation":
+			refresh_grow_panel()
+			if not bool(grow_snapshot().ventilation):return "INSPECT HOUSE VENTILATION · NOT INSTALLED"
+			return ("TURN OFF " if bool(grow_snapshot().ventilation_on) else "TURN ON ")+"HOUSE VENTILATION"
 		if id=="grow_lights":
 			refresh_grow_panel()
 			if grow_snapshot().tents<=0:return "INSPECT HOUSE GROW PANEL · NO TENTS PLACED"
@@ -168,6 +199,9 @@ func use(target: String) -> void:
 	if target!=nearby(): return
 	if target.begins_with("switch_"):
 		var id := target.trim_prefix("switch_")
+		if id=="grow_ventilation":
+			toggle_house_ventilation()
+			return
 		if id=="grow_lights":
 			toggle_house_grow_lights()
 			return
