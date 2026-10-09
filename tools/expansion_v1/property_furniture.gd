@@ -311,7 +311,8 @@ func growth_settings(slot:int,base:Dictionary,offline:bool) -> Dictionary:
   if e.sku=="ventilation":vent=true
   if e.sku=="grow_light":light=true
  result.auto_water=water and not offline
- result.ventilation_factor=1.0 if vent and host.ventilation_on else host.VENTILATION_INACTIVE_GROWTH_MULTIPLIER
+ var ventilation_on:bool=bool(host.house_control_state.get("grow_ventilation",false)) if property=="house" else host.ventilation_on
+ result.ventilation_factor=1.0 if vent and ventilation_on else host.VENTILATION_INACTIVE_GROWTH_MULTIPLIER
  # Each property has its own grow-light switch; the shared legacy flag only
  # applies to the apartment. House plants must respect the house panel.
  var light_on:bool=bool(host.house_control_state.get("grow_lights",false)) if property=="house" else host.grow_lights_on
@@ -323,7 +324,7 @@ func utility_power(property:String) -> float:
  var rate:=0.0
  for e in state.items.values():
   if e.get("property","")!=property:continue
-  if e.sku=="ventilation" and host.ventilation_on:rate+=host.POWER_VENTILATION_COST_PER_GAME_MINUTE
+  if e.sku=="ventilation" and (bool(host.house_control_state.get("grow_ventilation",false)) if property=="house" else host.ventilation_on):rate+=host.POWER_VENTILATION_COST_PER_GAME_MINUTE
   if e.sku=="grow_light" and (bool(host.house_control_state.get("grow_lights",false)) if property=="house" else host.grow_lights_on):rate+=host.POWER_GROW_LIGHT_COST_PER_TENT_PER_GAME_MINUTE*.3
   if e.sku=="floor_lamp" and host.floor_lamp_on:rate+=host.POWER_LAMP_COST_PER_GAME_MINUTE
  return rate
