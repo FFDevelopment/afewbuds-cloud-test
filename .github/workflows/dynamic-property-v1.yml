@@ -35,7 +35,7 @@ jobs:
         run: |
           set -euo pipefail
           GODOT=/tmp/godot/Godot_v4.7.2-stable_linux.x86_64
-          for spec in "tools/dynamic_property_v1/check.gd|DYNAMIC_PROPERTY_REGISTRY_RESULT: PASS" "tools/property_isolation_v1/check.gd|PROPERTY_ISOLATION_RESULT: PASS"; do
+          for spec in "tools/dynamic_property_v1/check.gd|DYNAMIC_PROPERTY_REGISTRY_RESULT: PASS" "tools/property_isolation_v1/check.gd|PROPERTY_ISOLATION_RESULT: PASS" "tools/mobile_3d_movement/check.gd|MOBILE_3D_TEST_RESULT: PASS" "tools/progression_v1/check.gd|PROGRESSION_V1_TEST_RESULT: PASS" "tools/reward_contact_v1/check.gd|REWARD_CONTACT_RESULT: PASS" "tools/inventory_v1/check.gd|INVENTORY_TEST_RESULT: PASS" "tools/equipment_v2/check.gd|EQUIPMENT_V2_RESULT: PASS"; do
             script="${spec%%|*}"
             marker="${spec#*|}"
             XDG_DATA_HOME="$(mktemp -d)" timeout 180s "${GODOT}" --headless --path "${RUNNER_TEMP}/dynamic-property/candidate" --script "${GITHUB_WORKSPACE}/${script}" 2>&1 | tee /tmp/game-test.log
