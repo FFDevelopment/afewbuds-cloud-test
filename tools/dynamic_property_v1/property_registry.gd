@@ -123,7 +123,7 @@ func controlled(id: String) -> bool:
 	if id == "apartment":
 		return bool(host.apartment_rent_state.get("lease_active", true))
 	if id == "house":
-		return bool(host.property_opportunity_state.get("acquired", false)) and bool(host.property_opportunity_state.get("relocated", false))
+		return bool(host.property_opportunity_state.get("acquired", false))
 	return bool(state.properties[id].get("access", false))
 
 func property_ids(only_controlled: bool = false) -> Array[String]:
