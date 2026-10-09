@@ -118,7 +118,7 @@ jobs:
             git push origin HEAD:recovery/public-beta4-plus-fixes
           fi
 
-      - name: Verify apartment and house computers use independent staff, product listings, equipment, stock, and bills; house grow panel reads placed tents
+      - name: Verify house grow panel and ventilation sync installed equipment independently of apartment
         run: |
           set -euo pipefail
           XDG_DATA_HOME="$(mktemp -d)" timeout 120s /tmp/godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path "${RUNNER_TEMP}/mobile3d/candidate" --script "${GITHUB_WORKSPACE}/tools/property_isolation_v1/check.gd" 2>&1 | tee "${RUNNER_TEMP}/property-check.log"
