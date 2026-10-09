@@ -91,6 +91,30 @@ func register_definition(sku: String, item: Dictionary) -> bool:
 	definitions[sku] = copy
 	return true
 
+func import_definitions(items: Dictionary) -> bool:
+	# Validate every entry before importing any of them. A malformed content
+	# update cannot partially replace a game's available equipment catalog.
+	var staged: RefCounted = get_script().new()
+	staged.setup(definitions)
+	for key in items:
+		if not staged.register_definition(str(key), items[key]):
+			return false
+	for key in items:
+		definitions[str(key)] = staged.get_definition(str(key))
+	return true
+
+func load_external_catalog(path: String) -> bool:
+	# JSON content packs are authored alongside models and artwork, not saves.
+	if not FileAccess.file_exists(path):
+		return true
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+	if not parsed is Dictionary:
+		return false
+	if int(parsed.get("schema", 0)) != SCHEMA_VERSION:
+		return false
+	var items: Variant = parsed.get("items", {})
+	return items is Dictionary and import_definitions(items)
+
 func register_alias(previous_sku: String, active_sku: String) -> bool:
 	# Only aliases new, unused keys; existing inventories retain original SKUs.
 	if not _valid_key(previous_sku) or has(previous_sku) or not definitions.has(active_sku):
