@@ -15,7 +15,7 @@ func setup(owner: Node, legacy_rooms: Dictionary = {}) -> void:
 	if not state.has("properties"):
 		state["properties"] = {}
 	state["next_serial"] = maxi(1, int(state.get("next_serial", 1)))
-	state["schema"] = SCHEMA_VERSION
+	state["schema"] = maxi(SCHEMA_VERSION, int(state.get("schema", 0)))
 	host.location_state["property_registry"] = state
 	# Existing saves are linked in place; furniture, invoices, staff, and stock
 	# remain in their original property-keyed dictionaries until migrated.
@@ -146,22 +146,39 @@ func rooms_for(id: String) -> Dictionary:
 	return rooms
 
 func room_at(id: String, world_point: Vector3) -> String:
-	for room in rooms_for(id):
-		var rect: Rect2 = rooms_for(id)[room]
+	var rooms: Dictionary = rooms_for(id)
+	for room in rooms:
+		var rect: Rect2 = rooms[room]
 		if rect.has_point(Vector2(world_point.x, world_point.z)):
 			return room
 	return ""
 
+func _property_depth(id: String) -> int:
+	var depth: int = 0
+	var visited: Dictionary = {}
+	var next_id: String = id
+	while exists(next_id) and not visited.has(next_id):
+		visited[next_id] = true
+		next_id = str(state.properties[next_id].get("parent_id", ""))
+		if not next_id.is_empty() and exists(next_id):
+			depth += 1
+	return depth
+
 func property_at(world_point: Vector3) -> String:
-	# Child units win over their parent building when boundaries overlap.
-	var chosen := ""
-	var smallest := INF
+	# Registered sub-units take priority over parent buildings, even when
+	# their individual room geometry is larger than a parent room.
+	var chosen: String = ""
+	var best_depth: int = -1
+	var smallest: float = INF
 	for id in property_ids(true):
-		for rect in rooms_for(id).values():
-			if not (rect as Rect2).has_point(Vector2(world_point.x, world_point.z)):
+		for value in rooms_for(id).values():
+			var rect: Rect2 = value
+			if not rect.has_point(Vector2(world_point.x, world_point.z)):
 				continue
+			var depth: int = _property_depth(id)
 			var area: float = rect.size.x * rect.size.y
-			if area < smallest:
+			if depth > best_depth or (depth == best_depth and area < smallest):
+				best_depth = depth
 				smallest = area
 				chosen = id
 	return chosen
