@@ -97,8 +97,14 @@ func sync() -> void:
    if e.sku in ["floor_lamp","grow_light"]:
     var light:=OmniLight3D.new();light.name="ItemLight";light.position=Vector3(0,1.7,0);light.omni_range=4.6;light.light_energy=.8;light.light_color=Color("ffd2a0") if e.sku=="floor_lamp" else Color("daf7df");root.add_child(light)
  for id in rendered:
+  if not model.state.items.has(id):continue
+  var entry:Dictionary=model.state.items[id]
+  var house_grow_on:bool=bool(host.house_control_state.get("grow_lights",false))
+  var grow_on:bool=house_grow_on if entry.get("property","")=="house" else host.grow_lights_on
+  var tent_light:Node3D=rendered[id].get_node_or_null("TentGrowLight")
+  if tent_light!=null:tent_light.visible=grow_on
   var light:Node3D=rendered[id].get_node_or_null("ItemLight")
-  if light!=null:light.visible=host.floor_lamp_on if model.state.items[id].sku=="floor_lamp" else host.grow_lights_on
+  if light!=null:light.visible=host.floor_lamp_on if entry.sku=="floor_lamp" else grow_on
  for i in range(host.plant_visuals.size()):
   var plant:Node3D=host.plant_visuals[i]
   var id:String=model.item_for_slot(i)
@@ -164,6 +170,13 @@ func tent(root:Node3D,id:String) -> void:
  editor.piece(root,id,Vector3(0,s.y-.04,0),Vector3(s.x,.08,s.z),"232833")
  editor.piece(root,id,Vector3(0,.2,0),Vector3(s.x-.14,.08,s.z-.12),"353441")
  editor.piece(root,id,Vector3(0,s.y-.3,0),Vector3(s.x*.75,.05,.3),"d7f5d7")
+ var bulb:=OmniLight3D.new()
+ bulb.name="TentGrowLight"
+ bulb.position=Vector3(0,s.y-.38,0)
+ bulb.light_color=Color("e5f8d5")
+ bulb.light_energy=.65
+ bulb.omni_range=3.0
+ root.add_child(bulb)
  label(root,model.item_name(id),Vector3(0,s.y+.12,0))
 func label(root:Node3D,text:String,position:Vector3) -> void:
  var caption:=Label3D.new();caption.text=text;caption.font_size=24;caption.pixel_size=.004;caption.position=position;caption.billboard=BaseMaterial3D.BILLBOARD_ENABLED;root.add_child(caption)
