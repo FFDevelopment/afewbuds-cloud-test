@@ -525,7 +525,7 @@ func _house_power_rate() -> float:
 	var rate:float=host.POWER_BASE_COST_PER_GAME_MINUTE if active_property()=="house" else 0.0
 	for room_id in ["living","packing","kitchen","bathroom","bedroom","cross_hall","grow"]:
 		if bool(host.house_control_state.get(room_id,true)):rate+=host.POWER_MAIN_LIGHT_COST_PER_GAME_MINUTE
-	if host.grow_lights_on:rate+=host.POWER_GROW_LIGHT_COST_PER_TENT_PER_GAME_MINUTE*float(host.inventory_system.furniture.model.powered_tent_count("house"))
+	if bool(host.house_control_state.get("grow_lights",false)):rate+=host.POWER_GROW_LIGHT_COST_PER_TENT_PER_GAME_MINUTE*float(host.inventory_system.furniture.model.powered_tent_count("house"))
 	rate+=host.inventory_system.furniture.model.utility_power("house")
 	return rate
 
@@ -1037,6 +1037,10 @@ func production() -> void:
 			b("TURN "+("OFF" if bool(host.house_control_state.get("grow_lights",false)) else "ON")+" HOUSE TENT LIGHTS",toggle_computer_house_grow_lights)
 		else:
 			ui.label("No grow tents placed in the house. Purchase and place a tent in its grow room first.")
+		if bool(house_grow.ventilation):
+			b("TURN "+("OFF" if bool(house_grow.ventilation_on) else "ON")+" HOUSE VENTILATION",toggle_computer_house_ventilation)
+		else:
+			ui.label("VENTILATION NOT INSTALLED · Purchase and place a ventilation unit in the house grow room.")
 		var house_utility:Dictionary=utility_state("house")
 		ui.label("Power due: $%d · Water due: $%d" % [int(house_utility.get("power_due",0)),int(house_utility.get("water_due",0))])
 		for room in ["living","packing","kitchen","bathroom","bedroom","cross_hall","grow"]:
@@ -1047,6 +1051,10 @@ func production() -> void:
 	close();world.in_station=true
 	world.walk_position=host.camera.position;world.walk_rotation=host.camera.rotation
 	host._open_system_control_panel()
+func toggle_computer_house_ventilation() -> void:
+	if computer_context!="house" or not _property_controlled("house"):return
+	world.house_controls.toggle_house_ventilation()
+	production()
 func toggle_computer_house_grow_lights() -> void:
 	if computer_context!="house" or not _property_controlled("house"):return
 	world.house_controls.toggle_house_grow_lights()
