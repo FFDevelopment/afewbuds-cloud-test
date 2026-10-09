@@ -45,6 +45,18 @@ jobs:
           grep -q "PROGRESSION_V1_TEST_RESULT: PASS" "${RUNNER_TEMP}/progression-v1-check.log"
           if grep -E 'SCRIPT ERROR|^ERROR:' "${RUNNER_TEMP}/progression-v1-check.log"; then exit 1; fi
 
+      - name: Test property ownership, inventory, Reeves and gameplay safety
+        run: |
+          set -euo pipefail
+          GODOT=/tmp/godot/Godot_v4.7.2-stable_linux.x86_64
+          for spec in "tools/property_isolation_v1/check.gd|PROPERTY_ISOLATION_RESULT: PASS" "tools/reward_contact_v1/check.gd|REWARD_CONTACT_RESULT: PASS" "tools/inventory_v1/check.gd|INVENTORY_TEST_RESULT: PASS" "tools/equipment_v2/check.gd|EQUIPMENT_V2_RESULT: PASS"; do
+            script="${spec%%|*}"
+            marker="${spec#*|}"
+            XDG_DATA_HOME="$(mktemp -d)" timeout 180s "${GODOT}" --headless --path "${RUNNER_TEMP}/mobile3d/candidate" --script "${GITHUB_WORKSPACE}/${script}" 2>&1 | tee /tmp/afb-game-check.log
+            grep -q "${marker}" /tmp/afb-game-check.log
+            if grep -E 'SCRIPT ERROR|^ERROR:' /tmp/afb-game-check.log; then exit 1; fi
+          done
+
       - name: Commit validated baseline runtime
         run: |
           set -euo pipefail

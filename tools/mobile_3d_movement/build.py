@@ -13,6 +13,12 @@ def module(name,path):
 east=module('east_builder',ROOT/'tools/east_expansion_v1/build.py')
 
 def patch_neighborhood(source:str) -> str:
+    # Placement previews and decorative meshes must never become walking proxies.
+    source=source.replace('func _collect_colliders(node: Node) -> void:\n','func _collect_colliders(node: Node) -> void:\n\tif node.get_meta("equipment_legacy",false) or node.has_meta("equipment_id"):return\n',1)
+    source=source.replace('func _collect_map_colliders(node: Node) -> void:\n','func _collect_map_colliders(node: Node) -> void:\n\tif node.get_meta("equipment_legacy",false) or node.has_meta("equipment_id"):return\n',1)
+    collider_filter = 'if node is MeshInstance3D and node.is_visible_in_tree() and node.mesh != null:'
+    assert collider_filter in source
+    source = source.replace(collider_filter, collider_filter[:-1] + ' and not node.get_meta("no_collision",false):', 1)
     source=source.replace(
         'var couch_stand := Vector3.ZERO\n',
         '''var couch_stand := Vector3.ZERO
@@ -212,6 +218,11 @@ func _update_stamina_hud() -> void:
     source=source.replace(
         '\tif blocked:\n\t\tpointer=-99\n\t\tpad.release()\n\t\treturn\n',
         '\tif blocked:\n\t\tpointer=-99\n\t\tpad.release()\n\t\t_stop_physics_walk()\n\t\treturn\n',1)
+
+    source=source.replace('func handle_input(event: InputEvent) -> void:\n','func handle_input(event: InputEvent) -> void:\n\tif host.inventory_system!=null and host.inventory_system.furniture.handle_placement_input(event):\n\t\thost.get_viewport().set_input_as_handled();return\n',1)
+    source=source.replace('func _over_ui(point: Vector2) -> bool:\n','func _over_ui(point: Vector2) -> bool:\n\tif host.inventory_system!=null and host.inventory_system.furniture.over_controls(point):return true\n',1)
+    source=source.replace('func _near_target() -> String:\n','func _near_target() -> String:\n\tif host.inventory_system!=null and host.inventory_system.furniture.is_placing():return ""\n',1)
+    source=source.replace('func _tap(point: Vector2) -> void:\n','func _tap(point: Vector2) -> void:\n\tif host.inventory_system!=null and host.inventory_system.furniture.is_placing():return\n',1)
 
     start=source.index('\tvar turn:=float(Input.is_physical_key_pressed(KEY_LEFT))')
     end=source.index('\thost.view_label.text="Apartment" if _indoors(host.camera.position) else "Neighborhood"',start)
@@ -740,8 +751,55 @@ def main():
     before={n:b for n,b,f in entries}
 
     main_script=patch_progression_main(before['scripts/main.gd'].decode())
+    inventory_patch=module('inventory_patch',ROOT/'tools/inventory_v1/patch.py')
+    main_script=inventory_patch.patch_main(main_script)
+    expansion_patch=module("expansion_patch",ROOT/"tools/expansion_v1/patch.py")
+    main_script=expansion_patch.patch_main(main_script)
+    equipment_patch=module("equipment_patch",ROOT/"tools/equipment_v2/integrate.py")
+    main_script=equipment_patch.restore_cabinet_hooks(equipment_patch.patch_story(equipment_patch.patch_growth(equipment_patch.finish_main(equipment_patch.patch_main(main_script)))))
+    property_patch=module("property_isolation_patch",ROOT/"tools/property_isolation_v1/patch.py")
+    main_script=property_patch.patch_main(main_script)
+    reward_contact_patch=module("reward_contact_patch",ROOT/"tools/reward_contact_v1/patch.py")
+    main_script=reward_contact_patch.patch_main(main_script)
+    reeves_followup_patch=module("reeves_followup_patch",ROOT/"tools/reeves_followup_v1/patch.py")
+    main_script=reeves_followup_patch.patch_main(main_script)
+    grow_status_patch=module("house_grow_status_patch",ROOT/"tools/property_isolation_v1/grow_status_patch.py")
+    main_script=grow_status_patch.apply(main_script)
+    # Idle production workers follow the current apartment couch, not its old anchor.
+    _old_idle = '\t\t_: return Vector3(-2.775, 0.0, 2.1)'
+    _new_idle = '\t\t_:\n\t\t\tif neighborhood != null and neighborhood.location_ops != null and neighborhood.location_ops.crew != null:\n\t\t\t\treturn neighborhood.location_ops.crew.idle_spot(false,false)\n\t\t\treturn Vector3(-0.75, 0.0, 1.25)'
+    assert _old_idle in main_script
+    main_script=main_script.replace(_old_idle,_new_idle,1)
+    # Both desktop and mobile need to retarget the production worker every idle
+    # frame. The previous mobile runtime kept the old table-side destination.
+    idle_motion_old = (
+        '\tif not on_duty:\n'
+        '\t\tif production_worker_node.visible:production_worker_node.position=production_worker_node.position.move_toward(_production_worker_station_position("idle"),PRODUCTION_WORKER_MOVE_SPEED*delta)\n'
+        '\t\treturn\n'
+        '\tvar move_target: Vector3 = _production_worker_navigation_target()'
+    )
+    idle_motion_new = (
+        '\tif not on_duty:\n'
+        '\t\tif production_worker_node.visible and not bool(production_worker_node.get_meta("seated",false)):\n'
+        '\t\t\tproduction_worker_node.position=production_worker_node.position.move_toward(_production_worker_station_position("idle"),PRODUCTION_WORKER_MOVE_SPEED*delta)\n'
+        '\t\treturn\n'
+        '\tvar worker_idle: bool=production_worker_pending_action.is_empty() and (production_worker_task=="Waiting for work" or lay_low_active)\n'
+        '\tif worker_idle:\n'
+        '\t\tproduction_worker_target_position=_production_worker_station_position("idle")\n'
+        '\t\tif bool(production_worker_node.get_meta("seated",false)):\n'
+        '\t\t\treturn\n'
+        '\tvar move_target: Vector3 = _production_worker_navigation_target()'
+    )
+    assert main_script.count(idle_motion_old)==1, "Production worker movement baseline drift"
+    main_script=main_script.replace(idle_motion_old,idle_motion_new,1)
+    main_script=main_script.replace('user://bud_empire_beta_save.json','user://afb_inventory_preview_save.json')
+    save_hook='\tfile.store_string(JSON.stringify(data))\n\tfile.flush()\n\tlast_save_ok=file.get_error()==OK\n\tfile.close()'
+    assert save_hook in main_script
+    main_script=main_script.replace(save_hook,save_hook+'\n\tif OS.has_feature("web") and last_save_ok:\n\t\tJavaScriptBridge.eval("(()=>{const id=window.AFB_SAVE_SERIAL=(window.AFB_SAVE_SERIAL||0)+1;window.AFB_QUIT_SAVE_STATE=\'pending\';window.AFB_CLOUD.pushFromGame("+JSON.stringify(JSON.stringify(data))+").then(()=>{if(id===window.AFB_SAVE_SERIAL)window.AFB_QUIT_SAVE_STATE=\'saved\';}).catch(()=>{if(id===window.AFB_SAVE_SERIAL)window.AFB_QUIT_SAVE_STATE=\'failed\';});})();",true)',1)
     main_script=main_script.replace('brand_label.text = "AFewBuds"', 'if neighborhood != null and neighborhood.mobile_hud != null:\n\t\t\tneighborhood.mobile_hud.update_location()\n\t\telse: brand_label.text = load("res://scripts/districts.gd").heading(camera.position)')
-    neighborhood=patch_neighborhood(before['scripts/neighborhood.gd'].decode())
+    neighborhood=equipment_patch.patch_neighborhood(patch_neighborhood(before['scripts/neighborhood.gd'].decode()))
+    neighborhood=neighborhood.replace('action.visible=not target.is_empty()', 'action.visible=not target.is_empty() and not (host.inventory_system!=null and host.inventory_system.native_station_target(target))')
+    neighborhood=neighborhood.replace('func _open_station(id: String) -> void:\n', 'func _open_station(id: String) -> void:\n\tif host.inventory_system!=null and host.inventory_system.native_station_target(id):\n\t\thost.inventory_system.open_container(host.inventory_system.native_container(id))\n\t\treturn\n')
     station=patch_station((ROOT/'tools/police_station_v1/station.gd').read_text())
     door=(HERE/'interior_door_physics.gd').read_bytes()
     property_opportunity=(ROOT/'tools/progression_v1/property_opportunity.gd').read_bytes()
@@ -750,8 +808,74 @@ def main():
     assert 'host.phone_scroll.scroll_vertical=int(host.phone_scroll.get_v_scroll_bar().max_value)' in crew
     crew=crew.replace('host.phone_scroll.scroll_vertical=int(host.phone_scroll.get_v_scroll_bar().max_value)','host.phone_scroll.scroll_vertical=0')
     crew=crew.replace('for i in range(host.phone_text_messages.size()):','for i in range(host.phone_text_messages.size()-1,-1,-1):')
+    crew=property_patch.patch_crew(crew)
+    crew=reward_contact_patch.patch_crew(crew)
+    crew=reeves_followup_patch.patch_crew(crew)
+    # Preserve navigation behavior, but only loop walk while physically in transit.
+    # The imported NPCs must stand with their regular idle pose at every
+    # production workstation, even when the route cache has not advanced.
+    original_worker_animation = "var wanted: String=\"sit\" if bool(worker.get_meta(\"seated\",false)) and host.production_worker_pending_action.is_empty() else (\"walk\" if host.packing_employee_active and worker.position.distance_to(host._production_worker_navigation_target())>0.10 else \"idle\")"
+    assert crew.count(original_worker_animation)==1, "NPC animation switching source drift"
+    crew=crew.replace("func update_malik() -> void:\n","func production_worker_animation(worker: Node3D) -> String:\n\tif bool(worker.get_meta(\"seated\",false)) and host.production_worker_pending_action.is_empty():return \"sit\"\n\tif not host.packing_employee_active:return \"idle\"\n\t# After arriving at a station, stand naturally until work animations exist.\n\t# Use the FINAL station target, not stale intermediate path waypoints.\n\tvar goal: Vector3=host.production_worker_target_position\n\tvar horizontal_distance: float=Vector2(worker.position.x-goal.x,worker.position.z-goal.z).length()\n\tif horizontal_distance<=0.20:return \"idle\"\n\tvar next_waypoint: Vector3=host._production_worker_navigation_target()\n\tvar to_waypoint: float=Vector2(worker.position.x-next_waypoint.x,worker.position.z-next_waypoint.z).length()\n\treturn \"walk\" if to_waypoint>0.10 else \"idle\"\n\n"+"func update_malik() -> void:\n",1)
+    crew=crew.replace(original_worker_animation,'var wanted: String=production_worker_animation(worker)',1)
+    # Imported GLB sit animations contain only lower-body tracks (11 vs idle's 36).
+    # Restore unkeyed upper-body joint poses from the character's relaxed idle
+    # frame, while retaining every original sitting hip/leg keyframe.
+    sit_helper = '''func _complete_sit_tracks(avatar: Node3D) -> void:
+\tfor player in avatar.find_children("*","AnimationPlayer",true,false):
+\t\tvar idle: Animation=player.get_animation("idle")
+\t\tvar sit: Animation=player.get_animation("sit")
+\t\tif idle==null or sit==null:continue
+\t\tvar lib: AnimationLibrary=player.get_animation_library("")
+\t\tif lib==null:continue
+\t\tvar completed: Animation=sit.duplicate(true)
+\t\tvar added:int=0
+\t\tfor track in range(idle.get_track_count()):
+\t\t\tvar track_type:int=idle.track_get_type(track)
+\t\t\tif track_type not in [Animation.TYPE_ROTATION_3D,Animation.TYPE_POSITION_3D,Animation.TYPE_SCALE_3D]:continue
+\t\t\tif idle.track_get_key_count(track)==0:continue
+\t\t\tvar track_path:NodePath=idle.track_get_path(track)
+\t\t\t# Imported sit clips explicitly key shoulder, forearm and hand joints
+\t\t\t# in an outstretched bind pose. Replace those keys with arms-down idle.
+\t\t\tvar arm_path:String=str(track_path).to_lower()
+\t\t\tif arm_path.contains("upperarm") or arm_path.contains("lowerarm") or arm_path.contains("hand_"):
+\t\t\t\tfor existing in range(completed.get_track_count()-1,-1,-1):
+\t\t\t\t\tif completed.track_get_type(existing)==track_type and completed.track_get_path(existing)==track_path:
+\t\t\t\t\t\tcompleted.remove_track(existing)
+\t\t\tvar already:bool=false
+\t\t\tfor existing in range(completed.get_track_count()):
+\t\t\t\tif completed.track_get_type(existing)==track_type and completed.track_get_path(existing)==track_path:
+\t\t\t\t\talready=true
+\t\t\t\t\tbreak
+\t\t\tif already:continue
+\t\t\tvar next:int=completed.add_track(track_type)
+\t\t\tcompleted.track_set_path(next,track_path)
+\t\t\tcompleted.track_insert_key(next,0.0,idle.track_get_key_value(track,0))
+\t\t\tadded+=1
+\t\tif added>0:
+\t\t\tlib.remove_animation("sit")
+\t\t\tlib.add_animation("sit",completed)
+
+'''
+    assert crew.count("func character_instance(name: String) -> Node3D:\n")==1, "GLB character entrypoint changed"
+    crew=crew.replace("func character_instance(name: String) -> Node3D:\n",sit_helper+"func character_instance(name: String) -> Node3D:\n",1)
+    assert crew.count('\tinstance.set_meta("character",name)')==1, "GLB character initializer changed"
+    crew=crew.replace('\tinstance.set_meta("character",name)', '\tinstance.set_meta("character",name)\n\t_complete_sit_tracks(instance)',1)
+    # The apartment dealer/production crew must follow the currently placed couch.
+    from pathlib import Path as _Path
+    seating_edits = json.loads((_Path(__file__).resolve().parent / "crew_seating_replacements.json").read_text())
+    for edit in seating_edits:
+        assert edit["old"] in crew, "Couch seating baseline drift"
+        crew = crew.replace(edit["old"], edit["new"], 1)
+    interiors=before['scripts/interiors.gd'].decode()
+    shelf_body='func shelf(at: Vector3, width: float, depth: float, stocked: bool = true) -> void:\n\tvar body := StaticBody3D.new()'
+    assert shelf_body in interiors
+    interiors=interiors.replace(shelf_body,shelf_body+'\n\tif at.x>25 and at.x<45 and at.z> -14 and at.z<3:body.set_meta("equipment_template_group","house_supply" if at.z< -7 else "house_storage")',1)
     replacements={
+        'scripts/interiors.gd':interiors.encode(),
         'scripts/main.gd':main_script.encode(),
+        'scripts/house_controls.gd':(ROOT/"tools/property_isolation_v1/house_controls.gd").read_bytes(),
+        'scripts/offline_plant_care.gd':equipment_patch.patch_offline(before['scripts/offline_plant_care.gd'].decode()).encode(),
         'scripts/neighborhood.gd':neighborhood.encode(),
         'scripts/police_station.gd':station.encode(),
         'scripts/interior_door.gd':door,
@@ -763,14 +887,23 @@ def main():
     updated=[]
     for n,b,f in entries:
         updated.append([n,replacements.get(n,b),f])
+    updated.append(["scripts/equipment_world.gd",(ROOT/"tools/equipment_v2/equipment_world.gd").read_bytes(),0])
     updated.append(['scripts/mobile_physics_player.gd',(HERE/'mobile_physics_player.gd').read_bytes(),0])
 
     updated.append(['scripts/districts.gd',(HERE/'districts.gd').read_bytes(),0])
 
+    updated.append(['scripts/container_inventory.gd',(ROOT/'tools/inventory_v1/container_inventory.gd').read_bytes(),0])
+    updated.append(['scripts/session_menu.gd',(ROOT/'tools/inventory_v1/session_menu.gd').read_bytes(),0])
+    updated.append(['scripts/first_day_guide.gd',(ROOT/'tools/inventory_v1/first_day_guide.gd').read_bytes(),0])
+    for name in ["property_furniture","furniture_editor","chapter_five","physical_packing"]:
+        updated.append(["scripts/"+name+".gd",(ROOT/"tools/expansion_v1"/(name+".gd")).read_bytes(),0])
+    inventory_art=sorted((ROOT/"assets/inventory").glob("*.png"))
+    assert len(inventory_art)==6
+    for asset in inventory_art:updated.append(["assets/inventory/"+asset.name,asset.read_bytes(),0])
     built=east.pack.rebuild(baseline,fb,updated)
     after={n:b for n,b,f in east.pack.parse(built)[1]}
     changed=[n for n in before if before[n]!=after[n]]
-    expected_changed={'scripts/mobile_hud.gd','scripts/crew_phone.gd','scripts/interior_door.gd','scripts/location_ops.gd','scripts/main.gd','scripts/neighborhood.gd','scripts/police_station.gd','scripts/property_opportunity.gd'}
+    expected_changed={'scripts/interiors.gd','scripts/offline_plant_care.gd','scripts/mobile_hud.gd','scripts/crew_phone.gd','scripts/interior_door.gd','scripts/location_ops.gd','scripts/main.gd','scripts/house_controls.gd','scripts/neighborhood.gd','scripts/police_station.gd','scripts/property_opportunity.gd'}
     assert set(changed)==expected_changed,changed
     assert 'scripts/mobile_physics_player.gd' in after
 
@@ -791,6 +924,7 @@ def main():
         'assets/characters/Malik_BaseColor.png','assets/characters/Rod_BaseColor.png',
         'assets/furniture/walnut.png'
     ]
+    assets.extend("assets/inventory/"+asset.name for asset in inventory_art)
     for name,offset,size in east.directory(built):
         if offset>cursor:
             assert not any(built[cursor:offset]);segments.append(['zero',offset-cursor])
@@ -829,23 +963,24 @@ def main():
 
     loader=(ROOT/'shared/afb-runtime-kobi-v1.js').read_text()
     loader=loader.replace('kobi-v1','mobile-3d-v1').replace('AFB_RUNTIME_KOBI_V1','AFB_RUNTIME_MOBILE_3D_V1')
-    loader=re.sub(r'patch\.json\?v=\d+','patch.json?v=12',loader)
+    loader=re.sub(r'patch\.json\?v=(?:\d+|(?:inventory|expansion)\d+)','patch.json?v=expansion8',loader)
     (ROOT/'shared/afb-runtime-mobile-3d-v1.js').write_text(loader,newline='\n')
 
-    release='0.7.9-beta.19-cloudtest.99-mobile3d.12'
-    index=(ROOT/'index.html').read_text()
+    release='0.7.9-beta.19-cloudtest.99-expansion.9'
+    index=(ROOT/'index.html').read_text(encoding='utf-8')
+    index=re.sub(r'([?&]v=)(?:inventory|expansion)\d+',r'\g<1>expansion8',index)
+    index=index.replace('shared/afb-api.js\"','shared/afb-api.js?v=expansion8\"')
     index=index.replace('kobi-v1','mobile-3d-v1').replace('AFB_RUNTIME_KOBI_V1','AFB_RUNTIME_MOBILE_3D_V1')
-    index=re.sub(r'afb-runtime-mobile-3d-v1\.js\?v=\d+','afb-runtime-mobile-3d-v1.js?v=12',index)
-    index=re.sub(r'0\.7\.9-beta\.19-cloudtest\.(?:98-kobi|99-mobile3d)\.\d+',release,index)
+    index=re.sub(r'afb-runtime-mobile-3d-v1\.js\?v=(?:\d+|(?:inventory|expansion)\d+)','afb-runtime-mobile-3d-v1.js?v=expansion8',index)
+    index=re.sub(r'0\.7\.9-beta\.19-cloudtest\.(?:98-kobi|99-mobile3d|99-inventory|99-expansion)\.\d+',release,index)
     index=re.sub(r'"fileSizes":\{[^}]*\\}',f'"fileSizes":{{"index-mobile-3d-v1.pck":{len(built)},"index.wasm":{(ROOT/"index.wasm").stat().st_size}}}',index,count=1)
-    if 'MOBILE 3D TEST</title>' not in index:index=index.replace('</title>',' Â· MOBILE 3D TEST</title>',1)
-    (ROOT/'index.html').write_text(index,newline='\n')
+    (ROOT/'index.html').write_text(index,encoding='utf-8',newline='\n')
 
     version=json.loads((ROOT/'version.json').read_text())
     version['release_id']=release
     version['paused_heat_decay']='100 Heat over 180 real minutes'
     version['mobile_3d_movement']={
-        'branch':'main',
+        'branch':'experiment/chapter5-furniture',
         'player':'CharacterBody3D capsule',
         'input':'touch joystick + drag look; full forward stick sprints; Shift+forward sprints on keyboard',
         'physics':'gravity, floor snap, cached StaticBody3D world proxies, physical doors and police stair ramp',
@@ -871,7 +1006,7 @@ def main():
         'target_sha256':hashlib.sha256(built).hexdigest(),
         'target_bytes':len(built),
         'changed_existing_entries':changed,
-        'added_entries':['scripts/mobile_physics_player.gd','scripts/districts.gd'],
+        'added_entries':['scripts/mobile_physics_player.gd','scripts/districts.gd','scripts/container_inventory.gd','scripts/first_day_guide.gd','scripts/session_menu.gd','scripts/property_furniture.gd','scripts/furniture_editor.gd','scripts/chapter_five.gd','scripts/physical_packing.gd']+['assets/inventory/'+asset.name for asset in inventory_art],
         'unchanged_entries':len(before)-len(changed),
         'reconstruction_verified':True
     }

@@ -14,6 +14,13 @@ var layer: CanvasLayer
 var overlay: ColorRect
 var panel: PanelContainer
 var footer: VBoxContainer
+var scroll: ScrollContainer
+var scroll_actions:=false
+var scroll_touch:=-1
+var scroll_origin:=Vector2.ZERO
+var scroll_last:=Vector2.ZERO
+var scroll_dragging:=false
+var swallow_mouse_release:=false
 var body: VBoxContainer
 var tour_bar: VBoxContainer
 var tour_label: Label
@@ -45,7 +52,11 @@ func setup(owner: Node3D) -> void:
 	style.content_margin_top=16
 	style.content_margin_bottom=16
 	panel.add_theme_stylebox_override("panel",style)
-	var scroll := ScrollContainer.new()
+	scroll = ScrollContainer.new()
+	scroll.follow_focus=true
+	scroll.scroll_deadzone=12
+	scroll.vertical_scroll_mode=ScrollContainer.SCROLL_MODE_AUTO
+	scroll.get_v_scroll_bar().custom_minimum_size.x=14
 	scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED
 	var layout := VBoxContainer.new()
 	layout.add_theme_constant_override("separation",12)
@@ -112,9 +123,11 @@ func state() -> Dictionary:
 
 func resize() -> void:
 	var viewport: Vector2=host.get_viewport().get_visible_rect().size
-	var width: float=minf(760,viewport.x-24)
-	var height: float=minf(780,viewport.y-36)
-	panel.position=Vector2((viewport.x-width)/2,(viewport.y-height)/2)
+	var ui_scale:float=maxf(1.0,viewport.x/maxf(1.0,host.get_window().size.x))
+	panel.scale=Vector2.ONE*ui_scale
+	var width: float=minf(760,viewport.x/ui_scale-24)
+	var height: float=minf(780,viewport.y/ui_scale-36)
+	panel.position=(viewport-Vector2(width,height)*ui_scale)/2
 	panel.size=Vector2(width,height)
 	tour_bar.position=Vector2(18,140)
 	tour_bar.size=Vector2(minf(410,viewport.x-36),100)
@@ -123,6 +136,8 @@ func is_open() -> bool:
 	return overlay!=null and overlay.visible
 
 func _clear() -> void:
+	scroll_actions=false
+	scroll.scroll_vertical=0
 	for container in [body,footer]:
 		for child in container.get_children():
 			container.remove_child(child)
@@ -144,7 +159,9 @@ func button(text: String, callback: Callable, disabled:bool=false) -> void:
 	item.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 	item.disabled=disabled
 	item.pressed.connect(callback)
-	footer.add_child(item)
+	if scroll_actions and not text.begins_with("BACK") and not text.begins_with("CLOSE"):
+		body.add_child(item)
+	else:footer.add_child(item)
 
 func visited() -> Array:
 	var result: Array=[]
@@ -178,7 +195,7 @@ func show_details() -> void:
 		label("AFewBuds HOUSE OPERATION",30)
 		label("CHAPTER 5 — BUILDING AN OPERATION",27)
 		label("Agreement: %s" % agreement_name(),22)
-		label("The house is now your active operation. Career inventory, genetics, crew, dealers and player-owned operation upgrades moved with you. The apartment lease remains separate until you release it in Real Estate.",20)
+		label("The house is available as a separate operation. Each property keeps its own equipment, stock and assigned crew. Move items yourself through your backpack. The apartment lease continues until you release it in Real Estate.",20)
 		if str(state().get("agreement",""))=="lease":
 			label("OWNERSHIP EQUITY: $%d / $%d" % [int(state().get("equity_paid",0)),LEASE_TOTAL],22)
 		button("BACK TO NEIGHBORHOOD",end_tour)
@@ -264,30 +281,24 @@ func show_relocation() -> void:
 	_clear()
 	label("PREPARE RELOCATION",30)
 	label("Agreement signed: %s" % agreement_name(),23)
-	label("MOVE WITH THE OPERATION",22)
-	label("✓ seeds and fertilizer
-✓ trimmed, bagged and stored product
-✓ Dealer Storage inventory
-✓ genetics unlocks
-✓ staff and dealers
-✓ purchased portable equipment progression",19)
-	label("Permanent apartment construction stays with the apartment. This first relocation preserves your career state instead of deleting or repurchasing existing progression.",19)
+	label("MOVE AT YOUR OWN PACE",22)
+	label("Your career and genetics stay with you. Workers remain assigned to their existing property. Stock and furniture remain where you left them. Empty equipment, pick it up into your backpack, and place it at the new property. Order extra equipment to either property's curb.",19)
+	label("The apartment lease continues until you empty and release it in Real Estate.",19)
 	if str(state().get("agreement",""))=="lease":
 		label("OWNERSHIP EQUITY: $%d / $%d" % [int(state().get("equity_paid",0)),LEASE_TOTAL],21)
 	label("APARTMENT LEASE",23)
 	label("Your apartment lease stays active when you move. Apartment rent continues at $600 every 14 game days in addition to any house payment. Manage or release the apartment later in Phone > Real Estate.",19)
-	button("MOVE OPERATION",confirm_relocation)
-	button("BACK TO PROPERTY",show_details)
+	button("MAKE HOUSE PRIMARY · KEEP BOTH PROPERTIES",confirm_relocation)
+	button("KEEP APARTMENT PRIMARY · OPEN HOUSE",confirm_relocation.bind(false))
+	button("DECIDE LATER",end_tour)
 	overlay.show();tour_bar.hide();resize()
 
-func confirm_relocation() -> void:
+func confirm_relocation(make_primary:bool=true) -> void:
 	if not bool(state().get("agreement_signed",false)) or bool(state().get("relocated",false)):return
 	state()["relocated"]=true
 	state()["relocation_day"]=host.game_day
 	state()["keep_apartment"]=true
-	host.location_state["active_property"]="house"
-	host.location_state["operation_assets_property"]="house"
-	host.location_state["operation_contents_property"]="house"
+	if make_primary:host.location_state["active_property"]="house"
 	if host.location_state.get("house",{}) is Dictionary:
 		host.location_state["house"]["active"]=true
 	if not host.apartment_rent_state.has("lease_active"):
@@ -348,3 +359,28 @@ func update(delta: float) -> void:
 			state()["inspection_complete"]=seen.size()==ROOMS.size()
 			host._save_game()
 	tour_label.text="HOUSE TOUR · %d / 6 ROOMS INSPECTED\n%s" % [seen.size(),("Inspection complete. Review the property when ready." if seen.size()==6 else (ROOMS[room]+(" · inspected" if seen.has(room) else " · inspecting…") if ROOMS.has(room) else "Walk to the house and inspect each room."))]
+
+func handle_scroll(event:InputEvent) -> bool:
+	if not is_open():
+		scroll_touch=-1;scroll_dragging=false;return false
+	if event is InputEventScreenTouch:
+		if event.pressed and scroll.get_global_rect().has_point(event.position):
+			scroll_touch=event.index;scroll_origin=event.position;scroll_last=event.position;scroll_dragging=false
+		elif not event.pressed and event.index==scroll_touch:
+			var consumed:bool=scroll_dragging
+			scroll_touch=-1;scroll_dragging=false
+			return consumed
+	elif event is InputEventScreenDrag and event.index==scroll_touch:
+		if event.position.distance_to(scroll_origin)>12:scroll_dragging=true
+		if scroll_dragging:
+			scroll.scroll_vertical-=int((event.position.y-scroll_last.y)/panel.scale.y)
+			swallow_mouse_release=true
+			for button_node in body.find_children("*","BaseButton",true,false):button_node.button_pressed=false
+			scroll_last=event.position
+			return true
+		scroll_last=event.position
+	elif event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_LEFT:
+		if not event.pressed and swallow_mouse_release:
+			swallow_mouse_release=false;return true
+		if event.pressed:swallow_mouse_release=false
+	return false

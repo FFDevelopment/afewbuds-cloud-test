@@ -1,10 +1,13 @@
 {
   "baseline_sha256": "bbc788e5d4dd19b59af7dd2824f34943361d901d08ae5b5c25f8e7c6b9a75410",
-  "target_sha256": "0504f4363f235e0cd6c6da70d818dd28202b2d0b67c7bb1721215384c1eb5394",
-  "target_bytes": 37292336,
+  "target_sha256": "8d9a7d70c34e5d8ef61184e2621f9db75643d5e92483b9cfda2c7fe63896c472",
+  "target_bytes": 48794476,
   "changed_existing_entries": [
     "scripts/main.gd",
+    "scripts/offline_plant_care.gd",
+    "scripts/interiors.gd",
     "scripts/interior_door.gd",
+    "scripts/house_controls.gd",
     "scripts/neighborhood.gd",
     "scripts/property_opportunity.gd",
     "scripts/location_ops.gd",
@@ -14,8 +17,21 @@
   ],
   "added_entries": [
     "scripts/mobile_physics_player.gd",
-    "scripts/districts.gd"
+    "scripts/districts.gd",
+    "scripts/container_inventory.gd",
+    "scripts/first_day_guide.gd",
+    "scripts/session_menu.gd",
+    "scripts/property_furniture.gd",
+    "scripts/furniture_editor.gd",
+    "scripts/chapter_five.gd",
+    "scripts/physical_packing.gd",
+    "assets/inventory/cash.png",
+    "assets/inventory/equipment.png",
+    "assets/inventory/fertilizer.png",
+    "assets/inventory/jar.png",
+    "assets/inventory/product.png",
+    "assets/inventory/seeds.png"
   ],
-  "unchanged_entries": 212,
+  "unchanged_entries": 209,
   "reconstruction_verified": true
 }

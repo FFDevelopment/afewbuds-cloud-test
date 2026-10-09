@@ -25,6 +25,7 @@ func mature_chapter_four_operation() -> void:
 	game.grow_tent_count=3
 	game.bagging_level=3
 	game.dealer_locker_level=4
+	game.inventory_system.furniture.model.record_progress()
 	game.packing_employee_hired=true
 	game.packing_employee_active=true
 	game.dealer_count=2
@@ -98,7 +99,7 @@ func run() -> void:
 	op.confirm_relocation()
 	check(bool(game.property_opportunity_state.get("relocated",false)) and str(game.location_state.get("active_property",""))=="house","Relocation switches active operation to house")
 	check(bool(game.apartment_rent_state.get("lease_active",false)),"Moving to house keeps apartment lease active by default")
-	check(str(game.location_state.get("operation_assets_property",""))=="house" and str(game.location_state.get("operation_contents_property",""))=="house","Player-owned operation assets and contents move with the house relocation")
+	check(str(game.location_state.get("operation_assets_property",""))=="apartment" and str(game.location_state.get("operation_contents_property",""))=="apartment","Opening the house preserves apartment equipment and inventory ownership")
 	check(not game._story_chapter_four_complete(),"Relocation waits for first house entry before Chapter 4 completion")
 	var house_door:Node3D=game.neighborhood.get_node("HouseEntrance")
 	game.camera.global_position=Vector3(35,1.64,4.8)
@@ -170,7 +171,7 @@ func run() -> void:
 	game.ventilation_on=true
 	game.house_control_state={"living":false,"packing":false,"kitchen":false,"bathroom":false,"bedroom":false,"cross_hall":false,"grow":false}
 	ops.track_power_usage(10.0)
-	check(float(house_util.get("today_power",0.0))>0.0 and is_zero_approx(float(apt_util.get("today_power",0.0))),"House operation power bills house while unused apartment stays at zero",[apt_util,house_util])
+	check(float(apt_util.get("today_power",0.0))>0.0,"Tent left in apartment continues billing its actual property",[apt_util,house_util])
 	game.main_ceiling_light_on=true
 	ops.track_power_usage(10.0)
 	check(float(apt_util.get("today_power",0.0))>0.0,"Leaving an apartment light on creates apartment electricity usage",apt_util)
@@ -202,6 +203,22 @@ func run() -> void:
 	var old_apartment_balance:int=ops.apartment_balance()
 	var old_power_due:int=ops.property_utility_due("apartment","power")
 	var old_water_due:int=ops.property_utility_due("apartment","water")
+	var furniture=game.inventory_system.furniture.model
+	check(not ops.apartment_release_blockers().is_empty(),"Placed furniture blocks lease release")
+	for i in range(game.plant_slots.size()):game.plant_slots[i]=game._empty_plant_slot()
+	game.packing_employee_active=false;game.production_worker_pending_action=""
+	var inventory=game.inventory_system
+	inventory.state.backpack_level=4
+	for container in inventory.state.containers.keys():
+		if container.begins_with("apartment:"):
+			for item in inventory.contents(container):inventory.set_amount(container,item,0)
+	game.camera.global_position=inventory.POSITIONS["market:orders"]
+	for id in furniture.state.items.keys():
+		if furniture.state.items[id].get("property","")!="apartment":continue
+		furniture.lock(id,false)
+		check(furniture.pack(id),"Empty furniture packs before lease release")
+		check(furniture.sell(id),"Player can sell packed furniture at market")
+
 	check(ops.apartment_release_blockers().is_empty(),"Cleared apartment with another property can be released",ops.apartment_release_blockers())
 	ops.request_apartment_release()
 	check(ops.apartment_release_confirm,"Real Estate release requires explicit confirmation")
@@ -324,7 +341,9 @@ func run() -> void:
 	game.phone_open=false
 	game.phone_panel.hide()
 
+	furniture=null
 	game.queue_free()
 	await frames()
 	print("PROGRESSION_V1_TEST_RESULT: ","PASS" if failures==0 else "FAIL"," checks=",checks," failures=",failures)
-	quit(0 if failures==0 else 1)
+	# Let coroutine locals unwind before Godot shuts down its resource cache.
+	call_deferred("quit",0 if failures==0 else 1)

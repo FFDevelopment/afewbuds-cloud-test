@@ -1,23 +1,16 @@
-# AFewBuds Cloud Test — mobile 3D baseline
+# AFewBuds cloud test — playable mobile baseline
 
-`main` is the canonical mobile/web game. Baseline: **mobile 3D v12** (`0.7.9-beta.19-cloudtest.99-mobile3d.12`), paired with [desktop 0.13.2](https://github.com/FFDevelopment/afewbuds-3d-prototype).
+This repository's `main` branch is aligned with the gameplay source of **AFewBuds Mobile Beta 0.16.0-mobile-beta.7**.
 
-[Play AFewBuds](https://ffdevelopment.github.io/afewbuds-cloud-test/). The former `/mobile-3d-movement/` URL serves the same build for existing links and bookmarks.
+- Pinned public-beta source commit: `866fc272a3a672210556dc85d6257ed98e5e1c0c`
+- Public mobile PWA: https://ffdevelopment.github.io/afewbuds-beta/
+- Cloud-test playable site: https://ffdevelopment.github.io/afewbuds-cloud-test/
+- `main` is the current playable **mobile source baseline**. Its own generated test-game version strings can differ from the public-beta release number; game logic is reconstructed from the same source.
+- The universal property registry is under development at `feature/dynamic-property-registry-v1`. It is deliberately **not on `main` or in the public beta**.
+- The previous main baseline is preserved at `archive/pre-mobile-beta7-main-baseline`.
 
-## Included
+On pushes to `main`, the mobile candidate is reconstructed with Godot 4.7.2 and tested for movement, progression, property isolation, Reeves, inventory and equipment. Only after a successful run are generated runtime assets committed and the cloud-test site deployed. This pipeline does not publish to `afewbuds-beta`; public beta releases use their own pin-and-validate workflow.
 
-- Physics movement, working doors/stairs, sprint stamina and touch controls.
-- Bongchester districts: Roachwood, Half Baked Heights and Paranoia Point.
-- Chapter 4 property finale, house purchase/rent/lease-to-own, relocation and Chapter 5 opening.
-- Real Estate, retained apartment leases, release safeguards and per-property billing.
-- Newest-first messages and shared account careers.
+The mobile web/PWA maintains touch controls, mobile HUD, account/session handling and its own updater. Desktop retains a separate Godot export and controls. Shared gameplay patches are developed and validated on both platforms before public releases.
 
-Chapter 5 does not yet have a full mission chain or finale. Interactive furniture placement and further phone reorganization remain pending.
-
-## Build and release
-
-Every push to `main` runs **Build mobile baseline**. It reconstructs the runtime, verifies the pack hash, imports it with Godot 4.7.2, and runs movement/stamina/district plus progression/property/message checks before committing generated files. **Deploy cloud-test baseline** publishes only after that build succeeds.
-
-Local reconstruction: `python tools/mobile_3d_movement/build.py --output-dir <directory outside this checkout>`. Test scripts are `tools/mobile_3d_movement/check.gd` and `tools/progression_v1/check.gd`. Pages staging uses `tools/stage_pages.py`; it excludes historical packs, inactive recipes, tools, archived workflows and database files.
-
-`archive/workflows/` preserves retired one-off Actions jobs. Pinned packs, recipes, assets and build helpers remain in Git because reconstruction depends on them. See `AGENTS.md` for paired-release rules and `tools/mobile_3d_movement/DISTRICTS.md` for district boundaries.
+**Player-protection rule:** never rename save paths or account keys, overwrite a confirmed career, reset purchases, remove property state or clear application storage during development synchronization.

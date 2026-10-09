@@ -1,0 +1,166 @@
+extends SceneTree
+var failures:=0
+var checks:=0
+func _initialize():call_deferred("run")
+func check(ok:bool,label:String):
+ checks+=1
+ if not ok:failures+=1;push_error(label)
+ else:print("PASS ",label)
+func run():
+ var desktop:=ResourceLoader.exists("res://prototype/apartment.tscn")
+ var game=load("res://prototype/apartment.tscn" if desktop else "res://scenes/main.tscn").instantiate();root.add_child(game)
+ for i in range(15):await process_frame
+ game.set_process(false);game.neighborhood.set_process(false)
+ if desktop:game.fp_player.set_physics_process(false)
+ else:game.neighborhood.physics_body.set_physics_process(false)
+ for timer in game.find_children("*","Timer",true,false):timer.stop()
+ game.tutorial_active=false;game.session_paused=false;game.daily_report_pending=false
+ game.tutorial_panel.hide();game.pause_overlay.hide();game.daily_report_panel.hide()
+ var inv=game.inventory_system;inv.set_process(false);inv.guide.state.active=false;inv.guide.state.completed=true
+ inv.furniture.set_process(false)
+ var camera_before:Transform3D=game.camera.global_transform
+ game.camera.global_position=Vector3(0,2.16,7)
+ game.peephole_checked=false;game._open_peephole()
+ check(not game.peephole_panel.visible and not game.peephole_checked,"Peephole cannot be used outside apartment")
+ game.camera.global_position=Vector3(0,2.16,5)
+ game._open_peephole()
+ check(game.peephole_panel.visible and game.peephole_checked,"Peephole still works inside apartment")
+ game._close_peephole();game.camera.global_transform=camera_before
+ var market=game.neighborhood.location_ops
+ market.market()
+ check(market.is_open(),"Central Market opens with platform adapter")
+ market.equipment()
+ check(market.is_open(),"Upgrades category opens")
+ market.market_grow_tents()
+ check(inv.furniture.is_open() and inv.furniture.hint.text=="CENTRAL MARKET / GROW","Grow tents open as buyable items")
+ market.market_furniture()
+ check(inv.furniture.is_open() and "FURNITURE" in inv.furniture.hint.text,"Furniture category opens at Central Market")
+ inv.furniture.close()
+ var m=inv.furniture.model
+ game.cash=10000;game.property_opportunity_state={"acquired":true,"first_entry":true,"relocated":true}
+ game.location_state.operation_contents_property="house"
+ inv.state.backpack_level=4
+ inv.furniture.sync_world()
+ var chair:String=m.own("armchair");var table:String=m.own("coffee_table")
+ check(m.place(chair,"house",Vector3(26.5,0,0),0),"Place purchased chair")
+ check(m.place(table,"house",Vector3(31,0,0),0),"Place purchased table")
+ inv.furniture.sync_world()
+ check(inv.furniture.equipment_world.rendered.has(chair) and inv.furniture.equipment_world.rendered.has(table),"Placed furniture has physical world instances")
+ m.lock(chair,false);m.pack(chair);inv.furniture.sync_world()
+ check(not inv.furniture.equipment_world.rendered.has(chair) and inv.furniture.equipment_world.rendered.has(table),"Packing removes world instance")
+ m.place(chair,"house",Vector3(26.5,0,0),0)
+ var editor=inv.furniture
+ var movable:String=m.own("armchair")
+ game.camera.global_position=Vector3(29,2.16,1.5);game.camera.look_at(Vector3(29,0,-2))
+ var normal_camera:Transform3D=game.camera.global_transform
+ editor.open();editor.begin(movable)
+ check(editor.is_placing() and not game._any_modal_open(),"Placement allows normal walking and looking")
+ editor._process(.016)
+ check(game.camera.global_transform.is_equal_approx(normal_camera),"Placement never moves or zooms camera")
+ var aim_before:Vector3=editor.point
+ game.camera.position.x+=1;editor.aim()
+ check(editor.point.x>aim_before.x,"Preview follows player movement")
+ var clear_spots:=0
+ var problems:Dictionary={}
+ for x in range(26,33):
+  for z in range(-4,2):
+   editor.point=Vector3(x,0,z)
+   var problem:String=editor.obstacle()
+   if problem.is_empty():clear_spots+=1
+   else:problems[problem]=int(problems.get(problem,0))+1
+ print("PLACEMENT_SCAN: ",clear_spots," clear; ",problems)
+ check(clear_spots>0,"Actual furnished house has green placement spots")
+ editor.point=Vector3(26.5,0,0)
+ check(not editor.obstacle().is_empty(),"Placement rejects existing furniture")
+ editor.point=Vector3(25,0,-2)
+ check(not editor.obstacle().is_empty(),"Placement rejects crossing room walls")
+ var move_end:Transform3D=game.camera.global_transform
+ editor.close()
+ check(game.camera.global_transform.is_equal_approx(move_end),"Cancel preserves new player viewpoint")
+ m.state.items.erase(movable)
+ var story=inv.furniture.chapter
+ game.advancement_stats.harvests=100;game.advancement_stats.grams_trimmed=1000;game.advancement_stats.bags_sealed=50;game.advancement_stats.sales=100;game.advancement_stats.dealer_sales=20
+ story.tick()
+ check(story.stage()==1,"Furniture milestone advances once")
+ check(not story.ready(),"Old career harvest totals do not complete new chapter")
+ for i in range(game.plant_slots.size()):game.plant_slots[i]=game._empty_plant_slot()
+ m.lock("legacy_tent_0",false)
+ if not desktop:
+  # Exercise the live apartment collider refresh with the preview visible.
+  # A static house-only scan misses a ghost becoming its own walking obstacle.
+  game.camera.global_position=Vector3(0,2.16,-5)
+  editor.open();editor.begin("legacy_tent_0")
+  editor.point=Vector3(0,0,-7.5);editor.preview()
+  check(editor.obstacle().is_empty(),"Clear apartment tent position starts green")
+  for refresh in range(3):
+   game.neighborhood.interior_obstacles.clear()
+   game.neighborhood._collect_colliders(game)
+   game.neighborhood._rebuild_physics_obstacles(true)
+   await physics_frame
+   editor.preview()
+   check(editor.obstacle().is_empty() and not editor.place_button.disabled,"Tent preview stays green after live collision refresh %d"%refresh)
+  editor.confirm()
+  check(not editor.is_placing() and m.state.items.legacy_tent_0.property=="apartment","Green apartment tent can actually be placed")
+  m.lock("legacy_tent_0",false)
+  editor.open();editor.begin("legacy_tent_0")
+  editor.point=Vector3(-4.5,0,-7.5)
+  check(not editor.obstacle().is_empty(),"Tent still cannot cross apartment wall")
+  editor.close()
+ check(m.pack("legacy_tent_0") and m.place("legacy_tent_0","house",Vector3(41.8,0,-12),0),"Legacy tent carried and placed in house")
+ inv.furniture.sync_world();m.lock("legacy_tent_0",false);m.pack("legacy_tent_0");inv.furniture.sync_world()
+ check(game.plant_visuals[0].get_node("PlantHitArea0").collision_layer==0,"Packed tent disables plant interactions")
+ check(m.powered_tent_count("house")==0,"Packed tent does not consume electricity")
+ check(m.place("legacy_tent_0","house",Vector3(41.8,0,-12),0),"Packed tent can be placed again")
+ inv.furniture.sync_world()
+ check(game.plant_visuals[0].get_node("PlantHitArea0").collision_layer==8,"Replaced tent restores plant interactions")
+ check(m.powered_tent_count("house")==1,"Placed tent power belongs to its property")
+ m.lock("legacy_tent_0",false)
+ game.camera.global_position=Vector3(41.8,2.16,-8)
+ editor.open();editor.begin("legacy_tent_0")
+ var tent_spots:=0
+ for x in range(81,87):
+  for z in range(-25,-17):
+   editor.point=Vector3(x*.5,0,z*.5)
+   if editor.obstacle().is_empty():tent_spots+=1
+ check(tent_spots>0,"Actual house grow room has valid tent placement")
+ editor.close();m.lock("legacy_tent_0",true)
+ game.advancement_stats.harvests+=3;story.tick()
+ check(story.stage()==2,"House harvest milestone advances")
+ game.advancement_stats.grams_trimmed+=30;game.advancement_stats.bags_sealed+=5;story.tick()
+ check(story.stage()==3,"Craft milestone advances")
+ game.advancement_stats.sales+=7;game.advancement_stats.dealer_sales+=2;story.tick()
+ check(story.stage()==4,"Customer milestone advances")
+ game.location_state.house_bills_paid=1;story.tick()
+ check(story.stage()==5,"House bills milestone advances")
+ game.lifetime_revenue+=2500;game.advancement_stats.sales+=5;game.heat=26
+ check(not story.meet_rod(),"Finale requires low heat")
+ game.heat=20
+ check(story.meet_rod() and story.complete(),"Chapter 5 can complete")
+ var cash:int=game.cash
+ check(not story.meet_rod() and game.cash==cash,"Finale reward cannot be claimed twice")
+ game.cash+=1000
+ var house_bench:String=m.own("bench_1")
+ check(m.place(house_bench,"house",Vector3(41,0,-3.5),0),"Purchased house packing station placed")
+ inv.furniture.sync_world()
+ var packing=inv.packing
+ game.untrimmed_inventory={"Street Green":8};game.trimmed_inventory={};game.bagged_inventory={}
+ game.camera.global_position=inv.all_positions()["house:packing"]+Vector3(0,.6,1.4)
+ packing.start("raw|Street Green")
+ check(packing.active and packing.targets.size()==3,"Packing uses objects in the world")
+ packing.selected=1;packing.use_selected()
+ check(packing.progress==0,"Scissors required before trimming")
+ packing.selected=0;packing.use_selected();packing.selected=1;packing.use_selected();packing.close(false)
+ check(game.untrimmed_inventory["Street Green"]==8 and int(game.trimmed_inventory.get("Street Green",0))==0,"Canceling trim conserves inventory")
+ packing.start("raw|Street Green");packing.selected=0;packing.use_selected();packing.selected=1
+ for i in range(8):packing.use_selected()
+ check(game.untrimmed_inventory["Street Green"]==0 and game.trimmed_inventory["Street Green"]==8,"Trimming conserves exact grams")
+ inv.close();packing.start("trimmed|Street Green")
+ packing.selected=2;packing.use_selected()
+ check(int(game.bagged_inventory.get("Street Green",0))==0,"Cannot seal an empty bag")
+ var amount:int=packing.amount
+ while packing.progress<packing.amount:
+  packing.selected=0;packing.use_selected();packing.selected=1;packing.use_selected()
+ packing.selected=2;packing.use_selected()
+ check(game.bagged_inventory["Street Green"]==amount and game.trimmed_inventory["Street Green"]==8-amount,"Sealing conserves exact grams")
+ print("EXPANSION_TEST_RESULT: ","PASS" if failures==0 else "FAIL"," checks=",checks)
+ game.queue_free();await process_frame;quit(0 if failures==0 else 1)

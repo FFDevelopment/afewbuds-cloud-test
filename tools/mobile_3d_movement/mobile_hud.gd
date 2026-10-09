@@ -55,7 +55,7 @@ func update(delta: float) -> void:
 		for button in [host.left_button,host.right_button,host.forward_button,host.door_quick_button]:button.hide()
 		if host.back_button.visible:host.back_button.text="BACK"
 	world.pad.visible=walking and not modal
-	world.action.visible=walking and not modal and not world._near_target().is_empty()
+	world.action.visible=walking and not modal and not world._near_target().is_empty() and not (host.inventory_system!=null and host.inventory_system.native_station_target(world._near_target()))
 	# Visitor countdown is immediate information; keep it compact and persistent.
 	if host.knock_banner!=null and host.knock_banner.visible:
 		host.knock_banner.offset_top=12 if modal else host.world_top_bar.offset_bottom+12;host.knock_banner.offset_bottom=host.knock_banner.offset_top+66

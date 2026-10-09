@@ -1,0 +1,32 @@
+begin;
+do $test$
+declare a uuid; b uuid; ta text; tb text; tx text; p1 uuid:=gen_random_uuid(); p2 uuid:=gen_random_uuid(); p3 uuid:=gen_random_uuid(); r jsonb;
+begin
+ insert into public.afb_player_accounts(username,password_hash) values('qa_sync_'||substr(replace(gen_random_uuid()::text,'-',''),1,10),'not-a-login-password') returning id into a;
+ ta:=public.afb_make_session(a,false)->>'session_token';
+ insert into public.afb_player_saves(account_id,save_json) values(a,'{"cash":400,"location_state":{"container_inventory":{"backpack":{"seed|Purple Dream":3}}}}');
+ r:=public.afb_begin_play(ta,p1); assert r->>'state'='active' and r#>>'{save_json,cash}'='400','initial shared career';
+ tb:=public.afb_make_session(a,false)->>'session_token';
+ r:=public.afb_begin_play(tb,p2); assert r->>'state'='waiting','second device waits';
+ r:=public.afb_play_heartbeat(ta,p1); assert r->>'state'='handoff','old device asked to pause';
+ r:=public.afb_save_career(ta,p1,0,'{"cash":450,"location_state":{"container_inventory":{"backpack":{"seed|Purple Dream":2}}}}'); assert r->>'ok'='true','final old-device save';
+ r:=public.afb_release_play(ta,p1); assert r->>'ok'='true','release after saving';
+ r:=public.afb_begin_play(tb,p2); assert r->>'state'='active' and r#>>'{save_json,cash}'='450' and r#>>'{save_json,location_state,container_inventory,backpack,seed|Purple Dream}'='2','handoff loads exact final inventory';
+ r:=public.afb_save_career(ta,p1,1,'{"cash":999}'); assert r->>'ok'='false','revoked old session blocked';
+ r:=public.afb_set_save(tb,'{"cash":999,"saved_unix":99999999999}'); assert r->>'reason'='client_update_required','old client cannot bypass play fence';
+ r:=public.afb_save_career(tb,p2,0,'{"cash":999}'); assert r->>'reason'='save_conflict','stale revision blocked';
+ r:=public.afb_save_career(tb,p2,1,'{"cash":500}'); assert r->>'revision'='2','current revision accepted';
+ r:=public.afb_save_career(tb,p2,1,'{"cash":500}'); assert r->>'retry'='true' and r->>'revision'='2','lost acknowledgement retry is idempotent';
+ r:=public.afb_begin_play(tb,p3); assert r->>'state'='waiting','same-token second tab waits';
+ update afb_play_private.leases set heartbeat=clock_timestamp()-interval '30 seconds' where account_id=a;
+ r:=public.afb_begin_play(tb,p3); assert r->>'state'='active' and r#>>'{save_json,cash}'='500','offline takeover uses cloud';
+ r:=public.afb_save_career(tb,p2,2,'{"cash":999}'); assert r->>'reason'='session_replaced','same-token old tab fenced';
+ insert into public.afb_player_accounts(username,password_hash) values('qa_other_'||substr(replace(gen_random_uuid()::text,'-',''),1,10),'not-a-login-password') returning id into b;
+ tx:=public.afb_make_session(b,false)->>'session_token';
+ r:=public.afb_save_career(tx,p3,2,'{"cash":999}'); assert r->>'ok'='false','other account cannot write active career';
+ assert (select save_json->>'cash'='400' from afb_play_private.original_careers where account_id=a),'pre-upgrade career backup retained';
+ assert not has_table_privilege('anon','afb_play_private.leases','select'),'no public lease table access';
+ assert not has_table_privilege('anon','afb_play_private.original_careers','select'),'no public backup access';
+end; $test$;
+select 'SHARED_SESSION_SERVER_TEST: PASS (handoff, exact inventory, offline takeover, stale revision, old clients, account isolation, backup, privileges)' as result;
+rollback;
