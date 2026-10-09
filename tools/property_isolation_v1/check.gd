@@ -126,6 +126,28 @@ func run():
  game.camera.global_position=Vector3(30,1.64,0)
  game.neighborhood.location_ops.computer("house")
  check(game.neighborhood.location_ops.computer_context=="house" and inv.operation()=="house","House computer selects house inventory")
+ var computer_ops=game.neighborhood.location_ops
+ var computer_crew=computer_ops.crew
+ var existing_hire:bool=game.packing_employee_hired
+ var existing_active:bool=game.packing_employee_active
+ game.packing_employee_hired=true;game.packing_employee_active=true
+ var worker_name:String=game._critical_production_sender()
+ check(computer_ops.computer_staff_names("apartment").has(worker_name) and not computer_ops.computer_staff_names("house").has(worker_name),"Apartment worker does not automatically appear on house computer roster")
+ computer_ops.manage("employees")
+ var house_employees:Array[String]=[]
+ for node in computer_ops.ui.body.find_children("*","Label",true,false):
+  house_employees.append(node.text)
+ check(" ".join(PackedStringArray(house_employees)).contains("No workers are assigned to this property"),"House employee page starts with empty local crew, not apartment staff")
+ computer_ops.manage("business")
+ var house_labels:Array[String]=[]
+ for node in computer_ops.ui.body.find_children("*","Label",true,false):house_labels.append(node.text)
+ check(" ".join(PackedStringArray(house_labels)).contains("HOUSE OPERATION") and not " ".join(PackedStringArray(house_labels)).contains("APARTMENT STOREFRONT"),"House business dashboard shows its own operation instead of apartment storefront")
+ check(computer_ops.computer_stock_total("house","storage","product|")==0 or computer_ops.computer_stock_total("house","storage","product|")==int(inv.contents("house:storage").get("product|Purple Dream",0)),"House business stock reads house-only storage")
+ computer_crew.assign(worker_name,"house")
+ check(computer_ops.computer_staff_names("house").has(worker_name) and not computer_ops.computer_staff_names("apartment").has(worker_name),"Worker transfer changes ownership of assignment, not a duplicate")
+ computer_crew.assign(worker_name,"apartment")
+ check(computer_ops.computer_staff_names("apartment").has(worker_name) and not computer_ops.computer_staff_names("house").has(worker_name),"Moving worker back restores separate apartment roster")
+ game.packing_employee_hired=existing_hire;game.packing_employee_active=existing_active
  game.neighborhood.location_ops.close()
  model.lock(computer_id,false);model.pack(computer_id)
  check(model.place(computer_id,"apartment",Vector3(-1,0,0),0),"Packed computer can move to apartment")
