@@ -895,8 +895,21 @@ def main():
     updated.append(['scripts/container_inventory.gd',(ROOT/'tools/inventory_v1/container_inventory.gd').read_bytes(),0])
     updated.append(['scripts/session_menu.gd',(ROOT/'tools/inventory_v1/session_menu.gd').read_bytes(),0])
     updated.append(['scripts/first_day_guide.gd',(ROOT/'tools/inventory_v1/first_day_guide.gd').read_bytes(),0])
+    # A single portable property registry drives stable IDs on both platforms.
+    # Keep existing career containers/utility records unmodified; only add an
+    # opt-in registry document to location_state during Furniture.setup().
+    dynamic_patch=module("dynamic_property_patch",ROOT/"tools/dynamic_property_v1/patch.py")
+    item_patch=module("item_registry_patch",ROOT/"tools/item_registry_v1/patch.py")
+    registry_bytes=(ROOT/"tools/dynamic_property_v1/property_registry.gd").read_bytes()
+    updated.append(["scripts/property_registry.gd",registry_bytes,0])
+    item_bytes=(ROOT/"tools/item_registry_v1/item_registry.gd").read_bytes()
+    updated.append(["scripts/item_registry.gd",item_bytes,0])
+    updated.append(["data/item_definitions.json",(ROOT/"tools/item_registry_v1/item_definitions.json").read_bytes(),0])
     for name in ["property_furniture","furniture_editor","chapter_five","physical_packing"]:
-        updated.append(["scripts/"+name+".gd",(ROOT/"tools/expansion_v1"/(name+".gd")).read_bytes(),0])
+        source_bytes=(ROOT/"tools/expansion_v1"/(name+".gd")).read_bytes()
+        if name=="property_furniture":
+            source_bytes=item_patch.patch_furniture(dynamic_patch.patch_furniture(source_bytes.decode())).encode()
+        updated.append(["scripts/"+name+".gd",source_bytes,0])
     inventory_art=sorted((ROOT/"assets/inventory").glob("*.png"))
     assert len(inventory_art)==6
     for asset in inventory_art:updated.append(["assets/inventory/"+asset.name,asset.read_bytes(),0])
@@ -906,6 +919,9 @@ def main():
     expected_changed={'scripts/interiors.gd','scripts/offline_plant_care.gd','scripts/mobile_hud.gd','scripts/crew_phone.gd','scripts/interior_door.gd','scripts/location_ops.gd','scripts/main.gd','scripts/house_controls.gd','scripts/neighborhood.gd','scripts/police_station.gd','scripts/property_opportunity.gd'}
     assert set(changed)==expected_changed,changed
     assert 'scripts/mobile_physics_player.gd' in after
+    assert after['scripts/property_registry.gd']==registry_bytes
+    assert after['scripts/item_registry.gd']==item_bytes
+    assert 'data/item_definitions.json' in after
 
     (out/'candidate.pck').write_bytes(built)
     east.fit.extract(updated,out/'candidate','AFB Mobile 3D Movement Candidate')
@@ -1006,7 +1022,7 @@ def main():
         'target_sha256':hashlib.sha256(built).hexdigest(),
         'target_bytes':len(built),
         'changed_existing_entries':changed,
-        'added_entries':['scripts/mobile_physics_player.gd','scripts/districts.gd','scripts/container_inventory.gd','scripts/first_day_guide.gd','scripts/session_menu.gd','scripts/property_furniture.gd','scripts/furniture_editor.gd','scripts/chapter_five.gd','scripts/physical_packing.gd']+['assets/inventory/'+asset.name for asset in inventory_art],
+        'added_entries':['scripts/property_registry.gd','scripts/item_registry.gd','data/item_definitions.json','scripts/mobile_physics_player.gd','scripts/districts.gd','scripts/container_inventory.gd','scripts/first_day_guide.gd','scripts/session_menu.gd','scripts/property_furniture.gd','scripts/furniture_editor.gd','scripts/chapter_five.gd','scripts/physical_packing.gd']+['assets/inventory/'+asset.name for asset in inventory_art],
         'unchanged_entries':len(before)-len(changed),
         'reconstruction_verified':True
     }
