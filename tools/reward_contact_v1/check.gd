@@ -75,6 +75,10 @@ func run()->void:
  game.advancement_stats["grams_stored"]=old_grams
  game.advancement_stats["hybrids_created"]=old_hybrids
  game.storage_level=old_storage
+ # Clear retained signal Callables and RefCounted crew fixtures before teardown.
+ for node in game.phone_list.get_children():node.queue_free()
+ await process_frame
+ crew=null
  game.queue_free()
  await process_frame
  print("REWARD_CONTACT_RESULT: ","PASS" if failures==0 else "FAIL"," checks=",checks," failures=",failures)
