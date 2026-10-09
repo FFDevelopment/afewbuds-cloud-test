@@ -881,7 +881,8 @@ func activate_adapters(property:String) -> void:
   state.containers[property+":"+kind]={}
  host.seed_inventory={};host.fertilizer_units=0;host.locker_weed={}
  host.untrimmed_inventory={};host.trimmed_inventory={};host.bagged_inventory={}
- host.products=state.product_metadata.get(property,host.products).duplicate(true)
+ # New properties start without product listings or pricing inherited from elsewhere.
+ host.products=state.product_metadata.get(property,{}).duplicate(true)
  for data in host.products.values():
   data.stock=0
   if not state.product_metadata.has(property):data.reserved=0
