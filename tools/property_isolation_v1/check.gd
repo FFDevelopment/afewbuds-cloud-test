@@ -220,6 +220,8 @@ func run():
   check(not game.fp_prompt.text.is_empty(),"House bench has a desktop interaction prompt at standing eye height")
   game._use_target()
   check(inv.is_open() and inv.container_kind(inv.container_id)=="packing","Desktop interact opens the house bench inventory")
+ # Release temporary management references before destroying the test scene.
+ computer_ops=null;computer_crew=null
  game.queue_free();await process_frame
  print("PROPERTY_ISOLATION_RESULT: ","PASS" if failures==0 else "FAIL"," checks=",checks," failures=",failures)
  quit(0 if failures==0 else 1)
