@@ -294,8 +294,9 @@ func computer(property: String) -> void:
 		return
 	manage("business")
 func manage(app: String) -> void:
-	var expected_target: String="house_computer" if computer_context=="house" else "apartment_computer"
-	if target()!=expected_target:return
+	# Bind every dashboard tab to the property of the opened computer.
+	# Looking away from its mesh must never change or suppress the property context.
+	if computer_context not in ["apartment","house"] or not _property_controlled(computer_context):return
 	management_app=app
 	rendering_management=true
 	clear(computer_context.to_upper()+" — "+app.to_upper())
@@ -1011,8 +1012,7 @@ func equipment_ui(parent: VBoxContainer) -> void:
 	_property_button(parent,"ORDER GROW TENTS",market_grow_tents)
 
 func production() -> void:
-	var expected_target:String="house_computer" if computer_context=="house" else "apartment_computer"
-	if target()!=expected_target:return
+	if computer_context not in ["apartment","house"] or not _property_controlled(computer_context):return
 	if computer_context=="house":
 		clear("HOUSE — PRODUCTION & POWER")
 		ui.label("House equipment and utilities are separate from apartment switches.")
