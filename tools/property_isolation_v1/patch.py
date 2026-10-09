@@ -24,6 +24,33 @@ def patch_main(s):
     signature='func _refresh_direct_plant_panel() -> void:\n'
     replacement=signature+'\tif inventory_system!=null and inventory_system.furniture!=null and selected_plant_slot>=0:\n\t\tinventory_system.at_property(inventory_system.furniture.model.slot_property(selected_plant_slot),_refresh_direct_plant_panel_local)\n\telse:_refresh_direct_plant_panel_local()\n\n'+signature.replace('_refresh_direct_plant_panel(', '_refresh_direct_plant_panel_local(')
     assert signature in s;s=s.replace(signature,replacement,1)
+    # Production worker station targets must follow the assigned property.
+    station_old='func _production_worker_station_position(station_name: String) -> Vector3:\n\tmatch station_name:'
+    station_new='''func _production_worker_station_position(station_name: String) -> Vector3:
+	if inventory_system!=null and inventory_system.furniture!=null and inventory_system.worker_property()=="house":
+		var model:RefCounted=inventory_system.furniture.model
+		if station_name=="entry":return Vector3(28.5,0.0,-0.8)
+		if station_name=="idle":return Vector3(29.0,0.0,-0.9)
+		var kind:String={"workbench":"packing","storage":"storage","grow":"tent"}.get(station_name,"")
+		if station_name=="grow":
+			for id in model.state.items:
+				var entry:Dictionary=model.state.items[id]
+				if entry.get("property","")=="house" and str(entry.get("sku","")).begins_with("tent_") and entry.has("position"):
+					return Vector3(float(entry.position[0])-1.2,0.0,float(entry.position[2]))
+			return Vector3(40.4,0.0,-9.0)
+		if not kind.is_empty():
+			var station_id:String=model.primary("house",kind)
+			if not station_id.is_empty():
+				var e:Dictionary=model.state.items[station_id]
+				if e.has("position"):return Vector3(float(e.position[0])-1.3,0.0,float(e.position[2]))
+		return Vector3(28.5,0.0,-0.8)
+	match station_name:'''
+    assert s.count(station_old)==1, "worker station target source drift"
+    s=s.replace(station_old,station_new,1)
+    route_old='func _production_worker_navigation_target() -> Vector3:\n\tif production_worker_node == null:'
+    route_new='func _production_worker_navigation_target() -> Vector3:\n\tif inventory_system!=null and inventory_system.worker_property()=="house":return production_worker_target_position\n\tif production_worker_node == null:'
+    assert s.count(route_old)==1, "worker path source drift"
+    s=s.replace(route_old,route_new,1)
     return s
 
 def patch_crew(s):
