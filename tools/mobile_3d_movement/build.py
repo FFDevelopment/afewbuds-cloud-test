@@ -759,6 +759,8 @@ def main():
     main_script=equipment_patch.restore_cabinet_hooks(equipment_patch.patch_story(equipment_patch.patch_growth(equipment_patch.finish_main(equipment_patch.patch_main(main_script)))))
     property_patch=module("property_isolation_patch",ROOT/"tools/property_isolation_v1/patch.py")
     main_script=property_patch.patch_main(main_script)
+    grow_status_patch=module("house_grow_status_patch",ROOT/"tools/property_isolation_v1/grow_status_patch.py")
+    main_script=grow_status_patch.apply(main_script)
     # Idle production workers follow the current apartment couch, not its old anchor.
     _old_idle = '\t\t_: return Vector3(-2.775, 0.0, 2.1)'
     _new_idle = '\t\t_:\n\t\t\tif neighborhood != null and neighborhood.location_ops != null and neighborhood.location_ops.crew != null:\n\t\t\t\treturn neighborhood.location_ops.crew.idle_spot(false,false)\n\t\t\treturn Vector3(-0.75, 0.0, 1.25)'
@@ -866,6 +868,7 @@ def main():
     replacements={
         'scripts/interiors.gd':interiors.encode(),
         'scripts/main.gd':main_script.encode(),
+        'scripts/house_controls.gd':(ROOT/"tools/property_isolation_v1/house_controls.gd").read_bytes(),
         'scripts/offline_plant_care.gd':equipment_patch.patch_offline(before['scripts/offline_plant_care.gd'].decode()).encode(),
         'scripts/neighborhood.gd':neighborhood.encode(),
         'scripts/police_station.gd':station.encode(),
@@ -894,7 +897,7 @@ def main():
     built=east.pack.rebuild(baseline,fb,updated)
     after={n:b for n,b,f in east.pack.parse(built)[1]}
     changed=[n for n in before if before[n]!=after[n]]
-    expected_changed={'scripts/interiors.gd','scripts/offline_plant_care.gd','scripts/mobile_hud.gd','scripts/crew_phone.gd','scripts/interior_door.gd','scripts/location_ops.gd','scripts/main.gd','scripts/neighborhood.gd','scripts/police_station.gd','scripts/property_opportunity.gd'}
+    expected_changed={'scripts/interiors.gd','scripts/offline_plant_care.gd','scripts/mobile_hud.gd','scripts/crew_phone.gd','scripts/interior_door.gd','scripts/location_ops.gd','scripts/main.gd','scripts/house_controls.gd','scripts/neighborhood.gd','scripts/police_station.gd','scripts/property_opportunity.gd'}
     assert set(changed)==expected_changed,changed
     assert 'scripts/mobile_physics_player.gd' in after
 
