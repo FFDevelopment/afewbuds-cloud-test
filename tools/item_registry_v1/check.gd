@@ -23,6 +23,7 @@ func run() -> void:
 	var registry: RefCounted = load("res://scripts/item_registry.gd").new()
 	registry.setup(original)
 	check(registry.verify_legacy(original), "All legacy SKUs, descriptions, prices and weights remain unchanged")
+	check(registry.load_external_catalog("res://data/item_definitions.json"), "Versioned empty content catalog loads without changing existing equipment")
 	check(registry.quote("sofa") == 350 and registry.quote("computer") == 550 and registry.quote("ventilation") == 320, "Existing store prices remain identical")
 	check(registry.keys_for_shop("equipment").has("ventilation") and registry.keys_for_shop("furniture").has("computer"), "Old store categories remain the same")
 	check(not registry.register_definition("sofa", {"name": "Wrong", "shop": "furniture", "price": 1, "weight": 1, "size": [1, 1, 1]}), "Cannot overwrite an existing SKU and corrupt purchased equipment")
@@ -35,6 +36,13 @@ func run() -> void:
 	check(registry.permits_room("workshop_cart_01", "packing") and not registry.permits_room("workshop_cart_01", "bedroom"), "Per-item room restrictions prevent invalid placement")
 	check(not registry.permits_room("ventilation", "living") and registry.permits_room("ventilation", "grow"), "Existing grow-only equipment restrictions remain")
 	check(registry.register_alias("legacy_cart", "workshop_cart_01") and registry.canonical("legacy_cart") == "workshop_cart_01", "Optional alias resolves existing item IDs without changing saved identifiers")
+	var prepared: Dictionary = {"extra_toolbox_02": {"name": "Extra Toolbox", "shop": "tools", "price": 55, "weight": 4, "size": [0.5, 0.5, 0.5]}}
+	check(registry.import_definitions(prepared) and registry.quote("extra_toolbox_02") == 55, "Catalog imports independent extra item definitions")
+	var invalid_batch: Dictionary = {
+		"next_toolbox_03": {"name": "Later Toolbox", "shop": "tools", "price": 55, "weight": 4, "size": [0.5, 0.5, 0.5]},
+		"bad_item_04": {"name": "Invalid", "shop": "tools", "price": -5, "weight": 4, "size": [0.5, 0.5, 0.5]}
+	}
+	check(not registry.import_definitions(invalid_batch) and not registry.has("next_toolbox_03"), "Invalid multi-item content pack rolls back all new definitions")
 	check(registry.verify_legacy(original) and JSON.stringify(original) == before, "Adding items never mutates the legacy definitions")
 	var copy: Dictionary = registry.get_definition("workshop_cart_01")
 	copy["price"] = 1
