@@ -899,12 +899,15 @@ def main():
     # Keep existing career containers/utility records unmodified; only add an
     # opt-in registry document to location_state during Furniture.setup().
     dynamic_patch=module("dynamic_property_patch",ROOT/"tools/dynamic_property_v1/patch.py")
+    item_patch=module("item_registry_patch",ROOT/"tools/item_registry_v1/patch.py")
     registry_bytes=(ROOT/"tools/dynamic_property_v1/property_registry.gd").read_bytes()
     updated.append(["scripts/property_registry.gd",registry_bytes,0])
+    item_bytes=(ROOT/"tools/item_registry_v1/item_registry.gd").read_bytes()
+    updated.append(["scripts/item_registry.gd",item_bytes,0])
     for name in ["property_furniture","furniture_editor","chapter_five","physical_packing"]:
         source_bytes=(ROOT/"tools/expansion_v1"/(name+".gd")).read_bytes()
         if name=="property_furniture":
-            source_bytes=dynamic_patch.patch_furniture(source_bytes.decode()).encode()
+            source_bytes=item_patch.patch_furniture(dynamic_patch.patch_furniture(source_bytes.decode())).encode()
         updated.append(["scripts/"+name+".gd",source_bytes,0])
     inventory_art=sorted((ROOT/"assets/inventory").glob("*.png"))
     assert len(inventory_art)==6
@@ -916,6 +919,7 @@ def main():
     assert set(changed)==expected_changed,changed
     assert 'scripts/mobile_physics_player.gd' in after
     assert after['scripts/property_registry.gd']==registry_bytes
+    assert after['scripts/item_registry.gd']==item_bytes
 
     (out/'candidate.pck').write_bytes(built)
     east.fit.extract(updated,out/'candidate','AFB Mobile 3D Movement Candidate')
@@ -1016,7 +1020,7 @@ def main():
         'target_sha256':hashlib.sha256(built).hexdigest(),
         'target_bytes':len(built),
         'changed_existing_entries':changed,
-        'added_entries':['scripts/property_registry.gd','scripts/mobile_physics_player.gd','scripts/districts.gd','scripts/container_inventory.gd','scripts/first_day_guide.gd','scripts/session_menu.gd','scripts/property_furniture.gd','scripts/furniture_editor.gd','scripts/chapter_five.gd','scripts/physical_packing.gd']+['assets/inventory/'+asset.name for asset in inventory_art],
+        'added_entries':['scripts/property_registry.gd','scripts/item_registry.gd','scripts/mobile_physics_player.gd','scripts/districts.gd','scripts/container_inventory.gd','scripts/first_day_guide.gd','scripts/session_menu.gd','scripts/property_furniture.gd','scripts/furniture_editor.gd','scripts/chapter_five.gd','scripts/physical_packing.gd']+['assets/inventory/'+asset.name for asset in inventory_art],
         'unchanged_entries':len(before)-len(changed),
         'reconstruction_verified':True
     }
