@@ -39,6 +39,9 @@ func run() -> void:
 	registry.setup(host, room_defs)
 	check(registry.exists("apartment") and registry.exists("house"), "Legacy apartment and house keep their stable IDs")
 	check(not registry.controlled("house") and registry.controlled("apartment"), "Existing house unlock and apartment lease safeguards remain intact")
+	host.property_opportunity_state["acquired"] = true
+	check(registry.controlled("house"), "House acquisition retains pre-relocation furniture access")
+	host.property_opportunity_state["acquired"] = false
 	for key in before:
 		check(JSON.stringify(host.location_state[key]) == JSON.stringify(before[key]), "Registry preserves untouched legacy save field: " + key)
 	var generated: String = registry.register_property("Future Name Not Known", "commercial", {"main": Rect2(95, 95, 20, 20), "grow_a": Rect2(117, 95, 5, 6)})
