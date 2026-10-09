@@ -332,12 +332,15 @@ func transfer(source:String,destination:String,item:String,amount:int,expected_r
  if destination=="backpack" and category(item)=="product":
   host._ensure_product_exists(item.get_slice("|",1))
   host._schedule_next_customer(true)
- if destination==operation()+":storage" and category(item)=="product":
-  var strain:String=item.get_slice("|",1)
-  if host.tutorial_active and host.tutorial_step==8 and strain==host.tutorial_harvest_strain:host.products[strain]["listed"]=false
+ if destination.ends_with(":storage") and destination.get_slice(":",0) in ["apartment","house"] and category(item)=="product":
+  # Lifetime storage progress is independent of which property is the active
+  # inventory adapter. Depositing in a secondary house must count as well.
   host._increment_advancement_stat("grams_stored",amount)
-  host._tutorial_record("store",-1,strain)
-  host._schedule_next_customer(true)
+  if destination==operation()+":storage":
+   var strain:String=item.get_slice("|",1)
+   if host.tutorial_active and host.tutorial_step==8 and strain==host.tutorial_harvest_strain:host.products[strain]["listed"]=false
+   host._tutorial_record("store",-1,strain)
+   host._schedule_next_customer(true)
  if guide!=null:
   if source=="market:orders":guide.record("collect")
   if source.ends_with(":packing") and category(item)=="product":guide.record("carry_product")
