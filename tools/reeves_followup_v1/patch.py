@@ -124,4 +124,8 @@ def patch_crew(s: str) -> str:
         'label(host.phone_list,"The protection arrangement is settled.")',
         'label(host.phone_list,"The protection arrangement is settled. Paid-in-full relationships retain optional favors and private visits." if host._reeves_is_friendly() else "The protection arrangement is settled.")',
         "settled relationship explanation")
+    s = once(s,
+        '\tbutton(host.phone_list,"ASK REEVES TO REDUCE HEAT · $%d" % host._heat_contact_cost(),reeves_message.bind("help"),not can_help)',
+        '\tbutton(host.phone_list,"ASK REEVES TO REDUCE HEAT · $%d" % host._heat_contact_cost(),reeves_message.bind("help"),not can_help)\n\tif host.heat<=0.0:\n\t\tlabel(host.phone_list,"Heat is 0. Reeves stays available, but there is no attention to reduce. You can still request a private visit.")\n\telif not can_help and host.cash<host._heat_contact_cost():\n\t\tlabel(host.phone_list,"Not enough cash for this favor.")',
+        "zero heat guidance")
     return s
