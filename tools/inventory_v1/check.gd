@@ -112,6 +112,18 @@ func run():
  game.location_state.operation_contents_property="house"
  check(inv.contents("house:storage").get("product|Purple Dream")==2 and inv.contents("apartment:storage").get("product|Purple Dream")==15,"Relocation preserves stock at each physical property")
  check(inv.contents("apartment:storage").get("cash")==25 and inv.property_has_items("apartment"),"Relocation leaves stash contents to be carried by the player")
+ # A newly accessed house must not inherit product names, prices, listings
+ # or reservation metadata from an existing apartment operation.
+ inv.activate_adapters("apartment")
+ game.products["Apartment Only Fixture"]={"stock":0,"listed":true,"price":111,"grade":"A","reserved":0}
+ inv.state.product_metadata.erase("house")
+ inv.activate_adapters("house")
+ check(not game.products.has("Apartment Only Fixture"),"First house login never copies apartment product listing metadata")
+ game.products["House Only Fixture"]={"stock":0,"listed":false,"price":222,"grade":"B","reserved":0}
+ inv.activate_adapters("apartment")
+ check(game.products.has("Apartment Only Fixture") and not game.products.has("House Only Fixture"),"Apartment settings cannot see house product prices")
+ inv.activate_adapters("house")
+ check(game.products.has("House Only Fixture") and not game.products.has("Apartment Only Fixture"),"House product metadata persists independently of apartment")
  game.queue_free();await frames()
  print("INVENTORY_TEST_RESULT: ","PASS" if failures==0 else "FAIL"," checks=",checks," failures=",failures)
  quit(0 if failures==0 else 1)
