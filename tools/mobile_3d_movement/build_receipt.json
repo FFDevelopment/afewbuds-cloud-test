@@ -1,12 +1,13 @@
 {
   "baseline_sha256": "bbc788e5d4dd19b59af7dd2824f34943361d901d08ae5b5c25f8e7c6b9a75410",
-  "target_sha256": "9591014acc53e94b43f581ceb8b9cc29dd37168e2aa9e2931efa5537970c27db",
-  "target_bytes": 48783948,
+  "target_sha256": "bd0cc5c82b918902946c12bfecea49a727b99feb9b642fa4bcc6b0d0ebe22940",
+  "target_bytes": 48789356,
   "changed_existing_entries": [
     "scripts/main.gd",
     "scripts/offline_plant_care.gd",
     "scripts/interiors.gd",
     "scripts/interior_door.gd",
+    "scripts/house_controls.gd",
     "scripts/neighborhood.gd",
     "scripts/property_opportunity.gd",
     "scripts/location_ops.gd",
@@ -31,6 +32,6 @@
     "assets/inventory/product.png",
     "assets/inventory/seeds.png"
   ],
-  "unchanged_entries": 210,
+  "unchanged_entries": 209,
   "reconstruction_verified": true
 }
