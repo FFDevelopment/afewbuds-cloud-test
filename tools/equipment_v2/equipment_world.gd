@@ -119,6 +119,7 @@ func sync() -> void:
   plant.global_transform=Transform3D(Basis(Vector3.UP,deg_to_rad(float(e.get("yaw",0)))),Vector3(e.position[0],0,e.position[2]))*Transform3D(Basis.IDENTITY,Vector3(x,.26,0))
  sync_levels()
  sync_supply_labels()
+ if host.neighborhood!=null and host.neighborhood.house_controls!=null:host.neighborhood.house_controls.refresh_grow_panel()
 func clone_computer(root:Node3D,id:String,e:Dictionary) -> bool:
  if e.get("sku","")!="computer" or not str(e.get("legacy_group","")).is_empty():return false
  var copied:=0
