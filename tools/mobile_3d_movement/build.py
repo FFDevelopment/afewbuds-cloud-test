@@ -934,6 +934,8 @@ def main():
     inventory_art=sorted((ROOT/"assets/inventory").glob("*.png"))
     assert len(inventory_art)==6
     for asset in inventory_art:updated.append(["assets/inventory/"+asset.name,asset.read_bytes(),0])
+    map_patch=module("map_integration",ROOT/"tools/map_integration_v1/patch.py")
+    updated=map_patch.integrate(updated)
     built=east.pack.rebuild(baseline,fb,updated)
     # Every unique gameplay pack gets its own browser-visible identity.
     # This prevents development releases from silently sharing a stale URL.
@@ -941,7 +943,7 @@ def main():
     build_stamp=build_sha256[:12]
     after={n:b for n,b,f in east.pack.parse(built)[1]}
     changed=[n for n in before if before[n]!=after[n]]
-    expected_changed={'scripts/client_visits.gd','scripts/interiors.gd','scripts/offline_plant_care.gd','scripts/mobile_hud.gd','scripts/crew_phone.gd','scripts/interior_door.gd','scripts/location_ops.gd','scripts/main.gd','scripts/house_controls.gd','scripts/neighborhood.gd','scripts/police_station.gd','scripts/property_opportunity.gd'}
+    expected_changed={'scripts/east_expansion.gd','scripts/police_district.gd','scripts/client_visits.gd','scripts/interiors.gd','scripts/offline_plant_care.gd','scripts/mobile_hud.gd','scripts/crew_phone.gd','scripts/interior_door.gd','scripts/location_ops.gd','scripts/main.gd','scripts/house_controls.gd','scripts/neighborhood.gd','scripts/police_station.gd','scripts/property_opportunity.gd'}
     assert set(changed)==expected_changed,changed
     assert 'scripts/mobile_physics_player.gd' in after
     assert after['scripts/property_registry.gd']==registry_bytes
@@ -1007,7 +1009,7 @@ def main():
     loader=re.sub(r'patch\.json\?v=[A-Za-z0-9._+-]+','patch.json?v='+build_stamp,loader)
     (ROOT/'shared/afb-runtime-mobile-3d-v1.js').write_text(loader,newline='\n')
 
-    release='0.7.9-beta.19-cloudtest.99-expansion.17.'+build_stamp
+    release='0.7.9-beta.19-cloudtest.99-expansion.18.'+build_stamp
     index=(ROOT/'index.html').read_text(encoding='utf-8')
     index=re.sub(r'([?&]v=)(?:inventory|expansion)\d+',lambda m:m.group(1)+build_stamp,index)
     index=index.replace('shared/afb-api.js"', 'shared/afb-api.js?v='+build_stamp+'"')

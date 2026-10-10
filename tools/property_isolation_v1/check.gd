@@ -53,9 +53,12 @@ func run():
  game.camera.global_position=Vector3(41.8,1.64,-10)
  inv.open_backpack();inv.place_backpack_item(placement_tent)
  check(inv.furniture.is_placing() and inv.furniture.property=="house" and not inv.is_open(),"Backpack placement uses current house despite previously browsing apartment")
- for near_wall in [Vector3(39.35,0,-10),Vector3(44.25,0,-10),Vector3(41.8,0,-13.2),Vector3(43.5,0,-7.8)]:
+ for near_wall in [Vector3(39.35,0,-10),Vector3(40.45,0,-13.2)]:
   inv.furniture.point=near_wall;inv.furniture.yaw=0
   check(inv.furniture.obstacle().is_empty(),"House tent can place near wall at "+str(near_wall)+": "+inv.furniture.obstacle())
+ for stair_edge in [Vector3(44.25,0,-10),Vector3(41.8,0,-13.2),Vector3(43.5,0,-7.8)]:
+  inv.furniture.point=stair_edge
+  check(not inv.furniture.obstacle().is_empty(),"Stair opening and rails stay clear: "+str(stair_edge))
  check(not model.validate(placement_tent,"house",Vector3(38.9,0,-10),0).is_empty(),"Tent still cannot cross the grow-room wall")
  inv.furniture.close()
  inv.furniture.open_property("house");inv.furniture.close()
@@ -109,6 +112,31 @@ func run():
  game.camera.global_position=Vector3(30,1.2,2.8);game.camera.look_at(Vector3(30,.8,1))
  editor.start_layout("house")
  check(editor.layout_focus==computer_id and not editor.layout_move.disabled,"Walk-around layout selects the complete desk")
+ if desktop:
+  var input=root.get_node("DesktopInput")
+  var toggle:=InputEventKey.new();toggle.keycode=KEY_TAB;toggle.pressed=true
+  check(editor.handle_placement_input(toggle) and editor.controls_active and Input.mouse_mode==Input.MOUSE_MODE_VISIBLE,"Tab releases cursor for furniture controls")
+  check(editor.blocks_movement() and input.menu_root()==editor.layout_panel,"Furniture controls pause movement and expose correct toolbar")
+  var selected_before:String=editor.layout_focus
+  editor.refresh_layout()
+  check(editor.layout_focus==selected_before,"Cursor mode preserves selected furniture")
+  var back:=InputEventJoypadButton.new();back.button_index=JOY_BUTTON_B;back.pressed=true
+  check(editor.handle_placement_input(back) and not editor.controls_active and editor.layout_mode,"Controller B returns to camera without closing layout")
+  var pad_toggle:=InputEventJoypadButton.new();pad_toggle.button_index=JOY_BUTTON_Y;pad_toggle.pressed=true
+  input._input(pad_toggle)
+  check(editor.controls_active and input.menu_controls().size()==4,"Controller Y exposes all four furniture actions")
+  editor.layout_move.grab_focus()
+  var right:=InputEventJoypadButton.new();right.button_index=JOY_BUTTON_DPAD_RIGHT;right.pressed=true
+  input._input(right)
+  check(root.gui_get_focus_owner()==editor.layout_pickup,"D-pad navigates from Move to Pick up")
+  editor.layout_move.grab_focus()
+  var accept:=InputEventJoypadButton.new();accept.button_index=JOY_BUTTON_A;accept.pressed=true
+  input._input(accept)
+  check(editor.is_placing() and not editor.controls_active,"Controller A activates focused Move and returns to aiming")
+  editor.handle_placement_input(toggle)
+  check(input.menu_root()==editor.placement_panel,"Placement controls expose Rotate Place and Cancel")
+  editor.handle_placement_input(back)
+  editor.cancel_placement()
  editor.layout_move_item()
  check(editor.is_placing() and editor.layout_mode,"Layout move enters placement without reopening phone")
  editor.cancel_placement()
@@ -142,7 +170,7 @@ func run():
  computer_ops.manage("business")
  var house_labels:Array[String]=[]
  for node in computer_ops.ui.body.find_children("*","Label",true,false):house_labels.append(node.text)
- check(" ".join(PackedStringArray(house_labels)).contains("HOUSE") and not " ".join(PackedStringArray(house_labels)).contains("APARTMENT STOREFRONT"),"House business dashboard shows its own operation instead of apartment storefront")
+ check(" ".join(PackedStringArray(house_labels)).contains("HOUSE AT A GLANCE") and not " ".join(PackedStringArray(house_labels)).contains("APARTMENT STOREFRONT"),"House business dashboard shows its own operation instead of apartment storefront")
  check(computer_ops.computer_stock_total("house","storage","product|")==0 or computer_ops.computer_stock_total("house","storage","product|")==int(inv.contents("house:storage").get("product|Purple Dream",0)),"House business stock reads house-only storage")
  game.location_state.staff_assignments[worker_name]="house"
  check(computer_ops.computer_staff_names("house").has(worker_name) and not computer_ops.computer_staff_names("apartment").has(worker_name),"Per-property worker roster changes without creating a duplicate")
@@ -200,6 +228,15 @@ func run():
  check(int(grow_status.tents)==1 and int(grow_status.capacity)==1 and int(grow_status.active)==1 and int(grow_status.dry)==1,"House grow panel reads placed tent, assigned pot and dry plant")
  check(house_grow.title("switch_grow_lights").contains("1 TENT"),"House panel no longer reports missing equipment when house tent is installed")
  check(house_grow.grow_panel_label!=null and house_grow.grow_panel_label.text.contains("PLANTS 1/1"),"House wall grow panel displays live 1/1 plant count")
+ # The wall status must track live water/health changes without reopening it.
+ game.neighborhood.location_ops.update(.6)
+ check(house_grow.grow_panel_label.text.contains("DRY 1"),"House panel polls current dry plant status")
+ game.plant_slots[house_slot].water=95
+ game.neighborhood.location_ops.update(.6)
+ check(house_grow.grow_panel_label.text.contains("DRY 0"),"House panel removes dry warning after watering without player interaction")
+ game.plant_slots[house_slot].water=0
+ game.neighborhood.location_ops.update(.6)
+ check(house_grow.grow_panel_label.text.contains("DRY 1"),"House panel restores dry warning if crop dries again")
  var apartment_light_before:bool=game.grow_lights_on
  var house_light_before:bool=bool(game.house_control_state.get("grow_lights",false))
  var house_growth_before:float=float(model.growth_settings(house_slot,game._plant_growth_settings(false,house_slot),false).light_factor)
@@ -208,7 +245,7 @@ func run():
  var house_growth_after:float=float(model.growth_settings(house_slot,game._plant_growth_settings(false,house_slot),false).light_factor)
  check(house_light_before!=house_light_after and game.grow_lights_on==apartment_light_before,"House grow light switch changes house lighting without touching apartment")
  check(absf(house_growth_after-house_growth_before)>.05,"House plant growth reacts to actual house light state")
- var house_bulb=inv.furniture.equipment_world.rendered["isolation_house_tent"].get_node_or_null("TentGrowLight")
+ var house_bulb=inv.furniture.equipment_world.rendered["isolation_house_tent"].get_node_or_null("GrowEquipmentVisual/GrowBeam")
  check(house_bulb!=null and house_bulb.visible==house_light_after,"Placed house tent's real light follows house grow panel switch")
  # Independently installed ventilation: no unit means no house air toggle or
  # growth benefit, even if apartment ventilation happens to be turned on.
