@@ -879,6 +879,13 @@ def main():
     assert shelf_body in interiors
     interiors=interiors.replace(shelf_body,shelf_body+'\n\tif at.x>25 and at.x<45 and at.z> -14 and at.z<3:body.set_meta("equipment_template_group","house_supply" if at.z< -7 else "house_storage")',1)
     main_script=gameplay.apply(main_script,"main.gd")
+    phone_visuals=module("phone_visuals",ROOT/"tools/phone_visuals_v1/patch.py")
+    main_script=phone_visuals.apply(main_script,"main.gd")
+    location_ops=phone_visuals.apply(location_ops.decode(),"location_ops.gd").encode()
+    start=neighborhood.index("\t# Preserve portrait touch sizes; center the phone menu on a wider screen.")
+    end=neighborhood.index("\thost._reset_world_pointer()",start)
+    neighborhood=neighborhood[:start]+"\tpreload(\"res://scripts/phone_visuals.gd\").fit(host)\n"+neighborhood[end:]
+
     replacements={
         'scripts/interiors.gd':interiors.encode(),
         'scripts/main.gd':main_script.encode(),
@@ -901,6 +908,7 @@ def main():
 
     updated.append(['scripts/districts.gd',(HERE/'districts.gd').read_bytes(),0])
 
+    updated.append(['scripts/phone_visuals.gd',(ROOT/'tools/phone_visuals_v1/phone_visuals.gd').read_bytes(),0])
     updated.append(['scripts/phone_dialogue.gd',(ROOT/'tools/property_phone_v1/phone_dialogue.gd').read_bytes(),0])
     updated.append(['scripts/tent_genetics.gd',(ROOT/'tools/property_phone_v1/tent_genetics.gd').read_bytes(),0])
     updated.append(['scripts/property_shop.gd',(ROOT/'tools/property_phone_v1/property_shop.gd').read_bytes(),0])
@@ -998,7 +1006,7 @@ def main():
     loader=re.sub(r'patch\.json\?v=[A-Za-z0-9._+-]+','patch.json?v='+build_stamp,loader)
     (ROOT/'shared/afb-runtime-mobile-3d-v1.js').write_text(loader,newline='\n')
 
-    release='0.7.9-beta.19-cloudtest.99-expansion.12.'+build_stamp
+    release='0.7.9-beta.19-cloudtest.99-expansion.13.'+build_stamp
     index=(ROOT/'index.html').read_text(encoding='utf-8')
     index=re.sub(r'([?&]v=)(?:inventory|expansion)\d+',lambda m:m.group(1)+build_stamp,index)
     index=index.replace('shared/afb-api.js"', 'shared/afb-api.js?v='+build_stamp+'"')

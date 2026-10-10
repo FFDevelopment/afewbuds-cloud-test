@@ -58,9 +58,10 @@ func update(delta: float) -> void:
 	world.action.visible=walking and not modal and not world._near_target().is_empty() and not (host.inventory_system!=null and host.inventory_system.native_station_target(world._near_target()))
 	# Visitor countdown is immediate information; keep it compact and persistent.
 	if host.knock_banner!=null and host.knock_banner.visible:
-		host.knock_banner.offset_top=12 if modal else host.world_top_bar.offset_bottom+12;host.knock_banner.offset_bottom=host.knock_banner.offset_top+66
-		host.knock_text.add_theme_font_size_override("font_size",17)
-		host.door_alert_detail.add_theme_font_size_override("font_size",15)
+		host.knock_banner.offset_top=12 if modal else host.world_top_bar.offset_bottom+12;host.knock_banner.offset_bottom=host.knock_banner.offset_top+56
+		host.knock_banner.offset_left=-210;host.knock_banner.offset_right=210
+		host.knock_text.add_theme_font_size_override("font_size",18)
+		host.door_alert_detail.add_theme_font_size_override("font_size",14)
 		host.door_alert_dot.hide()
 		host.door_alert_button.hide()
 		host.status_label.hide()
