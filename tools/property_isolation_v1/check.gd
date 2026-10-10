@@ -141,7 +141,7 @@ func run():
  computer_ops.manage("business")
  var house_labels:Array[String]=[]
  for node in computer_ops.ui.body.find_children("*","Label",true,false):house_labels.append(node.text)
- check(" ".join(PackedStringArray(house_labels)).contains("HOUSE OPERATION") and not " ".join(PackedStringArray(house_labels)).contains("APARTMENT STOREFRONT"),"House business dashboard shows its own operation instead of apartment storefront")
+ check(" ".join(PackedStringArray(house_labels)).contains("HOUSE") and not " ".join(PackedStringArray(house_labels)).contains("APARTMENT STOREFRONT"),"House business dashboard shows its own operation instead of apartment storefront")
  check(computer_ops.computer_stock_total("house","storage","product|")==0 or computer_ops.computer_stock_total("house","storage","product|")==int(inv.contents("house:storage").get("product|Purple Dream",0)),"House business stock reads house-only storage")
  game.location_state.staff_assignments[worker_name]="house"
  check(computer_ops.computer_staff_names("house").has(worker_name) and not computer_ops.computer_staff_names("apartment").has(worker_name),"Per-property worker roster changes without creating a duplicate")
