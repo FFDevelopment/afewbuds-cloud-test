@@ -989,7 +989,8 @@ def main():
     release='0.7.9-beta.19-cloudtest.99-expansion.9.'+build_stamp
     index=(ROOT/'index.html').read_text(encoding='utf-8')
     index=re.sub(r'([?&]v=)(?:inventory|expansion)\d+',lambda m:m.group(1)+build_stamp,index)
-    index=index.replace('shared/afb-api.js\"','shared/afb-api.js?v=expansion8\"')
+    index=index.replace('shared/afb-api.js"', 'shared/afb-api.js?v='+build_stamp+'"')
+    index=re.sub(r'((?:shared/afb-api\.js|shared/afb-expansion-save\.js)\?v=)[A-Za-z0-9._+-]+',lambda m:m.group(1)+build_stamp,index)
     index=index.replace('kobi-v1','mobile-3d-v1').replace('AFB_RUNTIME_KOBI_V1','AFB_RUNTIME_MOBILE_3D_V1')
     index=re.sub(r'afb-runtime-mobile-3d-v1\.js\?v=[A-Za-z0-9._+-]+','afb-runtime-mobile-3d-v1.js?v='+build_stamp,index)
     index=re.sub(r'index-accountsync10\.js\?v=[A-Za-z0-9._+-]+','index-accountsync10.js?v='+build_stamp,index)
