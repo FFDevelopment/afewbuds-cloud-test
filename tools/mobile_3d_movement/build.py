@@ -914,6 +914,10 @@ def main():
     assert len(inventory_art)==6
     for asset in inventory_art:updated.append(["assets/inventory/"+asset.name,asset.read_bytes(),0])
     built=east.pack.rebuild(baseline,fb,updated)
+    # Every unique gameplay pack gets its own browser-visible identity.
+    # This prevents development releases from silently sharing a stale URL.
+    build_sha256=hashlib.sha256(built).hexdigest()
+    build_stamp=build_sha256[:12]
     after={n:b for n,b,f in east.pack.parse(built)[1]}
     changed=[n for n in before if before[n]!=after[n]]
     expected_changed={'scripts/interiors.gd','scripts/offline_plant_care.gd','scripts/mobile_hud.gd','scripts/crew_phone.gd','scripts/interior_door.gd','scripts/location_ops.gd','scripts/main.gd','scripts/house_controls.gd','scripts/neighborhood.gd','scripts/police_station.gd','scripts/property_opportunity.gd'}
@@ -946,7 +950,7 @@ def main():
             assert not any(built[cursor:offset]);segments.append(['zero',offset-cursor])
         data=built[offset:offset+size]
         if name in assets:
-            segments.append(['asset',name+'?v=mobile-3d-v1',size,hashlib.sha256(data).hexdigest()])
+            segments.append(['asset',name+'?v='+build_stamp,size,hashlib.sha256(data).hexdigest()])
         elif name in source:
             oldoff,oldsize=source[name];previous=base[oldoff:oldoff+oldsize]
             if data==previous:
@@ -979,21 +983,26 @@ def main():
 
     loader=(ROOT/'shared/afb-runtime-kobi-v1.js').read_text()
     loader=loader.replace('kobi-v1','mobile-3d-v1').replace('AFB_RUNTIME_KOBI_V1','AFB_RUNTIME_MOBILE_3D_V1')
-    loader=re.sub(r'patch\.json\?v=(?:\d+|(?:inventory|expansion)\d+)','patch.json?v=expansion8',loader)
+    loader=re.sub(r'patch\.json\?v=[A-Za-z0-9._+-]+','patch.json?v='+build_stamp,loader)
     (ROOT/'shared/afb-runtime-mobile-3d-v1.js').write_text(loader,newline='\n')
 
-    release='0.7.9-beta.19-cloudtest.99-expansion.9'
+    release='0.7.9-beta.19-cloudtest.99-expansion.9.'+build_stamp
     index=(ROOT/'index.html').read_text(encoding='utf-8')
-    index=re.sub(r'([?&]v=)(?:inventory|expansion)\d+',r'\g<1>expansion8',index)
-    index=index.replace('shared/afb-api.js\"','shared/afb-api.js?v=expansion8\"')
+    index=re.sub(r'([?&]v=)(?:inventory|expansion)\d+',lambda m:m.group(1)+build_stamp,index)
+    index=index.replace('shared/afb-api.js"', 'shared/afb-api.js?v='+build_stamp+'"')
+    index=re.sub(r'((?:shared/afb-api\.js|shared/afb-expansion-save\.js)\?v=)[A-Za-z0-9._+-]+',lambda m:m.group(1)+build_stamp,index)
     index=index.replace('kobi-v1','mobile-3d-v1').replace('AFB_RUNTIME_KOBI_V1','AFB_RUNTIME_MOBILE_3D_V1')
-    index=re.sub(r'afb-runtime-mobile-3d-v1\.js\?v=(?:\d+|(?:inventory|expansion)\d+)','afb-runtime-mobile-3d-v1.js?v=expansion8',index)
-    index=re.sub(r'0\.7\.9-beta\.19-cloudtest\.(?:98-kobi|99-mobile3d|99-inventory|99-expansion)\.\d+',release,index)
+    index=re.sub(r'afb-runtime-mobile-3d-v1\.js\?v=[A-Za-z0-9._+-]+','afb-runtime-mobile-3d-v1.js?v='+build_stamp,index)
+    index=re.sub(r'index-accountsync10\.js\?v=[A-Za-z0-9._+-]+','index-accountsync10.js?v='+build_stamp,index)
+    assert index.count('const AFB_TEST_RELEASE = "')==1
+    index=re.sub(r'(const AFB_TEST_RELEASE = ")[^"]+(")',lambda m:m.group(1)+release+m.group(2),index,count=1)
+    assert 'const AFB_TEST_RELEASE = "'+release+'"' in index
     index=re.sub(r'"fileSizes":\{[^}]*\\}',f'"fileSizes":{{"index-mobile-3d-v1.pck":{len(built)},"index.wasm":{(ROOT/"index.wasm").stat().st_size}}}',index,count=1)
     (ROOT/'index.html').write_text(index,encoding='utf-8',newline='\n')
 
     version=json.loads((ROOT/'version.json').read_text())
     version['release_id']=release
+    version['runtime_pack_sha256']=build_sha256
     version['paused_heat_decay']='100 Heat over 180 real minutes'
     version['mobile_3d_movement']={
         'branch':'experiment/chapter5-furniture',
