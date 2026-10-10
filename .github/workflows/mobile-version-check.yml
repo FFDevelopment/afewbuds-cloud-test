@@ -1,0 +1,52 @@
+name: Verify mobile cache-busting release IDs
+on:
+  push:
+    branches: [fix/visible-mobile-build-identity]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  stamp:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rebuild development game and generated release metadata
+        run: python3 tools/mobile_3d_movement/build.py --output-dir "${RUNNER_TEMP}/afb-build"
+      - name: Verify release identity matches game, loader and assets
+        run: |
+          python3 - <<'PY'
+          import json, pathlib, re
+          root=pathlib.Path(".")
+          receipt=json.loads((root/'tools/mobile_3d_movement/build_receipt.json').read_text())
+          manifest=json.loads((root/'version.json').read_text())
+          html=(root/'index.html').read_text()
+          js=(root/'shared/afb-runtime-mobile-3d-v1.js').read_text()
+          patch=json.loads((root/'runtime/mobile-3d-v1.patch.json').read_text())
+          sha=receipt['target_sha256']
+          stamp=sha[:12]
+          release=manifest['release_id']
+          assert manifest['runtime_pack_sha256']==sha
+          assert re.search(r'[0-9a-f]{12}$',release)
+          assert release.endswith(stamp)
+          assert f'const AFB_TEST_RELEASE = "{release}";' in html
+          assert f'index-accountsync10.js?v={stamp}' in html
+          assert f'afb-runtime-mobile-3d-v1.js?v={stamp}' in html
+          assert f'patch.json?v={stamp}' in js
+          assets=[s[1] for s in patch['segments'] if s[0]=='asset']
+          assert assets and all(f'?v={stamp}' in path for path in assets)
+          assert '0.7.9-beta.19' in (root/'BUILD_VERSION.txt').read_text()
+          print('DEV_RELEASE_CACHE_STAMP_RESULT: PASS',release,len(assets))
+          PY
+      - name: Run Godot import and property/equipment/worker regression checks
+        run: |
+          curl -fL --retry 3 -o /tmp/godot.zip https://github.com/godotengine/godot-builds/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
+          unzip -q /tmp/godot.zip -d /tmp/godot
+          /tmp/godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path "${RUNNER_TEMP}/afb-build/candidate" --editor --import --quit
+          for spec in "tools/dynamic_property_v1/check.gd|DYNAMIC_PROPERTY_REGISTRY_RESULT: PASS" "tools/item_registry_v1/check.gd|ITEM_REGISTRY_RESULT: PASS" "tools/property_isolation_v1/check.gd|PROPERTY_ISOLATION_RESULT: PASS" "tools/equipment_v2/check.gd|EQUIPMENT_V2_RESULT: PASS"; do
+            file="${spec%%|*}"
+            marker="${spec#*|}"
+            XDG_DATA_HOME="$(mktemp -d)" timeout 150s /tmp/godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path "${RUNNER_TEMP}/afb-build/candidate" --script "${GITHUB_WORKSPACE}/${file}" 2>&1 | tee /tmp/afb-test.log
+            grep -q "${marker}" /tmp/afb-test.log
+            if grep -E 'SCRIPT ERROR|^ERROR:' /tmp/afb-test.log;then exit 1;fi
+          done
