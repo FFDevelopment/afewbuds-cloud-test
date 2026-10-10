@@ -765,6 +765,8 @@ def main():
     main_script=reeves_followup_patch.patch_main(main_script)
     grow_status_patch=module("house_grow_status_patch",ROOT/"tools/property_isolation_v1/grow_status_patch.py")
     main_script=grow_status_patch.apply(main_script)
+    staff_patch=module("staff_ui_patch",ROOT/"tools/staff_ui_v1/patch.py")
+    main_script=staff_patch.patch_main(main_script)
     # Idle production workers follow the current apartment couch, not its old anchor.
     _old_idle = '\t\t_: return Vector3(-2.775, 0.0, 2.1)'
     _new_idle = '\t\t_:\n\t\t\tif neighborhood != null and neighborhood.location_ops != null and neighborhood.location_ops.crew != null:\n\t\t\t\treturn neighborhood.location_ops.crew.idle_spot(false,false)\n\t\t\treturn Vector3(-0.75, 0.0, 1.25)'
@@ -803,7 +805,7 @@ def main():
     station=patch_station((ROOT/'tools/police_station_v1/station.gd').read_text())
     door=(HERE/'interior_door_physics.gd').read_bytes()
     property_opportunity=(ROOT/'tools/progression_v1/property_opportunity.gd').read_bytes()
-    location_ops=(ROOT/'tools/progression_v1/location_ops.gd').read_bytes()
+    location_ops=staff_patch.patch_location((ROOT/'tools/progression_v1/location_ops.gd').read_text()).encode()
     crew=before['scripts/crew_phone.gd'].decode()
     assert 'host.phone_scroll.scroll_vertical=int(host.phone_scroll.get_v_scroll_bar().max_value)' in crew
     crew=crew.replace('host.phone_scroll.scroll_vertical=int(host.phone_scroll.get_v_scroll_bar().max_value)','host.phone_scroll.scroll_vertical=0')
@@ -867,6 +869,7 @@ def main():
     for edit in seating_edits:
         assert edit["old"] in crew, "Couch seating baseline drift"
         crew = crew.replace(edit["old"], edit["new"], 1)
+    crew=staff_patch.patch_crew(crew)
     interiors=before['scripts/interiors.gd'].decode()
     shelf_body='func shelf(at: Vector3, width: float, depth: float, stocked: bool = true) -> void:\n\tvar body := StaticBody3D.new()'
     assert shelf_body in interiors
