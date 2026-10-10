@@ -1,0 +1,27 @@
+name: Verify cross-platform career parity (mobile)
+on:
+  push:
+    branches: [fix/shared-career-parity-v1]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  career-parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test mobile production-style revision protocol with fictional tent and worker records
+        run: node tools/career_parity_v1/check.cjs
+      - uses: actions/checkout@v4
+        with:
+          repository: FFDevelopment/afewbuds-beta
+          ref: 2284aa779b8bb6001127ef263b8591dae8e83b40
+          path: tester-phone
+          persist-credentials: false
+      - name: Verify tester-phone canonical cloud implementation with its existing suite
+        run: |
+          cd tester-phone
+          node tools/shared_save_test.cjs
+      - name: Run identical tent-and-crew fixture using the real phone beta cloud implementation
+        run: node tools/career_parity_v1/check.cjs tester-phone/shared/afb-cloud.js
