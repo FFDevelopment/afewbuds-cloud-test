@@ -11,8 +11,8 @@ func setup(host:Node) -> void:
 	if config.load(PATH)==OK:level=clampi(int(config.get_value("phone","ring_volume",70)),0,100)
 	_add_key("+",Vector2(-18,165),Vector2(28,58),"Ring volume up",change_volume.bind(10))
 	_add_key("−",Vector2(-18,229),Vector2(28,58),"Ring volume down",change_volume.bind(-10))
-	_add_key("",Vector2(380,182),Vector2(28,76),"Power: close phone",power)
-	readout=Label.new();readout.position=Vector2(72,53);readout.size=Vector2(246,34)
+	_add_key("",Vector2(preload("res://scripts/phone_visuals.gd").SIZE.x-10,182),Vector2(28,76),"Power: close phone",power)
+	readout=Label.new();readout.position=Vector2((preload("res://scripts/phone_visuals.gd").SIZE.x-246)*0.5,53);readout.size=Vector2(246,34)
 	readout.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
 	readout.add_theme_font_size_override("font_size",13)
 	readout.add_theme_stylebox_override("normal",preload("res://scripts/phone_visuals.gd").box(Color("29332f"),12,Color("bfc5cc"),6))

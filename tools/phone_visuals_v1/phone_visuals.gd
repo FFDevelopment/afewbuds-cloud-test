@@ -1,10 +1,10 @@
 extends RefCounted
 # Shared visual layer. All actions and balances still come from the live game.
-const SIZE := Vector2(390,805)
+const SIZE := Vector2(440,805)
 const INK := Color("f3f3e9")
 const MUTED := Color("9caea3")
 const MINT := Color("a4e3b3")
-const ICONS = {"Properties": "<path d=\"m3 10 9-7 9 7M5 9v12h14V9M9 21v-8h6v8\"/>", "Contacts": "<circle cx=\"12\" cy=\"7\" r=\"4\"/><path d=\"M4 21v-3a8 8 0 0 1 16 0v3\"/>", "Shop": "<path d=\"M3 3h3l3 13h10l3-9H7M10 21h.01M19 21h.01\"/>", "Genetics": "<path d=\"M6 3c0 8 12 10 12 18M18 3C18 11 6 13 6 21M7 5h10M8 9h8M8 15h8M7 19h10\"/>", "Clients": "<circle cx=\"8\" cy=\"8\" r=\"3\"/><circle cx=\"18\" cy=\"9\" r=\"3\"/><path d=\"M1 21v-3a7 7 0 0 1 14 0v3M16 15a6 6 0 0 1 7 6\"/>", "Rewards": "<path d=\"M7 3h10v6a5 5 0 0 1-10 0V3ZM7 5H3v3a5 5 0 0 0 5 5M17 5h4v3a5 5 0 0 1-5 5M12 14v7M7 21h10\"/>", "Stats": "<path d=\"M3 21V11h4v10M10 21V6h4v15M17 21V2h4v19\"/>", "Heat": "<path d=\"m12 2 9 4v6c0 5-9 10-9 10S3 17 3 12V6l9-4Z M12 7v6M12 17h.01\"/>", "Messages": "<path d=\"M3 3h18v14H8l-5 4V3Z M7 8h10M7 12h7\"/>", "Leaderboard": "<path d=\"M7 3h10v6a5 5 0 0 1-10 0V3ZM7 5H3v3a5 5 0 0 0 5 5M17 5h4v3a5 5 0 0 1-5 5M12 14v7M7 21h10\"/>"}
+const ICONS = {"Properties": "<path d=\"m3 10 9-7 9 7M5 9v12h14V9M9 21v-8h6v8\"/>", "Contacts": "<circle cx=\"12\" cy=\"7\" r=\"4\"/><path d=\"M4 21v-3a8 8 0 0 1 16 0v3\"/>", "Shop": "<path d=\"M3 3h3l3 13h10l3-9H7M10 21h.01M19 21h.01\"/>", "Genetics": "<path d=\"M6 3c0 8 12 10 12 18M18 3C18 11 6 13 6 21M7 5h10M8 9h8M8 15h8M7 19h10\"/>", "Clients": "<circle cx=\"8\" cy=\"8\" r=\"3\"/><circle cx=\"18\" cy=\"9\" r=\"3\"/><path d=\"M1 21v-3a7 7 0 0 1 14 0v3M16 15a6 6 0 0 1 7 6\"/>", "Rewards": "<path d=\"M7 3h10v6a5 5 0 0 1-10 0V3ZM7 5H3v3a5 5 0 0 0 5 5M17 5h4v3a5 5 0 0 1-5 5M12 14v7M7 21h10\"/>", "Stats": "<path d=\"M3 21V11h4v10M10 21V6h4v15M17 21V2h4v19\"/>", "Heat": "<path d=\"m12 2 9 4v6c0 5-9 10-9 10S3 17 3 12V6l9-4Z M12 7v6M12 17h.01\"/>", "Messages": "<path d=\"M3 3h18v14H8l-5 4V3Z M7 8h10M7 12h7\"/>", "Leaderboard": "<path d=\"M7 3h10v6a5 5 0 0 1-10 0V3ZM7 5H3v3a5 5 0 0 0 5 5M17 5h4v3a5 5 0 0 1-5 5M12 14v7M7 21h10\"/>", "Battery": "<rect x=\"2\" y=\"7\" width=\"18\" height=\"10\" rx=\"2\"/><path d=\"M23 10v4M5 10v4M8 10v4M11 10v4M14 10v4M17 10v4\"/>", "Back": "<path d=\"m15 5-7 7 7 7\"/>", "Home": "<path d=\"M4 12h16\" stroke-width=\"4\"/>", "Help": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M9 9a3 3 0 1 1 5 2c-2 1-2 2-2 3M12 17h.01\"/>", "Pause": "<path d=\"M8 5v14M16 5v14\" stroke-width=\"3\"/>"}
 
 static var icon_cache:Dictionary={}
 
@@ -57,6 +57,7 @@ static func tile(parent:GridContainer, name:String, app:String, color:String, ac
 	wash.texture=ImageTexture.create_from_image(wash_image);wash.size=Vector2(65,65);wash.mouse_filter=Control.MOUSE_FILTER_IGNORE;plate.add_child(wash)
 	var picture:=TextureRect.new();picture.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;picture.texture=icon(name);picture.position=Vector2(17,17);picture.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;picture.size=Vector2(31,31);picture.mouse_filter=Control.MOUSE_FILTER_IGNORE;plate.add_child(picture)
 	var caption:=label(name,11);caption.position=Vector2(0,77);caption.size=Vector2(97,18);caption.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;button.add_child(caption)
+	button.resized.connect(func():plate.position.x=(button.size.x-65)*0.5;caption.size.x=button.size.x)
 	button.mouse_entered.connect(func():plate.modulate=Color(1.2,1.2,1.2))
 	button.mouse_exited.connect(func():plate.modulate=Color.WHITE)
 
