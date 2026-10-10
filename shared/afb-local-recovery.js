@@ -95,7 +95,11 @@
        close();resolve(clone(snapshot.save));
      });
      button('Use SERVER career — keep my Windows/phone tester progress',()=>{close();resolve(null);});
-     button('CANCEL — do not load or change either career',()=>{
+     button('CANCEL — do not load or change either career',async()=>{
+       // Relinquish the protected lease so the player's Windows or phone
+       // session is not blocked by an abandoned recovery decision.
+       try { await window.AFB_CLOUD?.releasePlay?.(); }
+       catch(error) { console.warn('AFB recovery cancellation could not release the play session',error); }
        close();reject(Error('Save selection canceled. Neither career was changed.'));
      });
      document.body.appendChild(overlay);
