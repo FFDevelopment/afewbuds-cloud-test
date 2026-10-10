@@ -1,6 +1,6 @@
 {
   "baseline_sha256": "bbc788e5d4dd19b59af7dd2824f34943361d901d08ae5b5c25f8e7c6b9a75410",
-  "target_sha256": "f14a0048b40a72b26ce0ac39f2b155590af0fca54f2db929f1bb41cb7267861e",
+  "target_sha256": "ace2af8601ad90f2aaed9cb6565b44d9265d3992b4f3c017fb89673e2c981bed",
   "target_bytes": 48957552,
   "changed_existing_entries": [
     "scripts/main.gd",
