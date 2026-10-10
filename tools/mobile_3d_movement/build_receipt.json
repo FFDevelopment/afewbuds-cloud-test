@@ -1,7 +1,7 @@
 {
   "baseline_sha256": "bbc788e5d4dd19b59af7dd2824f34943361d901d08ae5b5c25f8e7c6b9a75410",
-  "target_sha256": "711359aa987bc1d840debd17600b3a3e6693b02696937741e3858dfbd2e9e2f2",
-  "target_bytes": 48886844,
+  "target_sha256": "f14a0048b40a72b26ce0ac39f2b155590af0fca54f2db929f1bb41cb7267861e",
+  "target_bytes": 48957552,
   "changed_existing_entries": [
     "scripts/main.gd",
     "scripts/offline_plant_care.gd",
@@ -14,7 +14,9 @@
     "scripts/location_ops.gd",
     "scripts/mobile_hud.gd",
     "scripts/crew_phone.gd",
-    "scripts/police_station.gd"
+    "scripts/east_expansion.gd",
+    "scripts/police_station.gd",
+    "scripts/police_district.gd"
   ],
   "added_entries": [
     "scripts/property_registry.gd",
@@ -36,6 +38,6 @@
     "assets/inventory/product.png",
     "assets/inventory/seeds.png"
   ],
-  "unchanged_entries": 208,
+  "unchanged_entries": 206,
   "reconstruction_verified": true
 }
