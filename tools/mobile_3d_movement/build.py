@@ -939,6 +939,8 @@ def main():
     map_patch=module("map_integration",ROOT/"tools/map_integration_v1/patch.py")
     updated=map_patch.integrate(updated)
     updated=friends.apply_entries(updated,ROOT)
+    production=module("production_actions",ROOT/"tools/production_actions_v1/patch.py")
+    updated=production.apply_entries(updated)
     built=east.pack.rebuild(baseline,fb,updated)
     # Every unique gameplay pack gets its own browser-visible identity.
     # This prevents development releases from silently sharing a stale URL.
