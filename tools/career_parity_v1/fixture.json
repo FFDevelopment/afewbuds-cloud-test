@@ -1,0 +1,132 @@
+{
+  "save_schema": 2,
+  "saved_unix": 1790000000,
+  "game_day": 33,
+  "cash": 1280,
+  "packing_employee_hired": true,
+  "packing_employee_active": true,
+  "production_worker_friend_name": "Malik",
+  "friend_staff_roles": {
+    "Malik": "production",
+    "Tyler": "dealer"
+  },
+  "dealer_count": 1,
+  "dealers_active": true,
+  "property_opportunity_state": {
+    "acquired": true,
+    "relocated": true,
+    "agreement": "purchase"
+  },
+  "location_state": {
+    "active_property": "house",
+    "operation_contents_property": "house",
+    "staff_assignments": {
+      "Malik": "house",
+      "Tyler": "apartment"
+    },
+    "furniture_v1": {
+      "schema": 2,
+      "next_id": 150,
+      "items": {
+        "furniture_101": {
+          "sku": "tent_1",
+          "property": "house",
+          "position": [
+            41.8,
+            0,
+            -12
+          ],
+          "yaw": 0,
+          "locked": true,
+          "slots": [
+            6
+          ],
+          "paid": 240,
+          "condition": 100,
+          "upgrades": {}
+        },
+        "furniture_102": {
+          "sku": "tent_2",
+          "property": "backpack",
+          "locked": false,
+          "slots": [
+            7,
+            8
+          ],
+          "paid": 480,
+          "condition": 100,
+          "upgrades": {}
+        },
+        "legacy_sofa": {
+          "sku": "sofa",
+          "property": "apartment",
+          "position": [
+            -2.4,
+            0,
+            3.2
+          ],
+          "yaw": 0,
+          "locked": true,
+          "paid": 350,
+          "condition": 100,
+          "upgrades": {}
+        }
+      }
+    },
+    "container_inventory": {
+      "backpack": {
+        "furniture|furniture_102": 1
+      },
+      "containers": {
+        "house:supply": {
+          "seed|Street Green": 3,
+          "fertilizer": 8
+        },
+        "apartment:supply": {
+          "seed|Purple Dream": 5
+        },
+        "house:storage": {
+          "product|Street Green": 21
+        },
+        "apartment:storage": {
+          "product|Purple Dream": 16
+        }
+      }
+    },
+    "property_utilities": {
+      "apartment": {
+        "power_due": 11,
+        "water_due": 4
+      },
+      "house": {
+        "power_due": 32,
+        "water_due": 9
+      }
+    },
+    "property_registry": {
+      "schema": 1,
+      "properties": {
+        "apartment": {
+          "id": "apartment",
+          "name": "Starter Apartment"
+        },
+        "house": {
+          "id": "house",
+          "name": "Maple Flats House"
+        }
+      }
+    }
+  },
+  "runtime": {
+    "current_view": "main_grow_door",
+    "current_room": "main",
+    "future": "preserved"
+  },
+  "advancement_stats": {
+    "dealer_sales": 53,
+    "contact_calls": 1
+  },
+  "future_field": {
+    "preserve_me": true
+  }
+}
