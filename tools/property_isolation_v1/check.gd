@@ -124,8 +124,9 @@ func run():
  var computer_area:Node=editor.equipment_world.rendered[computer_id].find_children("*","Area3D",true,false)[0]
  check(computer_area.get_meta("equipment_container")=="house:computer","Computer interaction belongs to its placed property")
  game.camera.global_position=Vector3(30,1.64,0)
+ var operation_before_computer:String=inv.operation()
  game.neighborhood.location_ops.computer("house")
- check(game.neighborhood.location_ops.computer_context=="house" and inv.operation()=="house","House computer selects house inventory")
+ check(game.neighborhood.location_ops.computer_context=="house" and inv.operation()==operation_before_computer and game.neighborhood.location_ops.management_app=="","Computer opens property information without silently changing inventory or opening a second management interface")
  var computer_ops=game.neighborhood.location_ops
  var computer_crew=computer_ops.crew
  var existing_hire:bool=game.packing_employee_hired
