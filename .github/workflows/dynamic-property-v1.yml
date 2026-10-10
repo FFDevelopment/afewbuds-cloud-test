@@ -15,7 +15,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: FFDevelopment/afewbuds-3d-prototype
-          ref: 1ff73f8f1d7d6816054e8be0300891be5ceae375
+          ref: 327b318b4b969e3fd5dd279ca74789e89c915408
           path: afb-shared-core
           persist-credentials: false
       - name: Ensure mobile and desktop share identical property logic

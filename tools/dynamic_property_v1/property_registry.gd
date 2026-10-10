@@ -1,7 +1,7 @@
 extends RefCounted
 ## Data-only property registry. Property names are labels, not save keys.
 ## A saved property ID never changes when its display name changes.
-const SCHEMA_VERSION: int = 1
+const SCHEMA_VERSION: int = 2
 const DEFAULT_SYSTEMS := ["inventory", "furniture", "equipment", "computer", "utilities", "grow", "staff"]
 var host: Node
 var state: Dictionary = {}
@@ -146,10 +146,11 @@ func rooms_for(id: String) -> Dictionary:
 	return rooms
 
 func room_at(id: String, world_point: Vector3) -> String:
+	if not world_point.is_finite():return ""
 	var rooms: Dictionary = rooms_for(id)
 	for room in rooms:
 		var rect: Rect2 = rooms[room]
-		if rect.has_point(Vector2(world_point.x, world_point.z)):
+		if rect.has_point(Vector2(world_point.x, world_point.z)) and _within_height(id, room, world_point.y):
 			return room
 	return ""
 
@@ -167,12 +168,14 @@ func _property_depth(id: String) -> int:
 func property_at(world_point: Vector3) -> String:
 	# Registered sub-units take priority over parent buildings, even when
 	# their individual room geometry is larger than a parent room.
+	if not world_point.is_finite():return ""
 	var chosen: String = ""
 	var best_depth: int = -1
 	var smallest: float = INF
 	for id in property_ids(true):
-		for value in rooms_for(id).values():
-			var rect: Rect2 = value
+		for room in rooms_for(id):
+			var rect: Rect2 = rooms_for(id)[room]
+			if not _within_height(id, room, world_point.y):continue
 			if not rect.has_point(Vector2(world_point.x, world_point.z)):
 				continue
 			var depth: int = _property_depth(id)
@@ -208,3 +211,60 @@ func register_equipment(id: String, equipment_id: String) -> bool:
 		return false
 	system_data(id, "equipment")[equipment_id] = true
 	return true
+
+# Additive spatial contract. Older rooms retain their original 2D behavior until
+# map authors explicitly supply vertical bounds. Bounds are [floor, ceiling).
+func set_room_height(id: String, room: String, floor_y: float, ceiling_y: float) -> bool:
+	if not exists(id) or not rooms_for(id).has(room):return false
+	if not is_finite(floor_y) or not is_finite(ceiling_y) or floor_y >= ceiling_y:return false
+	if not state.properties[id].get("room_heights", {}) is Dictionary:return false
+	if not state.properties[id].has("room_heights"):state.properties[id]["room_heights"] = {}
+	state.properties[id].room_heights[room] = [floor_y, ceiling_y]
+	return true
+
+func _within_height(id: String, room: String, y: float) -> bool:
+	if not is_finite(y):return false
+	var heights: Variant = state.properties[id].get("room_heights", {})
+	if not heights is Dictionary:return false
+	if not heights.has(room):return true
+	var limits: Variant = heights[room]
+	if not limits is Array or limits.size() != 2:return false
+	if not (limits[0] is float or limits[0] is int) or not (limits[1] is float or limits[1] is int):return false
+	return is_finite(float(limits[0])) and is_finite(float(limits[1])) and y >= float(limits[0]) and y < float(limits[1])
+
+# Locations identify destinations; registration never grants access or moves a
+# player. Interior services must resolve to their declared room and floor.
+const SITE_ROLES := ["entry", "curb", "delivery", "grow_panel", "packing", "supply", "staff"]
+func register_site(id: String, site_id: String, role: String, position: Vector3, room: String = "") -> bool:
+	if not exists(id) or site_id.strip_edges().is_empty() or role not in SITE_ROLES or not position.is_finite():return false
+	if room.is_empty():
+		if role not in ["entry", "curb", "delivery"]:return false
+	elif room_at(id, position) != room:return false
+	if not state.properties[id].get("sites", {}) is Dictionary:return false
+	if not state.properties[id].has("sites"):state.properties[id]["sites"] = {}
+	state.properties[id].sites[site_id] = {"role":role, "room":room, "position":[position.x,position.y,position.z]}
+	return true
+
+func sites_for(id: String, role: String = "") -> Dictionary:
+	var result: Dictionary = {}
+	if not exists(id) or (not role.is_empty() and role not in SITE_ROLES):return result
+	var sites: Variant = state.properties[id].get("sites", {})
+	if not sites is Dictionary:return result
+	for site_id in sites:
+		var site: Variant = sites[site_id]
+		if not site is Dictionary or str(site.get("role", "")) not in SITE_ROLES:continue
+		if not role.is_empty() and site.role != role:continue
+		var coords: Variant = site.get("position", [])
+		if not coords is Array or coords.size() != 3:continue
+		var valid: bool = true
+		for coord in coords:
+			if not (coord is float or coord is int):valid = false;break
+			if not is_finite(float(coord)):valid = false;break
+		if not valid:continue
+		var point := Vector3(float(coords[0]),float(coords[1]),float(coords[2]))
+		var room: String = str(site.get("room", ""))
+		if room.is_empty():
+			if site.role not in ["entry", "curb", "delivery"]:continue
+		elif room_at(id, point) != room:continue
+		result[str(site_id)] = site.duplicate(true)
+	return result
