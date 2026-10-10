@@ -991,8 +991,8 @@ def main():
     index=re.sub(r'([?&]v=)(?:inventory|expansion)\d+',lambda m:m.group(1)+build_stamp,index)
     index=index.replace('shared/afb-api.js\"','shared/afb-api.js?v=expansion8\"')
     index=index.replace('kobi-v1','mobile-3d-v1').replace('AFB_RUNTIME_KOBI_V1','AFB_RUNTIME_MOBILE_3D_V1')
-    index=re.sub(r'afb-runtime-mobile-3d-v1\\.js\\?v=[A-Za-z0-9._+-]+','afb-runtime-mobile-3d-v1.js?v='+build_stamp,index)
-    index=re.sub(r'index-accountsync10\\.js\\?v=[A-Za-z0-9._+-]+','index-accountsync10.js?v='+build_stamp,index)
+    index=re.sub(r'afb-runtime-mobile-3d-v1\.js\?v=[A-Za-z0-9._+-]+','afb-runtime-mobile-3d-v1.js?v='+build_stamp,index)
+    index=re.sub(r'index-accountsync10\.js\?v=[A-Za-z0-9._+-]+','index-accountsync10.js?v='+build_stamp,index)
     assert index.count('const AFB_TEST_RELEASE = "')==1
     index=re.sub(r'(const AFB_TEST_RELEASE = ")[^"]+(")',lambda m:m.group(1)+release+m.group(2),index,count=1)
     assert 'const AFB_TEST_RELEASE = "'+release+'"' in index
