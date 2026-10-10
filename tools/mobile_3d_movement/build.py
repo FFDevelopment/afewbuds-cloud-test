@@ -874,6 +874,8 @@ def main():
         crew = crew.replace(edit["old"], edit["new"], 1)
     crew=staff_patch.patch_crew(crew)
     crew=gameplay.apply(property_phone.patch_crew(crew),"crew_phone.gd")
+    friends=module("friend_characters",ROOT/"tools/friend_characters_v1/patch.py")
+    crew=friends.patch_crew(crew)
     interiors=before['scripts/interiors.gd'].decode()
     shelf_body='func shelf(at: Vector3, width: float, depth: float, stocked: bool = true) -> void:\n\tvar body := StaticBody3D.new()'
     assert shelf_body in interiors
@@ -936,6 +938,7 @@ def main():
     for asset in inventory_art:updated.append(["assets/inventory/"+asset.name,asset.read_bytes(),0])
     map_patch=module("map_integration",ROOT/"tools/map_integration_v1/patch.py")
     updated=map_patch.integrate(updated)
+    updated=friends.apply_entries(updated,ROOT)
     built=east.pack.rebuild(baseline,fb,updated)
     # Every unique gameplay pack gets its own browser-visible identity.
     # This prevents development releases from silently sharing a stale URL.
@@ -944,6 +947,7 @@ def main():
     after={n:b for n,b,f in east.pack.parse(built)[1]}
     changed=[n for n in before if before[n]!=after[n]]
     expected_changed={'scripts/east_expansion.gd','scripts/police_district.gd','scripts/client_visits.gd','scripts/interiors.gd','scripts/offline_plant_care.gd','scripts/mobile_hud.gd','scripts/crew_phone.gd','scripts/interior_door.gd','scripts/location_ops.gd','scripts/main.gd','scripts/house_controls.gd','scripts/neighborhood.gd','scripts/police_station.gd','scripts/property_opportunity.gd'}
+    expected_changed.update("assets/characters/"+name+".glb" for name in ["Rod","Kobi","Malik"])
     assert set(changed)==expected_changed,changed
     assert 'scripts/mobile_physics_player.gd' in after
     assert after['scripts/property_registry.gd']==registry_bytes
@@ -967,13 +971,15 @@ def main():
         'assets/characters/Malik_BaseColor.png','assets/characters/Rod_BaseColor.png',
         'assets/furniture/walnut.png'
     ]
+    assets.extend("assets/characters/"+name+".glb" for name in friends.NAMES if "assets/characters/"+name+".glb" not in assets)
     assets.extend("assets/inventory/"+asset.name for asset in inventory_art)
     for name,offset,size in east.directory(built):
         if offset>cursor:
             assert not any(built[cursor:offset]);segments.append(['zero',offset-cursor])
         data=built[offset:offset+size]
         if name in assets:
-            segments.append(['asset',name+'?v='+build_stamp,size,hashlib.sha256(data).hexdigest()])
+            asset_path=name.replace('assets/characters/','assets/characters/friends/') if name.endswith('.glb') and name.startswith('assets/characters/') else name
+            segments.append(['asset',asset_path+'?v='+build_stamp,size,hashlib.sha256(data).hexdigest()])
         elif name in source:
             oldoff,oldsize=source[name];previous=base[oldoff:oldoff+oldsize]
             if data==previous:
@@ -1058,7 +1064,7 @@ def main():
         'target_sha256':hashlib.sha256(built).hexdigest(),
         'target_bytes':len(built),
         'changed_existing_entries':changed,
-        'added_entries':['scripts/property_registry.gd','scripts/item_registry.gd','data/item_definitions.json','scripts/mobile_physics_player.gd','scripts/districts.gd','scripts/container_inventory.gd','scripts/first_day_guide.gd','scripts/session_menu.gd','scripts/property_furniture.gd','scripts/furniture_editor.gd','scripts/chapter_five.gd','scripts/physical_packing.gd']+['assets/inventory/'+asset.name for asset in inventory_art],
+        'added_entries':sorted(set(after)-set(before)),
         'unchanged_entries':len(before)-len(changed),
         'reconstruction_verified':True
     }

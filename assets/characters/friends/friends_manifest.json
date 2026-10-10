@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "provenance": "User-supplied characters.zip originals and friends.zip reference art; locally authored friend meshes and corrected shared animations. Original asset rights retained by owner. No third-party generated meshes.",
+  "source_preview": "AFewBuds Animation Lab",
+  "models": {
+    "Mike": {
+      "file": "Mike.glb",
+      "sha256": "4be2dc3d394b08f107e724f10a2fb6dde86feef6c8d5b81a17d4b87969517982",
+      "bytes": 2317824
+    },
+    "Tyler": {
+      "file": "Tyler.glb",
+      "sha256": "d2dfd5e74251dbdc303c98daf660faee1229a94eda84cd7e3c3b7fda563a8a64",
+      "bytes": 2401652
+    },
+    "Jeremias": {
+      "file": "Jeremias.glb",
+      "sha256": "3f7aa4140393cbfbe6353c8e14ade18ebb69e7c5d97784fbeebad7526b384fc9",
+      "bytes": 1773064
+    },
+    "Mahto": {
+      "file": "Mahto.glb",
+      "sha256": "041432a5351e0fef49d13ed09e83a251eb9eb56174cb3ce2070164ff489f8d39",
+      "bytes": 2835732
+    },
+    "Marcuss": {
+      "file": "Marcuss.glb",
+      "sha256": "de761823aa20c0e35da8170a55287f94d4adc76749b071a6c4661f6234884193",
+      "bytes": 1541548
+    },
+    "Diddy": {
+      "file": "Diddy.glb",
+      "sha256": "e25ae35b2c59935e4453a36d41cc59a2322a67c2ac667ce00b06531b70bdd872",
+      "bytes": 1926072
+    },
+    "Kobi": {
+      "file": "Kobi.glb",
+      "sha256": "ea797b3836add701a95fe31047796252f7c14a2b32904ca557e6891ad86495d1",
+      "bytes": 2667896
+    },
+    "Rod": {
+      "file": "Rod.glb",
+      "sha256": "7936855f258c93b51e4eefc153dfe99d2aeac36376e9985f25fa0306b20f12fb",
+      "bytes": 2863388
+    },
+    "Malik": {
+      "file": "Malik.glb",
+      "sha256": "8b51461947f4197ea2943e53214e937da525a42483a658af03511d6be7e93b65",
+      "bytes": 2589628
+    }
+  }
+}
