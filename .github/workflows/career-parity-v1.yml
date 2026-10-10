@@ -23,3 +23,5 @@ jobs:
         run: |
           cd tester-phone
           node tools/shared_save_test.cjs
+      - name: Run identical tent-and-crew fixture using the real phone beta cloud implementation
+        run: node tools/career_parity_v1/check.cjs tester-phone/shared/afb-cloud.js
