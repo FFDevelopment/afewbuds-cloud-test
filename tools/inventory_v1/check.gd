@@ -73,7 +73,9 @@ func run():
  check(inv.transfer("apartment:storage","backpack","product|Purple Dream",5).ok,"Take packaged stock into backpack")
  check(game.products["Purple Dream"].stock+int(inv.contents("backpack").get("product|Purple Dream",0))==total_before,"Product transfer conserves grams")
  check(inv.transfer("backpack","apartment:storage","cash",25).ok and game.cash==475,"Stash can hold cash separately from carried money")
- check(inv.transfer("backpack","apartment:storage","equipment|Grow Tent upgrade",1).ok,"Store one paid equipment item")
+ check(not inv.transfer("backpack","apartment:storage","equipment|Grow Tent upgrade",1).ok,"Property storage rejects equipment without dedicated capacity")
+ inv.set_amount("backpack","equipment|Grow Tent upgrade",1)
+ inv.set_amount("apartment:storage","equipment|Grow Tent upgrade",1) # Legacy stored item stays recoverable.
  check(inv.transfer("apartment:storage","backpack","equipment|Grow Tent upgrade",1).ok and inv.contents("backpack").get("equipment|Grow Tent upgrade")==2,"Taking matching paid equipment preserves both items")
  check(inv.contents("apartment:storage").cash==25 and not inv.contents("apartment:supply").has("cash"),"Containers never expose each other's contents")
  game.property_opportunity_state.acquired=true;game.property_opportunity_state.relocated=true

@@ -220,7 +220,7 @@ func accepts(id:String,item:String) -> bool:
  if kind=="supply":return group(item) in ["seeds","fertilizer"]
  if kind=="dealer":return category(item)=="product"
  if kind=="packing":return group(item)=="grams"
- return kind=="storage" and (category(item)=="product" or item=="cash" or group(item)=="equipment")
+ return kind=="storage" and (category(item)=="product" or item=="cash")
 func capacity(id:String,item:String) -> int:
  if item=="cash":return 2000000000
  if furniture!=null and id!="backpack":
@@ -294,13 +294,8 @@ func available(id:String,item:String) -> int:
   value-=int(state.get("product_metadata",{}).get(id.get_slice(":",0),{}).get(item.get_slice("|",1),{}).get("reserved",0))
  return maxi(0,value)
 func controlled(id:String) -> bool:
- if id in ["backpack","market:orders"]:
-  return true
- if host.neighborhood==null:
-  return false
- if host.neighborhood.location_ops==null:
-  return false
- return bool(host.neighborhood.location_ops._property_controlled(id.get_slice(":",0)))
+ if id in ["backpack","market:orders"]:return true
+ return host.neighborhood.location_ops._property_controlled(id.get_slice(":",0))
 func reachable(id:String) -> bool:
  if not controlled(id):return false
  var positions:Dictionary=all_positions()
@@ -324,6 +319,7 @@ func transfer(source:String,destination:String,item:String,amount:int,expected_r
  if source==destination or amount<=0 or (source!="backpack" and destination!="backpack"):return {"ok":false,"reason":"Choose a backpack/container transfer."}
  var container:String=destination if source=="backpack" else source
  if not reachable(container):return {"ok":false,"reason":"Stand near this container to transfer items."}
+ if destination!="backpack" and group(item)=="equipment":return {"ok":false,"reason":"Furniture and equipment need dedicated storage. Keep them placed or in your backpack."}
  if not accepts(destination,item):return {"ok":false,"reason":"This container does not accept that item."}
  if amount>available(source,item):return {"ok":false,"reason":"Not enough available stock. Reserved orders stay in storage."}
  if amount>free_space(destination,item):return {"ok":false,"reason":"Not enough space for that amount."}
@@ -439,10 +435,7 @@ func native_station_target(target:String) -> bool:
  return target in ["station_workbench","station_storage","storage_vault","station_supply","station_locker"]
 func sync_station_prompt(nearby:String) -> void:
  if host.get("fp_player")!=null:
-  var target:Node=host.get("fp_target")
-  if target!=null and native_station_target(str(target.get_meta("interaction_id",""))) :
-   host.fp_prompt.text=""
-   if not nearby.is_empty():nearby_button.text+="  ["+host.get_node("/root/DesktopInput").label("interact")+"]"
+  nearby_button.hide();host.contextual_button.hide()
  else:
   var world:Node=host.neighborhood
   if world.get("action")!=null:
@@ -727,6 +720,8 @@ func process_selected() -> void:
  var chosen:String=selected
  packing_return=container_id
  close()
+ # Keep stock in its property-local inventory adapter; restore the familiar
+ # scissors trimming and drag-to-bag game instead of the new click-only proxy.
  if category(chosen)=="raw":host._start_trim_minigame(chosen.get_slice("|",1))
  elif category(chosen)=="trimmed":host._start_bag_minigame(chosen.get_slice("|",1))
 func return_to_packing() -> void:

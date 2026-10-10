@@ -769,6 +769,7 @@ def main():
     main_script=staff_patch.patch_main(main_script)
     property_phone=module("property_phone",ROOT/"tools/property_phone_v1/patch.py")
     main_script=property_phone.patch_main(main_script)
+    gameplay=module("property_gameplay",ROOT/"tools/property_phone_v1/gameplay.py")
     # Idle production workers follow the current apartment couch, not its old anchor.
     _old_idle = '\t\t_: return Vector3(-2.775, 0.0, 2.1)'
     _new_idle = '\t\t_:\n\t\t\tif neighborhood != null and neighborhood.location_ops != null and neighborhood.location_ops.crew != null:\n\t\t\t\treturn neighborhood.location_ops.crew.idle_spot(false,false)\n\t\t\treturn Vector3(-0.75, 0.0, 1.25)'
@@ -807,7 +808,7 @@ def main():
     station=patch_station((ROOT/'tools/police_station_v1/station.gd').read_text())
     door=(HERE/'interior_door_physics.gd').read_bytes()
     property_opportunity=(ROOT/'tools/progression_v1/property_opportunity.gd').read_bytes()
-    location_ops=property_phone.patch_location(staff_patch.patch_location((ROOT/'tools/progression_v1/location_ops.gd').read_text())).encode()
+    location_ops=gameplay.apply(property_phone.patch_location(staff_patch.patch_location((ROOT/'tools/progression_v1/location_ops.gd').read_text())),"location_ops.gd").encode()
     crew=before['scripts/crew_phone.gd'].decode()
     assert 'host.phone_scroll.scroll_vertical=int(host.phone_scroll.get_v_scroll_bar().max_value)' in crew
     crew=crew.replace('host.phone_scroll.scroll_vertical=int(host.phone_scroll.get_v_scroll_bar().max_value)','host.phone_scroll.scroll_vertical=0')
@@ -872,11 +873,12 @@ def main():
         assert edit["old"] in crew, "Couch seating baseline drift"
         crew = crew.replace(edit["old"], edit["new"], 1)
     crew=staff_patch.patch_crew(crew)
-    crew=property_phone.patch_crew(crew)
+    crew=gameplay.apply(property_phone.patch_crew(crew),"crew_phone.gd")
     interiors=before['scripts/interiors.gd'].decode()
     shelf_body='func shelf(at: Vector3, width: float, depth: float, stocked: bool = true) -> void:\n\tvar body := StaticBody3D.new()'
     assert shelf_body in interiors
     interiors=interiors.replace(shelf_body,shelf_body+'\n\tif at.x>25 and at.x<45 and at.z> -14 and at.z<3:body.set_meta("equipment_template_group","house_supply" if at.z< -7 else "house_storage")',1)
+    main_script=gameplay.apply(main_script,"main.gd")
     replacements={
         'scripts/interiors.gd':interiors.encode(),
         'scripts/main.gd':main_script.encode(),
@@ -888,6 +890,7 @@ def main():
         'scripts/property_opportunity.gd':property_opportunity,
         'scripts/location_ops.gd':location_ops,
         'scripts/crew_phone.gd':crew.encode(),
+        'scripts/client_visits.gd':(ROOT/'tools/property_phone_v1/client_visits.gd').read_bytes(),
         'scripts/mobile_hud.gd':(HERE/'mobile_hud.gd').read_bytes(),
     }
     updated=[]
@@ -898,6 +901,9 @@ def main():
 
     updated.append(['scripts/districts.gd',(HERE/'districts.gd').read_bytes(),0])
 
+    updated.append(['scripts/phone_dialogue.gd',(ROOT/'tools/property_phone_v1/phone_dialogue.gd').read_bytes(),0])
+    updated.append(['scripts/tent_genetics.gd',(ROOT/'tools/property_phone_v1/tent_genetics.gd').read_bytes(),0])
+    updated.append(['scripts/property_shop.gd',(ROOT/'tools/property_phone_v1/property_shop.gd').read_bytes(),0])
     updated.append(['scripts/container_inventory.gd',(ROOT/'tools/inventory_v1/container_inventory.gd').read_bytes(),0])
     updated.append(['scripts/session_menu.gd',(ROOT/'tools/inventory_v1/session_menu.gd').read_bytes(),0])
     updated.append(['scripts/first_day_guide.gd',(ROOT/'tools/inventory_v1/first_day_guide.gd').read_bytes(),0])
@@ -926,7 +932,7 @@ def main():
     build_stamp=build_sha256[:12]
     after={n:b for n,b,f in east.pack.parse(built)[1]}
     changed=[n for n in before if before[n]!=after[n]]
-    expected_changed={'scripts/interiors.gd','scripts/offline_plant_care.gd','scripts/mobile_hud.gd','scripts/crew_phone.gd','scripts/interior_door.gd','scripts/location_ops.gd','scripts/main.gd','scripts/house_controls.gd','scripts/neighborhood.gd','scripts/police_station.gd','scripts/property_opportunity.gd'}
+    expected_changed={'scripts/client_visits.gd','scripts/interiors.gd','scripts/offline_plant_care.gd','scripts/mobile_hud.gd','scripts/crew_phone.gd','scripts/interior_door.gd','scripts/location_ops.gd','scripts/main.gd','scripts/house_controls.gd','scripts/neighborhood.gd','scripts/police_station.gd','scripts/property_opportunity.gd'}
     assert set(changed)==expected_changed,changed
     assert 'scripts/mobile_physics_player.gd' in after
     assert after['scripts/property_registry.gd']==registry_bytes
@@ -992,7 +998,7 @@ def main():
     loader=re.sub(r'patch\.json\?v=[A-Za-z0-9._+-]+','patch.json?v='+build_stamp,loader)
     (ROOT/'shared/afb-runtime-mobile-3d-v1.js').write_text(loader,newline='\n')
 
-    release='0.7.9-beta.19-cloudtest.99-expansion.11.'+build_stamp
+    release='0.7.9-beta.19-cloudtest.99-expansion.12.'+build_stamp
     index=(ROOT/'index.html').read_text(encoding='utf-8')
     index=re.sub(r'([?&]v=)(?:inventory|expansion)\d+',lambda m:m.group(1)+build_stamp,index)
     index=index.replace('shared/afb-api.js"', 'shared/afb-api.js?v='+build_stamp+'"')
