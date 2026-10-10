@@ -349,13 +349,17 @@ func sync_packing_displays() -> void:
   var trimmed:int=0
   var raw:int=0
   var names:Array[String]=[]
-  for item in stock:
+  var raw_strains:Dictionary={}
+  var trimmed_strains:Dictionary={}
+  var stock_keys:Array=stock.keys();stock_keys.sort()
+  for item in stock_keys:
    var key:String=str(item)
    if key.begins_with("trimmed|"):
     trimmed+=maxi(0,int(stock[item]))
-    if int(stock[item])>0:names.append(key.get_slice("|",1))
+    if int(stock[item])>0:trimmed_strains[key.get_slice("|",1)]=int(stock[item]);names.append("%s:%d"%[key,int(stock[item])])
    elif key.begins_with("raw|"):
     raw+=maxi(0,int(stock[item]))
+    if int(stock[item])>0:raw_strains[key.get_slice("|",1)]=int(stock[item]);names.append("%s:%d"%[key,int(stock[item])])
   var signature:String="%d:%d:%s"%[trimmed,raw,",".join(names)]
   if packing_visual_signatures.get(id,"")==signature:continue
   packing_visual_signatures[id]=signature
@@ -389,7 +393,17 @@ func sync_packing_displays() -> void:
    var bud:=MeshInstance3D.new()
    bud.name=("RawBud" if n<raw_shown else "TrimmedBud")+str(n)
    var mesh:=SphereMesh.new();mesh.radius=.5;mesh.height=1.0;mesh.radial_segments=10;mesh.rings=6
-   var material:=StandardMaterial3D.new();material.albedo_color=Color("486f38") if n<raw_shown else Color("71944c");material.roughness=.85;mesh.material=material;bud.mesh=mesh
+   var strains:Dictionary=raw_strains if n<raw_shown else trimmed_strains
+   var pile_count:int=raw_shown if n<raw_shown else shown-raw_shown
+   var pile_index:int=n if n<raw_shown else n-raw_shown
+   var point:float=(float(pile_index)+.5)/float(pile_count)*float(raw if n<raw_shown else trimmed)
+   var running:=0;var strain_name:String=str(strains.keys()[0])
+   for strain in strains:
+    running+=int(strains[strain])
+    if point<=running:strain_name=str(strain);break
+   var palette:Dictionary=host._strain_visual_palette(strain_name)
+   mesh.material=host._textured_plant_material(palette.get("bud",Color("829d69")),"res://assets/textures/bud_surface.png",.92);bud.mesh=mesh
+   bud.set_meta("strain",strain_name)
    var x:=float(n%4)/3.0;var z:=float(n/4)/3.0
    bud.position=Vector3(lerpf(tray_box.position.x+.045,tray_box.end.x-.045,x),tray_box.end.y+.028,lerpf(tray_box.position.z+.04,tray_box.end.z-.04,z))
    bud.scale=Vector3(.068,.05,.058);bud.set_meta("no_collision",true);display.add_child(bud)

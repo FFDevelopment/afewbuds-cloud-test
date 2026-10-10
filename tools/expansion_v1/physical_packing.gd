@@ -157,9 +157,12 @@ func decorate(mesh:MeshInstance3D,title:String) -> void:
    detail(mesh,ring,Vector3(-.095,0,z),"293c31")
  elif title=="Untrimmed batch":
   mesh.mesh=SphereMesh.new();mesh.mesh.radius=.06;mesh.mesh.height=.1
+  var color:Color=host._strain_visual_palette(strain).get("bud",Color("829d69"))
+  mesh.material_override=host._textured_plant_material(color,"res://assets/textures/bud_surface.png",.92)
   for i in range(5):
    var bud:=SphereMesh.new();bud.radius=.035;bud.height=.065;bud.radial_segments=10;bud.rings=6
-   detail(mesh,bud,Vector3(sin(i*2.4)*.075,.01,cos(i*2.4)*.07),"739350" if i%2==0 else "496932")
+   var nug:=detail(mesh,bud,Vector3(sin(i*2.4)*.075,.01,cos(i*2.4)*.07),color.to_html(false))
+   nug.material_override=mesh.material_override
  elif title=="Scoop":
   mesh.mesh.size=Vector3(.15,.015,.025)
   var bowl:=SphereMesh.new();bowl.radius=.047;bowl.height=.025

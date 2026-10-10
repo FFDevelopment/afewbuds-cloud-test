@@ -13,6 +13,8 @@ var bud:MeshInstance3D
 var tray:MeshInstance3D
 var display:Label3D
 var prior_display:=""
+var visual_strain:=""
+var bag_fill:MeshInstance3D
 const GROW_TASKS=["plant","water","fertilize","harvest"]
 var seed_packet:Node3D
 var seed:MeshInstance3D
@@ -72,6 +74,7 @@ func setup(owner_host:Node3D,character:Node3D):
  for x in [-.016,.016]:
   var ring:=MeshInstance3D.new();var torus:=TorusMesh.new();torus.inner_radius=.009;torus.outer_radius=.014;torus.rings=12;torus.ring_segments=6;ring.mesh=torus;ring.position=Vector3(x,0,.02);scissors.add_child(ring)
  bag=Node3D.new();rig.add_child(bag);box(bag,Vector3.ZERO,Vector3(.073,.095,.012),"b7c9b5");box(bag,Vector3(0,.035,0),Vector3(.075,.005,.014),"41633f")
+ bag_fill=box(bag,Vector3(0,-.015,-.008),Vector3(.047,.047,.008),"829d69")
  bud=box(rig,Vector3.ZERO,Vector3(.035,.05,.035),"6a904d");bud.mesh=SphereMesh.new();bud.mesh.radius=.021;bud.mesh.height=.055
  tray=box(rig,Vector3.ZERO,Vector3(.24,.035,.18),"47564a")
  seed_packet=Node3D.new();rig.add_child(seed_packet)
@@ -112,7 +115,16 @@ func sync():
  if host._simulation_blocked():return
  if active!=task:
   stop();active=task;player.play("idle");player.advance(0);player.pause()
- hide_props();rig.action="pack";rig.clock=host.production_worker_action_dwell
+ var strain_name:String=host.production_worker_pending_strain
+ if task=="harvest":
+  var slot:int=host.production_worker_pending_slot
+  if slot>=0 and slot<host.plant_slots.size():strain_name=str(host.plant_slots[slot].get("strain",strain_name))
+ if visual_strain!=strain_name or bud.material_override.albedo_texture==null:
+  visual_strain=strain_name
+  var palette:Dictionary=host._strain_visual_palette(strain_name)
+  var material:StandardMaterial3D=host._textured_plant_material(palette.get("bud",Color("829d69")),"res://assets/textures/bud_surface.png",.92)
+  bud.material_override=material;bag_fill.material_override=material
+ hide_props();bag_fill.visible=task=="bag" and host.production_worker_action_dwell/duration(task)>.60;rig.action="pack";rig.clock=host.production_worker_action_dwell
  var t:=clampf(rig.clock/duration(task),0,1)
  var facing:Vector3
  var station_root:=station(host)
