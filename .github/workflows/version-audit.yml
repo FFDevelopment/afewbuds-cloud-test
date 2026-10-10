@@ -1,0 +1,37 @@
+name: Audit in-game mobile version (read-only)
+on:
+  push:
+    branches: [fix/visible-mobile-build-identity]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reconstruct the currently deployed mobile runtime
+        run: python3 tools/mobile_3d_movement/build.py --output-dir "${RUNNER_TEMP}/afb-audit"
+      - name: Search real game pack for player-visible version
+        env:
+          CANDIDATE: ${{ runner.temp }}/afb-audit/candidate
+        run: |
+          python3 - <<'PY'
+          import os,re
+          from pathlib import Path
+          root=Path(os.environ['CANDIDATE'])
+          print("AUDIT_CANDIDATE",str(root),root.exists())
+          keys=['7.7.1-beta.1','7.7.1','0.7.9-beta','game_version','version_label','release_id','version=']
+          for file in sorted(root.rglob('*')):
+              if not file.is_file() or file.stat().st_size > 8000000:
+                  continue
+              if file.suffix.lower() not in {'.gd','.tscn','.godot','.json','.cfg','.txt','.ini','.js'}:continue
+              try: content=file.read_text(errors='replace')
+              except Exception: continue
+              hit=[(i,line[:220]) for i,line in enumerate(content.splitlines(),1) if any(k.lower() in line.lower() for k in keys)]
+              if hit:
+                  print('FILE',file.relative_to(root))
+                  for i,line in hit[:60]:print('MATCH',i,line)
+          print('AUDIT_FINISHED')
+          PY
