@@ -6,6 +6,9 @@ var flights: Array[Dictionary]=[]
 var landings: Array[Dictionary]=[]
 func block(at: Vector3,size: Vector3,solid: bool=false) -> MeshInstance3D:
  var n:=MeshInstance3D.new();var mesh:=BoxMesh.new();mesh.size=size
+ # Explicit ramps, decks and guards own physics; never flatten visual treads
+ # into the mobile scanner's full-height obstacle rectangles.
+ n.set_meta("no_collision",true)
  n.mesh=mesh;n.material_override=metal;n.position=at;n.layers=3;add_child(n)
  if solid:
   var b:=StaticBody3D.new();b.collision_layer=1;b.collision_mask=4

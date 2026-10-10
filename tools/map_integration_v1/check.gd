@@ -63,5 +63,24 @@ func run():
   game.production_worker_node.position=game.production_worker_node.position.move_toward(target,.1)
   if game.production_worker_node.position.distance_to(Vector3(42,-1.9,-13))<.2:passed_landing=true
  check(passed_landing and game.production_worker_node.position.distance_to(game.production_worker_target_position)<.1,"Worker reaches basement through stair landing")
+ # Exercise the live collision refresh, not just freshly installed geometry.
+ if desktop:game._add_physical_collisions(game)
+ else:
+  game.neighborhood.interior_obstacles.clear()
+  game.neighborhood._collect_colliders(game)
+  game.neighborhood.map_obstacles.clear()
+  game.neighborhood._collect_map_colliders(game.neighborhood)
+  game.neighborhood._rebuild_physics_obstacles(true)
+ player.position=Vector3(6.02,.12,3.5);player.velocity=Vector3.ZERO
+ for tick in 290:
+  await physics_frame
+  player.velocity=Vector3(0,-.5 if player.is_on_floor() else player.velocity.y-18.0/60.0,-3.4)
+  player.move_and_slide()
+ check(player.position.z< -6.8 and player.position.y>4.3,"Walk from sidewalk to first fire escape landing after collision refresh")
+ for tick in 290:
+  await physics_frame
+  player.velocity=Vector3(0,-.5 if player.is_on_floor() else player.velocity.y-18.0/60.0,3.4)
+  player.move_and_slide()
+ check(player.position.z>2.8 and player.position.y<.15,"Walk down fire escape and exit onto sidewalk")
  print("MAP_INTEGRATION_RESULT: ","PASS" if failures==0 else "FAIL")
  game.queue_free();await process_frame;quit(1 if failures else 0)
