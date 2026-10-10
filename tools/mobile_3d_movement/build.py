@@ -990,13 +990,17 @@ def main():
     index=(ROOT/'index.html').read_text(encoding='utf-8')
     index=re.sub(r'([?&]v=)(?:inventory|expansion)\d+',lambda m:m.group(1)+build_stamp,index)
     index=index.replace('shared/afb-api.js"', 'shared/afb-api.js?v='+build_stamp+'"')
-    index=re.sub(r'((?:shared/afb-api\.js|shared/afb-expansion-save\.js)\?v=)[A-Za-z0-9._+-]+',lambda m:m.group(1)+build_stamp,index)
+    index=re.sub(r'((?:shared/afb-api\.js|shared/afb-local-recovery\.js|shared/afb-cloud\.js)\?v=)[A-Za-z0-9._+-]+',lambda m:m.group(1)+build_stamp,index)
     index=index.replace('kobi-v1','mobile-3d-v1').replace('AFB_RUNTIME_KOBI_V1','AFB_RUNTIME_MOBILE_3D_V1')
     index=re.sub(r'afb-runtime-mobile-3d-v1\.js\?v=[A-Za-z0-9._+-]+','afb-runtime-mobile-3d-v1.js?v='+build_stamp,index)
     index=re.sub(r'index-accountsync10\.js\?v=[A-Za-z0-9._+-]+','index-accountsync10.js?v='+build_stamp,index)
     assert index.count('const AFB_TEST_RELEASE = "')==1
     index=re.sub(r'(const AFB_TEST_RELEASE = ")[^"]+(")',lambda m:m.group(1)+release+m.group(2),index,count=1)
     assert 'const AFB_TEST_RELEASE = "'+release+'"' in index
+    assert 'shared/afb-cloud.js?v='+build_stamp in index
+    assert 'shared/afb-local-recovery.js?v='+build_stamp in index
+    assert '<script src="shared/afb-expansion-save.js' not in index
+
     index=re.sub(r'"fileSizes":\{[^}]*\\}',f'"fileSizes":{{"index-mobile-3d-v1.pck":{len(built)},"index.wasm":{(ROOT/"index.wasm").stat().st_size}}}',index,count=1)
     (ROOT/'index.html').write_text(index,encoding='utf-8',newline='\n')
 
