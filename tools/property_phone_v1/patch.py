@@ -60,4 +60,7 @@ def patch_location(source):
 def patch_crew(source):
     source=replace_func(source,'role',CREW_ROLE)
     source=replace_func(source,'roster',CREW_ROSTER)
+    source=must(source,'button(host.phone_list,"EMPLOYEES · DUTY / DEALER SALES / COMMISSION",host._open_phone_app.bind("employees"))','button(host.phone_list,"PROPERTIES · MANAGE YOUR WORKERS",host._open_phone_app.bind("realestate"))')
+    source=must(source,'button(host.phone_list,"ALL EMPLOYEES · FULL DUTY & PERFORMANCE",host._open_phone_app.bind("employees"))','button(host.phone_list,"MANAGE THIS WORKER IN PROPERTIES",open_worker_manager.bind(thread))')
+    source=must(source,'func transfer_from_contact(name:String,property:String) -> void:',"func open_worker_manager(name:String) -> void:\n\tif role(name).is_empty():return\n\tvar property:String=assignment(name)\n\tif not ops._property_controlled(property):return\n\thost._open_phone_app(\"realestate\")\n\tops.portfolio_select(property)\n\thost._open_phone_app(\"employees\")\n\tops.portfolio_employee_open(name)\n\n"+'func transfer_from_contact(name:String,property:String) -> void:')
     return source
