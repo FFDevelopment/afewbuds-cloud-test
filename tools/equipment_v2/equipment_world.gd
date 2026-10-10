@@ -365,39 +365,34 @@ func sync_packing_displays() -> void:
   display.name="PackingDisplayVisuals"
   display.set_meta("no_collision",true)
   root.add_child(display)
-  var size:Vector3=model.size_of(id)
-  var plate:=MeshInstance3D.new()
-  var plate_mesh:=BoxMesh.new()
-  plate_mesh.size=Vector3(.46,.035,.32)
-  plate.mesh=plate_mesh
-  plate.position=Vector3(0,size.y+.012,0)
-  display.add_child(plate)
+  var legacy:Node3D=root.get_node_or_null("PackingBenchLooseBuds")
+  if legacy!=null:legacy.hide()
+  var tray:MeshInstance3D=root.find_child("TrimTray",true,false)
+  var tray_box:=AABB(Vector3(-.23,model.size_of(id).y,-.16),Vector3(.46,.035,.32))
+  if tray!=null:
+   tray_box=root.global_transform.affine_inverse()*tray.global_transform*tray.get_aabb()
+  else:
+   var top:MeshInstance3D=root.find_child("TableTop",true,false)
+   if top!=null:
+    var top_box:AABB=root.global_transform.affine_inverse()*top.global_transform*top.get_aabb()
+    tray_box.position=Vector3(top_box.get_center().x-.23,top_box.end.y,top_box.get_center().z-.16)
+   var plate:=MeshInstance3D.new();var plate_mesh:=BoxMesh.new();plate_mesh.size=tray_box.size;plate.mesh=plate_mesh;plate.position=tray_box.get_center();display.add_child(plate)
   var screen:=Label3D.new()
-  screen.text="TRIMMED %.1f g"%float(trimmed)
-  screen.font_size=30
-  screen.pixel_size=.0032
-  screen.position=Vector3(0,size.y+.27,.01)
-  screen.billboard=BaseMaterial3D.BILLBOARD_ENABLED
-  display.add_child(screen)
-  if trimmed<=0:continue
-  var shown:int=mini(16,maxi(2,ceili(sqrt(float(trimmed))*2.0)))
+  screen.name="StockCaption";screen.text="RAW %.1f g  /  TRIMMED %.1f g"%[float(raw),float(trimmed)]
+  screen.font_size=30;screen.pixel_size=.0015
+  screen.position=tray_box.get_center()+Vector3(0,.16,0)
+  screen.billboard=BaseMaterial3D.BILLBOARD_ENABLED;display.add_child(screen)
+  if raw+trimmed<=0:continue
+  var shown:int=mini(16,maxi(2,ceili(sqrt(float(raw+trimmed))*2.0)))
+  var raw_shown:int=clampi(roundi(float(shown)*raw/float(raw+trimmed)),1 if raw>0 else 0,shown-(1 if trimmed>0 else 0))
   for n in range(shown):
    var bud:=MeshInstance3D.new()
-   bud.name="TrimmedBud%d"%n
-   var mesh:=SphereMesh.new()
-   mesh.radius=.5
-   mesh.height=1.0
-   mesh.radial_segments=10
-   mesh.rings=6
-   var material:=StandardMaterial3D.new()
-   material.albedo_color=Color("71944c") if n%3!=0 else Color("557b41")
-   material.roughness=.85
-   mesh.material=material
-   bud.mesh=mesh
-   bud.position=Vector3(-.17+float(n%4)*.11,size.y+.075+float(n/4)*.023,-.105+float((n/4)%4)*.065)
-   bud.scale=Vector3(.095,.072,.078)
-   bud.set_meta("no_collision",true)
-   display.add_child(bud)
+   bud.name=("RawBud" if n<raw_shown else "TrimmedBud")+str(n)
+   var mesh:=SphereMesh.new();mesh.radius=.5;mesh.height=1.0;mesh.radial_segments=10;mesh.rings=6
+   var material:=StandardMaterial3D.new();material.albedo_color=Color("486f38") if n<raw_shown else Color("71944c");material.roughness=.85;mesh.material=material;bud.mesh=mesh
+   var x:=float(n%4)/3.0;var z:=float(n/4)/3.0
+   bud.position=Vector3(lerpf(tray_box.position.x+.045,tray_box.end.x-.045,x),tray_box.end.y+.028,lerpf(tray_box.position.z+.04,tray_box.end.z-.04,z))
+   bud.scale=Vector3(.068,.05,.058);bud.set_meta("no_collision",true);display.add_child(bud)
 
 func sync_supply_labels() -> void:
  for id in rendered:
