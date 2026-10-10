@@ -120,7 +120,7 @@ func seeds(parent:Node)->void:
   chooser(box,key)
 func supplies(parent:Node)->void:
  inv.art_rect("fertilizer",parent,Vector2(80,80))
- inv.label("Fertilizer · 5 uses per pack · $45 · 5 lb",parent,18)
+ inv.label("Fertilizer · Pack of 5 · $45 · 5 lb",parent,18)
  toolbar(parent);chooser(parent,"fertilizer")
 
 func refresh_summaries()->void:
