@@ -1,7 +1,7 @@
 {
   "baseline_sha256": "bbc788e5d4dd19b59af7dd2824f34943361d901d08ae5b5c25f8e7c6b9a75410",
-  "target_sha256": "57a63d21b6b773fca367234c45505187bf8bee53f21420a5a19511b7681be57c",
-  "target_bytes": 48796908,
+  "target_sha256": "3b46cb48e84c5424f14fd03ec7cd106ec5dcf206dbf3c20bcfbf9654c03f6802",
+  "target_bytes": 48811124,
   "changed_existing_entries": [
     "scripts/main.gd",
     "scripts/offline_plant_care.gd",
@@ -16,6 +16,9 @@
     "scripts/police_station.gd"
   ],
   "added_entries": [
+    "scripts/property_registry.gd",
+    "scripts/item_registry.gd",
+    "data/item_definitions.json",
     "scripts/mobile_physics_player.gd",
     "scripts/districts.gd",
     "scripts/container_inventory.gd",
