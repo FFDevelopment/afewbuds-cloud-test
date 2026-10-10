@@ -24,11 +24,13 @@ assert 'MutationObserver(afbKeepTestTitle)' in html
 assert 'cloudtest.99-expansion.10.' in release
 for url in [
     f"shared/afb-api.js?v={token}",
-    f"shared/afb-expansion-save.js?v={token}",
+    f"shared/afb-local-recovery.js?v={token}",
+    f"shared/afb-cloud.js?v={token}",
     f"index-accountsync10.js?v={token}",
     f"shared/afb-runtime-mobile-3d-v1.js?v={token}",
 ]:
     assert url in html, f"Cached JS: {url}"
+assert '<script src="shared/afb-expansion-save.js' not in html
 assert f"patch.json?v={token}" in loader, "Cached PCK delta recipe URL"
 asset_urls = [x[1] for x in patch["segments"] if x[0] == "asset"]
 assert asset_urls and all(x.endswith("?v=" + token) for x in asset_urls)
