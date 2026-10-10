@@ -6,7 +6,7 @@
 	<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 	<meta http-equiv="Pragma" content="no-cache">
 	<meta http-equiv="Expires" content="0">
-		<title>AFewBuds</title>
+		<title>AFewBuds Cloud Test</title>
 		<style>
 html, body, #canvas {
 	margin: 0;
@@ -74,6 +74,18 @@ body {
 
 #status-progress, #status-notice {
 	display: none;
+}
+#afb-dev-build {
+    position: absolute;
+    bottom: 4%;
+    left: 1rem;
+    right: 1rem;
+    text-align: center;
+    color: #a9cda1;
+    font: 12px/1.5 'Noto Sans', 'Droid Sans', Arial, sans-serif;
+    letter-spacing: .02em;
+    pointer-events: none;
+    z-index: 2;
 }
 
 #status-progress {
@@ -438,6 +450,7 @@ body {
 		<div id="status">
 			<img id="status-splash" class="show-image--true fullsize--false use-filter--true" src="index.png?v=0.7.9-beta.19" alt="">
 			<progress id="status-progress"></progress>
+            <div id="afb-dev-build" aria-label="Current Cloud Test release"></div>
 			<div id="status-notice"></div>
 		</div>
 
@@ -448,10 +461,16 @@ body {
 		<script src="shared/afb-runtime-mobile-3d-v1.js?v=3b46cb48e84c"></script>
 		<script>
 const AFB_TEST_RELEASE = "0.7.9-beta.19-cloudtest.99-expansion.9.3b46cb48e84c";
-const AFB_TEST_TITLE = "AFewBuds";
+const AFB_TEST_TITLE = "AFewBuds Cloud Test · 0.7.9-beta.19";
 function afbKeepTestTitle(){ if(document.title !== AFB_TEST_TITLE) document.title = AFB_TEST_TITLE; }
 afbKeepTestTitle();
+// Godot can reset the browser title while its WebAssembly runtime starts.
+// Correct that immediately, and keep the visible release tied to the pack.
+const afbTitleNode = document.querySelector("title");
+if (afbTitleNode) new MutationObserver(afbKeepTestTitle).observe(afbTitleNode, { childList:true, characterData:true, subtree:true });
 setInterval(afbKeepTestTitle, 1000);
+const afbDevBuild = document.getElementById("afb-dev-build");
+if (afbDevBuild) afbDevBuild.textContent = "DEVELOPMENT BUILD · " + AFB_TEST_RELEASE;
 const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":true,"fileSizes":{"index-mobile-3d-v1.pck":37241100,"index.wasm":37902138},"focusCanvas":true,"mainPack":"index-mobile-3d-v1.pck","gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":""};
 const GODOT_THREADS_ENABLED = false;
 let AFB_GAME_STARTED = false;
