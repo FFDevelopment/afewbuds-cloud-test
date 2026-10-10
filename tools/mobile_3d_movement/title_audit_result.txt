@@ -7,4 +7,4 @@ PROJECT 8 window/stretch/mode="canvas_items"
 MAIN 80 const BUILD_VERSION: String = "0.7.9-beta.19"
 MAIN 9631 		"build_version": BUILD_VERSION,
 WEB index.html 771 False release True
-WEB version.json 771 False release 0.7.9-beta.19-cloudtest.99-expansion.9.3b46cb48e84c
+WEB version.json 771 False release 0.7.9-beta.19-cloudtest.99-expansion.10.3b46cb48e84c
