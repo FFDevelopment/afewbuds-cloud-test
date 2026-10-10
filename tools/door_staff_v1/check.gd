@@ -21,7 +21,7 @@ func run()->void:
     for timer in game.find_children("*","Timer",true,false):timer.stop()
     game.gameplay_ready=true;game.tutorial_active=false;game.session_paused=false;game.daily_report_pending=false
     game.tutorial_panel.hide();game.pause_overlay.hide();game.daily_report_panel.hide()
-    game.grower_level=20;game.heat=0;game.cash=10000
+    game.grower_level=20;game.heat=0;game.cash=10000;game.business_open=true;game.lay_low_active=false
     game.property_offer_unlocked=true
     game.property_opportunity_state["acquired"]=true
     game.property_opportunity_state["relocated"]=true
@@ -66,6 +66,9 @@ func run()->void:
     for i in 3:game._record_customer_strain_experience("Dre",requested,alternative)
     var after:float=game._substitute_acceptance_chance_for(customer,requested,alternative)
     check(game._customer_favorite(customer)==alternative and after>before,"Five accepted substitutes can change favorite and increase future acceptance")
+    for key in game.products.keys():
+        game.products[key]["listed"]=false
+        game.products[key]["stock"]=0
     game.products[requested]["listed"]=true
     game.products[requested]["stock"]=0
     game.products[alternative]["listed"]=true
