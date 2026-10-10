@@ -21,7 +21,7 @@ assert 'id="afb-dev-build"' in html
 assert 'afbDevBuild.textContent = "DEVELOPMENT BUILD · " + AFB_TEST_RELEASE' in html
 assert 'const AFB_TEST_TITLE = "AFewBuds Cloud Test · 0.7.9-beta.19";' in html
 assert 'MutationObserver(afbKeepTestTitle)' in html
-assert 'cloudtest.99-expansion.16.' in release
+assert 'cloudtest.99-expansion.17.' in release
 for url in [
     f"shared/afb-api.js?v={token}",
     f"shared/afb-local-recovery.js?v={token}",

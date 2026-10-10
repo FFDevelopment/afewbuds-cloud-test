@@ -17,13 +17,20 @@ static func box(color:Color, radius:int=16, border:Color=Color("35483c"), paddin
 static func fit(host:Node) -> void:
 	var panel:Control=host.phone_panel
 	if panel==null:return
+	if ThemeDB.fallback_font is FontFile and ThemeDB.fallback_font.oversampling < 2.0:
+		ThemeDB.fallback_font.oversampling=2.0
 	var screen:Vector2=host.get_viewport().get_visible_rect().size
 	var available:=screen-Vector2(52,116)
-	var factor:=minf(available.x/SIZE.x,available.y/SIZE.y)
+	# Keep phone text at a readable physical size when the desktop canvas
+	# scales down. Shorten the scrolling screen instead of shrinking its type.
+	var window_size:=Vector2(host.get_window().size)
+	var canvas_scale:=minf(window_size.x/screen.x,window_size.y/screen.y)
+	var factor:=minf(available.x/SIZE.x,maxf(available.y/SIZE.y,1.0/maxf(canvas_scale,0.1)))
+	var layout_size:=Vector2(SIZE.x,minf(SIZE.y,available.y/factor))
 	panel.set_anchors_preset(Control.PRESET_TOP_LEFT)
-	panel.size=SIZE
+	panel.size=layout_size
 	panel.scale=Vector2.ONE*factor
-	panel.position=(screen-SIZE*factor)*0.5+Vector2(0,38)
+	panel.position=((screen-layout_size*factor)*0.5+Vector2(0,38)).round()
 
 static func label(text:String, size:int=14, color:Color=INK) -> Label:
 	var item:=Label.new();item.text=text
@@ -34,7 +41,7 @@ static func label(text:String, size:int=14, color:Color=INK) -> Label:
 static func icon(name:String, color:String="f7f0d8") -> Texture2D:
 	var key:=name+color
 	if icon_cache.has(key):return icon_cache[key]
-	var source:String='<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24"><g fill="none" stroke="#'+color+'" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+str(ICONS.get(name,ICONS.Properties))+'</g></svg>'
+	var source:String='<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 24 24"><g fill="none" stroke="#'+color+'" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+str(ICONS.get(name,ICONS.Properties))+'</g></svg>'
 	var image:=Image.new();image.load_svg_from_string(source)
 	icon_cache[key]=ImageTexture.create_from_image(image)
 	return icon_cache[key]
@@ -56,7 +63,7 @@ static func tile(parent:GridContainer, name:String, app:String, color:String, ac
 	wash_image.load_svg_from_string('<svg xmlns="http://www.w3.org/2000/svg" width="65" height="65"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffffff" stop-opacity=".13"/><stop offset="1" stop-color="#000000" stop-opacity=".25"/></linearGradient></defs><rect x="1" y="1" width="63" height="63" rx="17" fill="url(#g)"/></svg>')
 	wash.texture=ImageTexture.create_from_image(wash_image);wash.size=Vector2(65,65);wash.mouse_filter=Control.MOUSE_FILTER_IGNORE;plate.add_child(wash)
 	var picture:=TextureRect.new();picture.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;picture.texture=icon(name);picture.position=Vector2(17,17);picture.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;picture.size=Vector2(31,31);picture.mouse_filter=Control.MOUSE_FILTER_IGNORE;plate.add_child(picture)
-	var caption:=label(name,11);caption.position=Vector2(0,77);caption.size=Vector2(97,18);caption.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;button.add_child(caption)
+	var caption:=label(name,13);caption.position=Vector2(0,77);caption.size=Vector2(97,18);caption.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;button.add_child(caption)
 	button.resized.connect(func():plate.position.x=(button.size.x-65)*0.5;caption.size.x=button.size.x)
 	button.mouse_entered.connect(func():plate.modulate=Color(1.2,1.2,1.2))
 	button.mouse_exited.connect(func():plate.modulate=Color.WHITE)
@@ -66,16 +73,16 @@ static func home(host:Node) -> void:
 	parent.set_meta("phone_visual",true)
 	parent.add_theme_constant_override("separation",19)
 	var brand:=RichTextLabel.new();brand.bbcode_enabled=true;brand.fit_content=true;brand.scroll_active=false;brand.text="[b]AFew[color=#a4e3b3]Buds[/color][/b]";brand.add_theme_font_size_override("normal_font_size",39);brand.add_theme_font_size_override("bold_font_size",39);parent.add_child(brand)
-	parent.add_child(label("YOUR WORLD. WITHIN REACH.",10,MUTED))
+	parent.add_child(label("YOUR WORLD. WITHIN REACH.",12,MUTED))
 	var ops=host.neighborhood.location_ops if host.neighborhood!=null else null
 	var property:String=ops.active_property() if ops!=null else "apartment"
 	var widget:=Button.new();widget.custom_minimum_size.y=106;widget.add_theme_stylebox_override("normal",box(Color("1c3024"),19));widget.pressed.connect(host._phone_open_property_from_business.bind(property));parent.add_child(widget)
 	var art:=TextureRect.new();art.texture=icon("Properties","cce0ae");art.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;art.position=Vector2(15,24);art.size=Vector2(52,52);art.mouse_filter=Control.MOUSE_FILTER_IGNORE;widget.add_child(art)
 	var title:=label(ops.portfolio_name(property) if ops!=null else "Properties",15);title.position=Vector2(80,18);widget.add_child(title)
 	var count:int=ops.computer_staff_names(property).size() if ops!=null else 0
-	var staff:=label("%d assigned crew" % count,11,MUTED);staff.position=Vector2(80,44);widget.add_child(staff)
+	var staff:=label("%d assigned crew" % count,13,MUTED);staff.position=Vector2(80,44);widget.add_child(staff)
 	var due:int=ops.computer_due(property) if ops!=null else 0
-	var bill:=label(("$%d in bills due" % due) if due>0 else "All bills paid",11,Color("e6b983") if due>0 else MINT);bill.position=Vector2(80,66);widget.add_child(bill)
+	var bill:=label(("$%d in bills due" % due) if due>0 else "All bills paid",13,Color("e6b983") if due>0 else MINT);bill.position=Vector2(80,66);widget.add_child(bill)
 	var grid:=GridContainer.new();grid.columns=3;grid.add_theme_constant_override("h_separation",8);grid.add_theme_constant_override("v_separation",13);parent.add_child(grid)
 	var names=["Properties","Contacts","Shop","Genetics","Messages","Rewards","Leaderboard","Stats","Heat"]
 	var apps=["realestate","clients","shop","genetics","texts","task","leaderboard","stats","heat"]
@@ -83,8 +90,8 @@ static func home(host:Node) -> void:
 	for i in range(names.size()):tile(grid,names[i],apps[i],colors[i],host._open_phone_app.bind(apps[i]))
 	var dock:=HBoxContainer.new();dock.add_theme_constant_override("separation",5);parent.add_child(dock)
 	for spec in [["Help","help"],["Settings","settings"],["Save & Session","system"]]:
-		var item:=Button.new();item.text=spec[0];item.add_theme_stylebox_override("normal",box(Color("1b2b21"),16,Color("314537"),8));item.custom_minimum_size.y=58;item.size_flags_horizontal=Control.SIZE_EXPAND_FILL;item.add_theme_font_size_override("font_size",11);item.pressed.connect(host._open_phone_app.bind(spec[1]));dock.add_child(item)
-	var balance:=label("$%d   ·   Day %d   ·   Grower %d" % [host.cash,host.game_day,host.grower_level],11,MUTED);balance.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;parent.add_child(balance)
+		var item:=Button.new();item.text=spec[0];item.add_theme_stylebox_override("normal",box(Color("1b2b21"),16,Color("314537"),8));item.custom_minimum_size.y=58;item.size_flags_horizontal=Control.SIZE_EXPAND_FILL;item.add_theme_font_size_override("font_size",13);item.pressed.connect(host._open_phone_app.bind(spec[1]));dock.add_child(item)
+	var balance:=label("$%d   ·   Day %d   ·   Grower %d" % [host.cash,host.game_day,host.grower_level],13,MUTED);balance.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;parent.add_child(balance)
 
 static func polish(node:Node) -> void:
 	if node.has_meta("phone_visual"):return
@@ -116,7 +123,7 @@ static func row(parent:VBoxContainer, text:String, action:Callable, disabled:boo
 	var parts:=text.replace(" · ","\n").split("\n",false,1)
 	var title:=label(parts[0].capitalize(),14);title.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;details.add_child(title)
 	if parts.size()>1:
-		var sub:=label(parts[1],11,MUTED);sub.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;details.add_child(sub)
+		var sub:=label(parts[1],13,MUTED);sub.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;details.add_child(sub)
 	content.add_child(label("›",22,MUTED))
 	if disabled:content.modulate.a=0.4
 	return button
