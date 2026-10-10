@@ -1,0 +1,32 @@
+name: Validate Cloud Test title and version label
+on:
+  push:
+    branches: [fix/cloudtest-visible-browser-title]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reconstruct current mobile development runtime
+        run: python3 tools/mobile_3d_movement/build.py --output-dir "${RUNNER_TEMP}/afb"
+      - name: Verify stamped browser title and loading screen
+        run: python3 tools/mobile_3d_movement/check_release_stamp.py
+      - name: Install Godot 4.7.2
+        run: |
+          curl -fL --retry 3 -o /tmp/godot.zip https://github.com/godotengine/godot-builds/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
+          unzip -q /tmp/godot.zip -d /tmp/godot
+      - name: Import and test current game without touching cloud careers
+        run: |
+          set -euo pipefail
+          GODOT=/tmp/godot/Godot_v4.7.2-stable_linux.x86_64
+          "${GODOT}" --headless --path "${RUNNER_TEMP}/afb/candidate" --editor --import --quit
+          for spec in "tools/mobile_3d_movement/check.gd|MOBILE_3D_TEST_RESULT: PASS" "tools/dynamic_property_v1/check.gd|DYNAMIC_PROPERTY_REGISTRY_RESULT: PASS" "tools/item_registry_v1/check.gd|ITEM_REGISTRY_RESULT: PASS" "tools/property_isolation_v1/check.gd|PROPERTY_ISOLATION_RESULT: PASS"; do
+            file="${spec%%|*}"; marker="${spec#*|}"
+            XDG_DATA_HOME="$(mktemp -d)" timeout 150s "${GODOT}" --headless --path "${RUNNER_TEMP}/afb/candidate" --script "${GITHUB_WORKSPACE}/${file}" 2>&1 | tee /tmp/afb-qa.log
+            grep -q "${marker}" /tmp/afb-qa.log
+            if grep -E 'SCRIPT ERROR|^ERROR:' /tmp/afb-qa.log; then exit 1; fi
+          done
