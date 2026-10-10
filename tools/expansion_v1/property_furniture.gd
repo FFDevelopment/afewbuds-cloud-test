@@ -310,7 +310,7 @@ func growth_settings(slot:int,base:Dictionary,offline:bool) -> Dictionary:
   if e.sku=="water_kit":water=true
   if e.sku=="ventilation":vent=true
   if e.sku=="grow_light":light=true
- result.auto_water=water and not offline
+ result.auto_water=water and not offline and not host.neighborhood.location_ops.crew.shop.laying_low(property)
  var ventilation_on:bool=bool(host.house_control_state.get("grow_ventilation",false)) if property=="house" else host.ventilation_on
  result.ventilation_factor=1.0 if vent and ventilation_on else host.VENTILATION_INACTIVE_GROWTH_MULTIPLIER
  # Each property has its own grow-light switch; the shared legacy flag only
