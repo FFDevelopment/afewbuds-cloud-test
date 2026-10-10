@@ -1,0 +1,49 @@
+name: Audit Cloud Test browser title source
+on:
+  push:
+    branches: [fix/cloudtest-visible-browser-title]
+    paths-ignore: [tools/mobile_3d_movement/title_audit_result.txt]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Rebuild and inspect the exact Godot project title
+        run: |
+          set -euo pipefail
+          python3 tools/mobile_3d_movement/build.py --output-dir "${RUNNER_TEMP}/inspect-title"
+          python3 - <<'PY' > tools/mobile_3d_movement/title_audit_result.txt
+          from pathlib import Path
+          import json
+          root=Path(__import__('os').environ['RUNNER_TEMP'])/'inspect-title'/'candidate'
+          project=root/'project.godot'
+          print('PROJECT_EXISTS',project.exists())
+          if project.exists():
+              for i,line in enumerate(project.read_text().splitlines(),1):
+                  if any(key in line.lower() for key in ['config/name','config/version','config/icon','config/description','application','window']):
+                      print(f'PROJECT {i} {line[:300]}')
+          main=root/'scripts'/'main.gd'
+          if main.exists():
+              for i,line in enumerate(main.read_text().splitlines(),1):
+                  if any(key in line.lower() for key in ['window_set_title','window.title','document.title','build_version','7.7.1','0.7.7']):
+                      print(f'MAIN {i} {line[:280]}')
+          for fn in ['index.html','version.json']:
+              text=Path(fn).read_text()
+              print('WEB',fn,'771', '7.7.1' in text,'release', json.loads(text)['release_id'] if fn.endswith('.json') else ('const AFB_TEST_RELEASE' in text))
+          PY
+          cat tools/mobile_3d_movement/title_audit_result.txt
+      - name: Commit title findings on diagnostic branch only
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tools/mobile_3d_movement/title_audit_result.txt
+          git diff --cached --quiet || {
+            git commit -m "Record in-game title origin for mobile Cloud Test [skip ci]"
+            git push origin HEAD:fix/cloudtest-visible-browser-title
+          }
