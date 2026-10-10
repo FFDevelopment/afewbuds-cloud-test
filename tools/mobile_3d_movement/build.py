@@ -908,6 +908,7 @@ def main():
 
     updated.append(['scripts/districts.gd',(HERE/'districts.gd').read_bytes(),0])
 
+    updated.append(['scripts/phone_hardware.gd',(ROOT/'tools/phone_visuals_v1/phone_hardware.gd').read_bytes(),0])
     updated.append(['scripts/phone_visuals.gd',(ROOT/'tools/phone_visuals_v1/phone_visuals.gd').read_bytes(),0])
     updated.append(['scripts/phone_dialogue.gd',(ROOT/'tools/property_phone_v1/phone_dialogue.gd').read_bytes(),0])
     updated.append(['scripts/tent_genetics.gd',(ROOT/'tools/property_phone_v1/tent_genetics.gd').read_bytes(),0])
@@ -1006,7 +1007,7 @@ def main():
     loader=re.sub(r'patch\.json\?v=[A-Za-z0-9._+-]+','patch.json?v='+build_stamp,loader)
     (ROOT/'shared/afb-runtime-mobile-3d-v1.js').write_text(loader,newline='\n')
 
-    release='0.7.9-beta.19-cloudtest.99-expansion.13.'+build_stamp
+    release='0.7.9-beta.19-cloudtest.99-expansion.14.'+build_stamp
     index=(ROOT/'index.html').read_text(encoding='utf-8')
     index=re.sub(r'([?&]v=)(?:inventory|expansion)\d+',lambda m:m.group(1)+build_stamp,index)
     index=index.replace('shared/afb-api.js"', 'shared/afb-api.js?v='+build_stamp+'"')

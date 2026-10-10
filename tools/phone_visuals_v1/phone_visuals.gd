@@ -18,7 +18,7 @@ static func fit(host:Node) -> void:
 	var panel:Control=host.phone_panel
 	if panel==null:return
 	var screen:Vector2=host.get_viewport().get_visible_rect().size
-	var available:=screen-Vector2(28,116)
+	var available:=screen-Vector2(52,116)
 	var factor:=minf(available.x/SIZE.x,available.y/SIZE.y)
 	panel.set_anchors_preset(Control.PRESET_TOP_LEFT)
 	panel.size=SIZE

@@ -9,16 +9,19 @@ var learned := false
 func setup(owner: Node3D) -> void:
 	world=owner;host=owner.host;unread=host.phone_text_unread
 	var bar: Control=host.world_top_bar
-	bar.offset_top=12;bar.offset_bottom=70
-	host.cash_label.add_theme_font_size_override("font_size",23)
-	host.brand_label.add_theme_font_size_override("font_size",20)
+	bar.offset_top=12;bar.offset_bottom=60
+	var style:=bar.get_theme_stylebox("panel").duplicate() as StyleBoxFlat
+	style.content_margin_top=4;style.content_margin_bottom=4
+	bar.add_theme_stylebox_override("panel",style)
+	host.cash_label.add_theme_font_size_override("font_size",18)
+	host.brand_label.add_theme_font_size_override("font_size",18)
 	host.brand_label.modulate=Color.WHITE
 	host.brand_label.add_theme_color_override("font_color",Color("e5efdf"))
 	host.brand_label.vertical_alignment=VERTICAL_ALIGNMENT_CENTER
 	update_location()
-	host.day_night_label.custom_minimum_size=Vector2(105,44)
+	host.day_night_label.custom_minimum_size=Vector2(105,36)
 	for button in bar.find_children("*","Button",true,false):
-		button.custom_minimum_size=Vector2(105,48)
+		button.custom_minimum_size=Vector2(105,40)
 		button.add_theme_font_size_override("font_size",17)
 	host.status_label.offset_top=112;host.status_label.offset_bottom=164
 	host.status_label.add_theme_font_size_override("font_size",16)
