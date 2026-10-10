@@ -111,10 +111,15 @@ func seeds(parent:Node)->void:
  for name in host.SEED_ORDER:
   if not host.seed_catalog.has(name) or host.seed_catalog[name].get("recipe_only",false):continue
   var key:String="seed|"+name;var info:=quote(key)
-  inv.label("%s · $%d"%[info.name,info.price],parent,18)
-  inv.label("Available" if str(info.reason).is_empty() else info.reason,parent,14)
-  chooser(parent,key)
+  var card:=PanelContainer.new();card.add_theme_stylebox_override("panel",inv.ui_style("151d17","44513f",12));parent.add_child(card)
+  var box:=VBoxContainer.new();card.add_child(box)
+  var heading:=HBoxContainer.new();box.add_child(heading)
+  inv.art_rect(key,heading,Vector2(64,64))
+  var title:Label=inv.label("%s · $%d"%[info.name,info.price],heading,18);title.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+  inv.label("Available" if str(info.reason).is_empty() else info.reason,box,14)
+  chooser(box,key)
 func supplies(parent:Node)->void:
+ inv.art_rect("fertilizer",parent,Vector2(80,80))
  inv.label("Fertilizer · 5 uses per pack · $45 · 5 lb",parent,18)
  toolbar(parent);chooser(parent,"fertilizer")
 
