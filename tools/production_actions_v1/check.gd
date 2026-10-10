@@ -87,6 +87,23 @@ func run():
   if task=="fertilize":check(game.fertilizer_units==2 and float(game.plant_slots[0].fertilizer)==100.0,"Fertilizing consumes one use")
   var after_tend:=JSON.stringify([game.seed_inventory,game.fertilizer_units,game.plant_slots]);game._execute_production_worker_action_local()
   check(JSON.stringify([game.seed_inventory,game.fertilizer_units,game.plant_slots])==after_tend,"Tending cannot commit twice "+task)
+ # Real update-loop boundary: commit progress without dropping the trimming pose.
+ for slot in game.plant_slots:slot.stage=-1
+ game.untrimmed_inventory={"Purple Dream":9,"Street Green":6};game.trimmed_inventory={};game.bagged_inventory={};game.production_worker_auto_plant=false
+ game.production_worker_pending_action="";game._assign_production_worker_task()
+ game.production_worker_node.global_position=game.production_worker_target_position;game.production_worker_action_dwell=3.98;crew.update_malik()
+ var continuous_pose=crew.malik_worker.get_node("ProductionActions")
+ var before_hand:Vector3=continuous_pose.rig.grip("R")
+ game._update_production_worker_visual(.03);crew.update_malik()
+ check(game.production_worker_pending_action=="trim" and game.production_worker_pending_strain=="Purple Dream","Same strain continues immediately without automation timer")
+ check(continuous_pose.scissors.visible and continuous_pose.active=="trim","Scissors remain active across progress boundary")
+ check(before_hand.distance_to(continuous_pose.rig.grip("R"))<.035,"Hand does not return to rest between portions")
+ check(int(game.untrimmed_inventory.get("Purple Dream",0))==6,"Continuous animation still commits exactly one portion")
+ for cycle in 2:
+  game.production_worker_action_dwell=3.98;crew.update_malik();game._update_production_worker_visual(.03);crew.update_malik()
+ game._update_production_worker_visual(0)
+ check(game.production_worker_pending_strain=="Street Green" and game.production_worker_task_label.text.contains("STREET GREEN"),"Label announces the next strain when trimming switches")
+ check(game.production_worker_task_label.position.y>=2.5 and game.production_worker_task_label.billboard==BaseMaterial3D.BILLBOARD_ENABLED,"Worker label stays above head and faces camera")
  # Palette regression: same colors/textures as plants, including future registered hybrids.
  game.seed_catalog["QA Future Cross"]={"profile":"solar"}
  var color_strains:Array[String]=["Purple Dream","QA Future Cross"]

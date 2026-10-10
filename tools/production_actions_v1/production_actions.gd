@@ -14,6 +14,9 @@ var tray:MeshInstance3D
 var display:Label3D
 var prior_display:=""
 var visual_strain:=""
+var trim_elapsed:=0.0
+var trim_last_dwell:=0.0
+var trim_strain:=""
 var bag_fill:MeshInstance3D
 const GROW_TASKS=["plant","water","fertilize","harvest"]
 var seed_packet:Node3D
@@ -101,7 +104,7 @@ func hide_props():
   if n!=null:n.hide()
 func stop():
  if active.is_empty():return
- active="";hide_props();rig.sk.clear_bones_global_pose_override()
+ active="";trim_elapsed=0.0;trim_last_dwell=0.0;trim_strain="";hide_props();rig.sk.clear_bones_global_pose_override()
  for bone in rig.sk.get_bone_count():
   rig.sk.set_bone_pose_rotation(bone,Quaternion.IDENTITY)
   rig.sk.set_bone_pose_position(bone,rig.sk.get_bone_rest(bone).origin)
@@ -125,6 +128,14 @@ func sync():
   var material:StandardMaterial3D=host._textured_plant_material(palette.get("bud",Color("829d69")),"res://assets/textures/bud_surface.png",.92)
   bud.material_override=material;bag_fill.material_override=material
  hide_props();bag_fill.visible=task=="bag" and host.production_worker_action_dwell/duration(task)>.60;rig.action="pack";rig.clock=host.production_worker_action_dwell
+ if task=="trim":
+  if trim_strain!=host.production_worker_pending_strain:
+   trim_strain=host.production_worker_pending_strain;trim_elapsed=rig.clock
+  else:
+   var advance:float=rig.clock-trim_last_dwell
+   if advance<0:advance+=duration("trim")
+   trim_elapsed+=maxf(0,advance)
+  trim_last_dwell=rig.clock
  var t:=clampf(rig.clock/duration(task),0,1)
  var facing:Vector3
  var station_root:=station(host)
@@ -160,6 +171,12 @@ func sync():
   working=rig.sk.to_local(reach_point)
  # Lean into the task, then return before the inventory completion boundary.
  var envelope:=smoothstep(0,.15,t)*(1-smoothstep(.86,1,t))
+ if task=="trim":
+  var inv=host.inventory_system
+  var station_id:String=inv.furniture.model.container_of(inv.furniture.model.primary(inv.worker_property(),"packing"))
+  var remaining:int=int(inv.contents(station_id).get("raw|"+host.production_worker_pending_strain,0))
+  envelope=smoothstep(0,.6,trim_elapsed)
+  if remaining<=host.PRODUCTION_WORKER_BATCH_SIZE:envelope*=1-smoothstep(.86,1,t)
  var tending:bool=task in ["plant","water","fertilize"]
  rig.crouch(envelope*(.40 if task=="plant" else .22) if tending else 0.0)
  rig.sk.set_bone_pose_rotation(rig.sk.find_bone("Spine"),Quaternion(Vector3.RIGHT,(-.55 if tending else -.14)*envelope))
