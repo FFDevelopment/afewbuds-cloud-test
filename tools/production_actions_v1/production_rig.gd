@@ -131,3 +131,21 @@ func close_bag_pinch():
     var local:Basis=sk.get_bone_rest(bone).basis.inverse()*parent.basis.inverse()*Basis(correction)*pose.basis
     sk.set_bone_pose_rotation(bone,local.get_rotation_quaternion().normalized())
     sk.force_update_all_bone_transforms()
+
+# Lower the pelvis while keeping both feet planted, with knees bending forward.
+func crouch(amount:float):
+ var hips:=sk.find_bone("Hips")
+ sk.set_bone_pose_position(hips,sk.get_bone_rest(hips).origin+Vector3(0,-amount,amount*.18))
+ sk.force_update_all_bone_transforms()
+ for side in ["L","R"]:
+  var u:=sk.find_bone("UpperLeg_"+side);var k:=sk.find_bone("LowerLeg_"+side);var f:=sk.find_bone("Foot_"+side)
+  var hip:Vector3=(sk.get_bone_global_pose(sk.get_bone_parent(u))*sk.get_bone_rest(u)).origin
+  var foot:=sk.get_bone_global_rest(f)
+  var upper:=sk.get_bone_rest(k).origin;var lower:=sk.get_bone_rest(f).origin
+  var a:=upper.length();var b:=lower.length();var delta:=foot.origin-hip;var d:=clampf(delta.length(),.02,a+b-.001)
+  var direction:=delta.normalized();var forward:=(Vector3.FORWARD-direction*direction.dot(Vector3.FORWARD)).normalized()
+  var along:=(a*a-b*b+d*d)/(2*d);var knee:=hip+direction*along+forward*sqrt(maxf(0,a*a-along*along))
+  sk.set_bone_global_pose_override(u,Transform3D(Basis(Quaternion(upper.normalized(),(knee-hip).normalized())),hip),1,true)
+  sk.set_bone_global_pose_override(k,Transform3D(Basis(Quaternion(lower.normalized(),(foot.origin-knee).normalized())),knee),1,true)
+  sk.set_bone_global_pose_override(f,foot,1,true)
+ sk.force_update_all_bone_transforms()

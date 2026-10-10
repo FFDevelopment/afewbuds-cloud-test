@@ -13,8 +13,14 @@ var bud:MeshInstance3D
 var tray:MeshInstance3D
 var display:Label3D
 var prior_display:=""
+const GROW_TASKS=["plant","water","fertilize","harvest"]
+var seed_packet:Node3D
+var seed:MeshInstance3D
+var watering_can:Node3D
+var feed_bottle:Node3D
+var stream:MeshInstance3D
 static func duration(action:String)->float:
- return {"trim":4.0,"bag":6.0,"harvest":4.5}.get(action,.95)
+ return {"trim":4.0,"bag":6.0,"harvest":4.5,"plant":4.5,"water":4.0,"fertilize":3.5}.get(action,.95)
 static func station(host_node:Node3D)->Node3D:
  var inv=host_node.inventory_system
  if inv==null or inv.furniture==null:return null
@@ -36,7 +42,7 @@ static func front(root:Node3D)->Vector3:
   return Vector3(0,0,-1 if normal.z<0 else 1)
  return Vector3.BACK
 static func target(host_node:Node3D,action:String,slot:int)->Variant:
- if action=="harvest" and slot>=0 and slot<host_node.plant_visuals.size():
+ if action in GROW_TASKS and slot>=0 and slot<host_node.plant_visuals.size():
   var p:Node3D=host_node.plant_visuals[slot]
   var direction:=Vector3.BACK
   var floor_y:float=p.global_position.y
@@ -45,7 +51,7 @@ static func target(host_node:Node3D,action:String,slot:int)->Variant:
    var id:String=inv.furniture.model.item_for_slot(slot)
    var tent:Node3D=inv.furniture.equipment_world.rendered.get(id)
    if tent!=null:direction=tent.global_basis.z.normalized();floor_y=tent.global_position.y
-  return Vector3(p.global_position.x,floor_y,p.global_position.z)+direction*.75
+  return Vector3(p.global_position.x,floor_y,p.global_position.z)+direction*(.60 if action=="plant" else .75)
  if action not in ["trim","bag"]:return null
  var root:=station(host_node)
  if root==null:return null
@@ -68,23 +74,40 @@ func setup(owner_host:Node3D,character:Node3D):
  bag=Node3D.new();rig.add_child(bag);box(bag,Vector3.ZERO,Vector3(.073,.095,.012),"b7c9b5");box(bag,Vector3(0,.035,0),Vector3(.075,.005,.014),"41633f")
  bud=box(rig,Vector3.ZERO,Vector3(.035,.05,.035),"6a904d");bud.mesh=SphereMesh.new();bud.mesh.radius=.021;bud.mesh.height=.055
  tray=box(rig,Vector3.ZERO,Vector3(.24,.035,.18),"47564a")
+ seed_packet=Node3D.new();rig.add_child(seed_packet)
+ box(seed_packet,Vector3.ZERO,Vector3(.06,.085,.008),"bcad7c")
+ box(seed_packet,Vector3(0,0,-.005),Vector3(.032,.04,.002),"427842")
+ seed=box(rig,Vector3.ZERO,Vector3(.008,.012,.006),"ab895d")
+ watering_can=Node3D.new();rig.add_child(watering_can)
+ box(watering_can,Vector3(0,-.085,0),Vector3(.15,.14,.13),"47786e")
+ # Open handle around the gripping hand, with an extended spout toward the pot.
+ box(watering_can,Vector3(0,.015,0),Vector3(.09,.012,.018),"375e56")
+ for x in [-.045,.045]:box(watering_can,Vector3(x,-.018,0),Vector3(.012,.075,.018),"375e56")
+ var spout=box(watering_can,Vector3(0,-.045,-.15),Vector3(.028,.028,.22),"47786e");spout.rotation.x=-.20
+ feed_bottle=Node3D.new();rig.add_child(feed_bottle)
+ box(feed_bottle,Vector3(0,-.055,0),Vector3(.065,.13,.06),"c8ba79")
+ box(feed_bottle,Vector3(0,.021,0),Vector3(.024,.025,.024),"48633d")
+ box(feed_bottle,Vector3(0,-.055,-.031),Vector3(.048,.052,.003),"48633d")
+ stream=box(rig,Vector3.ZERO,Vector3(.006,.1,.006),"8cc9d5")
  hide_props()
 func box(parent:Node3D,at:Vector3,size:Vector3,color:String)->MeshInstance3D:
  var n:=MeshInstance3D.new();n.mesh=BoxMesh.new();n.mesh.size=size;n.position=at
  var mat:=StandardMaterial3D.new();mat.albedo_color=Color(color);mat.roughness=.7;n.material_override=mat;parent.add_child(n);return n
 func hide_props():
- for n in [scissors,bag,bud,tray]:
+ for n in [scissors,bag,bud,tray,seed_packet,seed,watering_can,feed_bottle,stream]:
   if n!=null:n.hide()
 func stop():
  if active.is_empty():return
  active="";hide_props();rig.sk.clear_bones_global_pose_override()
- for bone in rig.sk.get_bone_count():rig.sk.set_bone_pose_rotation(bone,Quaternion.IDENTITY)
+ for bone in rig.sk.get_bone_count():
+  rig.sk.set_bone_pose_rotation(bone,Quaternion.IDENTITY)
+  rig.sk.set_bone_pose_position(bone,rig.sk.get_bone_rest(bone).origin)
  if is_instance_valid(display):display.text=prior_display
  display=null;player.play("idle");player.advance(0)
 func sync():
  var task:String=host.production_worker_pending_action
  var worker:Node3D=host.production_worker_node
- if not host.neighborhood.location_ops.crew.shop.production_allowed() or not host.packing_employee_active or not host.packing_employee_hired or host.production_worker_arrested or host.lay_low_active or task not in ["trim","bag","harvest"] or worker.global_position.distance_to(host.production_worker_target_position)>.16:
+ if not host.neighborhood.location_ops.crew.shop.production_allowed() or not host.packing_employee_active or not host.packing_employee_hired or host.production_worker_arrested or host.lay_low_active or task not in ["trim","bag","harvest","plant","water","fertilize"] or worker.global_position.distance_to(host.production_worker_target_position)>.16:
   stop();return
  if host._simulation_blocked():return
  if active!=task:
@@ -93,7 +116,7 @@ func sync():
  var t:=clampf(rig.clock/duration(task),0,1)
  var facing:Vector3
  var station_root:=station(host)
- if task=="harvest":
+ if task in GROW_TASKS:
   var slot:int=host.production_worker_pending_slot
   if slot<0 or slot>=host.plant_visuals.size():stop();return
   facing=host.plant_visuals[slot].global_position
@@ -103,7 +126,7 @@ func sync():
  facing.y=worker.global_position.y
  if worker.global_position.distance_to(facing)>.01:worker.look_at(facing,Vector3.UP)
  var working:=Vector3(0,1.13,-.34)
- if task!="harvest":
+ if task not in GROW_TASKS:
   var mesh:=surface(station_root)
   if mesh!=null:
    var top:=bounds_in(station_root,mesh)
@@ -119,10 +142,15 @@ func sync():
   var canopy:Node3D=plant.get_node_or_null("Canopy")
   var reach_point:=plant.global_position+Vector3(0,1.35,0)
   if canopy!=null:reach_point=canopy.global_position+Vector3(0,.35,0)
+  if task!="harvest":
+   var soil:Node3D=plant.get_node_or_null("Soil")
+   reach_point=soil.global_position+Vector3(0,.02,0) if soil!=null else plant.global_position+Vector3(0,.48,0)
   working=rig.sk.to_local(reach_point)
  # Lean into the task, then return before the inventory completion boundary.
  var envelope:=smoothstep(0,.15,t)*(1-smoothstep(.86,1,t))
- rig.sk.set_bone_pose_rotation(rig.sk.find_bone("Spine"),Quaternion(Vector3.RIGHT,-.14*envelope))
+ var tending:bool=task in ["plant","water","fertilize"]
+ rig.crouch(envelope*(.40 if task=="plant" else .22) if tending else 0.0)
+ rig.sk.set_bone_pose_rotation(rig.sk.find_bone("Spine"),Quaternion(Vector3.RIGHT,(-.55 if tending else -.14)*envelope))
  rig.sk.set_bone_pose_rotation(rig.sk.find_bone("Head"),Quaternion(Vector3.RIGHT,-.14*envelope))
  rig.sk.force_update_all_bone_transforms()
  var l:=working+Vector3(.08,.09,.05);var r:=working+Vector3(-.07,.10,.06)
@@ -136,11 +164,22 @@ func sync():
   if t>.65:r=l+Vector3(lerpf(-.07,.025,smoothstep(.65,.85,t)),0,0)
   if t>.85:l=l.lerp(working+Vector3(.18,.01,.02),smoothstep(.85,1,t))
   update_scale(station_root,t)
- else:
+ elif task=="harvest":
   scissors.visible=t>.12 and t<.70;bud.visible=t>.52;tray.hide()
   moving_blade.rotation.y=.35*(.5+.5*sin(t*TAU*7))
   if t>.55:
    l=l.lerp(Vector3(.24,.94,-.04),smoothstep(.55,.85,t));r=r.lerp(Vector3(-.20,.95,-.08),smoothstep(.55,.85,t))
+ elif task=="plant":
+  seed_packet.show();seed.visible=t>.18 and t<.50
+  l=working+Vector3(.12,.24,.12)
+  # Pinch seed out, place it, then cover with two short soil sweeps.
+  r=l+Vector3(-.03,.04,-.02)
+  if t>.25:r=r.lerp(working+Vector3(0,.02,.07),smoothstep(.25,.48,t))
+  if t>.52:r=working+Vector3(.045*sin((t-.52)*TAU*5),.025,.065)
+ else:
+  l=Vector3(.20,.83,-.17)
+  r=working+Vector3(0,.33,.28)
+  watering_can.visible=task=="water";feed_bottle.visible=task=="fertilize"
  # Clamp requested wrist targets to the physical chain, never stretch bones.
  for side in ["L","R"]:
   var shoulder:Vector3=rig.sk.get_bone_global_pose(rig.sk.find_bone("Shoulder_"+side)).origin
@@ -151,6 +190,19 @@ func sync():
  scissors.position=rig.grip("R");bag.position=rig.bag_pinch()-Vector3(.0365,.018,0)
  bud.position=rig.bag_pinch() if task!="bag" else rig.grip("R")-Vector3(0,.015,.03)
  if task=="bag" and t>=.18 and t<.40:bud.position=working
+ if task=="plant":
+  seed_packet.position=rig.bag_pinch()-Vector3(.03,.02,0)
+  seed.position=rig.grip("R")
+ elif task in ["water","fertilize"]:
+  var container:Node3D=watering_can if task=="water" else feed_bottle
+  var pour:=smoothstep(.20,.35,t)*(1-smoothstep(.68,.82,t))
+  container.position=rig.grip("R")
+  container.rotation=Vector3(-.45*pour if task=="water" else -2.15*pour,0,0)
+  var tip:=container.position+container.basis*(Vector3(0,-.023,-.26) if task=="water" else Vector3(0,.035,0))
+  var flow:=working-tip
+  stream.visible=pour>.85 and envelope>.8
+  stream.position=tip+flow*.5;stream.scale=Vector3(1,flow.length()/.1,1)
+  stream.basis=Basis(Quaternion(Vector3.UP,flow.normalized())).scaled(Vector3(1,flow.length()/.1,1))
  if envelope<.05:hide_props()
 func update_scale(root:Node3D,t:float):
  if not is_instance_valid(display):

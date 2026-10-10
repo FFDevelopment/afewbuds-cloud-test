@@ -17,8 +17,8 @@ func run():
  var samples:=0
  for who in crew.FriendCharacters.NAMES:
   game.production_worker_friend_name=who
-  for task in ["trim","bag","harvest"]:
-   game.production_worker_pending_action=task;game.production_worker_pending_slot=0 if task=="harvest" else -1;game.production_worker_pending_strain=strain
+  for task in ["trim","bag","harvest","plant","water","fertilize"]:
+   game.production_worker_pending_action=task;game.production_worker_pending_slot=0 if task in Actions.GROW_TASKS else -1;game.production_worker_pending_strain=strain
    var target:Variant=Actions.target(game,task,game.production_worker_pending_slot)
    check(target is Vector3,"Target exists "+task)
    if not target is Vector3:continue
@@ -50,6 +50,19 @@ func run():
  check(int(game.plant_slots[0].stage)==-1,"Harvest completion clears the mature crop")
  var after_harvest:=JSON.stringify([game.untrimmed_inventory,game.inventory_system.state]);game._execute_production_worker_action_local()
  check(JSON.stringify([game.untrimmed_inventory,game.inventory_system.state])==after_harvest,"Harvest cannot award twice")
+ game.seed_inventory[strain]=3;game.fertilizer_units=3
+ for task in ["plant","water","fertilize"]:
+  game.production_worker_pending_action=task;game.production_worker_pending_slot=0;game.production_worker_pending_strain=strain
+  game.production_worker_target_position=Actions.target(game,task,0);game.production_worker_node.global_position=game.production_worker_target_position;game.production_worker_action_dwell=Actions.duration(task)*.5
+  var before_tend:=JSON.stringify([game.seed_inventory,game.fertilizer_units,game.plant_slots])
+  crew.update_malik()
+  check(JSON.stringify([game.seed_inventory,game.fertilizer_units,game.plant_slots])==before_tend,"Tending pose consumes no supplies "+task)
+  game._execute_production_worker_action_local()
+  if task=="plant":check(int(game.seed_inventory[strain])==2 and int(game.plant_slots[0].stage)==0,"Plant consumes exactly one seed")
+  if task=="water":check(float(game.plant_slots[0].water)==100.0,"Water completion fills target pot")
+  if task=="fertilize":check(game.fertilizer_units==2 and float(game.plant_slots[0].fertilizer)==100.0,"Fertilizing consumes one use")
+  var after_tend:=JSON.stringify([game.seed_inventory,game.fertilizer_units,game.plant_slots]);game._execute_production_worker_action_local()
+  check(JSON.stringify([game.seed_inventory,game.fertilizer_units,game.plant_slots])==after_tend,"Tending cannot commit twice "+task)
  print("PRODUCTION_ACTIONS_RESULT ",JSON.stringify({"passed":errors.is_empty(),"samples":samples,"errors":errors}))
  print("PRODUCTION_ACTIONS_TEST_RESULT: "+("PASS" if errors.is_empty() else "FAIL"))
  quit(0 if errors.is_empty() else 1)
