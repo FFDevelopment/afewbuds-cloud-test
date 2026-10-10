@@ -16,6 +16,12 @@ release = manifest["release_id"]
 assert token == manifest["runtime_pack_sha256"][:12] and pack_sha == manifest["runtime_pack_sha256"]
 assert release.endswith("." + token), (release, token)
 assert f'const AFB_TEST_RELEASE = "{release}";' in html
+assert '<title>AFewBuds Cloud Test</title>' in html
+assert 'id="afb-dev-build"' in html
+assert 'afbDevBuild.textContent = "DEVELOPMENT BUILD · " + AFB_TEST_RELEASE' in html
+assert 'const AFB_TEST_TITLE = "AFewBuds Cloud Test · 0.7.9-beta.19";' in html
+assert 'MutationObserver(afbKeepTestTitle)' in html
+assert 'cloudtest.99-expansion.10.' in release
 for url in [
     f"shared/afb-api.js?v={token}",
     f"shared/afb-expansion-save.js?v={token}",
