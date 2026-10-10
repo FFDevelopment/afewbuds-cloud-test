@@ -24,6 +24,8 @@ static func fit(host:Node) -> void:
 	# Keep phone text at a readable physical size when the desktop canvas
 	# scales down. Shorten the scrolling screen instead of shrinking its type.
 	var window_size:=Vector2(host.get_window().size)
+	# Headless CI starts with a dummy 64px window, not a player display.
+	if DisplayServer.get_name()=="headless" and window_size.x<320:window_size=screen
 	var canvas_scale:=minf(window_size.x/screen.x,window_size.y/screen.y)
 	var factor:=minf(available.x/SIZE.x,maxf(available.y/SIZE.y,1.0/maxf(canvas_scale,0.1)))
 	var layout_size:=Vector2(SIZE.x,minf(SIZE.y,available.y/factor))
