@@ -2,9 +2,10 @@ name: Audit in-game mobile version (read-only)
 on:
   push:
     branches: [fix/visible-mobile-build-identity]
+    paths-ignore: [tools/mobile_3d_movement/version_audit_result.txt]
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   audit:
     runs-on: ubuntu-latest
@@ -17,7 +18,7 @@ jobs:
         env:
           CANDIDATE: ${{ runner.temp }}/afb-audit/candidate
         run: |
-          python3 - <<'PY'
+          python3 - <<'PY' | tee /tmp/afb-version-audit.txt
           import os,re
           from pathlib import Path
           root=Path(os.environ['CANDIDATE'])
@@ -35,3 +36,12 @@ jobs:
                   for i,line in hit[:60]:print('MATCH',i,line)
           print('AUDIT_FINISHED')
           PY
+      - name: Persist diagnostic result to audit branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          mkdir -p tools/mobile_3d_movement
+          cp /tmp/afb-version-audit.txt tools/mobile_3d_movement/version_audit_result.txt
+          git add tools/mobile_3d_movement/version_audit_result.txt
+          git commit -m "Record game-pack version audit [skip ci]"
+          git push origin HEAD:fix/visible-mobile-build-identity
