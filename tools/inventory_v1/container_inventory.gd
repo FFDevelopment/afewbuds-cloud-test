@@ -295,7 +295,7 @@ func available(id:String,item:String) -> int:
  return maxi(0,value)
 func controlled(id:String) -> bool:
  if id in ["backpack","market:orders"]:return true
- return host.neighborhood.location_ops._property_controlled(id.get_slice(":",0))
+ if host.neighborhood==null or host.neighborhood.location_ops==null:return false # World services are not ready during first render frame.\n return host.neighborhood.location_ops._property_controlled(id.get_slice(":",0))
 func reachable(id:String) -> bool:
  if not controlled(id):return false
  var positions:Dictionary=all_positions()
