@@ -1,0 +1,13 @@
+AUDIT_CANDIDATE /home/runner/work/_temp/afb-audit/candidate True
+FILE project.godot
+MATCH 1 config_version=5
+FILE scripts/equipment_world.gd
+MATCH 304   e.cabinet_model_version=1
+FILE scripts/first_day_guide.gd
+MATCH 124   state.version=3
+MATCH 127   state.version=4
+FILE scripts/main.gd
+MATCH 80 const BUILD_VERSION: String = "0.7.9-beta.19"
+FILE scripts/property_furniture.gd
+MATCH 135   e.utility_layout_version=2
+AUDIT_FINISHED
