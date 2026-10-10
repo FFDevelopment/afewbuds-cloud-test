@@ -17,7 +17,7 @@ def add_function(source,name,body,anchor):
     if start<0 or (start and source[start-1]!="\n"):
         raise AssertionError("Door staffing anchor missing: "+anchor)
     return source[:start]+body.rstrip()+"\n\n"+source[start:]
-ANCHORS={"main.gd":{"_customer_favorite":"_dealer_sell_one","_record_customer_strain_experience":"_dealer_sell_one","_dealer_product_amount":"_dealer_sell_one","_dealer_best_offer":"_dealer_sell_one","_substitute_acceptance_chance_for":"_show_substitutes"},"crew_phone.gd":{"recruit_door":"invite"}}
+ANCHORS={"main.gd":{"_customer_favorite":"_dealer_sell_one","_record_customer_strain_experience":"_dealer_sell_one","_dealer_product_amount":"_dealer_sell_one","_dealer_best_offer":"_dealer_sell_one","_substitute_acceptance_chance_for":"_show_substitutes"},"crew_phone.gd":{"recruit_door":"invite","generic_manager_instance":"character_instance"}}
 def apply_entries(entries):
     result=[]
     seen=set()
