@@ -965,6 +965,8 @@ def main():
     updated=wall_fit.apply_entries(updated)
     rooms_patch=module("house_room_bounds_v1",ROOT/"tools/house_room_bounds_v1/patch.py")
     updated=rooms_patch.apply_entries(updated)
+    house_packing=module("house_packing_parity",ROOT/"tools/house_packing_parity_v1/patch.py")
+    updated=house_packing.apply_entries(updated)
     built=east.pack.rebuild(baseline,fb,updated)
     # Every unique gameplay pack gets its own browser-visible identity.
     # This prevents development releases from silently sharing a stale URL.
@@ -990,6 +992,9 @@ def main():
     assert b'BASEMENT_GROW_PLACEMENT' in after['scripts/property_furniture.gd'], 'Stair-safe basement grow floor bounds missing'
     assert b'rooms=model.placement_rooms(property,floor_y)' in after['scripts/furniture_editor.gd'], 'Walk-around editor not using physical room bounds'
     assert b'wall_snap:' in after['scripts/furniture_editor.gd'], 'Wall alignment control missing'
+    assert b'BASEMENT_EAST_PLACEMENT' in after['scripts/property_furniture.gd'], 'Basement east grow wing missing'
+    assert b'packing.start(chosen)' in after['scripts/container_inventory.gd'], 'House physical trim and bag bridge missing'
+    assert b'WorkerTrimScissors' in after['scripts/main.gd'], 'Generic production packing animation missing'
     assert b'shop_upgrade_catalog.gd' in after['scripts/location_ops.gd'], 'Market backpack upgrade control missing'
     assert 'scripts/mobile_physics_player.gd' in after
     assert after['scripts/property_registry.gd']==registry_bytes
