@@ -961,6 +961,8 @@ def main():
     updated=equipment_upgrades.apply_entries(updated)
     property_staff=module("property_staff",ROOT/"tools/property_worker_v1/patch.py")
     updated=property_staff.apply_entries(updated)
+    wall_fit=module("house_bench_wallfit",ROOT/"tools/house_bench_flush_v1/patch.py")
+    updated=wall_fit.apply_entries(updated)
     built=east.pack.rebuild(baseline,fb,updated)
     # Every unique gameplay pack gets its own browser-visible identity.
     # This prevents development releases from silently sharing a stale URL.
@@ -981,6 +983,8 @@ def main():
     assert b'production_crew.setup(self)' in after['scripts/main.gd'], 'Independent worker initialization missing'
     assert b'func unlock_level' in after['scripts/property_furniture.gd'], 'Grower level locks missing'
     assert b'func fit_aim_to_room' in after['scripts/furniture_editor.gd'], 'Bench wall fit missing'
+    assert b'HOUSE_PACKING_PLACEMENT' in after['scripts/property_furniture.gd'], 'Physical house wall bounds not used'
+    assert b'wall_snap:' in after['scripts/furniture_editor.gd'], 'Wall alignment control missing'
     assert b'shop_upgrade_catalog.gd' in after['scripts/location_ops.gd'], 'Market backpack upgrade control missing'
     assert 'scripts/mobile_physics_player.gd' in after
     assert after['scripts/property_registry.gd']==registry_bytes

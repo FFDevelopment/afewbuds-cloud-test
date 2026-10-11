@@ -70,13 +70,58 @@ func run()->void:
  furniture.point=Vector3(47.0,0,-2.1)
  furniture.yaw=0
  furniture.fit_aim_to_room()
- var xlimit:float=model.ROOMS.house.packing.end.x-model.size_of(temp,0).x*.5
- check(furniture.point.x<=xlimit and furniture.point.x>=xlimit-.1,"Packing Bench III aim fits against packing-room wall instead of projecting through")
- var near_wall:Vector3=Vector3(xlimit-.015,0,-2.4)
- check(model.validate(temp,"house",near_wall,0).is_empty(),"Full-size Packing Bench III legally fits within a narrow wall clearance: "+model.validate(temp,"house",near_wall,0))
+ var fit:Rect2=model.placement_rooms("house",0).packing
+ var legacy:Rect2=model.registry.rooms_for("house").packing
+ check(fit.end.x-legacy.end.x>.25 and fit.position.x<legacy.position.x-.25,"House packing bounds match actual walls without rewriting old saved property bounds")
+ var half_width:float=model.size_of(temp,0).x*.5
+ var xlimit:float=fit.end.x-half_width-.005
+ check(absf(furniture.point.x-xlimit)<.002,"Packing Bench III aim can reach within millimetres of the right wall")
+ # The solid section of the exterior wall is near the front corner; the
+ # middle section contains window blinds and must not be allowed to clip.
+ var near_wall:Vector3=Vector3(xlimit,0,1.45)
+ check(model.validate(temp,"house",near_wall,0).is_empty(),"Expanded packing-room border accepts Bench III at the real exterior wall")
+ furniture.point=Vector3(xlimit,0,-1.2)
+ check(furniture.obstacle().contains("Window covering"),"Closed house window blinds reject visible Bench III clipping")
  furniture.point=near_wall
- check(furniture.obstacle().is_empty(),"Complete wall and furniture physics accepts Packing Bench III near wall: "+furniture.obstacle())
- check(not model.validate(temp,"house",Vector3(xlimit+.22,0,-2.4),0).is_empty(),"Bench cannot clip through wall when pushed beyond room")
+ check(furniture.obstacle().is_empty(),"Real collision geometry accepts Bench III at solid right wall: "+furniture.obstacle())
+ check(not model.validate(temp,"house",Vector3(xlimit+.085,0,1.45),0).is_empty(),"Bench III cannot cross the real exterior wall face")
+ furniture.confirm()
+ check(model.state.items[temp].get("property","")=="house","Full arrangement flow places Bench III against the exterior wall")
+ furniture.sync_world()
+ var bench_root:Node3D=furniture.equipment_world.rendered.get(temp)
+ var holder:Node3D=bench_root.get_node_or_null("ApprovedPackingBenchModel") if bench_root!=null else null
+ check(holder!=null,"Purchased Bench III uses the approved finished apartment packing model")
+ if holder!=null:
+  var actual:AABB=AABB()
+  var found:bool=false
+  for mesh in holder.find_children("*","MeshInstance3D",true,false):
+   if mesh.mesh==null:continue
+   var world_box:AABB=mesh.global_transform*mesh.get_aabb()
+   actual=actual.merge(world_box) if found else world_box
+   found=true
+  check(found and 44.89-actual.end.x>=-.001 and 44.89-actual.end.x<.025,"Visible Bench III artwork meets exterior wall within 2.5 cm, no wall penetration")
+ model.lock(temp,false)
+ game.camera.global_position=Vector3(40.1,1.7,-2.1)
+ furniture.begin(temp)
+ var left_center:float=fit.position.x+half_width+.005
+ var left_wall:Vector3=Vector3(left_center,0,-2.9)
+ furniture.point=left_wall
+ furniture.yaw=0
+ check(furniture.obstacle().is_empty(),"Bench III also fits flush to solid hall partition: "+furniture.obstacle())
+ furniture.confirm()
+ furniture.sync_world()
+ bench_root=furniture.equipment_world.rendered.get(temp)
+ holder=bench_root.get_node_or_null("ApprovedPackingBenchModel") if bench_root!=null else null
+ if holder!=null:
+  var actual_left:AABB=AABB()
+  var found_left:bool=false
+  for mesh in holder.find_children("*","MeshInstance3D",true,false):
+   if mesh.mesh==null:continue
+   var piece_box:AABB=mesh.global_transform*mesh.get_aabb()
+   actual_left=actual_left.merge(piece_box) if found_left else piece_box
+   found_left=true
+  check(found_left and actual_left.position.x-36.61>=-.001 and actual_left.position.x-36.61<.025,"Visible Bench III meets hall-side wall within 2.5 cm")
+ else:check(false,"Approved Bench III model persists after moving against the opposite wall")
  furniture.cancel_placement()
  model.state.items.erase(temp)
  game.queue_free()
