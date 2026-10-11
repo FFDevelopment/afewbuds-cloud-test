@@ -113,7 +113,15 @@ func stop():
 func sync():
  var task:String=host.production_worker_pending_action
  var worker:Node3D=host.production_worker_node
- if not host.neighborhood.location_ops.crew.shop.production_allowed() or not host.packing_employee_active or not host.packing_employee_hired or host.production_worker_arrested or host.lay_low_active or task not in ["trim","bag","harvest","plant","water","fertilize"] or worker.global_position.distance_to(host.production_worker_target_position)>.16:
+ var inv=host.inventory_system
+ var property:String=inv.worker_property() if inv!=null else "apartment"
+ var shop=host.neighborhood.location_ops.crew.shop
+ var reached:bool=false
+ if worker!=null:
+  reached=host.house_route_arrived("production",worker.global_position,host.production_worker_target_position) if property=="house" else worker.global_position.distance_to(host.production_worker_target_position)<=.16
+ # Use the same house arrival decision as the work scheduler. Previously,
+ # AI tasks could complete without ever starting their animated hand actions.
+ if not shop.production_allowed() or shop.laying_low(property) or not host.packing_employee_active or not host.packing_employee_hired or host.production_worker_arrested or task not in ["trim","bag","harvest","plant","water","fertilize"] or not reached:
   stop();return
  if host._simulation_blocked():return
  if active!=task:
