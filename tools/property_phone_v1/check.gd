@@ -60,10 +60,10 @@ func run():
  check(property_ops.portfolio_on_site("apartment") and not property_ops.portfolio_on_site("house"),"Starter apartment still independently editable")
  property_ops.portfolio_reset()
  game.camera.global_position=initial_camera_position
- game.packing_employee_hired=true;game.packing_employee_active=true;game.dealer_count=1;game.dealers_active=true
+ game.dealer_count=1;game.dealers_active=true
+ check(game.production_crew.hire("house"),"House shop setup hires a property-scoped production worker")
  var crew=game.neighborhood.location_ops.crew;var shop=crew.shop
- var worker:String=game._critical_production_sender()
- game.location_state.staff_assignments[worker]="house"
+ var worker:String=game.production_crew.name_for("house")
  game.location_state.staff_assignments["Hired Dealer 1"]="apartment"
  var controls=game.neighborhood.house_controls
  controls.states["living"]=true;controls.states["bedroom"]=false;controls.states["grow_lights"]=true;controls.states["grow_ventilation"]=true
@@ -75,19 +75,19 @@ func run():
  shop.command(worker,"shutdown")
  check(shop.laying_low("house") and not controls.states.living and not controls.states.grow_lights and not controls.states.grow_ventilation,"House lay low switches equipment off")
  check(game.main_ceiling_light_on and game.grow_lights_on and game.business_open,"House shutdown never touches apartment equipment or shop")
- check(not shop.production_allowed() and shop.dealer_allowed("Hired Dealer 1"),"House production pauses while apartment dealer remains eligible")
+ check(not bool(game.production_crew.with_property("house",func():return shop.production_allowed())) and shop.dealer_allowed("Hired Dealer 1"),"House production pauses while apartment dealer remains eligible")
  var snapshot:String=JSON.stringify(shop.record("house").equipment_before_shutdown)
  shop.command(worker,"shutdown")
  check(JSON.stringify(shop.record("house").equipment_before_shutdown)==snapshot,"Repeated shutdown preserves original settings")
  game.heat=80;shop.command(worker,"reopen")
  check(shop.laying_low("house") and not controls.states.living,"Blocked reopen does not restore equipment")
  game.heat=0;shop.command(worker,"reopen")
- check(controls.states.living and controls.states.grow_lights and not controls.states.bedroom and shop.production_allowed(),"Set Up restores exactly the previous switches")
+ check(controls.states.living and controls.states.grow_lights and not controls.states.bedroom and bool(game.production_crew.with_property("house",func():return shop.production_allowed())),"Set Up restores exactly the previous switches")
  shop.command("Hired Dealer 1","shutdown")
  check(game.lay_low_active and not game.grow_lights_on and not game.ventilation_on and shop.is_open("house"),"Apartment shutdown remains local")
  shop.command("Hired Dealer 1","reopen")
  check(game.business_open and game.grow_lights_on and game.ventilation_on and not game.floor_lamp_on,"Apartment equipment restores with off switches preserved")
- game.packing_employee_active=false;shop.command(worker,"close")
+ game.production_crew.toggle("house");shop.command(worker,"close")
  check(shop.is_open("house"),"Off-duty employees cannot close remote property")
  for cat in ["equipment|Grow Tent","delivery|Paid Tent","furniture|legacy_sofa"]:
   check(not inv.accepts("apartment:storage",cat) and not inv.accepts("house:storage",cat),"Both properties reject "+cat)
