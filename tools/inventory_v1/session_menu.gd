@@ -26,7 +26,7 @@ func setup(owner:Node,controller:Node) -> void:
 func show_page(next:String) -> void:
  page=next
  if host.pause_message.get_parent()!=null:host.pause_message.get_parent().remove_child(host.pause_message)
- for child in body.get_children():body.remove_child(child);child.queue_free()
+ for child in body.get_children():child.queue_free();body.remove_child(child)
  inventory.label("AFewBuds" if page=="home" else page.to_upper(),body,26)
  if page=="home":
   body.add_child(host.pause_message);host.pause_message.add_theme_font_size_override("font_size",16)
