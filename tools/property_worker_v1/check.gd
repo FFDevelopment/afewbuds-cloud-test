@@ -101,7 +101,8 @@ func run()->void:
    found=true
   check(found and 44.89-actual.end.x>=-.001 and 44.89-actual.end.x<.025,"Visible Bench III artwork meets exterior wall within 2.5 cm, no wall penetration")
  model.lock(temp,false)
- game.camera.global_position=Vector3(40.1,1.7,-2.1)
+ # Keep the player outside the larger bench footprint while testing wall fit.
+ game.camera.global_position=Vector3(41.5,1.7,0.5)
  furniture.begin(temp)
  var left_center:float=fit.position.x+half_width+.005
  var left_wall:Vector3=Vector3(left_center,0,-2.9)
