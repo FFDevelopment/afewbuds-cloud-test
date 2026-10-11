@@ -945,6 +945,8 @@ def main():
     updated=door_patch.apply_entries(updated)
     house_paths=module("house_npc_nav_v1",ROOT/"tools/house_npc_nav_v1/patch.py")
     updated=house_paths.apply_entries(updated)
+    door_movement=module("door_movement_v1",ROOT/"tools/door_movement_v1/patch.py")
+    updated=door_movement.apply_entries(updated)
     built=east.pack.rebuild(baseline,fb,updated)
     # Every unique gameplay pack gets its own browser-visible identity.
     # This prevents development releases from silently sharing a stale URL.
