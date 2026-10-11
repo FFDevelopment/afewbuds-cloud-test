@@ -121,11 +121,6 @@
       "before": "\tif name==\"Dealer Team\" and property==\"house\":return\n\tvar previous:String=assignment(name)",
       "after": "\tif name==\"Dealer Team\" and property==\"house\":return\n\tif role(name)==\"production\" and host.production_crew!=null:\n\t\tif host.production_crew.transfer(name,property):\n\t\t\toutgoing(name,\"Report to the \"+property+\".\")\n\t\t\tsend(name,say(name,\"assigned\",{\"property\":property}))\n\t\treturn\n\tvar previous:String=assignment(name)",
       "line": 286
-    },
-    {
-      "before": "func recruit(name: String,job: String) -> void:\n\tactions=false\n\thost._recruit_friend_staff(name,job)\n\tif role(name)==job:assign(name,\"apartment\")",
-      "after": "func recruit(name: String,job: String,property_id:String=\"apartment\") -> void:\n\tactions=false\n\thost._recruit_friend_staff(name,job,property_id)\n\tif job!=\"production\" and role(name)==job:assign(name,\"apartment\")",
-      "line": 312
     }
   ],
   "scripts/location_ops.gd": [
