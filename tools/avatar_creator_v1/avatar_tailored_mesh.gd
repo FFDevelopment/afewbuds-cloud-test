@@ -65,8 +65,8 @@ func section(point:Vector3,radii:Vector2,primary:String,secondary:String="",infl
 func loft(slot:String,name:String,axis:String,rings:Array,color:Color,segments:int=RADIAL,rough:float=.84)->MeshInstance3D:
  if rings.size()<2 or sk==null:return null
  var st:=SurfaceTool.new()
- st.begin(Mesh.PRIMITIVE_TRIANGLES)
  st.set_skin_weight_count(SurfaceTool.SKIN_4_WEIGHTS)
+ st.begin(Mesh.PRIMITIVE_TRIANGLES)
  for k in range(rings.size()):
   var ring:Dictionary=rings[k]
   var center:Vector3=ring.p
