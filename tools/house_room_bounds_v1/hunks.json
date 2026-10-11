@@ -20,7 +20,7 @@
   "scripts/furniture_editor.gd": [
     {
       "before": " if property==\"house\" and floor_y<-.5:\n  rooms={\"grow\":Rect2(26.3,-13.5,14.2,13.0)}\n  selected_room=\"grow\"\n else:\n  rooms=model.placement_rooms(property,floor_y)\n  selected_room=host.neighborhood.location_ops.placement_room(property,host.camera.global_position)\n",
-      "after": " if property==\"house\" and floor_y<-.5:\n  selected_room=\"basement_grow\"\n else:\n  selected_room=host.neighborhood.location_ops.placement_room(property,host.camera.global_position)\n"
+      "after": " rooms=model.placement_rooms(property,floor_y)\n if property==\"house\" and floor_y<-.5:\n  selected_room=\"basement_grow\"\n else:\n  selected_room=host.neighborhood.location_ops.placement_room(property,host.camera.global_position)\n"
     }
   ]
 }
