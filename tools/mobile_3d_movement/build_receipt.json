@@ -1,7 +1,7 @@
 {
   "baseline_sha256": "bbc788e5d4dd19b59af7dd2824f34943361d901d08ae5b5c25f8e7c6b9a75410",
-  "target_sha256": "147d0bde2d900bb45a76988a8b296d48f5cb2ecdf0e477c1ce7faab22999578e",
-  "target_bytes": 61868448,
+  "target_sha256": "25a70bcde223c4188c42bc49472c8fee964d60b384e1fd9b36faf3f059d1e6d0",
+  "target_bytes": 61908276,
   "changed_existing_entries": [
     "scripts/main.gd",
     "scripts/offline_plant_care.gd",
@@ -63,9 +63,11 @@
     "scripts/production_actions.gd",
     "scripts/production_rig.gd",
     "scripts/property_furniture.gd",
+    "scripts/property_production_crew.gd",
     "scripts/property_registry.gd",
     "scripts/property_shop.gd",
     "scripts/session_menu.gd",
+    "scripts/shop_upgrade_catalog.gd",
     "scripts/tent_genetics.gd",
     "visual_lab/basement.gd",
     "visual_lab/fire_escape.gd",
