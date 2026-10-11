@@ -17,6 +17,18 @@ def apply_entries(entries):
                 if count!=1:
                     raise AssertionError(f"production/fit drift: {name}, hunk {i}, source line {h['line']}, matches={count}, preceding={before[:130]!r}")
                 src=src.replace(before,h["after"],1)
+            if name=="scripts/crew_phone.gd":
+                # Mobile's worker animation/visitor implementation differs from
+                # desktop; retain its visitor body and replace ONLY the worker
+                # rig prelude with the independently scoped implementation.
+                prefix="func update_malik() -> void:\n"
+                visitor="\tvar visitor: String="
+                start=src.find(prefix)
+                if start<0:raise AssertionError("Mobile worker update entrypoint missing")
+                end=src.find(visitor,start+len(prefix))
+                if end<0:raise AssertionError("Mobile visitor boundary missing: cannot safely patch rigs")
+                replacement=(HERE/"rig_patch.gdfrag").read_text(encoding="utf-8")
+                src=src[:start]+replacement+src[end:]
             data=src.encode("utf-8")
             seen.add(name)
         updated.append([name,data,flags])
