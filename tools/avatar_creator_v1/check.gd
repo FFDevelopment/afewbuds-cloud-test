@@ -54,6 +54,18 @@ func run()->void:
   alternate.bag="daypack";alternate.jewelry="studs"
   avatar.rebuild(alternate)
   check(avatar.part_count("hair")>1 and avatar.part_count("outerwear")>0 and avatar.part_count("headwear")>0 and avatar.part_count("glasses")>0 and avatar.part_count("gloves")>0 and avatar.part_count("bag")>0 and avatar.part_count("jewelry")>0,"All garment/accessory modules regenerate on appearance changes")
+  # The original bubble dummy used SphereMesh/BoxMesh for the main body.
+  # The tailored v2 body must use curved, weighted ArrayMesh surfaces.
+  var body:Array=avatar.modules.get("body",[])
+  var sculpted:int=0
+  var skinned:int=0
+  for node in body:
+   if node is MeshInstance3D and node.mesh is ArrayMesh:
+    sculpted+=1
+    if ((node.mesh as ArrayMesh).surface_get_format(0) & Mesh.ARRAY_FORMAT_BONES)!=0:skinned+=1
+  check(sculpted>=8 and skinned>=8,"Character body is a continuous rig-weighted sculpt, not disconnected sphere primitives")
+  var torso:MeshInstance3D=body[0] as MeshInstance3D
+  check(torso!=null and torso.mesh is ArrayMesh and (torso.mesh as ArrayMesh).surface_get_surface_count()>=1,"Torso has a real procedural skinned mesh")
   check(avatar.current.body=="feminine","Feminine body fit preserves common skeleton")
  # Exercise the exact WebGL path even though this CI runner is native Linux.
  var web_avatar=load("res://scripts/avatar_visual.gd").new()
