@@ -884,6 +884,9 @@ def main():
     phone_visuals=module("phone_visuals",ROOT/"tools/phone_visuals_v1/patch.py")
     main_script=phone_visuals.apply(main_script,"main.gd")
     location_ops=phone_visuals.apply(location_ops.decode(),"location_ops.gd").encode()
+    shop_patch=module("tester_shop_v1",ROOT/"tools/tester_shop_v1/patch.py")
+    main_script=shop_patch.patch_main(main_script)
+    location_ops=shop_patch.patch_location(location_ops.decode()).encode()
     start=neighborhood.index("\t# Preserve portrait touch sizes; center the phone menu on a wider screen.")
     end=neighborhood.index("\thost._reset_world_pointer()",start)
     neighborhood=neighborhood[:start]+"\tpreload(\"res://scripts/phone_visuals.gd\").fit(host)\n"+neighborhood[end:]
@@ -916,6 +919,7 @@ def main():
     updated.append(['scripts/tent_genetics.gd',(ROOT/'tools/property_phone_v1/tent_genetics.gd').read_bytes(),0])
     updated.append(['scripts/property_shop.gd',(ROOT/'tools/property_phone_v1/property_shop.gd').read_bytes(),0])
     updated.append(['scripts/container_inventory.gd',(ROOT/'tools/inventory_v1/container_inventory.gd').read_bytes(),0])
+    updated.append(['scripts/shop_upgrade_catalog.gd',(ROOT/'tools/tester_shop_v1/shop_upgrade_catalog.gd').read_bytes(),0])
     updated.append(['scripts/session_menu.gd',(ROOT/'tools/inventory_v1/session_menu.gd').read_bytes(),0])
     updated.append(['scripts/graphics_quality.gd',(ROOT/'tools/graphics_presets_v1/graphics_quality.gd').read_bytes(),0])
     updated.append(['scripts/player_unstuck.gd',(ROOT/'tools/landing_unstuck_hotfix_v1/player_unstuck.gd').read_bytes(),0])
@@ -959,6 +963,9 @@ def main():
     expected_changed={'scripts/east_expansion.gd','scripts/police_district.gd','scripts/client_visits.gd','scripts/interiors.gd','scripts/offline_plant_care.gd','scripts/mobile_hud.gd','scripts/crew_phone.gd','scripts/interior_door.gd','scripts/location_ops.gd','scripts/main.gd','scripts/house_controls.gd','scripts/neighborhood.gd','scripts/police_station.gd','scripts/property_opportunity.gd'}
     expected_changed.update("assets/characters/"+name+".glb" for name in ["Rod","Kobi","Malik"])
     assert set(changed)==expected_changed,changed
+    assert 'scripts/shop_upgrade_catalog.gd' in after, 'Market backpack upgrades and Phone Shop browse are missing'
+    assert b'shop_upgrades' in after['scripts/main.gd'], 'Phone Shop upgrades category absent'
+    assert b'shop_upgrade_catalog.gd' in after['scripts/location_ops.gd'], 'Market upgrade buttons absent'
     assert 'scripts/mobile_physics_player.gd' in after
     assert after['scripts/property_registry.gd']==registry_bytes
     assert after['scripts/item_registry.gd']==item_bytes
