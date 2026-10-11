@@ -180,7 +180,7 @@ func next_waypoint(agent:String,from:Vector3,goal:Vector3) -> Vector3:
     var points:Array=state.get("points",[])
     if points.is_empty():return from # Never cross a wall as a fallback.
     var at:int=int(state.get("index",0))
-    while at<points.size() and from.distance_to(points[at])<.19:at+=1
+    while at<points.size() and from.distance_to(points[at])<(.08 if at==points.size()-1 else .19):at+=1
     state["index"]=at
     routes[agent]=state
     if at>=points.size():return from
