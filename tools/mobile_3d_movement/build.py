@@ -944,6 +944,8 @@ def main():
     for asset in inventory_art:updated.append(["assets/inventory/"+asset.name,asset.read_bytes(),0])
     map_patch=module("map_integration",ROOT/"tools/map_integration_v1/patch.py")
     updated=map_patch.integrate(updated)
+    bench_hotfix=module("tester_bench",ROOT/"tools/tester_shop_v1/bench_patch.py")
+    updated=bench_hotfix.apply_entries(updated)
     updated=friends.apply_entries(updated,ROOT)
     production=module("production_actions",ROOT/"tools/production_actions_v1/patch.py")
     updated=production.apply_entries(updated)
