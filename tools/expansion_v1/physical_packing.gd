@@ -52,9 +52,11 @@ func start(item:String) -> void:
  saved_camera=host.camera.global_transform;saved_fov=host.camera.fov;saved_aspect=host.camera.keep_aspect
  inventory.close();active=true;bar.show();Input.mouse_mode=Input.MOUSE_MODE_VISIBLE
  surface=Node3D.new();host.add_child(surface)
- var apartment:bool=station_id.begins_with("apartment:")
- surface.position=inventory.all_positions()[station_id]
- surface.rotation.y=-PI/2 if apartment else 0
+ # Match the placed bench and floor, including the basement.
+ var furniture_id:String=inventory.furniture.model.container_item(station_id)
+ var item:Dictionary=inventory.furniture.model.state.items[furniture_id]
+ surface.position=Vector3(float(item.position[0]),float(item.position[1])+1.18,float(item.position[2]))
+ surface.rotation.y=deg_to_rad(float(item.get("yaw",0.0)))
  # Reuse the bench's actual world-space position rather than rendering a second UI scene.
  prop("Scissors" if mode=="trim" else "Scoop",Vector3(-.34,.025,.18),Vector3(.2,.025,.05),"b5c3c0")
  prop("Untrimmed batch" if mode=="trim" else "Bag on scale",Vector3(0,.06,0),Vector3(.23,.1,.19),"658c43" if mode=="trim" else "c8d7c9")
