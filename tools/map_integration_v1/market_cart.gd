@@ -16,7 +16,7 @@ func quote(key:String)->Dictionary:
  if key=="fertilizer":return {"name":"Fertilizer · pack of 5","price":45,"reason":""}
  if kind=="item" and inv.furniture.model.CATALOG.has(name):
   var catalog=inv.furniture.model
-  var reason:String="" if catalog.market_available(name) else "Buy the Level I version, then upgrade the placed equipment through Furniture Arrangement."
+  var reason:String=catalog.unlock_reason(name) if catalog.market_available(name) else "Buy the Level I version, then upgrade the placed equipment through Furniture Arrangement."
   return {"name":str(catalog.CATALOG[name].name),"price":catalog.price_for(name),"reason":reason}
  return {"name":"Unavailable item","price":0,"reason":"This item is no longer available."}
 # Equipment delivery choice is additive; preserve the legacy cart item->quantity map.
