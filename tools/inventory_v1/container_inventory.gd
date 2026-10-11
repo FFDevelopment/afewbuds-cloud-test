@@ -274,7 +274,7 @@ func upgrade_backpack(expected_level:int) -> bool:
  host.cash-=price;state.backpack_level=level+1;revision+=1
  host._record_daily_expense("Backpack upgrade",price)
  host._update_cash_ui();host._save_game()
- host.neighborhood.location_ops.market()
+ host.neighborhood.location_ops.equipment()
  return true
 func free_space(id:String,item:String) -> int:
  if not accepts(id,item):return 0
