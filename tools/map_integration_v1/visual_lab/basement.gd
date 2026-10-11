@@ -95,9 +95,13 @@ func register_basement_room(game:Node)->void:
  # original rectangle. Keep the same owned-property ID and stair exclusion.
  var valid:Rect2=game.inventory_system.furniture.model.BASEMENT_GROW_PLACEMENT
  record.rooms["basement_grow"]=[valid.position.x,valid.position.y,valid.size.x,valid.size.y]
+ var east:Rect2=game.inventory_system.furniture.model.BASEMENT_EAST_PLACEMENT
+ record.rooms["basement_east"]=[east.position.x,east.position.y,east.size.x,east.size.y]
  if not record.has("room_uses"):record["room_uses"]={}
  record.room_uses["basement_grow"]="grow"
+ record.room_uses["basement_east"]="grow"
  registry.set_room_height("house","basement_grow",-3.9,-.3)
+ registry.set_room_height("house","basement_east",-3.9,-.3)
  for room in record.rooms:
-  if room!="basement_grow" and not record.get("room_heights",{}).has(room):
+  if room not in ["basement_grow","basement_east"] and not record.get("room_heights",{}).has(room):
    registry.set_room_height("house",room,-.3,4.4)
