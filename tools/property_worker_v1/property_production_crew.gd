@@ -128,6 +128,7 @@ func setup(owner:Node3D)->void:
   record.route=[]
   record.route_valid=false
   if place=="house" and record.get("position",[])==[0.75,0.0,2.55]:record.position=[35.0,0.0,1.45]
+  if place=="house" and _at(record.get("target",[0,0,0])).x<25.0:record.target=[35.0,0.0,1.45]
   slots[place]=record
  initialized=true
  host.location_state["production_workers_v1"]=slots
