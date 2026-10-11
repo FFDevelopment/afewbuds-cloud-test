@@ -124,7 +124,7 @@ func run():
   check(editor.handle_placement_input(back) and not editor.controls_active and editor.layout_mode,"Controller B returns to camera without closing layout")
   var pad_toggle:=InputEventJoypadButton.new();pad_toggle.button_index=JOY_BUTTON_Y;pad_toggle.pressed=true
   input._input(pad_toggle)
-  check(editor.controls_active and input.menu_controls().size()==5,"Controller Y exposes Move, Pick up, All furniture, Done and Upgrade controls")
+  check(editor.controls_active and input.menu_controls().size()==(4 if editor.layout_upgrade.disabled else 5),"Controller navigation only includes the Upgrade button for upgradeable selected equipment")
   editor.layout_move.grab_focus()
   var right:=InputEventJoypadButton.new();right.button_index=JOY_BUTTON_DPAD_RIGHT;right.pressed=true
   input._input(right)
