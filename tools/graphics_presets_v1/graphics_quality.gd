@@ -69,10 +69,12 @@ func _apply_light(node:Node)->void:
     light.shadow_enabled=bool(light.get_meta("afb_quality_original_shadow",false)) and selected!="low"
 
 func _on_node_added(node:Node)->void:
-    if node is Light3D:call_deferred("_on_new_light_ready",node)
+    if DisplayServer.get_name()=="headless":return
+    if node is Light3D:call_deferred("_on_new_light_ready",weakref(node))
 
-func _on_new_light_ready(node:Node)->void:
-    if not is_instance_valid(node) or host==null:return
+func _on_new_light_ready(reference:WeakRef)->void:
+    var node:Node=reference.get_ref() as Node
+    if node==null or not is_instance_valid(node) or host==null:return
     if node!=host and not host.is_ancestor_of(node):return
     _apply_light(node)
 
