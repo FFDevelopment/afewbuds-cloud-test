@@ -75,9 +75,12 @@ func run()->void:
  inv.process_selected()
  check(inv.packing.active and inv.packing.mode=="bag","House Bag by hand begins the correct equipment interaction")
  if inv.packing.active:
-  inv.packing.selected=0;inv.packing.use_selected()
-  inv.packing.selected=1
-  for i in 8:inv.packing.use_selected()
+  # Bagging needs another scoop between pours; eight realistic motions
+  # cover every Tier III random drop size without skipping the interaction.
+  for i in 8:
+   inv.packing.selected=0;inv.packing.use_selected()
+   inv.packing.selected=1;inv.packing.use_selected()
+   if inv.packing.progress>=inv.packing.amount:break
   inv.packing.selected=2;inv.packing.use_selected()
  check(int(inv.contents(house_id).get("product|Street Green",0))==8,"Manual bagging commits product to the house only")
  check(inv.contents("apartment:packing")==original_apartment,"Apartment inventories remain unchanged after house packaging")
