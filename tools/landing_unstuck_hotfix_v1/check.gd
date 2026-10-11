@@ -25,7 +25,7 @@ func run()->void:
   check(door!=null,"Apartment "+str(pair[0])+" door remains in the world")
   if door==null:continue
   var leaf:Node=door.get_node_or_null("DoorLeaf")
-  var solid:StaticBody3D=leaf.get_node_or_null("StaticBody3D") if leaf!=null else null
+  var solid:StaticBody3D=leaf.get_node_or_null("LandingDoorCollision") if leaf!=null else null
   check(solid!=null and solid.collision_layer==1,"Apartment "+str(pair[0])+" leaf has an enabled collider")
   if solid==null:continue
   var shape:CollisionShape3D=solid.get_child(0) as CollisionShape3D
