@@ -24,6 +24,12 @@ def apply_entries(entries):
                 if count!=1:
                     raise AssertionError(f"equipment upgrades: {name} hunk {index} has {count} matches; aborting to avoid gameplay drift")
                 source=source.replace(old,new,1)
+            if name=="scripts/furniture_editor.gd":
+                # Mobile layout adapter predates desktop's force-refresh argument.
+                old="func refresh_layout() -> void:\n if not inside(layout_property):close();return\n"
+                new="func refresh_layout(force:bool=false) -> void:\n if not inside(layout_property):close();return\n if controls_active and not force:return\n"
+                assert source.count(old)==1,"Mobile layout signature changed"
+                source=source.replace(old,new,1)
             data=source.encode("utf-8")
             seen.add(name)
         updated.append([name,data,flags])
