@@ -8,7 +8,7 @@ var menu:Node
 var draft:Dictionary={}
 var overlay:Control
 var layout:GridContainer
-var preview_image:TextureRect
+var preview_image:SubViewportContainer
 var preview_viewport:SubViewport
 var preview_model:Node3D
 var camera:Camera3D
@@ -95,21 +95,23 @@ func _build()->void:
  left.name="CharacterPreviewControls"
  left.add_theme_constant_override("separation",9)
  layout.add_child(left)
- preview_image=TextureRect.new()
+ # SubViewportContainer presents the live 3D image directly. A TextureRect
+ # hosting its own SubViewportTexture could show an empty panel on WebGL/iOS.
+ preview_image=SubViewportContainer.new()
  preview_image.name="CharacterPreview"
  preview_image.custom_minimum_size=Vector2(360,440)
- preview_image.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
- preview_image.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+ preview_image.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+ preview_image.stretch=true
  preview_image.mouse_filter=Control.MOUSE_FILTER_STOP
  preview_image.gui_input.connect(_preview_input)
  left.add_child(preview_image)
  preview_viewport=SubViewport.new()
- preview_viewport.size=Vector2i(480,580)
+ preview_viewport.name="AvatarPreviewViewport"
+ preview_viewport.size=Vector2i(384,480)
  preview_viewport.own_world_3d=true
  preview_viewport.transparent_bg=false
  preview_viewport.render_target_update_mode=SubViewport.UPDATE_DISABLED if DisplayServer.get_name()=="headless" else SubViewport.UPDATE_ALWAYS
  preview_image.add_child(preview_viewport)
- if DisplayServer.get_name()!="headless":preview_image.texture=preview_viewport.get_texture()
  var stage:=Node3D.new()
  preview_viewport.add_child(stage)
  var world:=WorldEnvironment.new()
@@ -148,6 +150,7 @@ func _build()->void:
  camera.current=true
  stage.add_child(camera)
  _update_camera()
+ call_deferred("_update_camera")
  var controls:=HBoxContainer.new()
  left.add_child(controls)
  controls.add_child(_button("◀ ROTATE",_rotate.bind(-PI/5.0)))
@@ -285,8 +288,23 @@ func _zoom(delta:float)->void:
  _update_camera()
 func _update_camera()->void:
  if camera==null:return
- camera.position=Vector3(.1,1.23,-zoom)
- camera.look_at(Vector3(0,1.22,0))
+ # Frame the *actual imported rig*, not an assumed 1.22 m-high model.
+ # Character assets can have different scene-root offsets/scales.
+ var target:=Vector3(0,1.05,0)
+ var height:float=1.85
+ if preview_model!=null and preview_model.skeleton!=null:
+  var sk:Skeleton3D=preview_model.skeleton
+  var head:int=sk.find_bone("Head")
+  var left_foot:int=sk.find_bone("Foot_L")
+  if head>=0 and left_foot>=0:
+   var head_at:Vector3=sk.to_global(sk.get_bone_global_pose(head).origin)
+   var foot_at:Vector3=sk.to_global(sk.get_bone_global_pose(left_foot).origin)
+   target=(head_at+foot_at)*.5
+   target.y+=.04
+   height=maxf(1.3,head_at.distance_to(foot_at))
+ var distance:float=zoom*maxf(.85,height/1.85)
+ camera.position=target+Vector3(.12,0,-distance)
+ camera.look_at(target)
 func _preview_input(event:InputEvent)->void:
  if event is InputEventMouseMotion:
   if (event.button_mask & MOUSE_BUTTON_MASK_LEFT)!=0:_rotate(event.relative.x*.01)
@@ -310,7 +328,6 @@ func _cancel()->void:
 func _close()->void:
  if preview_viewport!=null:
   preview_viewport.render_target_update_mode=SubViewport.UPDATE_DISABLED
- if preview_image!=null:preview_image.texture=null
  visible=false
  if menu!=null and menu.avatar_editor==self:menu.avatar_editor=null
  queue_free()
