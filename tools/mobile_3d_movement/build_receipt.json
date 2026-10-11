@@ -1,7 +1,7 @@
 {
   "baseline_sha256": "bbc788e5d4dd19b59af7dd2824f34943361d901d08ae5b5c25f8e7c6b9a75410",
-  "target_sha256": "bc706e0f808287a0f67a16ddfdf65ef6608476eef7f37c6840c5424473fb4c8e",
-  "target_bytes": 61811176,
+  "target_sha256": "653dd8e084a2ca5bca2ee41012d1f017c9968212164df0a360fa8a9b6adc8049",
+  "target_bytes": 61815884,
   "changed_existing_entries": [
     "scripts/main.gd",
     "scripts/offline_plant_care.gd",
@@ -43,6 +43,7 @@
     "scripts/first_day_guide.gd",
     "scripts/friend_characters.gd",
     "scripts/furniture_editor.gd",
+    "scripts/graphics_quality.gd",
     "scripts/grow_equipment_visuals.gd",
     "scripts/house_npc_navigation.gd",
     "scripts/item_registry.gd",
