@@ -103,6 +103,7 @@ func run()->void:
  shop_ui.shop("equipment")
  check(text_matches(shop_ui.list,"Packing Bench I") and not text_matches(shop_ui.list,"Packing Bench III"),"On-site equipment shop shows starter tier only")
  shop_ui.close()
+ game.grower_level=6
  var led_id:String="test_owned_tent_led"
  model.state.items[led_id]={"sku":"tent_1","property":"house","position":[41.8,0,-11.2],"yaw":0,"locked":true,"quality":1,"paid":240,"upgrades":{}}
  model.ensure_slots()
