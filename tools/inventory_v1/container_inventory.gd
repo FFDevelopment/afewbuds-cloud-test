@@ -719,9 +719,15 @@ func process_selected() -> void:
  if not packing_allowed() or not reachable(container_id):return
  var chosen:String=selected
  packing_return=container_id
+ # The original apartment bench keeps its familiar first-person minigame.
+ # Purchased and house benches MUST process their own container, not the
+ # apartment-only legacy loose/trimmed inventory adapters.
+ var station_asset:String=furniture.model.container_item(container_id)
+ var station:Dictionary=furniture.model.state.items.get(station_asset,{})
+ if container_id.begins_with("house:") or str(station.get("legacy_group",""))!="packing":
+  packing.start(chosen)
+  return
  close()
- # Keep stock in its property-local inventory adapter; restore the familiar
- # scissors trimming and drag-to-bag game instead of the new click-only proxy.
  if category(chosen)=="raw":host._start_trim_minigame(chosen.get_slice("|",1))
  elif category(chosen)=="trimmed":host._start_bag_minigame(chosen.get_slice("|",1))
 func return_to_packing() -> void:
@@ -840,7 +846,7 @@ func all_positions() -> Dictionary:
   if e.get("property","") not in furniture.model.ROOMS or not e.has("position"):continue
   var id:String=furniture.model.container_of(asset)
   if id.is_empty():continue
-  result[id]=Vector3(e.position[0],1.2,e.position[2])
+  result[id]=Vector3(float(e.position[0]),float(e.position[1])+1.20,float(e.position[2]))
  return result
 func equipment_harvest(slot:int,strain:String,amount:int) -> bool:
  var property:String=furniture.model.slot_property(slot)
