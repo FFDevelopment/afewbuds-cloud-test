@@ -963,6 +963,8 @@ def main():
     updated=property_staff.apply_entries(updated)
     wall_fit=module("house_bench_wallfit",ROOT/"tools/house_bench_flush_v1/patch.py")
     updated=wall_fit.apply_entries(updated)
+    rooms_patch=module("house_room_bounds_v1",ROOT/"tools/house_room_bounds_v1/patch.py")
+    updated=rooms_patch.apply_entries(updated)
     built=east.pack.rebuild(baseline,fb,updated)
     # Every unique gameplay pack gets its own browser-visible identity.
     # This prevents development releases from silently sharing a stale URL.
@@ -984,6 +986,9 @@ def main():
     assert b'func unlock_level' in after['scripts/property_furniture.gd'], 'Grower level locks missing'
     assert b'func fit_aim_to_room' in after['scripts/furniture_editor.gd'], 'Bench wall fit missing'
     assert b'HOUSE_PACKING_PLACEMENT' in after['scripts/property_furniture.gd'], 'Physical house wall bounds not used'
+    assert b'HOUSE_ROOM_PLACEMENT' in after['scripts/property_furniture.gd'], 'Upper house placement boundaries not updated'
+    assert b'BASEMENT_GROW_PLACEMENT' in after['scripts/property_furniture.gd'], 'Stair-safe basement grow floor bounds missing'
+    assert b'rooms=model.placement_rooms(property,floor_y)' in after['scripts/furniture_editor.gd'], 'Walk-around editor not using physical room bounds'
     assert b'wall_snap:' in after['scripts/furniture_editor.gd'], 'Wall alignment control missing'
     assert b'shop_upgrade_catalog.gd' in after['scripts/location_ops.gd'], 'Market backpack upgrade control missing'
     assert 'scripts/mobile_physics_player.gd' in after
