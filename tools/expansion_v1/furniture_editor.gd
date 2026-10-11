@@ -357,7 +357,7 @@ func build_preview() -> void:
    if int(slots[i])>=host.plant_visuals.size():continue
    var pot:Node3D=host.plant_visuals[int(slots[i])].duplicate()
    preview_model.add_child(pot);pot.position=Vector3((float(i)-(slots.size()-1)*.5)*(model.size_of(selected).x-.35)/slots.size(),.26,0);pot.rotation=Vector3.ZERO;pot.show()
- elif not equipment_world.clone_computer(preview_model,selected,e) and not equipment_world.clone_supply(preview_model,selected,e) and not equipment_world.clone_cabinet(preview_model,selected,e) and not equipment_world.clone_packing(preview_model,selected,e) and not equipment_world.clone_legacy(preview_model,selected,e):build_prop(preview_model,selected,e.sku)
+ elif not equipment_world.clone_computer(preview_model,selected,e) and not equipment_world.clone_supply(preview_model,selected,e) and not equipment_world.clone_cabinet(preview_model,selected,e) and not equipment_world.clone_legacy(preview_model,selected,e):build_prop(preview_model,selected,e.sku)
  for body in preview_model.find_children("*","CollisionObject3D",true,false):
   if is_instance_valid(body):body.free()
  preview_material=StandardMaterial3D.new();preview_material.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA;preview_material.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
