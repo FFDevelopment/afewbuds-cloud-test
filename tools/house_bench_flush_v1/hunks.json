@@ -1,0 +1,36 @@
+{
+  "scripts/property_furniture.gd": [
+    {
+      "before": " \"house\":{\"water_kit\":Vector3(39.65,0,-8.2),\"ventilation\":Vector3(40.65,0,-8.2)}}\nconst CURBS={\"apartment\":Vector3(-2,0,7.2),\"house\":Vector3(34.8,0,4.8)}\nvar host:Node\nvar registry:RefCounted",
+      "after": " \"house\":{\"water_kit\":Vector3(39.65,0,-8.2),\"ventilation\":Vector3(40.65,0,-8.2)}}\nconst CURBS={\"apartment\":Vector3(-2,0,7.2),\"house\":Vector3(34.8,0,4.8)}\n# The saved property registry keeps its historical logical room borders.\n# Placed furniture uses the *real inside wall faces* of the packing room:\n# partition x=36.50, exterior x=45.00, rear z=-5.00, front z=3.00.\n# Each wall is 0.22 m thick, leaving 0.11 m on its interior side.\n# The 5 mm inset prevents a flush bench from penetrating plaster/wall colliders.\nconst HOUSE_PACKING_PLACEMENT:=Rect2(36.615,-4.885,8.270,7.770)\nvar host:Node\nvar registry:RefCounted",
+      "line": 56
+    },
+    {
+      "before": " var next:String=next_upgrade(id)\n return unlock_reason(next) if not next.is_empty() else \"\"\nfunc item_name(id:String) -> String:return str(CATALOG[state.items[id].sku].name)\nfunc own(sku:String,destination:String=\"backpack\") -> String:",
+      "after": " var next:String=next_upgrade(id)\n return unlock_reason(next) if not next.is_empty() else \"\"\n# Placement-only bounds are recomputed each time, including on old careers.\n# Do NOT mutate persisted property_registry rooms: they govern ownership/access.\nfunc placement_rooms(property:String,floor_y:float=0.0)->Dictionary:\n var rooms:Dictionary=registry.rooms_for(property)\n if property==\"house\" and floor_y>-.5 and rooms.has(\"packing\"):\n  rooms[\"packing\"]=HOUSE_PACKING_PLACEMENT\n return rooms\nfunc item_name(id:String) -> String:return str(CATALOG[state.items[id].sku].name)\nfunc own(sku:String,destination:String=\"backpack\") -> String:",
+      "line": 185
+    },
+    {
+      "before": "  if not has_mount_support(id,point,yaw):return \"Mount against a solid wall, clear of windows and doors.\"\n var rect:=bounds(id,point,yaw);var room:=\"\"\n var allowed_rooms:Dictionary={\"grow\":Rect2(26.3,-13.5,14.2,13.0)} if basement else registry.rooms_for(property)\n if basement and elevated:allowed_rooms={\"grow\":Rect2(26.1,-13.7,14.4,13.2)}\n for key in allowed_rooms:",
+      "after": "  if not has_mount_support(id,point,yaw):return \"Mount against a solid wall, clear of windows and doors.\"\n var rect:=bounds(id,point,yaw);var room:=\"\"\n var allowed_rooms:Dictionary={\"grow\":Rect2(26.3,-13.5,14.2,13.0)} if basement else placement_rooms(property,point.y)\n if basement and elevated:allowed_rooms={\"grow\":Rect2(26.1,-13.7,14.4,13.2)}\n for key in allowed_rooms:",
+      "line": 287
+    },
+    {
+      "before": " for key in allowed_rooms:\n  if not basement and not registry._within_height(property,key,point.y):continue\n  if (allowed_rooms[key] as Rect2).grow(.35 if e.sku==\"storage_5\" or elevated else .015).encloses(rect):room=key;break\n if room.is_empty():return \"Keep the entire item inside one room and clear of doorways.\"\n if not item_registry.permits_room(str(e.sku),str(registry.state.properties[property].get(\"room_uses\",{}).get(room,room))):return \"This equipment is not allowed in this room.\"",
+      "after": " for key in allowed_rooms:\n  if not basement and not registry._within_height(property,key,point.y):continue\n  var edge_tolerance:float=0.0 if property==\"house\" and key==\"packing\" and not elevated else (.35 if e.sku==\"storage_5\" or elevated else .015)\n  if (allowed_rooms[key] as Rect2).grow(edge_tolerance).encloses(rect):room=key;break\n if room.is_empty():return \"Keep the entire item inside one room and clear of doorways.\"\n if not item_registry.permits_room(str(e.sku),str(registry.state.properties[property].get(\"room_uses\",{}).get(room,room))):return \"This equipment is not allowed in this room.\"",
+      "line": 291
+    }
+  ],
+  "scripts/furniture_editor.gd": [
+    {
+      "before": "  selected_room=\"grow\"\n else:\n  rooms=model.registry.rooms_for(property)\n  selected_room=host.neighborhood.location_ops.placement_room(property,host.camera.global_position)\n if not rooms.has(selected_room):return",
+      "after": "  selected_room=\"grow\"\n else:\n  rooms=model.placement_rooms(property,floor_y)\n  selected_room=host.neighborhood.location_ops.placement_room(property,host.camera.global_position)\n if not rooms.has(selected_room):return",
+      "line": 229
+    },
+    {
+      "before": " var rect:Rect2=rooms[selected_room]\n var size:Vector3=model.size_of(selected,yaw)\n var hx:float=size.x*.5+.022\n var hz:float=size.z*.5+.022\n if rect.size.x<hx*2.0 or rect.size.y<hz*2.0:return\n point.x=clampf(point.x,rect.position.x+hx,rect.end.x-hx)\n point.z=clampf(point.z,rect.position.y+hz,rect.end.y-hz)\n\nfunc aim() -> void:",
+      "after": " var rect:Rect2=rooms[selected_room]\n var size:Vector3=model.size_of(selected,yaw)\n # Only a few millimetres separate placed art from the real wall collider.\n # The old 2.2 cm margin was applied on top of a 30-50 cm room inset.\n var hx:float=size.x*.5+.005\n var hz:float=size.z*.5+.005\n if rect.size.x<hx*2.0 or rect.size.y<hz*2.0:return\n var min_x:float=rect.position.x+hx\n var max_x:float=rect.end.x-hx\n var min_z:float=rect.position.y+hz\n var max_z:float=rect.end.y-hz\n point.x=clampf(point.x,min_x,max_x)\n point.z=clampf(point.z,min_z,max_z)\n # When the player aims near a wall, finish the last few centimetres\n # automatically. Leave middle-of-room positioning fully precise.\n var wall_snap:float=.18 if str(model.state.items[selected].get(\"sku\",\"\")).begins_with(\"bench_\") else .065\n if absf(point.x-min_x)<wall_snap:point.x=min_x\n elif absf(point.x-max_x)<wall_snap:point.x=max_x\n if absf(point.z-min_z)<wall_snap:point.z=min_z\n elif absf(point.z-max_z)<wall_snap:point.z=max_z\n\nfunc aim() -> void:",
+      "line": 234
+    }
+  ]
+}
