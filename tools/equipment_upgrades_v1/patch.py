@@ -37,6 +37,17 @@ def apply_entries(entries):
                 source=source.replace(old,new,1)
             data=source.encode("utf-8")
             seen.add(name)
+        if name=="scripts/location_ops.gd":
+            source=data.decode("utf-8")
+            labels={
+                'ui.label("Buy additional equipment at Central Market. Purchases must be delivered or carried to this property.")':
+                'ui.label("Buy starter equipment at Central Market. Upgrade each installed item in Furniture Arrangement.")',
+                '_property_label(parent,"Owned equipment stays with you when packed. Upgrade an empty item, or buy and place a better replacement.")':
+                '_property_label(parent,"Installed equipment upgrades in Arrangement and keeps its paid improvements when packed.")',
+            }
+            for previous, revised in labels.items():
+                if previous in source:source=source.replace(previous,revised,1)
+            data=source.encode("utf-8")
         updated.append([name,data,flags])
     assert seen==set(FILES),f"Missing equipment scripts: {set(FILES)-seen}"
     return updated
