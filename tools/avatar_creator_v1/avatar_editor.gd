@@ -25,14 +25,23 @@ func open(owner:Node3D,source_menu:Node)->void:
  var stored:Variant=host.location_state.get("player_avatar_v1",{})
  var record:Dictionary=Catalog.record_from(stored)
  draft=Catalog.sanitize(record.get("appearance",{}))
- if overlay==null:_build()
- else:_rebuild_editors()
+ if overlay==null:
+  if DisplayServer.get_name()=="headless":
+   # Renderer-owned SubViewport textures and ColorPicker popups leak on
+   # Godot's dummy GPU. CI tests schema, rigging and Save/Cancel instead.
+   preview_model=Visual.new()
+   add_child(preview_model)
+   camera=Camera3D.new()
+   camera.current=false
+   add_child(camera)
+  else:_build()
+ elif tabs!=null:_rebuild_editors()
  visible=true
- preview_viewport.render_target_update_mode=SubViewport.UPDATE_DISABLED if DisplayServer.get_name()=="headless" else SubViewport.UPDATE_ALWAYS
+ if preview_viewport!=null:preview_viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS
  zoom=3.1
  _update_camera()
  _update_layout()
- message.text="Changes are a preview until you save. No gameplay stats or NPCs are changed."
+ if message!=null:message.text="Changes are a preview until you save. No gameplay stats or NPCs are changed."
 func _build()->void:
  overlay=Control.new()
  overlay.name="CharacterEditorOverlay"
@@ -318,7 +327,7 @@ func _save()->void:
  if not bool(host.last_save_ok):
   if had_record:host.location_state["player_avatar_v1"]=previous
   else:host.location_state.erase("player_avatar_v1")
-  message.text="Could not save appearance on this device. The previous character was kept."
+  if message!=null:message.text="Could not save appearance on this device. The previous character was kept."
   return
  _close()
  menu.show_page("settings")
