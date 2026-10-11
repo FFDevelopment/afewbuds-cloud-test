@@ -86,7 +86,7 @@ func sync() -> void:
    var root:=Node3D.new();root.name="Owned_"+id;root.set_meta("equipment_id",id);host.add_child(root);rendered[id]=root
    root.position=Vector3(e.position[0],0,e.position[2]);root.rotation.y=deg_to_rad(float(e.get("yaw",0)))
    if model.is_tent(e):tent(root,id)
-   elif not clone_computer(root,id,e) and not clone_supply(root,id,e) and not clone_cabinet(root,id,e) and not clone_packing(root,id,e) and not clone_legacy(root,id,e):editor.build_prop(root,id,e.sku)
+   elif not clone_computer(root,id,e) and not clone_supply(root,id,e) and not clone_cabinet(root,id,e) and not clone_legacy(root,id,e):editor.build_prop(root,id,e.sku)
    if not model.station_kind(id).is_empty():
     if root.find_child("SupplyShelfStatus",true,false)==null:label(root,model.item_name(id),Vector3(0,model.size_of(id).y+.2,0))
     interaction(root,id,model.container_of(id),model.size_of(id))
@@ -134,39 +134,6 @@ func clone_computer(root:Node3D,id:String,e:Dictionary) -> bool:
   root.add_child(copy);copy.transform=local_transform*record.transform;copy.show()
   colliders(copy,id);copied+=1
  return copied>0
-# Reuse the FULL finished apartment packing bench for newly purchased benches
-# in both properties. Only art/colliders are cloned: the property-scoped
-# inventory and existing drag-to-trim/drag-to-bag UI stay authoritative.
-func clone_packing(root:Node3D,id:String,e:Dictionary)->bool:
- if not str(e.get("sku","")).begins_with("bench_") or str(e.get("legacy_group",""))=="packing":return false
- var template:Dictionary=e.duplicate(true)
- template["legacy_group"]="packing"
- template["upgrades"]={}
- template.erase("visual_anchor")
- var holder:=Node3D.new()
- holder.name="ApprovedPackingBenchModel"
- holder.set_meta("furniture_id",id)
- root.add_child(holder)
- if not clone_legacy(holder,id,template):
-  holder.free()
-  return false
- var combined:=AABB()
- var found:bool=false
- # Center and fit the approved scale/tray/jars to the purchased station size.
- for node in holder.find_children("*","MeshInstance3D",true,false):
-  var mesh:MeshInstance3D=node as MeshInstance3D
-  if mesh.mesh==null:continue
-  var bbox:AABB=holder.global_transform.affine_inverse()*mesh.global_transform*mesh.get_aabb()
-  combined=combined.merge(bbox) if found else bbox
-  found=true
- if found:
-  var footprint:Vector3=model.size_of(id)
-  var xscale:float=clampf((footprint.x-.14)/maxf(combined.size.x,.1),.2,1.0)
-  var zscale:float=clampf((footprint.z-.10)/maxf(combined.size.z,.1),.2,1.0)
-  holder.scale=Vector3(xscale,1,zscale)
-  holder.position=Vector3(-combined.get_center().x*xscale,0,-combined.get_center().z*zscale)
- return true
-
 func clone_legacy(root:Node3D,id:String,e:Dictionary) -> bool:
  var group:String=e.get("legacy_group","")
  if group.is_empty() or (e.get("upgrades",{}).size()>0 and group!="house_supply"):return false
@@ -402,7 +369,7 @@ func sync_packing_displays() -> void:
   display.name="PackingDisplayVisuals"
   display.set_meta("no_collision",true)
   root.add_child(display)
-  var legacy:Node3D=root.find_child("PackingBenchLooseBuds",true,false)
+  var legacy:Node3D=root.get_node_or_null("PackingBenchLooseBuds")
   if legacy!=null:legacy.hide()
   var tray:MeshInstance3D=root.find_child("TrimTray",true,false)
   var tray_box:=AABB(Vector3(-.23,model.size_of(id).y,-.16),Vector3(.46,.035,.32))
