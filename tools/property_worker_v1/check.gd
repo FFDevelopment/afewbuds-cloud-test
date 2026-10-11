@@ -74,6 +74,8 @@ func run()->void:
  check(furniture.point.x<=xlimit and furniture.point.x>=xlimit-.1,"Packing Bench III aim fits against packing-room wall instead of projecting through")
  var near_wall:Vector3=Vector3(xlimit-.015,0,-2.4)
  check(model.validate(temp,"house",near_wall,0).is_empty(),"Full-size Packing Bench III legally fits within a narrow wall clearance: "+model.validate(temp,"house",near_wall,0))
+ furniture.point=near_wall
+ check(furniture.obstacle().is_empty(),"Complete wall and furniture physics accepts Packing Bench III near wall: "+furniture.obstacle())
  check(not model.validate(temp,"house",Vector3(xlimit+.22,0,-2.4),0).is_empty(),"Bench cannot clip through wall when pushed beyond room")
  furniture.cancel_placement()
  model.state.items.erase(temp)
