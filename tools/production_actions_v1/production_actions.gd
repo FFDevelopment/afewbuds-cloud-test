@@ -180,7 +180,6 @@ func sync():
  # Lean into the task, then return before the inventory completion boundary.
  var envelope:=smoothstep(0,.15,t)*(1-smoothstep(.86,1,t))
  if task=="trim":
-  var inv=host.inventory_system
   var station_id:String=inv.furniture.model.container_of(inv.furniture.model.primary(inv.worker_property(),"packing"))
   var remaining:int=int(inv.contents(station_id).get("raw|"+host.production_worker_pending_strain,0))
   envelope=smoothstep(0,.6,trim_elapsed)
