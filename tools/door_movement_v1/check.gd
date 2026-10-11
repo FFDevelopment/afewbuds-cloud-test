@@ -53,7 +53,7 @@ func run()->void:
 	game.current_customer=client
 	game.active_request={"product":str(client.get("favorite","")),"qty":1}
 	crew._update_house_door_manager(.1,"Rod")
-	check(str(manager.get_meta("house_motion",""))=="stand" and manager.position.distance_to(Vector3(seat.x,0,seat.z))<.01,"Worker rises at couch instead of teleporting to the door")
+	check(str(manager.get_meta("house_motion",""))=="stand" and Vector2(manager.position.x-seat.x,manager.position.z-seat.z).length()<.01,"Worker rises at couch instead of teleporting to the door")
 	check(manager.position.y>-.57 and manager.position.y<-.01,"Couch stand-up raises the character gradually")
 	check(not crew.manager_attempted,"Customer sale cannot happen during stand-up")
 	var max_step:float=0.0
