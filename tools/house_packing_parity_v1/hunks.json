@@ -1,0 +1,43 @@
+{
+  "scripts/property_furniture.gd": [
+    {
+      "before": " \"tent_4\":{\"name\":\"Wide Tent · 4 plants\",\"shop\":\"grow\",\"price\":1200,\"size\":[4.1,2.8,1.5],\"grow_only\":true,\"plants\":4,\"weight\":16},\n \"bench_1\":{\"name\":\"Packing Bench I\",\"shop\":\"equipment\",\"price\":180,\"size\":[1.6,1.25,.85],\"kind\":\"packing\",\"tier\":1,\"weight\":18},\n \"bench_2\":{\"name\":\"Packing Bench II\",\"shop\":\"equipment\",\"price\":450,\"size\":[1.8,1.25,.85],\"kind\":\"packing\",\"tier\":2,\"weight\":22},\n \"bench_3\":{\"name\":\"Packing Bench III\",\"shop\":\"equipment\",\"price\":850,\"size\":[2.1,1.25,.9],\"kind\":\"packing\",\"tier\":3,\"weight\":28},\n \"shelf_1\":{\"name\":\"Grow Supply Shelf I\",\"shop\":\"equipment\",\"price\":100,\"size\":[1.56,2.315,.68],\"kind\":\"supply\",\"tier\":1,\"weight\":10},",
+      "after": " \"tent_4\":{\"name\":\"Wide Tent · 4 plants\",\"shop\":\"grow\",\"price\":1200,\"size\":[4.1,2.8,1.5],\"grow_only\":true,\"plants\":4,\"weight\":16},\n \"bench_1\":{\"name\":\"Packing Bench I\",\"shop\":\"equipment\",\"price\":180,\"size\":[3.62,1.55,1.42],\"kind\":\"packing\",\"tier\":1,\"weight\":18},\n \"bench_2\":{\"name\":\"Packing Bench II\",\"shop\":\"equipment\",\"price\":450,\"size\":[3.62,1.65,1.42],\"kind\":\"packing\",\"tier\":2,\"weight\":22},\n \"bench_3\":{\"name\":\"Packing Bench III\",\"shop\":\"equipment\",\"price\":850,\"size\":[3.62,3.10,1.42],\"kind\":\"packing\",\"tier\":3,\"weight\":28},\n \"shelf_1\":{\"name\":\"Grow Supply Shelf I\",\"shop\":\"equipment\",\"price\":100,\"size\":[1.56,2.315,.68],\"kind\":\"supply\",\"tier\":1,\"weight\":10},",
+      "line": 8
+    },
+    {
+      "before": "const BASEMENT_GROW_PLACEMENT:=Rect2(26.105,-13.695,14.795,15.090)\nvar host:Node",
+      "after": "const BASEMENT_GROW_PLACEMENT:=Rect2(26.105,-13.695,14.795,15.090)\n# A second safe wing extends to the physical east wall north of the stairwell.\n# The stairs themselves (x >= 41.15, z <= -8.3) remain an exclusion zone.\nconst BASEMENT_EAST_PLACEMENT:=Rect2(40.90,-7.60,3.795,8.995)\nvar host:Node",
+      "line": 78
+    },
+    {
+      "before": " if property==\"house\":\n  if floor_y<-.5:return {\"basement_grow\":BASEMENT_GROW_PLACEMENT}\n  for room in HOUSE_ROOM_PLACEMENT:",
+      "after": " if property==\"house\":\n  if floor_y<-.5:return {\"basement_grow\":BASEMENT_GROW_PLACEMENT,\"basement_east\":BASEMENT_EAST_PLACEMENT}\n  for room in HOUSE_ROOM_PLACEMENT:",
+      "line": 212
+    },
+    {
+      "before": "  # Wall-mounted utilities still require an actual wall behind them.\n  allowed_rooms={\"basement_grow\":BASEMENT_GROW_PLACEMENT.grow(.12)}\n for key in allowed_rooms:",
+      "after": "  # Wall-mounted utilities still require an actual wall behind them.\n  allowed_rooms={\"basement_grow\":BASEMENT_GROW_PLACEMENT.grow(.12),\"basement_east\":BASEMENT_EAST_PLACEMENT.grow(.12)}\n for key in allowed_rooms:",
+      "line": 321
+    }
+  ],
+  "scripts/furniture_editor.gd": [
+    {
+      "before": " if property==\"house\" and floor_y<-.5:\n  selected_room=\"basement_grow\"\n else:",
+      "after": " if property==\"house\" and floor_y<-.5:\n  selected_room=\"basement_east\" if host.camera.global_position.x>40.90 and host.camera.global_position.z>-7.60 else \"basement_grow\"\n else:",
+      "line": 227
+    }
+  ],
+  "scripts/main.gd": [
+    {
+      "before": "\tproduction_worker_node.add_child(production_worker_task_label)\n",
+      "after": "\tproduction_worker_node.add_child(production_worker_task_label)\n\t# Generic hired workers have the primitive character instead of a GLB rig.\n\t# Give them visible scissors/bag props while actually working at the bench.\n\tvar trimming_prop:=MeshInstance3D.new()\n\ttrimming_prop.name=\"WorkerTrimScissors\"\n\tvar trimming_mesh:=BoxMesh.new()\n\ttrimming_mesh.size=Vector3(.025,.012,.18)\n\ttrimming_prop.mesh=trimming_mesh\n\ttrimming_prop.position=Vector3(-.27,1.05,-.28)\n\ttrimming_prop.visible=false\n\ttrimming_prop.set_meta(\"no_collision\",true)\n\tproduction_worker_node.add_child(trimming_prop)\n\tvar bagging_prop:=MeshInstance3D.new()\n\tbagging_prop.name=\"WorkerPackingBag\"\n\tvar bagging_mesh:=BoxMesh.new()\n\tbagging_mesh.size=Vector3(.15,.20,.025)\n\tbagging_prop.mesh=bagging_mesh\n\tbagging_prop.position=Vector3(.28,1.03,-.29)\n\tbagging_prop.visible=false\n\tbagging_prop.set_meta(\"no_collision\",true)\n\tproduction_worker_node.add_child(bagging_prop)\n",
+      "line": 5429
+    },
+    {
+      "before": "\t\tproduction_worker_task_label.text = \"%s  |  %s\" % [worker_name.to_upper(), production_worker_task.to_upper()]\n\t_refresh_production_worker_friend_face()\n\n\tif production_worker_pending_action.is_empty():",
+      "after": "\t\tproduction_worker_task_label.text = \"%s  |  %s\" % [worker_name.to_upper(), production_worker_task.to_upper()]\n\t_refresh_production_worker_friend_face()\n\tvar generic_worker:bool=production_worker_friend_name.is_empty()\n\tvar work_at_bench:bool=generic_worker and not moving and production_worker_action_dwell>0.0 and production_worker_pending_action in [\"trim\",\"bag\"]\n\tvar trim_prop:MeshInstance3D=production_worker_node.get_node_or_null(\"WorkerTrimScissors\") as MeshInstance3D\n\tvar bag_prop:MeshInstance3D=production_worker_node.get_node_or_null(\"WorkerPackingBag\") as MeshInstance3D\n\tif trim_prop!=null:trim_prop.visible=work_at_bench and production_worker_pending_action==\"trim\"\n\tif bag_prop!=null:bag_prop.visible=work_at_bench and production_worker_pending_action==\"bag\"\n\tif work_at_bench:\n\t\tvar pulse:float=sin(production_worker_action_dwell*TAU*2.4)\n\t\tif arm_l!=null:arm_l.rotation.x=-.82+.23*pulse\n\t\tif arm_r!=null:arm_r.rotation.x=-1.08+.36*sin(production_worker_action_dwell*TAU*2.4+1.2)\n\t\tif trim_prop!=null:trim_prop.position.y=1.07+.035*pulse\n\t\tif bag_prop!=null:bag_prop.rotation.z=.08*pulse\n\n\tif production_worker_pending_action.is_empty():",
+      "line": 5674
+    }
+  ]
+}
