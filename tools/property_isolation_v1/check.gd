@@ -159,8 +159,10 @@ func run():
  var computer_crew=computer_ops.crew
  var existing_hire:bool=game.packing_employee_hired
  var existing_active:bool=game.packing_employee_active
- game.packing_employee_hired=true;game.packing_employee_active=true
- var worker_name:String=game._critical_production_sender()
+ var previous_grower_level:int=game.grower_level
+ game.grower_level=maxi(game.grower_level,5)
+ check(game.production_crew.hire("apartment"),"Apartment worker hires into its own production slot")
+ var worker_name:String=game.production_crew.name_for("apartment")
  check(computer_ops.computer_staff_names("apartment").has(worker_name) and not computer_ops.computer_staff_names("house").has(worker_name),"Apartment worker does not automatically appear on house computer roster")
  computer_ops.manage("employees")
  var house_employees:Array[String]=[]
@@ -172,10 +174,12 @@ func run():
  for node in computer_ops.ui.body.find_children("*","Label",true,false):house_labels.append(node.text)
  check(" ".join(PackedStringArray(house_labels)).contains("HOUSE AT A GLANCE") and not " ".join(PackedStringArray(house_labels)).contains("APARTMENT STOREFRONT"),"House business dashboard shows its own operation instead of apartment storefront")
  check(computer_ops.computer_stock_total("house","storage","product|")==0 or computer_ops.computer_stock_total("house","storage","product|")==int(inv.contents("house:storage").get("product|Purple Dream",0)),"House business stock reads house-only storage")
- game.location_state.staff_assignments[worker_name]="house"
+ check(game.production_crew.transfer(worker_name,"house"),"Assigned apartment worker can transfer to a vacant house position")
  check(computer_ops.computer_staff_names("house").has(worker_name) and not computer_ops.computer_staff_names("apartment").has(worker_name),"Per-property worker roster changes without creating a duplicate")
- game.location_state.staff_assignments[worker_name]="apartment"
+ check(game.production_crew.transfer(worker_name,"apartment"),"Same worker transfers back to its apartment position")
  check(computer_ops.computer_staff_names("apartment").has(worker_name) and not computer_ops.computer_staff_names("house").has(worker_name),"Moving worker back restores separate apartment roster")
+ game.production_crew.fire("apartment")
+ game.grower_level=previous_grower_level
  game.packing_employee_hired=existing_hire;game.packing_employee_active=existing_active
  game.neighborhood.location_ops.close()
  model.lock(computer_id,false);model.pack(computer_id)
