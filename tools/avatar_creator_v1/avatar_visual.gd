@@ -3,14 +3,31 @@ extends Node3D
 ## Geometry is a prototype/fitting set: each body/garment/accessory is its own
 ## replaceable part, never a baked skin recolor or an NPC identity.
 const Catalog=preload("res://scripts/avatar_catalog.gd")
+const NativeRig=preload("res://scripts/avatar_native_rig.gd")
 var skeleton:Skeleton3D
 var animation:AnimationPlayer
 var modules:Dictionary={}
 var current:Dictionary={}
 var revision:int=0
 var material_cache:Dictionary={}
+var force_native_rig:bool=false
+var native_mode:bool=false
+var preview_motion:String="idle"
+var motion_clock:float=0.0
 func _ready()->void:
- var carrier:Node3D=load("res://assets/characters/Mike.glb").instantiate()
+ # Imported GLBs work in Godot's editor, but are not reliably instantiable
+ # in the mobile Web runtime. Use the ORIGINAL native 56-bone contract there.
+ native_mode=OS.has_feature("web") or force_native_rig
+ var carrier:Node3D
+ if native_mode:
+  carrier=NativeRig.new()
+ else:
+  var resource:Resource=load("res://assets/characters/Mike.glb")
+  if resource is PackedScene:
+   carrier=(resource as PackedScene).instantiate()
+  else:
+   native_mode=true
+   carrier=NativeRig.new()
  carrier.name="AFB_PlayerRig"
  add_child(carrier)
  var bones:Array[Node]=carrier.find_children("*","Skeleton3D",true,false)
@@ -239,7 +256,21 @@ func _accessories()->void:
    _ball("jewelry","Head",Vector3(side*.135,-.01,-.001),Vector3(.016,.02,.018),Color("d6bf7a"),.28,.75)
  elif str(current.jewelry)=="chain":
   _ball("jewelry","Neck",Vector3(0,-.052,-.086),Vector3(.105,.018,.016),Color("d6bf7a"),.28,.70)
+func _process(delta:float)->void:
+ if not native_mode or skeleton==null:return
+ motion_clock+=delta
+ var walk:bool=preview_motion=="walk"
+ var phase:float=sin(motion_clock*7.0) if walk else sin(motion_clock*1.5)
+ var left_arm:int=skeleton.find_bone("UpperArm_L")
+ var right_arm:int=skeleton.find_bone("UpperArm_R")
+ var left_leg:int=skeleton.find_bone("UpperLeg_L")
+ var right_leg:int=skeleton.find_bone("UpperLeg_R")
+ if left_arm>=0:skeleton.set_bone_pose_rotation(left_arm,Quaternion(Vector3(0,0,1),-1.15+(phase*.20 if walk else .015*phase)))
+ if right_arm>=0:skeleton.set_bone_pose_rotation(right_arm,Quaternion(Vector3(0,0,1),1.15+(phase*.20 if walk else -.015*phase)))
+ if left_leg>=0:skeleton.set_bone_pose_rotation(left_leg,Quaternion(Vector3.RIGHT,(-phase*.28 if walk else 0.0)))
+ if right_leg>=0:skeleton.set_bone_pose_rotation(right_leg,Quaternion(Vector3.RIGHT,(phase*.28 if walk else 0.0)))
 func play_preview(clip:String)->void:
+ preview_motion=clip if clip in ["idle","walk"] else "idle"
  if animation!=null and animation.has_animation(clip):animation.play(clip,.15)
 func part_count(slot:String)->int:
  return modules.get(slot,[]).size()

@@ -15,6 +15,7 @@ var camera:Camera3D
 var tabs:TabContainer
 var message:Label
 var zoom:float=4.0
+var force_native_preview:bool=false
 var title:Label
 func _ready()->void:
  layer=125
@@ -30,6 +31,7 @@ func open(owner:Node3D,source_menu:Node)->void:
    # Renderer-owned SubViewport textures and ColorPicker popups leak on
    # Godot's dummy GPU. CI tests schema, rigging and Save/Cancel instead.
    preview_model=Visual.new()
+   preview_model.force_native_rig=force_native_preview
    add_child(preview_model)
    camera=Camera3D.new()
    camera.current=false
@@ -146,6 +148,7 @@ func _build()->void:
  floor.material_override=ground_mat
  stage.add_child(floor)
  preview_model=Visual.new()
+ preview_model.force_native_rig=force_native_preview
  preview_model.name="PlayerPreview"
  stage.add_child(preview_model)
  camera=Camera3D.new()
@@ -156,10 +159,10 @@ func _build()->void:
  call_deferred("_update_camera")
  var controls:=HBoxContainer.new()
  left.add_child(controls)
- controls.add_child(_button("◀ ROTATE",_rotate.bind(-PI/5.0)))
- controls.add_child(_button("ROTATE ▶",_rotate.bind(PI/5.0)))
- controls.add_child(_button("− ZOOM",_zoom.bind(.3)))
- controls.add_child(_button("+ ZOOM",_zoom.bind(-.3)))
+ controls.add_child(_button("ROTATE L",_rotate.bind(-PI/5.0)))
+ controls.add_child(_button("ROTATE R",_rotate.bind(PI/5.0)))
+ controls.add_child(_button("ZOOM -",_zoom.bind(.3)))
+ controls.add_child(_button("ZOOM +",_zoom.bind(-.3)))
  var motion:=HBoxContainer.new()
  left.add_child(motion)
  motion.add_child(_button("IDLE",_play.bind("idle")))
@@ -238,9 +241,17 @@ func _rebuild_editors()->void:
  swatches.columns=5
  body.add_child(swatches)
  for hex_color in Catalog.SKIN_SWATCHES:
-  var sample:=_button("●",_skin_preset.bind(str(hex_color)))
+  var sample:=_button("",_skin_preset.bind(str(hex_color)))
+  sample.tooltip_text="Skin tone"
   sample.custom_minimum_size=Vector2(48,48)
-  sample.add_theme_color_override("font_color",Color("#"+str(hex_color)))
+  var swatch:=StyleBoxFlat.new()
+  swatch.bg_color=Color("#"+str(hex_color))
+  swatch.set_corner_radius_all(5)
+  swatch.set_border_width_all(2)
+  swatch.border_color=Color("afbbaa")
+  sample.add_theme_stylebox_override("normal",swatch)
+  sample.add_theme_stylebox_override("hover",swatch)
+  sample.add_theme_stylebox_override("pressed",swatch)
   swatches.add_child(sample)
  var hair:=_tab("Hair")
  _choice(hair,"hair","Hairstyle")
