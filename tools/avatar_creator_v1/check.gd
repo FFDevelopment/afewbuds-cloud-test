@@ -62,6 +62,11 @@ func run()->void:
  await process_frame
  check(web_avatar.native_mode and web_avatar.skeleton!=null and web_avatar.skeleton.get_bone_count()==56,"iOS web preview uses original native 56-bone rig without importing a GLB")
  if web_avatar.skeleton!=null:
+  var native_sk:Skeleton3D=web_avatar.skeleton
+  var head_y:float=native_sk.get_bone_global_pose(native_sk.find_bone("Head")).origin.y
+  var foot_y:float=native_sk.get_bone_global_pose(native_sk.find_bone("Foot_L")).origin.y
+  check(head_y>1.4 and foot_y<.20 and head_y-foot_y>1.3,"Web rig preserves standing skeleton poses instead of collapsing at the floor")
+ if web_avatar.skeleton!=null:
   check(web_avatar.part_count("body")>=10 and web_avatar.part_count("top")>=1 and web_avatar.part_count("shoes")>=2,"Native web rig carries real body and outfit geometry")
   var test_look:Dictionary=look.duplicate(true)
   test_look.hair="locs";test_look.bottom="skirt";test_look.top="hoodie"
