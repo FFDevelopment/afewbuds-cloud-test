@@ -10,7 +10,7 @@
     return response;
   }
   async function buildPack() {
-    const recipe = await (await checkedFetch('runtime/mobile-3d-v1.patch.json?v=936873d5d49a')).json();
+    const recipe = await (await checkedFetch('runtime/mobile-3d-v1.patch.json?v=c6bd7c886a9d')).json();
     if (recipe.format !== 'afb-pack-delta-1') throw new Error('Game update format is invalid.');
     const base = new Uint8Array(await (await checkedFetch(recipe.base_url)).arrayBuffer());
     if (base.byteLength !== recipe.base_size || await sha256(base) !== recipe.base_sha256)
