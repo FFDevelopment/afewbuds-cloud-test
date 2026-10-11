@@ -884,6 +884,9 @@ def main():
     phone_visuals=module("phone_visuals",ROOT/"tools/phone_visuals_v1/patch.py")
     main_script=phone_visuals.apply(main_script,"main.gd")
     location_ops=phone_visuals.apply(location_ops.decode(),"location_ops.gd").encode()
+    shop_patch=module("tester_shop_v1",ROOT/"tools/tester_shop_v1/patch.py")
+    main_script=shop_patch.patch_main(main_script)
+    location_ops=shop_patch.patch_location(location_ops.decode()).encode()
     start=neighborhood.index("\t# Preserve portrait touch sizes; center the phone menu on a wider screen.")
     end=neighborhood.index("\thost._reset_world_pointer()",start)
     neighborhood=neighborhood[:start]+"\tpreload(\"res://scripts/phone_visuals.gd\").fit(host)\n"+neighborhood[end:]
@@ -916,6 +919,7 @@ def main():
     updated.append(['scripts/tent_genetics.gd',(ROOT/'tools/property_phone_v1/tent_genetics.gd').read_bytes(),0])
     updated.append(['scripts/property_shop.gd',(ROOT/'tools/property_phone_v1/property_shop.gd').read_bytes(),0])
     updated.append(['scripts/container_inventory.gd',(ROOT/'tools/inventory_v1/container_inventory.gd').read_bytes(),0])
+    updated.append(['scripts/shop_upgrade_catalog.gd',(ROOT/'tools/tester_shop_v1/shop_upgrade_catalog.gd').read_bytes(),0])
     updated.append(['scripts/session_menu.gd',(ROOT/'tools/inventory_v1/session_menu.gd').read_bytes(),0])
     updated.append(['scripts/graphics_quality.gd',(ROOT/'tools/graphics_presets_v1/graphics_quality.gd').read_bytes(),0])
     updated.append(['scripts/player_unstuck.gd',(ROOT/'tools/landing_unstuck_hotfix_v1/player_unstuck.gd').read_bytes(),0])
@@ -942,6 +946,8 @@ def main():
     for asset in inventory_art:updated.append(["assets/inventory/"+asset.name,asset.read_bytes(),0])
     map_patch=module("map_integration",ROOT/"tools/map_integration_v1/patch.py")
     updated=map_patch.integrate(updated)
+    bench_hotfix=module('tester_bench',ROOT/'tools/tester_shop_v1/bench_patch.py')
+    updated=bench_hotfix.apply_entries(updated)
     updated=friends.apply_entries(updated,ROOT)
     production=module("production_actions",ROOT/"tools/production_actions_v1/patch.py")
     updated=production.apply_entries(updated)
@@ -963,6 +969,9 @@ def main():
     assert set(changed)==expected_changed,changed
     assert 'scripts/avatar_native_rig.gd' in after and b'AFB_MasterSkeleton' in after['scripts/avatar_native_rig.gd'], 'Native 56-bone web rig must be packed'
     assert 'scripts/avatar_tailored_mesh.gd' in after and b'SKIN_4_WEIGHTS' in after['scripts/avatar_tailored_mesh.gd'], 'The new weighted character body and clothing are missing from the web build'
+    assert 'scripts/shop_upgrade_catalog.gd' in after, 'Shop upgrade catalog missing'
+    assert b'shop_upgrades' in after['scripts/main.gd'], 'Phone shop upgrade category missing'
+    assert b'shop_upgrade_catalog.gd' in after['scripts/location_ops.gd'], 'Market backpack upgrade control missing'
     assert 'scripts/mobile_physics_player.gd' in after
     assert after['scripts/property_registry.gd']==registry_bytes
     assert after['scripts/item_registry.gd']==item_bytes
