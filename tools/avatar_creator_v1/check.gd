@@ -60,7 +60,9 @@ func run()->void:
   editor._refresh_preview()
   editor._cancel()
   check(not editor.visible and (game.location_state.get("player_avatar_v1",{})==old_appearance),"Cancel does not mutate career")
+  await process_frame
   menu._open_avatar()
+  editor=menu.avatar_editor
   editor.draft["body"]="feminine"
   editor.draft["hair"]="ponytail"
   editor.draft["top"]="button_shirt"
@@ -77,6 +79,10 @@ func run()->void:
   check(game.cash==balance and game.property_opportunity_state==property_state,"Editing appearance preserves money and property progression")
   check(not editor.visible and game.session_paused,"Saving closes editor but leaves gameplay paused")
  game.queue_free()
- for i in 3:await process_frame
+ editor=null
+ menu=null
+ game=null
+ avatar=null
+ for i in 12:await process_frame
  print("AVATAR_CREATOR_RESULT: "+("PASS" if failures==0 else "FAIL")+" checks="+str(checks))
  quit(0 if failures==0 else 1)
