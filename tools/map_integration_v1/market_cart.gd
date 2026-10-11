@@ -17,6 +17,24 @@ func quote(key:String)->Dictionary:
  if kind=="item" and inv.furniture.model.CATALOG.has(name):
   return {"name":str(inv.furniture.model.CATALOG[name].name),"price":inv.furniture.model.price_for(name),"reason":""}
  return {"name":"Unavailable item","price":0,"reason":"This item is no longer available."}
+# Equipment delivery choice is additive; preserve the legacy cart item->quantity map.
+func destination()->String:
+ var target:String=str(host.location_state.get("market_cart_delivery_v1","market:orders"))
+ return target if target in ["market:orders","apartment","house"] else "market:orders"
+func delivery_allowed(target:String)->bool:
+ if target=="market:orders":return true
+ return target in ["apartment","house"] and inv.furniture!=null and inv.furniture.model!=null and inv.furniture.model.controlled(target)
+func choose_delivery(target:String)->void:
+ if not delivery_allowed(target):
+  host.status_label.text="That property is not available for deliveries."
+  return
+ host.location_state["market_cart_delivery_v1"]=target
+ host._save_game()
+ show()
+func has_equipment()->bool:
+ for key in state().keys():
+  if str(key).begins_with("item|"):return true
+ return false
 func total()->int:
  var value:=0
  for key in state():value+=int(quote(key).price)*int(state()[key])
@@ -47,7 +65,17 @@ func show()->void:
  if host.phone_open:host._toggle_phone()
  if host.neighborhood.location_ops.is_open():host.neighborhood.location_ops.close()
  editor.open();editor.clear();editor.hint.text="CENTRAL MARKET · CART"
- inv.label("Pay once for the whole order. At checkout, collect what fits; the rest stays here for your next visit.",editor.list)
+ inv.label("Pay once for the whole order. Seeds and fertilizer use Central Market pickup. Equipment can be delivered to a property curb.",editor.list)
+ if has_equipment():
+  inv.label("DELIVERY FOR FURNITURE / EQUIPMENT",editor.list,19)
+  for target in ["market:orders","apartment","house"]:
+   var allowed:bool=delivery_allowed(target)
+   var chosen:bool=destination()==target
+   var caption:String="MARKET PICKUP" if target=="market:orders" else target.to_upper()+" CURBSIDE DELIVERY"
+   var choice:Button=inv.button(caption+(" · SELECTED" if chosen else ""),choose_delivery.bind(target),editor.list,chosen)
+   choice.disabled=chosen or not allowed
+   if not allowed and target!="market:orders":inv.label("You do not control "+target+".",editor.list,13)
+  inv.label("Collect delivered equipment from the labeled crate at the selected property curb. Existing stock stays where it is.",editor.list,14)
  if state().is_empty():inv.label("Your cart is empty.",editor.list)
  for key in state().keys():
   var info:=quote(key);inv.label("%s · $%d each"%[info.name,info.price],editor.list,18)
@@ -81,16 +109,22 @@ func checkout()->Dictionary:
   if not str(info.reason).is_empty():return {"ok":false,"reason":info.name+": "+info.reason}
   price+=int(info.price)*amount
  if host.cash<price:return {"ok":false,"reason":"Order costs $%d. You have $%d—need $%d more. Nothing was charged."%[price,host.cash,price-host.cash]}
+ var delivery:String=destination()
+ if has_equipment() and not delivery_allowed(delivery):
+  return {"ok":false,"reason":"Delivery property is unavailable. Choose market pickup or an owned property. Nothing was charged."}
  busy=true
- # Validate everything before charging. No awaits or callbacks while committing.
+ # Validate before payment. No awaits/callbacks inside the transaction.
  host.cash-=price
+ var delivered:int=0
  for key in basket:
   var amount:int=int(basket[key]);var name:String=str(key).get_slice("|",1)
   if str(key).begins_with("item|"):
    var model=inv.furniture.model
    for i in amount:
     var id:="furniture_%d"%int(model.state.next_id);model.state.next_id=int(model.state.next_id)+1
-    model.state.items[id]={"sku":name,"property":"market:orders","locked":false,"paid":model.price_for(name),"condition":100,"upgrades":{}}
+    var target:String="market:orders" if delivery=="market:orders" else delivery+":delivery"
+    model.state.items[id]={"sku":name,"property":target,"locked":false,"paid":model.price_for(name),"condition":100,"upgrades":{}}
+    if delivery!="market:orders":delivered+=1
   elif str(key).begins_with("seed|"):
    inv.set_amount("market:orders",key,int(inv.contents("market:orders").get(key,0))+amount)
    host._increment_advancement_stat("seeds_bought",amount)
@@ -103,7 +137,11 @@ func checkout()->Dictionary:
  host._record_daily_expense("Market order",price)
  host._update_cash_ui();host._save_game();busy=false
  if inv.reachable("market:orders"):inv.collect_all()
- return {"ok":true,"reason":"Paid $%d. %d item(s) awaiting pickup at Central Market; everything that fits is in your backpack."%[price,pickup_count()] if inv.reachable("market:orders") else "Paid $%d. Your order is waiting at Central Market checkout."%price}
+ var receipt:String="Paid $%d." % price
+ if delivered>0:receipt+=" %d furniture/equipment item(s) delivered to the %s curb." % [delivered,delivery.capitalize()]
+ if pickup_count()>0:receipt+=" %d item(s) still at Central Market pickup." % pickup_count()
+ elif delivered==0:receipt+=" Pickup completed."
+ return {"ok":true,"reason":receipt}
 
 func seeds(parent:Node)->void:
  inv.label("Choose quantities, add seeds to your cart, then check out once. Paid orders wait at Central Market.",parent)
