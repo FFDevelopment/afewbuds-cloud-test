@@ -49,9 +49,14 @@ func run()->void:
     check(prefs is Dictionary and prefs.get("quality","")=="low","Quality selection saved to a separate device-only file")
     check(graphics.read_preference()=="low" and graphics.get_parent()==menu,"Preference reload works without changing career save state")
     graphics.change("high")
+    for player in game.find_children("*","AudioStreamPlayer",true,false):
+        player.stop()
+        player.stream=null
+    await create_timer(.15).timeout
     game.queue_free()
     await process_frame
     await process_frame
+    await create_timer(.20).timeout
     check(Engine.max_fps==original_fps,"Graphics changes do not persist as a global FPS cap after exiting the game")
     print("GRAPHICS_PRESETS_RESULT: "+("PASS" if failures==0 else "FAIL")+" checks="+str(checks)+" failures="+str(failures))
     quit(0 if failures==0 else 1)
