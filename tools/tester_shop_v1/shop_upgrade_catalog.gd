@@ -35,7 +35,7 @@ static func phone(host:Node3D,parent:Node)->void:
  var inv:Node=host.inventory_system
  inv.ensure_state()
  inv.label("SHOP UPGRADES · BROWSE",parent,21)
- inv.label("See every capacity tier and its price. Buy the backpack upgrade at Central Market > Upgrades; equipment can be ordered from the market cart with HOUSE or APARTMENT curbside delivery.",parent,15)
+ inv.label("Buy starter furniture and equipment at Central Market for pickup or property delivery. Once placed, select that specific item in Furniture Arrangement to upgrade it. Tent size is separate from its Basic I / LED II lighting.",parent,15)
  inv.label(backpack_text(inv),parent,19)
  var level:int=int(inv.state.backpack_level)
  if level>=inv.BACKPACK_LIMITS.size():
@@ -51,8 +51,16 @@ static func phone(host:Node3D,parent:Node)->void:
   for sku in family.items:
    if not model.CATALOG.has(sku):continue
    var item:Dictionary=model.CATALOG[sku]
-   var line:String="%s · $%d" % [str(item.get("name",sku)),int(model.price_for(sku))]
-   if item.has("plants"):line+=" · %d plants" % int(item.plants)
+   var tier:int=int(item.get("tier",1))
+   var line:String="%s" % str(item.get("name",sku))
+   if tier>1:
+    var base:String=sku.get_slice("_",0)+"_"+str(tier-1)
+    var cost:int=maxi(0,int(model.price_for(sku))-int(model.price_for(base))) if model.CATALOG.has(base) else 0
+    line+=" · Level %d upgrade +$%d" % [tier,cost]
+   else:
+    line+=" · Buy at Market $%d" % int(model.price_for(sku))
+   if item.has("plants"):line+=" · %d plants · Basic grow light included" % int(item.plants)
    if item.has("capacity"):line+=" · %d capacity" % int(item.capacity)
    inv.label(line,parent,15)
- inv.label("Orders belong to your existing account. Items delivered to a property stay at its curb until you collect them; purchases do not move existing property stock.",parent,14)
+  if str(family.title)=="Grow Tents":inv.label("Each tent: upgrade the built-in light to LED II for $320 by selecting that tent in Arrangement. No new tent purchase is needed.",parent,14)
+ inv.label("Higher levels are not separate shop purchases. Owned upgraded furniture, existing stock, deliveries and career progress remain unchanged.",parent,14)
