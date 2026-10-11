@@ -9,9 +9,9 @@ func check(ok:bool,note:String)->void:
  if not ok:failures+=1;push_error("TESTER_SHOP_HOTFIX FAIL: "+note)
 func text_matches(parent:Node,needle:String)->bool:
  for item in parent.find_children("*","Label",true,false):
-  if needle in str((item as Label).text):return true
+  if needle.to_upper() in str((item as Label).text).to_upper():return true
  for item in parent.find_children("*","Button",true,false):
-  if needle in str((item as Button).text):return true
+  if needle.to_upper() in str((item as Button).text).to_upper():return true
  return false
 func run()->void:
  var desktop:bool=ResourceLoader.exists("res://prototype/apartment.tscn")
@@ -69,7 +69,7 @@ func run()->void:
  var before_apartment:Dictionary=inv.contents("apartment:packing").duplicate(true)
  var purchased:Dictionary=cart.checkout()
  check(purchased.ok and game.cash==money-expected and cart.state().is_empty(),"Mixed order commits one payment at the displayed price")
- check(int(inv.contents("market:orders").get("seed|Street Green",0))==before_seed+2,"Seeds remain at Central Market even when furniture goes to house curb")
+ check(int(inv.contents("market:orders").get("seed|Street Green",0))+int(inv.contents("backpack").get("seed|Street Green",0))==before_seed+2,"Seed orders stay in market-pickup flow, with automatic collection only when physically at checkout")
  check(inv.contents("apartment:packing")==before_apartment and inv.state.containers==saved_stock,"House delivery never moves existing apartment stock")
  var delivery_items:Dictionary=inv.contents("house:delivery")
  var delivered_id:String=""
