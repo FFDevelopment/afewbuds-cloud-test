@@ -315,8 +315,10 @@ func _outfit()->void:
  var shirt_pad:float=.027 if not hoodie else .046
  var top_rings:Array=spine_rings(shirt_pad)
  # End just below the neckline instead of ballooning over the head.
- top_rings[0]=section(Vector3(0,.903,0),Vector2(hips+.027,.156),"Hips")
- top_rings[1]=section(Vector3(0,.965,0),Vector2(hips+.031,.157),"Hips")
+ # Keep the fabric hem above the denim shell, with a real 20 mm gap:
+ # an almost-coplanar waistband caused z-fighting that looked like a torn shirt.
+ top_rings[0]=section(Vector3(0,.914,0),Vector2(hips+.065,.196),"Hips")
+ top_rings[1]=section(Vector3(0,.976,0),Vector2(hips+.059,.189),"Hips")
  top_rings[-1]=section(Vector3(0,1.485,0),Vector2(.092,.083),"Neck")
  loft("top","Tailored "+top.capitalize(),"y",top_rings,cloth,18)
  if not tank:
