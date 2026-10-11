@@ -54,9 +54,9 @@ func start(item:String) -> void:
  surface=Node3D.new();host.add_child(surface)
  # Match the placed bench and floor, including the basement.
  var furniture_id:String=inventory.furniture.model.container_item(station_id)
- var item:Dictionary=inventory.furniture.model.state.items[furniture_id]
- surface.position=Vector3(float(item.position[0]),float(item.position[1])+1.18,float(item.position[2]))
- surface.rotation.y=deg_to_rad(float(item.get("yaw",0.0)))
+ var station_entry:Dictionary=inventory.furniture.model.state.items[furniture_id]
+ surface.position=Vector3(float(station_entry.position[0]),float(station_entry.position[1])+1.18,float(station_entry.position[2]))
+ surface.rotation.y=deg_to_rad(float(station_entry.get("yaw",0.0)))
  # Reuse the bench's actual world-space position rather than rendering a second UI scene.
  prop("Scissors" if mode=="trim" else "Scoop",Vector3(-.34,.025,.18),Vector3(.2,.025,.05),"b5c3c0")
  prop("Untrimmed batch" if mode=="trim" else "Bag on scale",Vector3(0,.06,0),Vector3(.23,.1,.19),"658c43" if mode=="trim" else "c8d7c9")
