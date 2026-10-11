@@ -274,20 +274,29 @@ func transfer(name:String,target:String)->bool:
  host._refresh_phone()
  return true
 
+# The host's legacy production counters are a single-property adapter.
+# Clocking workers without switching inventory adapters silently consumes
+# apartment seeds and misses house packing inventory.
+func _task_tick()->void:
+ if host.packing_employee_hired and host.packing_employee_active:
+  host._assign_production_worker_task()
+ elif host.production_worker_node!=null:host.production_worker_node.visible=false
 func tick()->void:
  for place in PLACES:
   if not host.inventory_system.furniture.model.controlled(place):continue
-  with_property(place,func():
-   if host.packing_employee_hired and host.packing_employee_active:
-    host._assign_production_worker_task()
-   elif host.production_worker_node!=null:host.production_worker_node.visible=false
-  )
+  with_property(place,func():host.inventory_system.at_property(place,_task_tick))
+func _visual_at_current(delta:float,place:String)->void:
+ # Inventory switching is required only while a real job is pending;
+ # keep idle walking inexpensive on mobile.
+ if not host.production_worker_pending_action.is_empty():
+  host.inventory_system.at_property(place,host._update_production_worker_visual.bind(delta))
+ else:host._update_production_worker_visual(delta)
 func update(delta:float)->void:
  for place in PLACES:
   if not host.inventory_system.furniture.model.controlled(place):
    if actors.has(place):actors[place].visible=false
    continue
-  with_property(place,func():host._update_production_worker_visual(delta))
+  with_property(place,_visual_at_current.bind(delta,place))
 
 func charge_wages()->Dictionary:
  var paid:Array[String]=[]
