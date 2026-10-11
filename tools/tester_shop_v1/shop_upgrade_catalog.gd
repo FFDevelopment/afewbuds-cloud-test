@@ -61,6 +61,8 @@ static func phone(host:Node3D,parent:Node)->void:
     line+=" · Buy at Market $%d" % int(model.price_for(sku))
    if item.has("plants"):line+=" · %d plants · Basic grow light included" % int(item.plants)
    if item.has("capacity"):line+=" · %d capacity" % int(item.capacity)
+   var unlocked_at:int=model.unlock_level(sku)
+   if unlocked_at>1:line+=" · Unlock: Grower Lv %d" % unlocked_at
    inv.label(line,parent,15)
   if str(family.title)=="Grow Tents":inv.label("Each tent: upgrade the built-in light to LED II for $320 by selecting that tent in Arrangement. No new tent purchase is needed.",parent,14)
  inv.label("Higher levels are not separate shop purchases. Owned upgraded furniture, existing stock, deliveries and career progress remain unchanged.",parent,14)
