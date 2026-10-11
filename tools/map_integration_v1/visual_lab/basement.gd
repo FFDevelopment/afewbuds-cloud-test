@@ -91,7 +91,10 @@ func register_basement_room(game:Node)->void:
  if not registry.has_method("set_room_height"):return
  var record:Dictionary=registry.state.properties["house"]
  # Add one room to the existing house, retaining all ownership and service IDs.
- record.rooms["basement_grow"]=[26.3,-13.5,14.2,13.0]
+ # Match the shared physical grow-floor safe faces, not the undersized
+ # original rectangle. Keep the same owned-property ID and stair exclusion.
+ var valid:Rect2=game.inventory_system.furniture.model.BASEMENT_GROW_PLACEMENT
+ record.rooms["basement_grow"]=[valid.position.x,valid.position.y,valid.size.x,valid.size.y]
  if not record.has("room_uses"):record["room_uses"]={}
  record.room_uses["basement_grow"]="grow"
  registry.set_room_height("house","basement_grow",-3.9,-.3)
