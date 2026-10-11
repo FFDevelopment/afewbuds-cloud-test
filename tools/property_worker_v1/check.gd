@@ -80,6 +80,8 @@ func run()->void:
  # middle section contains window blinds and must not be allowed to clip.
  var near_wall:Vector3=Vector3(xlimit,0,1.45)
  check(model.validate(temp,"house",near_wall,0).is_empty(),"Expanded packing-room border accepts Bench III at the real exterior wall")
+ furniture.point=Vector3(xlimit,0,-1.2)
+ check(furniture.obstacle().contains("Window covering"),"Closed house window blinds reject visible Bench III clipping")
  furniture.point=near_wall
  check(furniture.obstacle().is_empty(),"Real collision geometry accepts Bench III at solid right wall: "+furniture.obstacle())
  check(not model.validate(temp,"house",Vector3(xlimit+.085,0,1.45),0).is_empty(),"Bench III cannot cross the real exterior wall face")
