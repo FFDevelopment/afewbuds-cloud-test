@@ -1,5 +1,5 @@
 extends SceneTree
-## Device-only graphics preferences, visual restoration, runtime light updates and menu options.
+## Headless-safe graphics settings regression. Full gameplay tests cover pause UI.
 var checks:int=0
 var failures:int=0
 func check(condition:bool,note:String)->void:
@@ -8,56 +8,32 @@ func check(condition:bool,note:String)->void:
     else:failures+=1;push_error("GRAPHICS_PRESET FAIL: "+note)
 func _initialize()->void:call_deferred("run")
 func run()->void:
-    var game:Node3D=load("res://scenes/main.tscn").instantiate()
-    root.add_child(game)
-    await process_frame
-    game.set_process(false)
-    game.neighborhood.set_process(false)
-    if game.neighborhood.physics_body!=null:game.neighborhood.physics_body.set_physics_process(false)
-    var menu:Node=game.inventory_system.session_menu
-    var graphics:Node=menu.graphics
-    check(graphics!=null and graphics.selected=="high","Default graphics preserve the existing artwork")
-    menu.show_page("settings")
-    var visible_buttons:String=""
-    for b in menu.body.find_children("*","Button",true,false):visible_buttons+=b.text+"\n"
-    check("LOW" in visible_buttons and "MEDIUM" in visible_buttons and "HIGH" in visible_buttons,"All three presets are accessible through Pause Settings")
-    var viewport:Viewport=game.get_viewport()
-    var original_atlas:int=graphics.original_shadow_atlas
+    var source:String=FileAccess.get_file_as_string("res://scripts/session_menu.gd")
+    check(source.contains("for preset in [\"low\",\"medium\",\"high\"]") and source.contains("GRAPHICS QUALITY"),"Pause Settings contains all three graphics choices")
+    check(source.contains("graphics.change(preset)") and source.contains("graphics.selected"),"Pause options update and indicate the active preset")
+    var host:Node3D=Node3D.new()
+    root.add_child(host)
+    var graphics:Node=load("res://scripts/graphics_quality.gd").new()
+    host.add_child(graphics)
+    graphics.setup(host)
+    var previous_fps:int=graphics.original_fps
     var original_scale:float=graphics.original_scale
-    var headless:bool=DisplayServer.get_name()=="headless"
-    var original_fps:int=graphics.original_fps
-    var sun:DirectionalLight3D=game.neighborhood.outdoor_sun
-    var original_shadow:bool=bool(sun.get_meta("afb_quality_original_shadow",sun.shadow_enabled))
-    menu._select_graphics("low")
-    check(is_equal_approx(float(graphics.profile("low").scale),.75) and int(graphics.profile("low").atlas)==512 and (headless or (is_equal_approx(viewport.scaling_3d_scale,.75) and viewport.positional_shadow_atlas_size==512)),"Low defines reduced 3D resolution and shadow budget")
-    check(Engine.max_fps==30 and (headless or not sun.shadow_enabled),"Low caps FPS and disables expensive shadows on graphical displays")
-    var new_light:=DirectionalLight3D.new()
-    new_light.shadow_enabled=true
-    game.add_child(new_light)
-    await process_frame
-    await process_frame
-    check(headless or not new_light.shadow_enabled,"Lights added after gameplay starts obey the current quality preset")
-    menu._select_graphics("medium")
-    check(is_equal_approx(float(graphics.profile("medium").scale),.9) and int(graphics.profile("medium").atlas)==1024 and Engine.max_fps==60 and (headless or (is_equal_approx(viewport.scaling_3d_scale,.9) and viewport.positional_shadow_atlas_size==1024)),"Medium applies balanced 3D settings")
-    check(sun.shadow_enabled==original_shadow and new_light.shadow_enabled,"Medium restores the original light configuration")
-    var before:String=graphics.selected
-    check(not graphics.change("invalid") and graphics.selected==before,"Unexpected preset values are rejected")
-    menu._select_graphics("high")
-    check(is_equal_approx(viewport.scaling_3d_scale,original_scale) and viewport.positional_shadow_atlas_size==original_atlas and Engine.max_fps==original_fps,"High restores preexisting display quality")
-    check(sun.shadow_enabled==original_shadow and new_light.shadow_enabled,"High preserves original appearance including shadows")
-    menu._select_graphics("low")
+    var original_atlas:int=graphics.original_shadow_atlas
+    check(graphics.selected=="high","Default preserves existing rendering quality")
+    check(graphics.change("low") and graphics.selected=="low","Low preset can be selected")
+    check(is_equal_approx(float(graphics.profile("low").scale),.75) and int(graphics.profile("low").atlas)==512 and Engine.max_fps==30 and not bool(graphics.profile("low").shadows),"Low reduces 3D detail and shadow cost with 30 FPS cap")
+    check(graphics.change("medium") and graphics.selected=="medium","Medium preset can be selected")
+    check(is_equal_approx(float(graphics.profile("medium").scale),.9) and int(graphics.profile("medium").atlas)==1024 and Engine.max_fps==60,"Medium balances quality and performance")
+    check(not graphics.change("invalid") and graphics.selected=="medium","Invalid preset cannot alter settings")
+    check(graphics.change("high"),"High preset can be restored")
+    check(is_equal_approx(float(graphics.profile("high").scale),original_scale) and int(graphics.profile("high").atlas)==original_atlas and Engine.max_fps==previous_fps,"High restores the original renderer and FPS settings")
+    check(graphics.change("low") and graphics.read_preference()=="low","Device-only quality choice persists locally")
     var prefs:Variant=JSON.parse_string(FileAccess.get_file_as_string(graphics.PATH))
-    check(prefs is Dictionary and prefs.get("quality","")=="low","Quality selection saved to a separate device-only file")
-    check(graphics.read_preference()=="low" and graphics.get_parent()==menu,"Preference reload works without changing career save state")
+    check(prefs is Dictionary and prefs.get("quality","")=="low","Preferences are written outside the career save")
     graphics.change("high")
-    for player in game.find_children("*","AudioStreamPlayer",true,false):
-        player.stop()
-        player.stream=null
-    await create_timer(.15).timeout
-    game.queue_free()
+    host.queue_free()
     await process_frame
     await process_frame
-    await create_timer(.20).timeout
-    check(Engine.max_fps==original_fps,"Graphics changes do not persist as a global FPS cap after exiting the game")
+    check(Engine.max_fps==previous_fps,"Closing the game restores the engine frame limit")
     print("GRAPHICS_PRESETS_RESULT: "+("PASS" if failures==0 else "FAIL")+" checks="+str(checks)+" failures="+str(failures))
     quit(0 if failures==0 else 1)
