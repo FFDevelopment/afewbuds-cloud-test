@@ -957,6 +957,8 @@ def main():
     updated=house_paths.apply_entries(updated)
     door_movement=module("door_movement_v1",ROOT/"tools/door_movement_v1/patch.py")
     updated=door_movement.apply_entries(updated)
+    equipment_upgrades=module("equipment_upgrades_v1",ROOT/"tools/equipment_upgrades_v1/patch.py")
+    updated=equipment_upgrades.apply_entries(updated)
     built=east.pack.rebuild(baseline,fb,updated)
     # Every unique gameplay pack gets its own browser-visible identity.
     # This prevents development releases from silently sharing a stale URL.
@@ -971,6 +973,8 @@ def main():
     assert 'scripts/avatar_tailored_mesh.gd' in after and b'SKIN_4_WEIGHTS' in after['scripts/avatar_tailored_mesh.gd'], 'The new weighted character body and clothing are missing from the web build'
     assert 'scripts/shop_upgrade_catalog.gd' in after, 'Shop upgrade catalog missing'
     assert b'shop_upgrades' in after['scripts/main.gd'], 'Phone shop upgrade category missing'
+    assert b'func market_available' in after['scripts/property_furniture.gd'], 'Base-tier purchase restriction missing'
+    assert b'func layout_upgrade_item()' in after['scripts/furniture_editor.gd'], 'Per-item arrangement upgrade action missing'
     assert b'shop_upgrade_catalog.gd' in after['scripts/location_ops.gd'], 'Market backpack upgrade control missing'
     assert 'scripts/mobile_physics_player.gd' in after
     assert after['scripts/property_registry.gd']==registry_bytes
