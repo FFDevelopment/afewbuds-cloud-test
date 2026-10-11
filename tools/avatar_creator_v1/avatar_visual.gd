@@ -3,7 +3,6 @@ extends Node3D
 ## Geometry is a prototype/fitting set: each body/garment/accessory is its own
 ## replaceable part, never a baked skin recolor or an NPC identity.
 const Catalog=preload("res://scripts/avatar_catalog.gd")
-const BASE=preload("res://assets/characters/Mike.glb")
 var skeleton:Skeleton3D
 var animation:AnimationPlayer
 var modules:Dictionary={}
@@ -11,7 +10,7 @@ var current:Dictionary={}
 var revision:int=0
 var material_cache:Dictionary={}
 func _ready()->void:
- var carrier:Node3D=BASE.instantiate()
+ var carrier:Node3D=load("res://assets/characters/Mike.glb").instantiate()
  carrier.name="AFB_PlayerRig"
  add_child(carrier)
  var bones:Array[Node]=carrier.find_children("*","Skeleton3D",true,false)
