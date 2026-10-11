@@ -2,7 +2,7 @@ name: Build mobile baseline
 
 on:
   push:
-    branches: [main, feature/friend-characters-20261010, feature/door-staff-substitutions-20261010, feature/house-npc-paths-v1]
+    branches: [main, feature/friend-characters-20261010, feature/door-staff-substitutions-20261010, feature/house-npc-paths-v1, feature/door-dealer-natural-movement-20261010]
   workflow_dispatch:
 
 permissions:
