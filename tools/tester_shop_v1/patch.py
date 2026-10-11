@@ -44,10 +44,4 @@ def patch_location(source):
     source=must(source,'\tmarket_card("equipment|Storage Shelving II","Furniture","Furnish your properties. Delivered to Property Storage.",market_furniture)',
                 '\tmarket_card("equipment|Storage Shelving II","Furniture","Order furniture for pickup or owned property curbside delivery.",market_furniture)',
                 "market delivery description")
-    replacements = {
-        "Buy additional equipment at Central Market. Purchases must be delivered or carried to this property.": "Buy starter equipment at Central Market. Upgrade each placed piece in Furniture Arrangement.",
-        "Owned equipment stays with you when packed. Upgrade an empty item, or buy and place a better replacement.": "Upgrade installed equipment in Arrangement. Tiers and paid improvements stay with an item when packed.",
-    }
-    for before, after in replacements.items():
-        if before in source: source = source.replace(before, after, 1)
     return source
