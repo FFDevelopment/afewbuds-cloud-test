@@ -219,7 +219,11 @@ func _anatomy()->void:
    section(Vector3(s*.841,1.398,0),Vector2(.012,.012),"Hand_"+side)
   ],skin,10)
   # One recognizable thumb, separate from the palm; no floating ball joints.
-  box_on("body","Thumb "+side,"Hand_"+side,Vector3(s*.045,-.03,-.058),Vector3(.072,.042,.044),skin)
+  loft("body","Fitted thumb "+side,"x",[
+   section(Vector3(s*.739,1.366,-.043),Vector2(.024,.026),"Hand_"+side),
+   section(Vector3(s*.783,1.356,-.054),Vector2(.025,.026),"Hand_"+side),
+   section(Vector3(s*.814,1.349,-.060),Vector2(.007,.010),"Hand_"+side)
+  ],skin,10)
   loft("body","Natural ankle "+side,"y",[
    section(Vector3(s*.111,.096,-.012),Vector2(.067,.066),"Foot_"+side),
    section(Vector3(s*.111,.048,-.061),Vector2(.086,.076),"Foot_"+side)
@@ -388,10 +392,12 @@ func _pants()->void:
  var joggers:bool=kind=="joggers"
  var cargo:bool=kind=="cargos"
  var skirt:bool=kind=="skirt"
- loft("bottom","Cut waistband","y",[
-  section(Vector3(0,.826,0),Vector2(hips+.024,.145),"Hips"),
-  section(Vector3(0,.891,0),Vector2(hips+.030,.157),"Hips"),
-  section(Vector3(0,.979,0),Vector2(hips+.025,.155),"Hips")
+ # Keep the waistband beneath the shirt instead of an exposed protruding
+ # light-blue apron across the front of jeans and cargos.
+ loft("bottom","Fitted waistband","y",[
+  section(Vector3(0,.895,0),Vector2(hips+.017,.139),"Hips"),
+  section(Vector3(0,.936,0),Vector2(hips+.018,.144),"Hips"),
+  section(Vector3(0,.978,0),Vector2(hips+.017,.141),"Hips")
  ],pants,16)
  if skirt:
   loft("bottom","Skirt silhouette","y",[
