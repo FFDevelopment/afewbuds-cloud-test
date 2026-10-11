@@ -32,7 +32,10 @@ def apply_entries(entries):
                 if source.count(old)!=1:raise AssertionError("House nav state declaration drift")
                 source=source.replace(old,old+'\nvar house_npc_navigation: RefCounted',1)
             for name,body in SPECS["modified"][key].items():
-                source=replace_function(source,name,body)
+                if key=="main.gd" and name=="_house_worker_navigation_target" and "func _house_worker_navigation_target(" not in source:
+                    source=add_function(source,name,body,"_production_worker_navigation_target")
+                else:
+                    source=replace_function(source,name,body)
             for name,body in SPECS["added"].get(key,{}).items():
                 source=add_function(source,name,body,"_production_worker_navigation_target")
             data=source.encode()
