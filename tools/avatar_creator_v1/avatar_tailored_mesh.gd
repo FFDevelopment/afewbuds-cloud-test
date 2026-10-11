@@ -201,7 +201,10 @@ func face_rings()->Array:
  ]
 
 func _anatomy()->void:
- loft("body","Anatomical torso","y",spine_rings(),skin)
+ # Hide the lower bare torso under every starter outfit. The former full
+ # lower trunk protruded beneath shirt/pants at the crotch on both body fits.
+ var upper_torso:Array=spine_rings().slice(2)
+ loft("body","Anatomical torso","y",upper_torso,skin)
  loft("body","Natural neck","y",[
   section(Vector3(0,1.447,0),Vector2(.073,.071),"Neck"),
   section(Vector3(0,1.507,0),Vector2(.069,.067),"Neck"),
