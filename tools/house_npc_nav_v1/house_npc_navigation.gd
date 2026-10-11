@@ -83,8 +83,8 @@ func _installed_footprints() -> Array[Dictionary]:
 func _blocked(point: Vector3, placed: Array[Dictionary]) -> bool:
     if _walls(point) or _built_in(point):return true
     for shape in placed:
-        var shifted := Vector2(point.x,point.z)-shape.center
-        var local := shifted.rotated(-float(shape.yaw))
+        var shifted: Vector2 = Vector2(point.x,point.z)-Vector2(shape.center)
+        var local: Vector2 = shifted.rotated(-float(shape.yaw))
         if absf(local.x)<shape.size.x*.5+RADIUS and absf(local.y)<shape.size.y*.5+RADIUS:return true
     return false
 
