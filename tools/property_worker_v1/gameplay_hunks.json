@@ -123,8 +123,8 @@
       "line": 286
     },
     {
-      "before": "\thost._refresh_phone();host._save_game()\nfunc recruit(name: String,job: String) -> void:\n\tactions=false\n\thost._recruit_friend_staff(name,job)\n\tif role(name)==job:assign(name,\"apartment\")\nfunc recruit_door(name: String, property_id: String) -> void:",
-      "after": "\thost._refresh_phone();host._save_game()\nfunc recruit(name: String,job: String,property_id:String=\"apartment\") -> void:\n\tactions=false\n\thost._recruit_friend_staff(name,job,property_id)\n\tif job!=\"production\" and role(name)==job:assign(name,\"apartment\")\nfunc recruit_door(name: String, property_id: String) -> void:",
+      "before": "func recruit(name: String,job: String) -> void:\n\tactions=false\n\thost._recruit_friend_staff(name,job)\n\tif role(name)==job:assign(name,\"apartment\")",
+      "after": "func recruit(name: String,job: String,property_id:String=\"apartment\") -> void:\n\tactions=false\n\thost._recruit_friend_staff(name,job,property_id)\n\tif job!=\"production\" and role(name)==job:assign(name,\"apartment\")",
       "line": 312
     }
   ],
