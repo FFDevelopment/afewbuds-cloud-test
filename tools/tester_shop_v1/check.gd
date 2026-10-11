@@ -96,6 +96,39 @@ func run()->void:
  check(FileAccess.get_file_as_string("res://scripts/container_inventory.gd").contains("host._start_trim_minigame") and FileAccess.get_file_as_string("res://scripts/container_inventory.gd").contains("host._start_bag_minigame"),"All bought benches retain original drag-to-trim and drag-to-bag minigames")
  var persisted:Variant=JSON.parse_string(JSON.stringify(game.location_state))
  check(int(persisted.container_inventory.backpack_level)==3 and persisted.furniture_v1.items[delivered_id].sku=="bench_1","Purchase and delivery survive existing career JSON save format")
+ # Level I purchase flow and individual in-place tent lighting upgrade.
+ check(model.market_available("bench_1") and model.market_available("tent_4") and not model.market_available("bench_2") and not model.market_available("storage_5"),"Market only sells Level I equipment; tent size remains a separate choice")
+ check(not str(cart.quote("item|bench_3").reason).is_empty(),"Stale high-tier cart cannot silently bypass the upgrade path")
+ var shop_ui:Node=inv.furniture
+ shop_ui.shop("equipment")
+ check(text_matches(shop_ui.list,"Packing Bench I") and not text_matches(shop_ui.list,"Packing Bench III"),"On-site equipment shop shows starter tier only")
+ shop_ui.close()
+ var led_id:String="test_owned_tent_led"
+ model.state.items[led_id]={"sku":"tent_1","property":"house","position":[41.8,0,-11.2],"yaw":0,"locked":true,"quality":1,"paid":240,"upgrades":{}}
+ model.ensure_slots()
+ var led_slot:int=int(model.state.items[led_id].slots[0])
+ var previous_plant:Dictionary=game.plant_slots[led_slot].duplicate(true)
+ game.plant_slots[led_slot].stage=1
+ game.plant_slots[led_slot].dead=false
+ var led_cash:int=game.cash
+ check(model.upgrade(led_id) and int(model.state.items[led_id].quality)==2 and game.cash==led_cash-320,"Live crop stays planted while its own tent receives the $320 LED retrofit")
+ check(int(game.plant_slots[led_slot].get("stage",-1))==1,"Installing LEDs does not reset or remove a live crop")
+ inv.furniture.sync_world()
+ var led_visual:Node=inv.furniture.equipment_world.rendered.get(led_id)
+ check(led_visual!=null and led_visual.find_child("LEDDriver",true,false)!=null and led_visual.find_child("BasicLightReflector",true,false)==null,"Paid LED upgrade swaps the real tent light model")
+ check(not model.upgrade(led_id) and game.cash==led_cash-320,"LED retrofit cannot be charged twice on the same tent")
+ game.plant_slots[led_slot]=previous_plant
+ model.state.items.erase(led_id)
+ var flush_a:String="test_nearby_a"
+ var flush_b:String="test_nearby_b"
+ model.state.items[flush_a]={"sku":"coffee_table","property":"house","position":[28.7,0,-0.5],"yaw":0,"locked":false,"paid":95,"upgrades":{}}
+ model.state.items[flush_b]={"sku":"coffee_table","property":"backpack","locked":false,"paid":95,"upgrades":{}}
+ check(model.validate(flush_b,"house",Vector3(29.8,0,-.5),0).is_empty(),"Neighboring furniture fits flush without artificial padding")
+ check(not model.validate(flush_b,"house",Vector3(29.6,0,-.5),0).is_empty(),"Actual 20cm overlapping footprints are blocked")
+ check(model.validate(flush_b,"house",Vector3(25.95,0,-1.2),0).is_empty(),"Furniture can sit with its bounding edge on the wall-side room boundary")
+ check(not model.validate(flush_b,"house",Vector3(25.70,0,-1.2),0).is_empty(),"Furniture crossing a structural room boundary remains blocked")
+ model.state.items.erase(flush_a)
+ model.state.items.erase(flush_b)
  game.queue_free()
  for i in 5:await process_frame
  print("TESTER_SHOP_HOTFIX_RESULT: "+("PASS" if failures==0 else "FAIL")+" checks="+str(checks))
