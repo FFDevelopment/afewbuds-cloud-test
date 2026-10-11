@@ -78,6 +78,7 @@ func run():
  inv.packing.active=true
  check(not m.pack(bench),"Active processing blocks pickup even when counters are empty")
  inv.packing.active=false
+ game.grower_level=12
  var previous:String=m.state.items[bench].sku
  check(m.upgrade(bench) and m.state.items[bench].sku!=previous,"Empty equipment upgrades by item identity")
  var upgraded:String=m.state.items[bench].sku
