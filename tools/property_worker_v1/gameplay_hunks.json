@@ -88,9 +88,14 @@
       "line": 30
     },
     {
-      "before": "\tfor idx in range(host.dealer_count):names.append(\"Hired Dealer %d\" % (idx+1))\n\tif host.packing_employee_hired and not names.has(host._critical_production_sender()):names.append(host._critical_production_sender())\n\treturn names\nfunc assignment(name: String) -> String:return str(host.location_state.staff_assignments.get(name,\"apartment\"))\nfunc reeves_available() -> bool:",
-      "after": "\tfor idx in range(host.dealer_count):names.append(\"Hired Dealer %d\" % (idx+1))\n\tif host.production_crew!=null:\n\t\tfor worker in host.production_crew.all_names():\n\t\t\tif not names.has(worker):names.append(worker)\n\telif host.packing_employee_hired and not names.has(host._critical_production_sender()):names.append(host._critical_production_sender())\n\treturn names\nfunc assignment(name: String) -> String:\n\tif host.production_crew!=null:\n\t\tvar assigned:String=host.production_crew.property_for_name(name)\n\t\tif not assigned.is_empty():return assigned\n\treturn str(host.location_state.staff_assignments.get(name,\"apartment\"))\nfunc reeves_available() -> bool:",
+      "before": "\tif host.packing_employee_hired and not names.has(host._critical_production_sender()):names.append(host._critical_production_sender())\n\treturn names",
+      "after": "\tif host.production_crew!=null:\n\t\tfor worker in host.production_crew.all_names():\n\t\t\tif not names.has(worker):names.append(worker)\n\telif host.packing_employee_hired and not names.has(host._critical_production_sender()):names.append(host._critical_production_sender())\n\treturn names",
       "line": 39
+    },
+    {
+      "before": "func assignment(name: String) -> String:return str(host.location_state.staff_assignments.get(name,\"apartment\"))",
+      "after": "func assignment(name: String) -> String:\n\tif host.production_crew!=null:\n\t\tvar assigned:String=host.production_crew.property_for_name(name)\n\t\tif not assigned.is_empty():return assigned\n\treturn str(host.location_state.staff_assignments.get(name,\"apartment\"))",
+      "line": 41
     },
     {
       "before": "\t\telif job==\"production\":\n\t\t\tlabel(host.phone_list,\"PRODUCTION: %s · Today: %d tasks · Current: %s\" % [\"ON DUTY\" if host.packing_employee_active else \"OFF DUTY\",host.production_worker_tasks_today,host.production_worker_last_action])\n\t\t\tvar production_reason:String=host._staff_duty_blocker(\"production\")\n\t\t\tif not host.packing_employee_active and not production_reason.is_empty():label(host.phone_list,\"WHY OFF DUTY: \"+production_reason)\n\t\t\tbutton(host.phone_list,\"SEND PRODUCTION WORKER HOME\" if host.packing_employee_active else \"PUT PRODUCTION WORKER ON DUTY\",toggle_crew_duty.bind(\"production\"),not host.packing_employee_active and not production_reason.is_empty())\n\t\tif thread!=\"Dealer Team\":",
