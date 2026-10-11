@@ -28,7 +28,7 @@ func open(owner:Node3D,source_menu:Node)->void:
  if overlay==null:_build()
  else:_rebuild_editors()
  visible=true
- preview_viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS
+ preview_viewport.render_target_update_mode=SubViewport.UPDATE_DISABLED if DisplayServer.get_name()=="headless" else SubViewport.UPDATE_ALWAYS
  zoom=3.1
  _update_camera()
  _update_layout()
@@ -98,9 +98,9 @@ func _build()->void:
  preview_viewport.size=Vector2i(480,580)
  preview_viewport.own_world_3d=true
  preview_viewport.transparent_bg=false
- preview_viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS
+ preview_viewport.render_target_update_mode=SubViewport.UPDATE_DISABLED if DisplayServer.get_name()=="headless" else SubViewport.UPDATE_ALWAYS
  preview_image.add_child(preview_viewport)
- preview_image.texture=preview_viewport.get_texture()
+ if DisplayServer.get_name()!="headless":preview_image.texture=preview_viewport.get_texture()
  var stage:=Node3D.new()
  preview_viewport.add_child(stage)
  var world:=WorldEnvironment.new()
@@ -299,8 +299,12 @@ func _update_layout()->void:
 func _cancel()->void:
  _close()
 func _close()->void:
- if preview_viewport!=null:preview_viewport.render_target_update_mode=SubViewport.UPDATE_DISABLED
+ if preview_viewport!=null:
+  preview_viewport.render_target_update_mode=SubViewport.UPDATE_DISABLED
+ if preview_image!=null:preview_image.texture=null
  visible=false
+ if menu!=null and menu.avatar_editor==self:menu.avatar_editor=null
+ queue_free()
 func _save()->void:
  if host==null or menu==null or menu.cloud_locked or menu.quitting:return
  var had_record:bool=host.location_state.has("player_avatar_v1")
