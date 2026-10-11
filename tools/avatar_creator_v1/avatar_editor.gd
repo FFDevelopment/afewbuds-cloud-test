@@ -37,7 +37,10 @@ func open(owner:Node3D,source_menu:Node)->void:
   else:_build()
  elif tabs!=null:_rebuild_editors()
  visible=true
- if preview_viewport!=null:preview_viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS
+ if preview_viewport!=null:
+  preview_viewport.disable_3d=false
+  preview_viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS
+  if camera!=null:camera.make_current()
  zoom=3.1
  _update_camera()
  _update_layout()
