@@ -65,7 +65,7 @@ func run()->void:
     if ((node.mesh as ArrayMesh).surface_get_format(0) & Mesh.ARRAY_FORMAT_BONES)!=0:skinned+=1
   check(sculpted>=8 and skinned>=8,"Character body is a continuous rig-weighted sculpt, not disconnected sphere primitives")
   var torso:MeshInstance3D=body[0] as MeshInstance3D
-  check(torso!=null and torso.mesh is ArrayMesh and (torso.mesh as ArrayMesh).surface_get_surface_count()>=1,"Torso has a real procedural skinned mesh")
+  check(torso!=null and torso.mesh is ArrayMesh and (torso.mesh as ArrayMesh).get_surface_count()>=1,"Torso has a real procedural skinned mesh")
   check(avatar.current.body=="feminine","Feminine body fit preserves common skeleton")
  # Exercise the exact WebGL path even though this CI runner is native Linux.
  var web_avatar=load("res://scripts/avatar_visual.gd").new()
