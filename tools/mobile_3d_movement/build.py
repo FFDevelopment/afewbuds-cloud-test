@@ -918,6 +918,7 @@ def main():
     updated.append(['scripts/container_inventory.gd',(ROOT/'tools/inventory_v1/container_inventory.gd').read_bytes(),0])
     updated.append(['scripts/session_menu.gd',(ROOT/'tools/inventory_v1/session_menu.gd').read_bytes(),0])
     updated.append(['scripts/graphics_quality.gd',(ROOT/'tools/graphics_presets_v1/graphics_quality.gd').read_bytes(),0])
+    updated.append(['scripts/player_unstuck.gd',(ROOT/'tools/landing_unstuck_hotfix_v1/player_unstuck.gd').read_bytes(),0])
     updated.append(['scripts/first_day_guide.gd',(ROOT/'tools/inventory_v1/first_day_guide.gd').read_bytes(),0])
     # A single portable property registry drives stable IDs on both platforms.
     # Keep existing career containers/utility records unmodified; only add an

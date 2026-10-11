@@ -9,9 +9,11 @@ var quitting:=false
 var cloud_locked:=false
 var cloud_state:=""
 var graphics:Node
+var recovery:Node
 func setup(owner:Node,controller:Node) -> void:
  host=owner;inventory=controller
  graphics=load("res://scripts/graphics_quality.gd").new();graphics.name="GraphicsQuality";add_child(graphics);graphics.setup(host)
+ recovery=load("res://scripts/player_unstuck.gd").new();recovery.name="PlayerUnstuck";add_child(recovery);recovery.setup(host)
  var old:Node=host.pause_overlay.get_child(0)
  host.pause_message.get_parent().remove_child(host.pause_message)
  host.pause_overlay.remove_child(old);old.queue_free()
@@ -33,6 +35,7 @@ func show_page(next:String) -> void:
   inventory.button("RESUME GAME",host._resume_gameplay,body,true)
   inventory.button("SETTINGS",func():show_page("settings"),body)
   inventory.button("HELP",func():show_page("help"),body)
+  inventory.button("UNSTUCK · RETURN TO SAFE SPOT",_request_unstuck,body)
   inventory.button("SAVE & QUIT",host._phone_safe_quit,body)
  elif page=="settings":
   inventory.button("BACK",func():show_page("home"),body)
@@ -53,6 +56,12 @@ func show_page(next:String) -> void:
   inventory.label("Saving your career for the other device..." if cloud_state=="handoff" else ("Connection lost. Gameplay is paused while we verify your active session." if cloud_state=="offline" else ("Cloud saves need attention. Your progress is saved on this device. Return to sign-in to review the cloud save." if cloud_state=="save_conflict" else "This play session is no longer valid. Sign in again to continue from your latest cloud save.")),body,18)
   if cloud_state in ["replaced","save_conflict"]:inventory.button("RETURN TO SIGN IN",return_to_sign_in,body,true)
  scroll.scroll_vertical=0
+func _request_unstuck()->void:
+ if cloud_locked or quitting:return
+ if recovery==null:return
+ host.pause_message.text=recovery.recover()
+ if host.pause_message.text.begins_with("UNSTUCK:"):host._save_game()
+ show_page("home")
 func _select_graphics(preset:String)->void:
  if graphics!=null and graphics.change(preset):show_page("settings")
 

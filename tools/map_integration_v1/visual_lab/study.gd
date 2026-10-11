@@ -181,7 +181,9 @@ func landing_apartment_door(y:float,z:float,unit:String)->void:
   ["UnitPlaque",Vector3(.115,2.43,0),Vector3(.025,.16,.30),plain("283e3e",.3)]
  ]
  for spec in parts:
-  var n=box(spec[1],spec[2],spec[3]);n.name=spec[0];n.reparent(root,false)
+  var n=solid_box(spec[1],spec[2],spec[3]) if spec[0]=="DoorLeaf" else box(spec[1],spec[2],spec[3])
+  n.name=spec[0];n.reparent(root,false)
+  if spec[0]=="DoorLeaf":n.set_meta("no_collision",true)
  var number=Label3D.new();number.name="UnitNumber";number.text=unit;number.font_size=48;number.pixel_size=.0018
  number.position=Vector3(.132,2.43,0);number.rotation.y=PI/2;number.modulate=Color("e7deca");number.outline_size=0;root.add_child(number)
  # Replace only window parts that overlap this closed entrance, avoiding a door over glass.
