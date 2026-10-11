@@ -1,0 +1,4 @@
+# AFewBuds Player Creator (development)
+Game uses the approved Mike 56-bone rig for editable modular player-only character previews. Open Pause → Settings → Character & Wardrobe, choose body silhouette, face/skin/eyes/hair and 9 outfit/accessory slots, rotate/zoom/animate, then Save Look. No change until Save.
+The result adds `location_state.player_avatar_v1` to the existing career JSON. It is never serialized as NPC stock, never bought/sold and never changes cash, workers or property saves. This is a procedural fitting-stage preview, not yet the final skinned asset set, third-person camera or server-reserved character entitlements.
+The three GDScripts are byte-identical to desktop's `game/scripts/avatar_*.gd`. Mobile pack builder inserts them unchanged. Validate `tools/avatar_creator_v1/check.gd` and all existing CI checks on real builds; do not promote to public testers until user approves the asset quality.

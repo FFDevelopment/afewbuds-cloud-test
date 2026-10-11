@@ -10,6 +10,7 @@ var cloud_locked:=false
 var cloud_state:=""
 var graphics:Node
 var recovery:Node
+var avatar_editor:CanvasLayer
 func setup(owner:Node,controller:Node) -> void:
  host=owner;inventory=controller
  graphics=load("res://scripts/graphics_quality.gd").new();graphics.name="GraphicsQuality";add_child(graphics);graphics.setup(host)
@@ -39,6 +40,8 @@ func show_page(next:String) -> void:
   inventory.button("SAVE & QUIT",host._phone_safe_quit,body)
  elif page=="settings":
   inventory.button("BACK",func():show_page("home"),body)
+  inventory.button("CHARACTER & WARDROBE",_open_avatar,body)
+  inventory.label("Create or edit your unique player appearance. Existing careers keep their look until you save one.",body,15)
   inventory.label("GRAPHICS QUALITY",body,21)
   inventory.label("Choose the performance and visual detail for THIS device. Your game, progress, and other device are unaffected.",body,16)
   for preset in ["low","medium","high"]:
@@ -62,6 +65,12 @@ func _request_unstuck()->void:
  host.pause_message.text=recovery.recover()
  if host.pause_message.text.begins_with("UNSTUCK:"):host._save_game()
  show_page("home")
+func _open_avatar()->void:
+ if cloud_locked or quitting:return
+ if avatar_editor==null or not is_instance_valid(avatar_editor):
+  avatar_editor=load("res://scripts/avatar_editor.gd").new()
+  host.add_child(avatar_editor)
+ avatar_editor.open(host,self)
 func _select_graphics(preset:String)->void:
  if graphics!=null and graphics.change(preset):show_page("settings")
 
@@ -99,6 +108,7 @@ func on_cloud_event(state:String) -> void:
   return
  if state not in ["handoff","replaced","offline","save_conflict"]:return
  cloud_locked=true
+ if avatar_editor!=null and avatar_editor.visible:avatar_editor._cancel()
  host._pause_gameplay()
  host.pause_overlay.show();show_page("session")
  if state=="handoff":
