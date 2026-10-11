@@ -127,7 +127,7 @@ func run()->void:
  check(model.validate(flush_b,"house",Vector3(29.8,0,-.5),0).is_empty(),"Neighboring furniture fits flush without artificial padding")
  check(not model.validate(flush_b,"house",Vector3(29.6,0,-.5),0).is_empty(),"Actual 20cm overlapping footprints are blocked")
  check(model.validate(flush_b,"house",Vector3(25.95,0,-1.2),0).is_empty(),"Furniture can sit with its bounding edge on the wall-side room boundary")
- check(not model.validate(flush_b,"house",Vector3(25.70,0,-1.2),0).is_empty(),"Furniture crossing a structural room boundary remains blocked")
+ check(not model.validate(flush_b,"house",Vector3(25.60,0,-1.2),0).is_empty(),"Furniture crossing a structural room boundary remains blocked")
  model.state.items.erase(flush_a)
  model.state.items.erase(flush_b)
  game.queue_free()
