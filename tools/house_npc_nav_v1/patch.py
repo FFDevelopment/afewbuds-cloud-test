@@ -32,6 +32,8 @@ def apply_entries(entries):
                 if source.count(old)!=1:raise AssertionError("House nav state declaration drift")
                 source=source.replace(old,old+'\nvar house_npc_navigation: RefCounted',1)
             for name,body in SPECS["modified"][key].items():
+                if name=="_house_worker_navigation_target" and "return waypoint" not in body:
+                    raise AssertionError("Truncated house stair route function in mobile source patch")
                 if key=="main.gd" and name=="_house_worker_navigation_target" and "func _house_worker_navigation_target(" not in source:
                     source=add_function(source,name,body,"_production_worker_navigation_target")
                 else:
