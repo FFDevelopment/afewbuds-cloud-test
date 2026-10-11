@@ -129,7 +129,7 @@ func _build()->void:
  floor.position=Vector3(0,-.08,0)
  var ground_mat:=StandardMaterial3D.new()
  ground_mat.albedo_color=Color("365548")
- ground.material_override=ground_mat
+ floor.material_override=ground_mat
  stage.add_child(floor)
  preview_model=Visual.new()
  preview_model.name="PlayerPreview"
