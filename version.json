@@ -1,5 +1,5 @@
 {
-  "release_id": "0.7.9-beta.19-cloudtest.99-expansion.19.930127d17204",
+  "release_id": "0.7.9-beta.19-cloudtest.99-expansion.19.bc706e0f8082",
   "game_build": "0.7.9-beta.19",
   "channel": "main-based-cloud-test",
   "updater": "network-only-no-service-worker",
@@ -222,5 +222,5 @@
     ],
     "hud": "Persistent city / current district; follows player location"
   },
-  "runtime_pack_sha256": "930127d172049d0830170160ceff8f1669042292183a83f33794a69c0d153501"
+  "runtime_pack_sha256": "bc706e0f808287a0f67a16ddfdf65ef6608476eef7f37c6840c5424473fb4c8e"
 }
