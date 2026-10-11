@@ -55,6 +55,21 @@ func run()->void:
   avatar.rebuild(alternate)
   check(avatar.part_count("hair")>1 and avatar.part_count("outerwear")>0 and avatar.part_count("headwear")>0 and avatar.part_count("glasses")>0 and avatar.part_count("gloves")>0 and avatar.part_count("bag")>0 and avatar.part_count("jewelry")>0,"All garment/accessory modules regenerate on appearance changes")
   check(avatar.current.body=="feminine","Feminine body fit preserves common skeleton")
+ # Exercise the exact WebGL path even though this CI runner is native Linux.
+ var web_avatar=load("res://scripts/avatar_visual.gd").new()
+ web_avatar.force_native_rig=true
+ root.add_child(web_avatar)
+ await process_frame
+ check(web_avatar.native_mode and web_avatar.skeleton!=null and web_avatar.skeleton.get_bone_count()==56,"iOS web preview uses original native 56-bone rig without importing a GLB")
+ if web_avatar.skeleton!=null:
+  check(web_avatar.part_count("body")>=10 and web_avatar.part_count("top")>=1 and web_avatar.part_count("shoes")>=2,"Native web rig carries real body and outfit geometry")
+  var test_look:Dictionary=look.duplicate(true)
+  test_look.hair="locs";test_look.bottom="skirt";test_look.top="hoodie"
+  web_avatar.rebuild(test_look)
+  web_avatar.play_preview("walk")
+  check(web_avatar.part_count("hair")>1 and web_avatar.part_count("bottom")>0,"Web rig can change hairstyle, outfit and animation")
+ web_avatar.queue_free()
+ web_avatar=null
  avatar.queue_free()
  avatar=null
  for i in 5:await process_frame
