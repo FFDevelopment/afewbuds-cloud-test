@@ -21,8 +21,12 @@ func status(property:String) -> String:
 	return "LAYING LOW" if laying_low(property) else ("OPEN" if is_open(property) else "CLOSED")
 func on_duty(name:String) -> bool:
 	var role:String=crew.role(name)
-	if role=="production":return host.packing_employee_active and not host.production_worker_arrested
-	return role=="dealer" and host.dealers_active and not host.dealer_arrested and crew.ops.portfolio_staff_duty(name)
+	if role=="production":
+		if host.production_crew!=null:
+			var prop:String=crew.assignment(name)
+			return host.production_crew.on_duty(prop) and not bool(host.production_crew.record(prop).get("arrested",false))
+		return host.packing_employee_active and not host.production_worker_arrested
+	return role in ["dealer","door"] and (host.dealers_active and not host.dealer_arrested if role=="dealer" else true) and crew.ops.portfolio_staff_duty(name)
 func operator_for(property:String) -> String:
 	for name in crew.roster():
 		if crew.assignment(name)==property and on_duty(name):return name
@@ -80,7 +84,15 @@ func shutdown(property:String="apartment") -> void:
 	data["lay_low"]=true;data["open"]=false
 	if property=="apartment":host.lay_low_active=true;host.reeves_quiet_pause_seconds=0.0
 	apply_equipment(property,data.equipment_before_shutdown,true)
-	if host.inventory_system.worker_property()==property:
+	if host.production_crew!=null and bool(host.production_crew.record(property).get("hired",false)):
+		host.production_crew.with_property(property,func():
+			host.production_worker_pending_action=""
+			host.production_worker_pending_slot=-1
+			host.production_worker_task="Laying low · "+property.capitalize()
+			host.production_worker_last_action=host.production_worker_task
+			host._reset_production_worker_navigation()
+		)
+	elif host.inventory_system.worker_property()==property:
 		host.production_worker_pending_action="";host.production_worker_pending_slot=-1
 		host.production_worker_task="Laying low · "+property.capitalize()
 		host.production_worker_last_action=host.production_worker_task
