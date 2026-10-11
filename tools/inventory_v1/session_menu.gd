@@ -40,7 +40,7 @@ func show_page(next:String) -> void:
   inventory.label("Choose the performance and visual detail for THIS device. Your game, progress, and other device are unaffected.",body,16)
   for preset in ["low","medium","high"]:
    var title:String=preset.to_upper()+("  ✓ CURRENT" if graphics.selected==preset else "")
-   inventory.button(title,func():_select_graphics(preset),body,graphics.selected==preset)
+   inventory.button(title,_select_graphics.bind(preset),body,graphics.selected==preset)
    inventory.label(str(graphics.DETAILS[preset]),body,15)
   inventory.button("ACCOUNT SETTINGS",host._open_web_account_settings,body)
   var input:Node=get_tree().root.get_node_or_null("DesktopInput")
