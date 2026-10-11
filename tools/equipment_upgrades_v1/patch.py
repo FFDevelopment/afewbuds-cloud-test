@@ -29,7 +29,7 @@ def apply_entries(entries):
                 if "var controls_active:=false" not in source:
                     marker="var layout_mode:=false"
                     assert source.count(marker)==1,"Mobile edit state anchor changed"
-                    source=source.replace(marker,"var controls_active:=false\\n"+marker,1)
+                    source=source.replace(marker,"var controls_active:=false\n"+marker,1)
                 # Mobile layout adapter predates desktop's force-refresh argument.
                 old="func refresh_layout() -> void:\n if not inside(layout_property):close();return\n"
                 new="func refresh_layout(force:bool=false) -> void:\n if not inside(layout_property):close();return\n if controls_active and not force:return\n"
