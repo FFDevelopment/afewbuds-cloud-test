@@ -14,7 +14,7 @@ var preview_model:Node3D
 var camera:Camera3D
 var tabs:TabContainer
 var message:Label
-var zoom:float=3.1
+var zoom:float=4.0
 var title:Label
 func _ready()->void:
  layer=125
@@ -41,7 +41,7 @@ func open(owner:Node3D,source_menu:Node)->void:
   preview_viewport.disable_3d=false
   preview_viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS
   if camera!=null:camera.make_current()
- zoom=3.1
+ zoom=4.0
  _update_camera()
  _update_layout()
  if message!=null:message.text="Changes are a preview until you save. No gameplay stats or NPCs are changed."
@@ -149,7 +149,7 @@ func _build()->void:
  preview_model.name="PlayerPreview"
  stage.add_child(preview_model)
  camera=Camera3D.new()
- camera.fov=37
+ camera.fov=40
  camera.current=true
  stage.add_child(camera)
  _update_camera()
@@ -287,7 +287,7 @@ func _reset()->void:
 func _rotate(angle:float)->void:
  if preview_model!=null:preview_model.rotation.y+=angle
 func _zoom(delta:float)->void:
- zoom=clampf(zoom+delta,2.15,4.5)
+ zoom=clampf(zoom+delta,2.45,5.6)
  _update_camera()
 func _update_camera()->void:
  if camera==null:return
@@ -305,7 +305,7 @@ func _update_camera()->void:
    target=(head_at+foot_at)*.5
    target.y+=.04
    height=maxf(1.3,head_at.distance_to(foot_at))
- var distance:float=zoom*maxf(.85,height/1.85)
+ var distance:float=zoom*maxf(1.0,(height+.35)/1.85)
  camera.position=target+Vector3(.12,0,-distance)
  camera.look_at(target)
 func _preview_input(event:InputEvent)->void:
@@ -324,7 +324,7 @@ func _update_layout()->void:
  var wide:bool=viewport_size.x>=860.0
  layout.columns=2 if wide else 1
  var picture_width:float=minf(380.0,maxf(250.0,viewport_size.x-45.0))
- preview_image.custom_minimum_size=Vector2(picture_width,460 if wide else 280)
+ preview_image.custom_minimum_size=Vector2(picture_width,460 if wide else 360)
  tabs.custom_minimum_size=Vector2(355 if wide else picture_width,470 if wide else 400)
 func _cancel()->void:
  _close()
