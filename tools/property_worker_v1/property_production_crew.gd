@@ -82,7 +82,7 @@ func _load(property:String)->void:
   host.production_worker_node=node
   host.production_worker_head=node.get_node_or_null("Head") as MeshInstance3D
   host.production_worker_face_shell=node.get_node_or_null("FriendFaceWrap") as MeshInstance3D
-  host.production_worker_task_label=node.find_child("*","Label3D",true,false) as Label3D
+  host.production_worker_task_label=(node.find_children("*","Label3D",true,false)[0] as Label3D)
   node.position=_at(d.get("position",[]),Vector3(35,0,1.5) if property=="house" else Vector3(0.75,0,2.55))
   node.rotation.y=float(d.get("yaw",0.0))
 
