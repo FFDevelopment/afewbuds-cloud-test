@@ -31,6 +31,10 @@ def apply_entries(entries):
             old="and not equipment_world.clone_cabinet(preview_model,selected,e) and not equipment_world.clone_legacy(preview_model,selected,e):build_prop(preview_model,selected,e.sku)"
             replacement="and not equipment_world.clone_cabinet(preview_model,selected,e) and not equipment_world.clone_packing(preview_model,selected,e) and not equipment_world.clone_legacy(preview_model,selected,e):build_prop(preview_model,selected,e.sku)"
             source=one(source,old,replacement,"placement preview")
+            source=one(source,
+                '  var size:Vector3=model.size_of(id,int(e.get("yaw",0)))\n  var box:=AABB(Vector3(e.position[0]-size.x*.5,e.position[1],e.position[2]-size.z*.5),size)',
+                '  # Ignore furniture on the opposite house floor during look selection.\n  if absf(float(e.position[1])-placement_floor())>0.8:continue\n  var size:Vector3=model.size_of(id,int(e.get("yaw",0)))\n  var box:=AABB(Vector3(e.position[0]-size.x*.5,e.position[1],e.position[2]-size.z*.5),size)',
+                "floor-aware house furniture targeting")
             data=source.encode()
             matched.add(name)
         result.append([name,data,flags])
