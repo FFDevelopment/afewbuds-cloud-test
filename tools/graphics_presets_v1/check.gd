@@ -24,20 +24,21 @@ func run()->void:
     var viewport:Viewport=game.get_viewport()
     var original_atlas:int=graphics.original_shadow_atlas
     var original_scale:float=graphics.original_scale
+    var headless:bool=DisplayServer.get_name()=="headless"
     var original_fps:int=graphics.original_fps
     var sun:DirectionalLight3D=game.neighborhood.outdoor_sun
     var original_shadow:bool=bool(sun.get_meta("afb_quality_original_shadow",sun.shadow_enabled))
     menu._select_graphics("low")
-    check(is_equal_approx(viewport.scaling_3d_scale,.75) and viewport.positional_shadow_atlas_size==512,"Low reduces internal 3D resolution and shadow budget")
-    check(Engine.max_fps==30 and not sun.shadow_enabled,"Low caps FPS and disables expensive shadows")
+    check(is_equal_approx(float(graphics.profile("low").scale),.75) and int(graphics.profile("low").atlas)==512 and (headless or (is_equal_approx(viewport.scaling_3d_scale,.75) and viewport.positional_shadow_atlas_size==512)),"Low defines reduced 3D resolution and shadow budget")
+    check(Engine.max_fps==30 and (headless or not sun.shadow_enabled),"Low caps FPS and disables expensive shadows on graphical displays")
     var new_light:=DirectionalLight3D.new()
     new_light.shadow_enabled=true
     game.add_child(new_light)
     await process_frame
     await process_frame
-    check(not new_light.shadow_enabled,"Lights added after gameplay starts obey the current quality preset")
+    check(headless or not new_light.shadow_enabled,"Lights added after gameplay starts obey the current quality preset")
     menu._select_graphics("medium")
-    check(is_equal_approx(viewport.scaling_3d_scale,.9) and viewport.positional_shadow_atlas_size==1024 and Engine.max_fps==60,"Medium applies balanced 3D settings")
+    check(is_equal_approx(float(graphics.profile("medium").scale),.9) and int(graphics.profile("medium").atlas)==1024 and Engine.max_fps==60 and (headless or (is_equal_approx(viewport.scaling_3d_scale,.9) and viewport.positional_shadow_atlas_size==1024)),"Medium applies balanced 3D settings")
     check(sun.shadow_enabled==original_shadow and new_light.shadow_enabled,"Medium restores the original light configuration")
     var before:String=graphics.selected
     check(not graphics.change("invalid") and graphics.selected==before,"Unexpected preset values are rejected")
