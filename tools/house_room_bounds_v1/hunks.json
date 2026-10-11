@@ -1,0 +1,26 @@
+{
+  "scripts/property_furniture.gd": [
+    {
+      "before": "const HOUSE_PACKING_PLACEMENT:=Rect2(36.615,-4.885,8.270,7.770)\n",
+      "after": "const HOUSE_PACKING_PLACEMENT:=Rect2(36.615,-4.885,8.270,7.770)\n# The other legacy registry rectangles stop 25-45 cm short of the walls.\n# These are *placement-only* safe inner faces from interiors.house()'s\n# 22 cm structural walls plus 5 mm clearance. They do not edit save keys.\nconst HOUSE_ROOM_PLACEMENT={\n \"living\":Rect2(25.115,-4.885,8.270,7.770),\n \"packing\":HOUSE_PACKING_PLACEMENT,\n \"kitchen\":Rect2(25.115,-13.885,6.070,6.770),\n \"bathroom\":Rect2(31.415,-13.885,2.670,6.770),\n \"bedroom\":Rect2(34.315,-13.885,4.170,6.770),\n \"grow\":Rect2(38.715,-13.885,6.170,6.770)\n}\n# Basement physical walls: x=26/44.8 and z=-13.8/1.5, 20 cm thick.\n# Reserve the staircase/railing wing x>=41.15 as an access path. Extending\n# the legacy 26.3..40.5 x -13.5..-.5 crop zone to the real safe walls gives\n# considerably more space without granting placement on the stairs.\nconst BASEMENT_GROW_PLACEMENT:=Rect2(26.105,-13.695,14.795,15.090)\n"
+    },
+    {
+      "before": "func placement_rooms(property:String,floor_y:float=0.0)->Dictionary:\n var rooms:Dictionary=registry.rooms_for(property)\n if property==\"house\" and floor_y>-.5 and rooms.has(\"packing\"):\n  rooms[\"packing\"]=HOUSE_PACKING_PLACEMENT\n return rooms\n",
+      "after": "func placement_rooms(property:String,floor_y:float=0.0)->Dictionary:\n var rooms:Dictionary=registry.rooms_for(property)\n if property==\"house\":\n  if floor_y<-.5:return {\"basement_grow\":BASEMENT_GROW_PLACEMENT}\n  for room in HOUSE_ROOM_PLACEMENT:\n   if rooms.has(room):rooms[room]=HOUSE_ROOM_PLACEMENT[room]\n return rooms\n"
+    },
+    {
+      "before": " var allowed_rooms:Dictionary={\"grow\":Rect2(26.3,-13.5,14.2,13.0)} if basement else placement_rooms(property,point.y)\n if basement and elevated:allowed_rooms={\"grow\":Rect2(26.1,-13.7,14.4,13.2)}\n",
+      "after": " var allowed_rooms:Dictionary=placement_rooms(property,point.y)\n if basement and elevated:\n  # Wall-mounted utilities still require an actual wall behind them.\n  allowed_rooms={\"basement_grow\":BASEMENT_GROW_PLACEMENT.grow(.12)}\n"
+    },
+    {
+      "before": "  var edge_tolerance:float=0.0 if property==\"house\" and key==\"packing\" and not elevated else (.35 if e.sku==\"storage_5\" or elevated else .015)",
+      "after": "  var edge_tolerance:float=0.0 if property==\"house\" and HOUSE_ROOM_PLACEMENT.has(key) and not elevated else (.35 if e.sku==\"storage_5\" or elevated else .015)"
+    }
+  ],
+  "scripts/furniture_editor.gd": [
+    {
+      "before": " if property==\"house\" and floor_y<-.5:\n  rooms={\"grow\":Rect2(26.3,-13.5,14.2,13.0)}\n  selected_room=\"grow\"\n else:\n  rooms=model.placement_rooms(property,floor_y)\n  selected_room=host.neighborhood.location_ops.placement_room(property,host.camera.global_position)\n",
+      "after": " if property==\"house\" and floor_y<-.5:\n  selected_room=\"basement_grow\"\n else:\n  selected_room=host.neighborhood.location_ops.placement_room(property,host.camera.global_position)\n"
+    }
+  ]
+}
