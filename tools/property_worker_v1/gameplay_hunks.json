@@ -1,0 +1,242 @@
+{
+  "scripts/main.gd": [
+    {
+      "before": "var production_worker_friend_name: String = \"\"\nvar friend_staff_roles: Dictionary = {}",
+      "after": "var production_worker_friend_name: String = \"\"\nvar production_crew:RefCounted\nvar pending_saved_plant_clock:Dictionary={}\nvar friend_staff_roles: Dictionary = {}",
+      "line": 149
+    },
+    {
+      "before": "\tinventory_system.setup(self)\n\t_update_day_night_visuals()",
+      "after": "\tinventory_system.setup(self)\n\tproduction_crew=load(\"res://scripts/property_production_crew.gd\").new()\n\tproduction_crew.setup(self)\n\tif not pending_saved_plant_clock.is_empty():\n\t\t_restore_plant_clock(pending_saved_plant_clock)\n\t\tpending_saved_plant_clock.clear()\n\t_update_day_night_visuals()",
+      "line": 753
+    },
+    {
+      "before": "\t\t\treturn\n\t\t_update_production_worker_visual(delta)\n\tif camera == null or _any_modal_open():",
+      "after": "\t\t\treturn\n\t\tif production_crew!=null:production_crew.update(delta)\n\t\telse:_update_production_worker_visual(delta)\n\tif camera == null or _any_modal_open():",
+      "line": 811
+    },
+    {
+      "before": "func _offline_worker_care_enabled() -> bool:\n\treturn packing_employee_hired and packing_employee_active and game_day >= raid_lockdown_until_day and _offline_crops_enabled() and (neighborhood==null or neighborhood.location_ops.crew.shop==null or neighborhood.location_ops.crew.shop.production_allowed())\n\nfunc _simulate_offline_plants(elapsed_seconds: float, worker_care: bool = false) -> void:\n\tif inventory_system!=null and inventory_system.furniture!=null and inventory_system.controlled(inventory_system.worker_property()+\":packing\"):",
+      "after": "func _offline_worker_care_enabled() -> bool:\n\tif production_crew!=null and production_crew.initialized:\n\t\treturn production_crew.any_duty() and game_day>=raid_lockdown_until_day and _offline_crops_enabled()\n\treturn packing_employee_hired and packing_employee_active and game_day >= raid_lockdown_until_day and _offline_crops_enabled() and (neighborhood==null or neighborhood.location_ops.crew.shop==null or neighborhood.location_ops.crew.shop.production_allowed())\n\nfunc _simulate_offline_plants(elapsed_seconds: float, worker_care: bool = false) -> void:\n\tif production_crew!=null and production_crew.initialized:\n\t\tproduction_crew.offline_plants(elapsed_seconds,worker_care)\n\t\treturn\n\tif inventory_system!=null and inventory_system.furniture!=null and inventory_system.controlled(inventory_system.worker_property()+\":packing\"):",
+      "line": 5180
+    },
+    {
+      "before": "\t\treturn\n\tif packing_employee_hired and packing_employee_active:\n\t\t_assign_production_worker_task()\n\telif production_worker_node != null:\n\t\tproduction_worker_node.visible = false\n\tif _total_dealer_count() > 0 and dealers_active:",
+      "after": "\t\treturn\n\tif production_crew!=null:production_crew.tick()\n\telif packing_employee_hired and packing_employee_active:_assign_production_worker_task()\n\telif production_worker_node != null:production_worker_node.visible = false\n\tif _total_dealer_count() > 0 and dealers_active:",
+      "line": 5325
+    },
+    {
+      "before": "func _staff_count() -> int:\n\treturn (1 if packing_employee_hired else 0) + _total_dealer_count() + _friend_staff_names(\"door\").size()\n",
+      "after": "func _staff_count() -> int:\n\treturn (production_crew.hired_count() if production_crew!=null else (1 if packing_employee_hired else 0)) + _total_dealer_count() + _friend_staff_names(\"door\").size()\n",
+      "line": 6065
+    },
+    {
+      "before": "func _staff_daily_payroll() -> int:\n\tvar total: int = 0\n\tif packing_employee_hired and packing_employee_active:\n\t\ttotal += PACKER_DAILY_WAGE\n\treturn total\n",
+      "after": "func _staff_daily_payroll() -> int:\n\tif production_crew!=null:return production_crew.payroll_due(\"apartment\")+production_crew.payroll_due(\"house\")\n\treturn PACKER_DAILY_WAGE if packing_employee_hired and packing_employee_active else 0\n",
+      "line": 6147
+    },
+    {
+      "before": "\tlast_production_payroll_cost = 0\n\tif packing_employee_hired and packing_employee_active:\n\t\tif cash >= PACKER_DAILY_WAGE:",
+      "after": "\tlast_production_payroll_cost = 0\n\tif production_crew!=null:\n\t\tvar wages:Dictionary=production_crew.charge_wages()\n\t\tlast_production_payroll_cost=int(wages.get(\"spent\",0))\n\t\tfor entry in wages.get(\"paid\",[]):paid_parts.append(str(entry))\n\t\tfor entry in wages.get(\"missed\",[]):missed_parts.append(str(entry))\n\telif packing_employee_hired and packing_employee_active:\n\t\tif cash >= PACKER_DAILY_WAGE:",
+      "line": 6426
+    },
+    {
+      "before": "func _critical_production_sender() -> String:\n\treturn production_worker_friend_name if not production_worker_friend_name.is_empty() else \"Production Worker\"\n",
+      "after": "func _critical_production_sender() -> String:\n\tif not production_worker_friend_name.is_empty():return production_worker_friend_name\n\treturn \"House Production Worker\" if production_crew!=null and production_crew.current==\"house\" else \"Production Worker\"\n",
+      "line": 8210
+    },
+    {
+      "before": "\tvar had_dealers: bool = dealers_active and _total_dealer_count() > 0\n\tvar had_production: bool = packing_employee_hired and packing_employee_active\n\tif not had_dealers and not had_production:",
+      "after": "\tvar had_dealers: bool = dealers_active and _total_dealer_count() > 0\n\tvar had_production: bool = production_crew.any_duty() if production_crew!=null else (packing_employee_hired and packing_employee_active)\n\tif not had_dealers and not had_production:",
+      "line": 8217
+    },
+    {
+      "before": "\t\t\t_push_phone_text(dealer_sender, \"The heat is way too hot. We are heading home. Do not put us back out until things cool down.\")\n\tif had_production:\n\t\tpacking_employee_active = false",
+      "after": "\t\t\t_push_phone_text(dealer_sender, \"The heat is way too hot. We are heading home. Do not put us back out until things cool down.\")\n\tif had_production and production_crew!=null:\n\t\tproduction_crew.heat_shutdown(arrest_target==\"production\")\n\telif had_production:\n\t\tpacking_employee_active = false",
+      "line": 8236
+    },
+    {
+      "before": "func _recruit_friend_staff(customer_name: String, role: String, target_property: String = \"apartment\") -> void:\n\tif _staff_heat_locked():",
+      "after": "func _recruit_friend_staff(customer_name: String, role: String, target_property: String = \"apartment\") -> void:\n\tif role==\"production\" and production_crew!=null and not production_crew.scoped:\n\t\tproduction_crew.recruit(customer_name,target_property)\n\t\treturn\n\tif _staff_heat_locked():",
+      "line": 8343
+    },
+    {
+      "before": "func _release_friend_staff(customer_name: String) -> void:\n\tvar held_role: String = _friend_staff_role(customer_name)",
+      "after": "func _release_friend_staff(customer_name: String) -> void:\n\tif production_crew!=null and not production_crew.scoped and production_crew.property_for_name(customer_name)!=\"\":\n\t\tproduction_crew.fire(production_crew.property_for_name(customer_name))\n\t\treturn\n\tvar held_role: String = _friend_staff_role(customer_name)",
+      "line": 8392
+    },
+    {
+      "before": "\t\t\tcontinue\n\t\tif role == \"production\" and not packing_employee_active:\n\t\t\tcontinue",
+      "after": "\t\t\tcontinue\n\t\tif role == \"production\" and (not production_crew.active_for_name(customer_name) if production_crew!=null else not packing_employee_active):\n\t\t\tcontinue",
+      "line": 8429
+    },
+    {
+      "before": "func _save_game() -> void:\n\tif phone_remote_stock_change:return",
+      "after": "func _save_game() -> void:\n\tif production_crew!=null and production_crew.initialized:production_crew._capture()\n\tif phone_remote_stock_change:return",
+      "line": 9866
+    },
+    {
+      "before": "\t\tcloseout_announced = true\n\t_restore_plant_clock(data)\n",
+      "after": "\t\tcloseout_announced = true\n\tpending_saved_plant_clock=data\n",
+      "line": 10289
+    }
+  ],
+  "scripts/crew_phone.gd": [
+    {
+      "before": "func role(name: String) -> String:\n\tif host.packing_employee_hired and name==host._critical_production_sender():return \"production\"",
+      "after": "func role(name: String) -> String:\n\tif host.production_crew!=null and host.production_crew.property_for_name(name)!=\"\":return \"production\"\n\tif host.packing_employee_hired and name==host._critical_production_sender():return \"production\"",
+      "line": 30
+    },
+    {
+      "before": "\tfor idx in range(host.dealer_count):names.append(\"Hired Dealer %d\" % (idx+1))\n\tif host.packing_employee_hired and not names.has(host._critical_production_sender()):names.append(host._critical_production_sender())\n\treturn names\nfunc assignment(name: String) -> String:return str(host.location_state.staff_assignments.get(name,\"apartment\"))\nfunc reeves_available() -> bool:",
+      "after": "\tfor idx in range(host.dealer_count):names.append(\"Hired Dealer %d\" % (idx+1))\n\tif host.production_crew!=null:\n\t\tfor worker in host.production_crew.all_names():\n\t\t\tif not names.has(worker):names.append(worker)\n\telif host.packing_employee_hired and not names.has(host._critical_production_sender()):names.append(host._critical_production_sender())\n\treturn names\nfunc assignment(name: String) -> String:\n\tif host.production_crew!=null:\n\t\tvar assigned:String=host.production_crew.property_for_name(name)\n\t\tif not assigned.is_empty():return assigned\n\treturn str(host.location_state.staff_assignments.get(name,\"apartment\"))\nfunc reeves_available() -> bool:",
+      "line": 39
+    },
+    {
+      "before": "\t\telif job==\"production\":\n\t\t\tlabel(host.phone_list,\"PRODUCTION: %s · Today: %d tasks · Current: %s\" % [\"ON DUTY\" if host.packing_employee_active else \"OFF DUTY\",host.production_worker_tasks_today,host.production_worker_last_action])\n\t\t\tvar production_reason:String=host._staff_duty_blocker(\"production\")\n\t\t\tif not host.packing_employee_active and not production_reason.is_empty():label(host.phone_list,\"WHY OFF DUTY: \"+production_reason)\n\t\t\tbutton(host.phone_list,\"SEND PRODUCTION WORKER HOME\" if host.packing_employee_active else \"PUT PRODUCTION WORKER ON DUTY\",toggle_crew_duty.bind(\"production\"),not host.packing_employee_active and not production_reason.is_empty())\n\t\tif thread!=\"Dealer Team\":",
+      "after": "\t\telif job==\"production\":\n\t\t\tvar property_id:String=assignment(thread)\n\t\t\tvar info:Dictionary=host.production_crew.record(property_id) if host.production_crew!=null else {}\n\t\t\tvar on:bool=bool(info.get(\"active\",host.packing_employee_active))\n\t\t\tlabel(host.phone_list,\"%s PRODUCTION: %s · Today: %d tasks · Current: %s\" % [property_id.to_upper(),\"ON DUTY\" if on else \"OFF DUTY\",int(info.get(\"tasks\",host.production_worker_tasks_today)),str(info.get(\"last\",host.production_worker_last_action))])\n\t\t\tvar production_reason:String=host.production_crew.with_property(property_id,func():return host._staff_duty_blocker(\"production\")) if host.production_crew!=null else host._staff_duty_blocker(\"production\")\n\t\t\tif not on and not production_reason.is_empty():label(host.phone_list,\"WHY OFF DUTY: \"+production_reason)\n\t\t\tbutton(host.phone_list,\"SEND PRODUCTION WORKER HOME\" if on else \"PUT PRODUCTION WORKER ON DUTY\",toggle_crew_duty.bind(\"production\",property_id),not on and not production_reason.is_empty())\n\t\tif thread!=\"Dealer Team\":",
+      "line": 127
+    },
+    {
+      "before": "\t\tif job==\"dealer\" and host.dealer_arrested:button(host.phone_list,\"SEND DEALER BAIL · $%d\" % host.dealer_bail_due,host._pay_dealer_bail,host.cash<host.dealer_bail_due)\n\t\tif job==\"production\" and host.production_worker_arrested:button(host.phone_list,\"SEND WORKER BAIL · $%d\" % host.production_worker_bail_due,host._pay_production_bail,host.cash<host.production_worker_bail_due)\n\telse:",
+      "after": "\t\tif job==\"dealer\" and host.dealer_arrested:button(host.phone_list,\"SEND DEALER BAIL · $%d\" % host.dealer_bail_due,host._pay_dealer_bail,host.cash<host.dealer_bail_due)\n\t\tif job==\"production\":\n\t\t\tvar record:Dictionary=host.production_crew.record(assignment(thread)) if host.production_crew!=null else {}\n\t\t\tif bool(record.get(\"arrested\",host.production_worker_arrested)):\n\t\t\t\tvar bail:int=int(record.get(\"bail\",host.production_worker_bail_due))\n\t\t\t\tbutton(host.phone_list,\"SEND WORKER BAIL · $%d\" % bail,host.production_crew.pay_bail.bind(assignment(thread)) if host.production_crew!=null else host._pay_production_bail,host.cash<bail)\n\telse:",
+      "line": 143
+    },
+    {
+      "before": "\t\t\t\tbutton(host.phone_list,\"OFFER DEALER WORK · APARTMENT\",recruit.bind(thread,\"dealer\"),host._total_dealer_count()>=host._dealer_capacity())\n\t\t\t\tbutton(host.phone_list,\"OFFER PRODUCTION WORK · APARTMENT\",recruit.bind(thread,\"production\"),host.grower_level<5 or host.packing_employee_hired)\n\t\t\t\tfor property_id in [\"apartment\",\"house\"]:",
+      "after": "\t\t\t\tbutton(host.phone_list,\"OFFER DEALER WORK · APARTMENT\",recruit.bind(thread,\"dealer\"),host._total_dealer_count()>=host._dealer_capacity())\n\t\t\t\tfor property_id in [\"apartment\",\"house\"]:\n\t\t\t\t\tif ops._property_controlled(property_id):\n\t\t\t\t\t\tvar occupied:bool=host.production_crew.hired_count()>0 and bool(host.production_crew.record(property_id).get(\"hired\",false)) if host.production_crew!=null else host.packing_employee_hired\n\t\t\t\t\t\tbutton(host.phone_list,\"OFFER PRODUCTION WORK · \"+property_id.to_upper(),recruit.bind(thread,\"production\",property_id),host.grower_level<5 or occupied or host._staff_heat_locked())\n\t\t\t\tfor property_id in [\"apartment\",\"house\"]:",
+      "line": 150
+    },
+    {
+      "before": "\nfunc toggle_crew_duty(job:String) -> void:\n\tif job==\"dealer\" and host._total_dealer_count()>0:host._toggle_dealers()\n\telif job==\"production\" and host.packing_employee_hired:host._toggle_packing_employee()",
+      "after": "\nfunc toggle_crew_duty(job:String,property_id:String=\"apartment\") -> void:\n\tif job==\"dealer\" and host._total_dealer_count()>0:host._toggle_dealers()\n\telif job==\"production\" and host.production_crew!=null:host.production_crew.toggle(property_id)\n\telif job==\"production\" and host.packing_employee_hired:host._toggle_packing_employee()",
+      "line": 196
+    },
+    {
+      "before": "\tif name==\"Dealer Team\" and property==\"house\":return\n\tvar previous:String=assignment(name)",
+      "after": "\tif name==\"Dealer Team\" and property==\"house\":return\n\tif role(name)==\"production\" and host.production_crew!=null:\n\t\tif host.production_crew.transfer(name,property):\n\t\t\toutgoing(name,\"Report to the \"+property+\".\")\n\t\t\tsend(name,say(name,\"assigned\",{\"property\":property}))\n\t\treturn\n\tvar previous:String=assignment(name)",
+      "line": 286
+    },
+    {
+      "before": "\thost._refresh_phone();host._save_game()\nfunc recruit(name: String,job: String) -> void:\n\tactions=false\n\thost._recruit_friend_staff(name,job)\n\tif role(name)==job:assign(name,\"apartment\")\nfunc recruit_door(name: String, property_id: String) -> void:",
+      "after": "\thost._refresh_phone();host._save_game()\nfunc recruit(name: String,job: String,property_id:String=\"apartment\") -> void:\n\tactions=false\n\thost._recruit_friend_staff(name,job,property_id)\n\tif job!=\"production\" and role(name)==job:assign(name,\"apartment\")\nfunc recruit_door(name: String, property_id: String) -> void:",
+      "line": 312
+    }
+  ],
+  "scripts/location_ops.gd": [
+    {
+      "before": "\tfor name in computer_staff_names(property):\n\t\tif crew.role(name)==\"production\" and host.packing_employee_active:total+=host.PACKER_DAILY_WAGE\n\treturn total",
+      "after": "\tfor name in computer_staff_names(property):\n\t\tif crew.role(name)==\"production\" and (host.production_crew.on_duty(property) if host.production_crew!=null else host.packing_employee_active):total+=host.PACKER_DAILY_WAGE\n\treturn total",
+      "line": 368
+    },
+    {
+      "before": "\tui.label(property.to_upper()+\" STAFF · \"+str(local.size())+\" assigned\",22)\n\tui.label(\"Crew positions are shared until transferred. Hired staff and pay remain in your career, but assignments and work stock are tied to one property.\")\n\tfor name in local:\n\t\tvar role_name:String=crew.role(name)\n\t\tui.label(name+\" · \"+role_name.capitalize()+\" · \"+(\"ON DUTY\" if host.packing_employee_active else \"OFF DUTY\") if role_name==\"production\" else name+\" · \"+role_name.capitalize())\n\t\tif role_name==\"dealer\":",
+      "after": "\tui.label(property.to_upper()+\" STAFF · \"+str(local.size())+\" assigned\",22)\n\tui.label(\"Each property has its own production position (one worker maximum). Transfer a worker only if the other property has a vacant position; stock and wages stay per property.\")\n\tfor name in local:\n\t\tvar role_name:String=crew.role(name)\n\t\tui.label(name+\" · \"+role_name.capitalize()+\" · \"+(\"ON DUTY\" if (host.production_crew.on_duty(property) if host.production_crew!=null else host.packing_employee_active) else \"OFF DUTY\") if role_name==\"production\" else name+\" · \"+role_name.capitalize())\n\t\tif role_name==\"dealer\":",
+      "line": 419
+    },
+    {
+      "before": "\t\tb(\"ASSIGN \"+name.to_upper()+\" TO \"+property.to_upper(),move_computer_staff.bind(name,property))\n\tif not host.packing_employee_hired:\n\t\tb(\"HIRE PRODUCTION WORKER FOR \"+property.to_upper(),hire_computer_worker.bind(property),host.grower_level<5 or host.cash<host.PACKER_HIRE_COST)\n\telif computer_staff_names(property).has(host._critical_production_sender()):\n\t\tvar worker_reason:String=host._staff_duty_blocker(\"production\")\n\t\tif not host.packing_employee_active and not worker_reason.is_empty():ui.label(\"WHY OFF DUTY: \"+worker_reason)\n\t\tb(\"SEND PRODUCTION WORKER HOME\" if host.packing_employee_active else \"PUT PRODUCTION WORKER ON DUTY\",toggle_computer_worker,not host.packing_employee_active and not worker_reason.is_empty())\n\tif property==\"apartment\":",
+      "after": "\t\tb(\"ASSIGN \"+name.to_upper()+\" TO \"+property.to_upper(),move_computer_staff.bind(name,property))\n\tvar hired_here:bool=bool(host.production_crew.record(property).get(\"hired\",false)) if host.production_crew!=null else host.packing_employee_hired\n\tvar active_here:bool=host.production_crew.on_duty(property) if host.production_crew!=null else host.packing_employee_active\n\tif not hired_here:\n\t\tb(\"HIRE PRODUCTION WORKER FOR \"+property.to_upper(),hire_computer_worker.bind(property),host.grower_level<5 or host.cash<host.PACKER_HIRE_COST or host._staff_heat_locked())\n\telse:\n\t\tvar worker_reason:String=host.production_crew.with_property(property,func():return host._staff_duty_blocker(\"production\")) if host.production_crew!=null else host._staff_duty_blocker(\"production\")\n\t\tif not active_here and not worker_reason.is_empty():ui.label(\"WHY OFF DUTY: \"+worker_reason)\n\t\tb(\"SEND PRODUCTION WORKER HOME\" if active_here else \"PUT PRODUCTION WORKER ON DUTY\",toggle_computer_worker,not active_here and not worker_reason.is_empty())\n\tif property==\"apartment\":",
+      "line": 441
+    },
+    {
+      "before": "\tif not _property_controlled(property):return\n\thost._hire_packing_employee()\n\tif host.packing_employee_hired:crew.assign(host._critical_production_sender(),property)\n\tmanage(\"employees\")",
+      "after": "\tif not _property_controlled(property):return\n\tif host.production_crew!=null:host.production_crew.hire(property)\n\telse:\n\t\thost._hire_packing_employee()\n\t\tif host.packing_employee_hired:crew.assign(host._critical_production_sender(),property)\n\tmanage(\"employees\")",
+      "line": 458
+    },
+    {
+      "before": "func toggle_computer_worker() -> void:\n\tif crew.assignment(host._critical_production_sender())!=computer_context:return\n\thost._toggle_packing_employee()\n\tmanage(\"employees\")",
+      "after": "func toggle_computer_worker() -> void:\n\tif host.production_crew!=null:host.production_crew.toggle(computer_context)\n\telse:\n\t\tif crew.assignment(host._critical_production_sender())!=computer_context:return\n\t\thost._toggle_packing_employee()\n\tmanage(\"employees\")",
+      "line": 471
+    },
+    {
+      "before": "\tif job==\"production\":\n\t\thost._toggle_packing_employee()\n\telif job in [\"dealer\",\"door\"]:",
+      "after": "\tif job==\"production\":\n\t\tif host.production_crew!=null:host.production_crew.toggle(portfolio_property)\n\t\telse:host._toggle_packing_employee()\n\telif job in [\"dealer\",\"door\"]:",
+      "line": 1221
+    },
+    {
+      "before": "\tif crew.role(name)==\"door\" and not crew.manager(target).is_empty():return\n\tcrew.assign(name,target)",
+      "after": "\tif crew.role(name)==\"door\" and not crew.manager(target).is_empty():return\n\tif crew.role(name)==\"production\" and host.production_crew!=null and bool(host.production_crew.record(target).get(\"hired\",false)):\n\t\thost.status_label.text=\"A production worker already works there. Fire or transfer that worker first.\"\n\t\treturn\n\tcrew.assign(name,target)",
+      "line": 1238
+    },
+    {
+      "before": "\tif crew.role(name) in [\"dealer\",\"door\"] and host.dealer_arrested:return\n\tif crew.role(name)==\"production\" and host.production_worker_arrested:return\n\tportfolio_fire_confirm=\"\"\n\tif name.begins_with(\"Hired Dealer \"):",
+      "after": "\tif crew.role(name) in [\"dealer\",\"door\"] and host.dealer_arrested:return\n\tif crew.role(name)==\"production\" and (bool(host.production_crew.record(portfolio_property).get(\"arrested\",false)) if host.production_crew!=null else host.production_worker_arrested):return\n\tportfolio_fire_confirm=\"\"\n\tif crew.role(name)==\"production\" and host.production_crew!=null:\n\t\thost.production_crew.fire(portfolio_property)\n\t\tportfolio_employee=\"\"\n\t\thost._refresh_phone()\n\t\treturn\n\tif name.begins_with(\"Hired Dealer \"):",
+      "line": 1245
+    },
+    {
+      "before": "\t\t\tvar job:String=crew.role(worker_name)\n\t\t\tvar working:bool=(host.dealers_active and portfolio_staff_duty(worker_name)) if job==\"dealer\" else (portfolio_staff_duty(worker_name) if job==\"door\" else host.packing_employee_active)\n\t\t\t_property_button(parent,worker_name+\" · \"+job.capitalize()+\"\\n\"+(\"ON DUTY\" if working else \"HOME\"),portfolio_employee_open.bind(worker_name))",
+      "after": "\t\t\tvar job:String=crew.role(worker_name)\n\t\t\tvar working:bool=(host.dealers_active and portfolio_staff_duty(worker_name)) if job==\"dealer\" else (portfolio_staff_duty(worker_name) if job==\"door\" else (host.production_crew.on_duty(prop) if host.production_crew!=null else host.packing_employee_active))\n\t\t\t_property_button(parent,worker_name+\" · \"+job.capitalize()+\"\\n\"+(\"ON DUTY\" if working else \"HOME\"),portfolio_employee_open.bind(worker_name))",
+      "line": 1291
+    },
+    {
+      "before": "\t_property_label(parent,name+\" · \"+job.capitalize(),20)\n\tvar working:bool=(host.dealers_active and portfolio_staff_duty(name)) if job==\"dealer\" else (portfolio_staff_duty(name) if job==\"door\" else host.packing_employee_active)\n\t_property_label(parent,\"Assigned: \"+portfolio_name(prop)+\"\\nStatus: \"+(\"LAYING LOW\" if working and crew.shop.laying_low(prop) else (\"ON DUTY\" if working else \"HOME\")),16)",
+      "after": "\t_property_label(parent,name+\" · \"+job.capitalize(),20)\n\tvar working:bool=(host.dealers_active and portfolio_staff_duty(name)) if job==\"dealer\" else (portfolio_staff_duty(name) if job==\"door\" else (host.production_crew.on_duty(prop) if host.production_crew!=null else host.packing_employee_active))\n\t_property_label(parent,\"Assigned: \"+portfolio_name(prop)+\"\\nStatus: \"+(\"LAYING LOW\" if working and crew.shop.laying_low(prop) else (\"ON DUTY\" if working else \"HOME\")),16)",
+      "line": 1303
+    },
+    {
+      "before": "\telif job==\"production\":\n\t\t_property_label(parent,\"Tasks today: %d\\nCurrent task: %s\" % [host.production_worker_tasks_today,host.production_worker_last_action],16)\n\t\t_property_button(parent,\"AUTO PLANT: \"+(\"ON\" if host.production_worker_auto_plant else \"OFF\"),host._toggle_production_worker_auto_plant)\n\tvar reason:String=\"\" if job==\"door\" else host._staff_duty_blocker(job)\n\t_property_button(parent,\"SEND HOME\" if working else \"PUT ON DUTY\",portfolio_set_duty.bind(name),not working and not reason.is_empty())",
+      "after": "\telif job==\"production\":\n\t\tvar worker_state:Dictionary=host.production_crew.record(prop) if host.production_crew!=null else {}\n\t\t_property_label(parent,\"Tasks today: %d\\nCurrent task: %s\" % [int(worker_state.get(\"tasks\",host.production_worker_tasks_today)),str(worker_state.get(\"last\",host.production_worker_last_action))],16)\n\t\t_property_button(parent,\"AUTO PLANT: \"+(\"ON\" if bool(worker_state.get(\"auto_plant\",host.production_worker_auto_plant)) else \"OFF\"),host.production_crew.toggle_auto_plant.bind(prop) if host.production_crew!=null else host._toggle_production_worker_auto_plant)\n\tvar reason:String=\"\" if job==\"door\" else (host.production_crew.with_property(prop,func():return host._staff_duty_blocker(\"production\")) if job==\"production\" and host.production_crew!=null else host._staff_duty_blocker(job))\n\t_property_button(parent,\"SEND HOME\" if working else \"PUT ON DUTY\",portfolio_set_duty.bind(name),not working and not reason.is_empty())",
+      "line": 1310
+    },
+    {
+      "before": "\tif _property_controlled(other):\n\t\tvar blocked:bool=job==\"door\" and not crew.manager(other).is_empty()\n\t\t_property_button(parent,\"TRANSFER TO \"+portfolio_name(other),portfolio_transfer.bind(name,other),blocked)",
+      "after": "\tif _property_controlled(other):\n\t\tvar blocked:bool=(job==\"door\" and not crew.manager(other).is_empty()) or (job==\"production\" and host.production_crew!=null and bool(host.production_crew.record(other).get(\"hired\",false)))\n\t\t_property_button(parent,\"TRANSFER TO \"+portfolio_name(other),portfolio_transfer.bind(name,other),blocked)",
+      "line": 1317
+    }
+  ],
+  "scripts/property_furniture.gd": [
+    {
+      "before": " \"computer\":{\"name\":\"Computer Desk\",\"shop\":\"furniture\",\"price\":550,\"size\":[1.5,1.65,.85],\"weight\":22}}\nconst ROOMS={",
+      "after": " \"computer\":{\"name\":\"Computer Desk\",\"shop\":\"furniture\",\"price\":550,\"size\":[1.5,1.65,.85],\"weight\":22}}\n# Preserve progression locks from the original Grower career.\n# Existing owned higher-tier items remain valid regardless of the current level.\nconst MIN_LEVEL={\n \"bench_2\":3,\"bench_3\":6,\n \"shelf_2\":2,\"shelf_3\":5,\n \"storage_2\":2,\"storage_3\":5,\"storage_4\":7,\"storage_5\":9,\n \"dealer_1\":6,\"dealer_2\":9,\"dealer_3\":12,\"dealer_4\":15,\n \"ventilation\":2,\"water_kit\":4,\"grow_light\":3,\n \"tent_quality\":3\n}\nconst ROOMS={",
+      "line": 38
+    },
+    {
+      "before": " return int(CATALOG[sku].get(\"tier\",1))<=1\nfunc item_name(id:String) -> String:return str(CATALOG[state.items[id].sku].name)",
+      "after": " return int(CATALOG[sku].get(\"tier\",1))<=1\nfunc unlock_level(sku:String)->int:\n return maxi(1,int(MIN_LEVEL.get(sku,1)))\nfunc unlock_reason(sku:String)->String:\n var required:int=unlock_level(sku)\n return \"Reach Grower Level %d to unlock %s (current: %d).\" % [required,str(CATALOG.get(sku,{}).get(\"name\",\"this equipment\")),host.grower_level] if host.grower_level<required else \"\"\nfunc upgrade_reason(id:String)->String:\n var next:String=next_upgrade(id)\n return unlock_reason(next) if not next.is_empty() else \"\"\nfunc item_name(id:String) -> String:return str(CATALOG[state.items[id].sku].name)",
+      "line": 167
+    },
+    {
+      "before": " if price<=0:error=\"This upgrade is unavailable.\";return false\n if host.cash<price:error=\"Not enough cash for this upgrade.\";return false",
+      "after": " if price<=0:error=\"This upgrade is unavailable.\";return false\n var level_gate:String=upgrade_reason(id)\n if not level_gate.is_empty():error=level_gate;return false\n if host.cash<price:error=\"Not enough cash for this upgrade.\";return false",
+      "line": 350
+    }
+  ],
+  "scripts/furniture_editor.gd": [
+    {
+      "before": "   var can_retrofit:bool=model.is_tent(e) or reason.is_empty()\n   inventory.button(model.upgrade_label(id),upgrade_furniture.bind(id),list).disabled=not inside(str(e.property)) or not can_retrofit or host.cash<upgrade_price\n   if not can_retrofit and not model.is_tent(e):inventory.label(\"Empty this station before upgrading; its stock will be preserved.\",list,13)",
+      "after": "   var can_retrofit:bool=model.is_tent(e) or reason.is_empty()\n   inventory.button(model.upgrade_label(id),upgrade_furniture.bind(id),list).disabled=not inside(str(e.property)) or not can_retrofit or host.cash<upgrade_price or not model.upgrade_reason(id).is_empty()\n   if not model.upgrade_reason(id).is_empty():inventory.label(model.upgrade_reason(id),list,13)\n   if not can_retrofit and not model.is_tent(e):inventory.label(\"Empty this station before upgrading; its stock will be preserved.\",list,13)",
+      "line": 166
+    },
+    {
+      "before": "  elif str(item.get(\"kind\",\"\"))!=\"\":inventory.label(\"Level I · Upgrade this item after placement.\",list,14)\n  cart.chooser(list,\"item|\"+sku)",
+      "after": "  elif str(item.get(\"kind\",\"\"))!=\"\":inventory.label(\"Level I · Upgrade this item after placement.\",list,14)\n  var lock_reason:String=model.unlock_reason(sku)\n  if not lock_reason.is_empty():inventory.label(lock_reason,list,14)\n  cart.chooser(list,\"item|\"+sku)",
+      "line": 179
+    },
+    {
+      "before": " yaw=posmod(yaw+90,360);preview()\nfunc aim() -> void:",
+      "after": " yaw=posmod(yaw+90,360);preview()\n# Fit the aim point against the room's usable perimeter instead of projecting\n# a large bench through the wall whenever the player stands nearby.\nfunc fit_aim_to_room() -> void:\n if selected.is_empty():return\n var floor_y:float=placement_floor()\n var rooms:Dictionary={}\n var selected_room:String=\"\"\n if property==\"house\" and floor_y<-.5:\n  rooms={\"grow\":Rect2(26.3,-13.5,14.2,13.0)}\n  selected_room=\"grow\"\n else:\n  rooms=model.registry.rooms_for(property)\n  selected_room=host.neighborhood.location_ops.placement_room(property,host.camera.global_position)\n if not rooms.has(selected_room):return\n var rect:Rect2=rooms[selected_room]\n var size:Vector3=model.size_of(selected,yaw)\n var hx:float=size.x*.5+.022\n var hz:float=size.z*.5+.022\n if rect.size.x<hx*2.0 or rect.size.y<hz*2.0:return\n point.x=clampf(point.x,rect.position.x+hx,rect.end.x-hx)\n point.z=clampf(point.z,rect.position.y+hz,rect.end.y-hz)\n\nfunc aim() -> void:",
+      "line": 215
+    },
+    {
+      "before": " point.x=snappedf(point.x,.01);point.z=snappedf(point.z,.01)\n if model.state.items[selected].sku==\"storage_5\":snap_stash_to_wall()",
+      "after": " point.x=snappedf(point.x,.01);point.z=snappedf(point.z,.01)\n if model.state.items[selected].sku!=\"storage_5\" and not (model.wall_mountable(selected) and wall_mount):fit_aim_to_room()\n if model.state.items[selected].sku==\"storage_5\":snap_stash_to_wall()",
+      "line": 227
+    },
+    {
+      "before": "   if originals.has(node.get_instance_id()):own_piece=own_piece or int(str(originals[node.get_instance_id()].id).trim_prefix(\"legacy_tent_\"))==int(model.state.items[selected].get(\"legacy_slot\",-1))\n   if own_piece:excluded.append(body.get_rid());break",
+      "after": "   if originals.has(node.get_instance_id()):own_piece=own_piece or int(str(originals[node.get_instance_id()].id).trim_prefix(\"legacy_tent_\"))==int(model.state.items[selected].get(\"legacy_slot\",-1))\n   # Decorative skirting/baseboards may be concealed by furniture.\n   # Real walls, doors and furniture still participate in collision tests.\n   if str(node.name).to_lower().contains(\"baseboard\"):\n    excluded.append(body.get_rid());break\n   if own_piece:excluded.append(body.get_rid());break",
+      "line": 282
+    },
+    {
+      "before": "  if mesh==ghost or not mesh.is_visible_in_tree() or not mesh.mesh is BoxMesh or mesh.get_meta(\"no_collision\",false):continue\n  if mesh.get_meta(\"furniture_id\",\"\")==selected:continue",
+      "after": "  if mesh==ghost or not mesh.is_visible_in_tree() or not mesh.mesh is BoxMesh or mesh.get_meta(\"no_collision\",false):continue\n  if str(mesh.name).to_lower().contains(\"baseboard\"):continue\n  if mesh.get_meta(\"furniture_id\",\"\")==selected:continue",
+      "line": 288
+    },
+    {
+      "before": " layout_upgrade.text=model.upgrade_label(layout_focus) if can_upgrade else \"No upgrade available\"\n layout_upgrade.disabled=not can_upgrade or host.cash<upgrade_price\n if can_upgrade and host.cash<upgrade_price:layout_hint.text+=\"\\nNeed $%d more.\" % (upgrade_price-host.cash)",
+      "after": " layout_upgrade.text=model.upgrade_label(layout_focus) if can_upgrade else \"No upgrade available\"\n layout_upgrade.disabled=not can_upgrade or host.cash<upgrade_price or not model.upgrade_reason(layout_focus).is_empty()\n if can_upgrade and not model.upgrade_reason(layout_focus).is_empty():layout_hint.text+=\"\\n\"+model.upgrade_reason(layout_focus)\n if can_upgrade and host.cash<upgrade_price:layout_hint.text+=\"\\nNeed $%d more.\" % (upgrade_price-host.cash)",
+      "line": 463
+    }
+  ]
+}
