@@ -6,7 +6,7 @@ from pathlib import Path
 HERE=Path(__file__).parent
 SPECS=json.loads((HERE/"functions.json").read_text())
 def replace_function(source,name,body):
-    pattern=re.compile(r"^func "+re.escape(name)+r"\([^\n]*\)[ \t]*(?:->[\t ]*[^\n:]+)?:\n.*?(?=^func |\Z)",re.M|re.S)
+    pattern=re.compile(r"^func "+re.escape(name)+r"\([^\n]*\)[ \t]*(?:->[\t ]*[^\n:]+)?:\n.*?(?=^func |^var |^const |\Z)",re.M|re.S)
     found=list(pattern.finditer(source))
     if len(found)!=1:raise AssertionError("House nav missing or duplicated: "+name)
     match=found[0]
