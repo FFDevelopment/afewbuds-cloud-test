@@ -80,6 +80,9 @@ func _ready()->void:
   if parent_id>=0:skeleton.set_bone_parent(idx,parent_id)
   var rest:=Transform3D(Basis.IDENTITY,Vector3(float(parts[0]),float(parts[1]),float(parts[2])))
   skeleton.set_bone_rest(idx,rest)
+  # Godot's native Skeleton3D pose is separate from its rest transform.
+  # Without the pose offset, all BoneAttachment3D meshes stack at Y=0.
+  skeleton.set_bone_pose_position(idx,rest.origin)
   count+=1
  if count!=56 or skeleton.find_bone("Head")<0 or skeleton.find_bone("Foot_R")<0:
   push_error("AFB native rig: master skeleton contract mismatch")
