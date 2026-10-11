@@ -941,6 +941,8 @@ def main():
     updated=friends.apply_entries(updated,ROOT)
     production=module("production_actions",ROOT/"tools/production_actions_v1/patch.py")
     updated=production.apply_entries(updated)
+    door_patch=module("door_staff_v1",ROOT/"tools/door_staff_v1/patch.py")
+    updated=door_patch.apply_entries(updated)
     built=east.pack.rebuild(baseline,fb,updated)
     # Every unique gameplay pack gets its own browser-visible identity.
     # This prevents development releases from silently sharing a stale URL.
