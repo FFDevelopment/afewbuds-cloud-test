@@ -41,19 +41,27 @@ func change(value:String)->bool:
     file.store_string(JSON.stringify({"quality":selected}))
     return true
 
+func profile(name:String)->Dictionary:
+    if name=="low":return {"scale":0.75,"atlas":512,"fps":30,"shadows":false}
+    if name=="medium":return {"scale":0.90,"atlas":1024,"fps":60,"shadows":true}
+    return {"scale":original_scale,"atlas":original_shadow_atlas,"fps":original_fps,"shadows":true}
+
 func apply()->void:
     if viewport==null:return
-    # Bilinear buffer scaling preserves native-resolution phone and menu text.
-    # No texture, model, furniture, save, or gameplay data is modified.
+    var settings:Dictionary=profile(selected)
+    Engine.max_fps=int(settings.fps)
+    # Headless CI has no GPU and must not allocate temporary dummy render RIDs.
+    # Native/Web games apply the same selected profile to their actual viewport.
+    if DisplayServer.get_name()=="headless":return
     viewport.scaling_3d_mode=Viewport.SCALING_3D_MODE_BILINEAR
-    viewport.scaling_3d_scale=0.75 if selected=="low" else (0.90 if selected=="medium" else original_scale)
-    viewport.positional_shadow_atlas_size=512 if selected=="low" else (1024 if selected=="medium" else original_shadow_atlas)
-    Engine.max_fps=30 if selected=="low" else (60 if selected=="medium" else original_fps)
+    viewport.scaling_3d_scale=float(settings.scale)
+    viewport.positional_shadow_atlas_size=int(settings.atlas)
     if host!=null:
         for light in host.find_children("*","Light3D",true,false):
             _apply_light(light)
 
 func _apply_light(node:Node)->void:
+    if DisplayServer.get_name()=="headless":return
     if not is_instance_valid(node) or not node is Light3D:return
     var light:Light3D=node as Light3D
     if not light.has_meta("afb_quality_original_shadow"):
