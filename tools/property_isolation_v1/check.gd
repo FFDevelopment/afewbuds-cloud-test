@@ -175,9 +175,11 @@ func run():
  check(" ".join(PackedStringArray(house_labels)).contains("HOUSE AT A GLANCE") and not " ".join(PackedStringArray(house_labels)).contains("APARTMENT STOREFRONT"),"House business dashboard shows its own operation instead of apartment storefront")
  check(computer_ops.computer_stock_total("house","storage","product|")==0 or computer_ops.computer_stock_total("house","storage","product|")==int(inv.contents("house:storage").get("product|Purple Dream",0)),"House business stock reads house-only storage")
  check(game.production_crew.transfer(worker_name,"house"),"Assigned apartment worker can transfer to a vacant house position")
- check(computer_ops.computer_staff_names("house").has(worker_name) and not computer_ops.computer_staff_names("apartment").has(worker_name),"Per-property worker roster changes without creating a duplicate")
- check(game.production_crew.transfer(worker_name,"apartment"),"Same worker transfers back to its apartment position")
- check(computer_ops.computer_staff_names("apartment").has(worker_name) and not computer_ops.computer_staff_names("house").has(worker_name),"Moving worker back restores separate apartment roster")
+ var moved_worker:String=game.production_crew.name_for("house")
+ check(computer_ops.computer_staff_names("house").has(moved_worker) and not computer_ops.computer_staff_names("apartment").has(worker_name) and game.production_crew.hired_count()==1,"Per-property worker roster changes without creating a duplicate")
+ check(game.production_crew.transfer(moved_worker,"apartment"),"Same worker transfers back to its apartment position")
+ var returned_worker:String=game.production_crew.name_for("apartment")
+ check(computer_ops.computer_staff_names("apartment").has(returned_worker) and not computer_ops.computer_staff_names("house").has(moved_worker),"Moving worker back restores separate apartment roster")
  game.production_crew.fire("apartment")
  game.grower_level=previous_grower_level
  game.packing_employee_hired=existing_hire;game.packing_employee_active=existing_active
