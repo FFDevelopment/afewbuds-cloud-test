@@ -121,22 +121,22 @@ func reopen(property:String) -> bool:
 # Closing or shutting down is a safety action and must remain available
 # even at critical Heat, without requiring an on-duty employee.
 func owner_control(property:String,action:String)->void:
- if property not in ["apartment","house"] or not crew.ops._property_controlled(property):return
- match action:
-  "close":
-   close_property(property)
-   host.status_label.text=property.capitalize()+" shop closed. New customer traffic stopped."
-  "shutdown":
-   shutdown(property)
-   return
-  "open","reopen":
-   if not reopen(property):
-    host.status_label.text="Cannot reopen yet. Lower Heat below 75 and finish any raid lockdown."
-    host._refresh_phone()
-   return
-  _:return
- host._save_game()
- host._refresh_phone()
+	if property not in ["apartment","house"] or not crew.ops._property_controlled(property):return
+	match action:
+		"close":
+			close_property(property)
+			host.status_label.text=property.capitalize()+" shop closed. New customer traffic stopped."
+		"shutdown":
+			shutdown(property)
+			return
+		"open","reopen":
+			if not reopen(property):
+				host.status_label.text="Cannot reopen yet. Lower Heat below 75 and finish any raid lockdown."
+				host._refresh_phone()
+			return
+		_:return
+	host._save_game()
+	host._refresh_phone()
 
 func command(name:String,action:String) -> void:
 	var property:String=crew.assignment(name)
@@ -161,16 +161,16 @@ func command(name:String,action:String) -> void:
 		crew.send(name,crew.say(name,"restored" if restoring else "opened",context))
 	host._save_game();host._refresh_phone()
 func render(parent:VBoxContainer,property:String) -> void:
- if not crew.ops._property_controlled(property):return
- crew.label(parent,"SHOP OPERATIONS · "+property.capitalize().to_upper()+" · "+status(property))
- crew.label(parent,"OWNER SAFETY CONTROLS · Available even if Heat is critical or every worker is off duty.")
- var blocked:bool=host._staff_heat_locked() or host.game_day<host.raid_lockdown_until_day
- if laying_low(property):
-  crew.button(parent,"SET UP & REOPEN SHOP" if not blocked else "REOPEN LOCKED · COOL HEAT FIRST",owner_control.bind(property,"reopen"),blocked)
- else:
-  if is_open(property):
-   crew.button(parent,"CLOSE SHOP · STOP NEW SALES",owner_control.bind(property,"close"))
-  else:
-   crew.button(parent,"OPEN SHOP" if not blocked else "OPEN LOCKED · COOL HEAT FIRST",owner_control.bind(property,"open"),blocked)
-  crew.button(parent,"SHUT DOWN & LAY LOW · POWER OFF",owner_control.bind(property,"shutdown"))
- crew.label(parent,"Close stops customer traffic. Lay Low also shuts down lights and equipment. Employee duty remains unchanged; reopening stays restricted at high Heat.")
+	if not crew.ops._property_controlled(property):return
+	crew.label(parent,"SHOP OPERATIONS · "+property.capitalize().to_upper()+" · "+status(property))
+	crew.label(parent,"OWNER SAFETY CONTROLS · Available even if Heat is critical or every worker is off duty.")
+	var blocked:bool=host._staff_heat_locked() or host.game_day<host.raid_lockdown_until_day
+	if laying_low(property):
+		crew.button(parent,"SET UP & REOPEN SHOP" if not blocked else "REOPEN LOCKED · COOL HEAT FIRST",owner_control.bind(property,"reopen"),blocked)
+	else:
+		if is_open(property):
+			crew.button(parent,"CLOSE SHOP · STOP NEW SALES",owner_control.bind(property,"close"))
+		else:
+			crew.button(parent,"OPEN SHOP" if not blocked else "OPEN LOCKED · COOL HEAT FIRST",owner_control.bind(property,"open"),blocked)
+		crew.button(parent,"SHUT DOWN & LAY LOW · POWER OFF",owner_control.bind(property,"shutdown"))
+	crew.label(parent,"Close stops customer traffic. Lay Low also shuts down lights and equipment. Employee duty remains unchanged; reopening stays restricted at high Heat.")
