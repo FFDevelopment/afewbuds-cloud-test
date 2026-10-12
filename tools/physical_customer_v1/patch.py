@@ -88,7 +88,7 @@ def patch_crew(s):
     if start<0 or end<start:raise AssertionError("Mobile visitor rendering boundary changed")
     # The final already-tested mobile worker avatar behavior above this block
     # is retained exactly. Replace only normal visitor creation/lifetime.
-    s=s[:start]+'''# All ordinary clients have physical visitor actors; the encounter controller
+    s=s[:start]+'''\t# All ordinary clients have physical visitor actors; the encounter controller
 \t# retains the departing model after the current order has been cleared.
 \tif host.customer_encounters!=null and host.customer_encounters.available():
 \t\thost.customer_encounters.ensure_visible_guest()
