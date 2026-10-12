@@ -738,26 +738,27 @@ func add_box_collision(body:StaticBody3D,bounds:AABB) -> void:
     return source
 
 def clip_house_stairwell_terrain(source: str) -> str:
-    # The first exterior ground sheet is batched as a *MultiMeshInstance3D*,
-    # not a MeshInstance3D. The basement's regular slab cutter cannot remove
-    # this renderer object, so it was still drawn over the walkable stairs.
-    # Split only this one original ground into four boxes before batching.
-    original = '\\texterior_box(Vector3(20.5,-0.20,1.5),Vector3(117,0.20,87),"c3c3b9",5)'
-    original = original.replace('\\t','\\x09')
-    assert source.count(original) == 1, 'Mobile original exterior terrain source drift'
-    split = """\\t# Leave the existing house basement stairwell visually open in the batched
-\\t# exterior terrain. Physics, stairs and everything outside the hole are intact.
-\\tvar terrain_ground:Rect2=Rect2(-38.0,-42.0,117.0,87.0)
-\\tvar stairwell_hole:Rect2=Rect2(41.15,-13.6,3.5,5.3)
-\\tvar terrain_slices:Array[Rect2]=[
-\\t Rect2(terrain_ground.position,Vector2(stairwell_hole.position.x-terrain_ground.position.x,terrain_ground.size.y)),
-\\t Rect2(Vector2(stairwell_hole.end.x,terrain_ground.position.y),Vector2(terrain_ground.end.x-stairwell_hole.end.x,terrain_ground.size.y)),
-\\t Rect2(Vector2(stairwell_hole.position.x,terrain_ground.position.y),Vector2(stairwell_hole.size.x,stairwell_hole.position.y-terrain_ground.position.y)),
-\\t Rect2(Vector2(stairwell_hole.position.x,stairwell_hole.end.y),Vector2(stairwell_hole.size.x,terrain_ground.end.y-stairwell_hole.end.y))
-\\t]
-\\tfor slab in terrain_slices:
-\\t\texterior_box(Vector3(slab.get_center().x,-0.20,slab.get_center().y),Vector3(slab.size.x,0.20,slab.size.y),"c3c3b9",5)"""
-    return source.replace(original,split.replace('\\t','\\x09'),1)
+    # Original neighborhood ground is a MultiMeshInstance3D after batching,
+    # so the regular MeshInstance3D slab cutter cannot remove it.
+    candidates = [line for line in source.splitlines() if 'c3c3b9' in line and '117' in line and 'exterior_box' in line]
+    assert len(candidates) == 1, ("Terrain source drift", [line for line in source.splitlines() if 'c3c3b9' in line][:20])
+    original = candidates[0]
+    prefix = original[:len(original) - len(original.lstrip())]
+    replacement = "\n".join([
+        prefix + "# Split original exterior terrain around the house basement stairs.",
+        prefix + "var terrain_ground:Rect2=Rect2(-38.0,-42.0,117.0,87.0)",
+        prefix + "var stairwell_hole:Rect2=Rect2(41.15,-13.6,3.5,5.3)",
+        prefix + "var terrain_slices:Array[Rect2]=[",
+        prefix + "\tRect2(terrain_ground.position,Vector2(stairwell_hole.position.x-terrain_ground.position.x,terrain_ground.size.y)),",
+        prefix + "\tRect2(Vector2(stairwell_hole.end.x,terrain_ground.position.y),Vector2(terrain_ground.end.x-stairwell_hole.end.x,terrain_ground.size.y)),",
+        prefix + "\tRect2(Vector2(stairwell_hole.position.x,terrain_ground.position.y),Vector2(stairwell_hole.size.x,stairwell_hole.position.y-terrain_ground.position.y)),",
+        prefix + "\tRect2(Vector2(stairwell_hole.position.x,stairwell_hole.end.y),Vector2(stairwell_hole.size.x,terrain_ground.end.y-stairwell_hole.end.y))",
+        prefix + "]",
+        prefix + "for slab in terrain_slices:",
+        prefix + '\texterior_box(Vector3(slab.get_center().x,-0.20,slab.get_center().y),Vector3(slab.size.x,0.20,slab.size.y),"c3c3b9",5)'
+    ])
+    assert source.count(original) == 1
+    return source.replace(original,replacement,1)
 
 def main():
     ap=argparse.ArgumentParser()
