@@ -101,12 +101,18 @@ func ensure_visible_guest()->Node3D:
   actor.position.y=0.0
  return actor
 
+func _swing_door()->void:
+ var exterior:Node=host.neighborhood
+ if exterior==null:return
+ if exterior.has_method("toggle_door"):exterior.toggle_door()
+ elif exterior.has_method("_toggle_door"):exterior._toggle_door()
+
 func prepare_sale()->bool:
  if not available():return false
  var actor:Node3D=ensure_visible_guest()
  if actor==null:return false
  if not host.neighborhood.door_open and not host.neighborhood.transitioning:
-  host.neighborhood.toggle_door()
+  _swing_door()
  host.peephole_checked=true
  host.status_label.text="You open the front door and speak with "+host._customer_display_name(host.current_customer)+"."
  return true
@@ -221,7 +227,7 @@ func _walk(delta:float)->void:
    stage="smoking"
    smoke_elapsed=0.0
    _play_guest_motion("sit")
-   if host.neighborhood.door_open and not host.neighborhood.transitioning:host.neighborhood.toggle_door()
+   if host.neighborhood.door_open and not host.neighborhood.transitioning:_swing_door()
   else:
    guest.hide()
    guest.queue_free()
@@ -239,7 +245,7 @@ func _walk(delta:float)->void:
  if guest.position.distance_to(destination)<.03:
   route.pop_front()
   if stage=="leaving" and route.size()==1 and host.neighborhood.door_open and not host.neighborhood.transitioning:
-   host.neighborhood.toggle_door()
+   _swing_door()
 
 func _process(delta:float)->void:
  if host==null or host._simulation_blocked():return
