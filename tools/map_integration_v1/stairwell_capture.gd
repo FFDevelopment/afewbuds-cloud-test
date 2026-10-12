@@ -24,6 +24,12 @@ func run()->void:
  game.tutorial_active=false
  game.daily_report_pending=false
  if not game.has_node("BasementExpansion"):game._install_map_update()
+ game.pause_overlay.hide()
+ game.tutorial_panel.hide()
+ game.daily_report_panel.hide()
+ game.phone_panel.hide()
+ world.set_process(false)
+ game.set_process(false)
  world.physics_body.stop()
  world.physics_body.set_physics_process(false)
  game.camera.current=true

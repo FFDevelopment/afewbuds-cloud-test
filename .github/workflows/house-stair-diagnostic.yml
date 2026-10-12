@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - tools/map_integration_v1/stairwell_inventory.gd
+      - tools/map_integration_v1/stairwell_capture.gd
       - .github/workflows/house-stair-diagnostic.yml
   workflow_dispatch:
 permissions:
