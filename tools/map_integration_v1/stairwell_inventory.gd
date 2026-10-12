@@ -49,6 +49,26 @@ func run()->void:
    center_materials.append("STAIR_CENTER "+item)
    count+=1
  for s in center_materials:print(s)
+ var checked:int=0
+ for node in world.get_children():
+  if not node is MultiMeshInstance3D:continue
+  var scatter:MultiMeshInstance3D=node as MultiMeshInstance3D
+  var mm:MultiMesh=scatter.multimesh
+  if mm==null or mm.mesh==null:continue
+  checked+=1
+  var bb:AABB=mm.mesh.get_aabb()
+  var material:Material=mm.mesh.surface_get_material(0) if mm.mesh.get_surface_count()>0 else null
+  var overlap_count:int=0
+  var examples:Array[String]=[]
+  for idx in mm.instance_count:
+   var t:Transform3D=scatter.global_transform*mm.get_instance_transform(idx)
+   var world_bounds:AABB=t*bb
+   var footprint:=Rect2(Vector2(world_bounds.position.x,world_bounds.position.z),Vector2(world_bounds.size.x,world_bounds.size.z))
+   if footprint.intersects(hole) and world_bounds.position.y < .5 and world_bounds.end.y> -1.0:
+    overlap_count+=1
+    if examples.size()<8:examples.append(str(idx)+":"+str(t.origin)+"/"+str(world_bounds.size))
+  print("STAIR_MULTIMESH path=",scatter.get_path()," count=",mm.instance_count," visible=",mm.visible_instance_count," base_bounds=",bb," world_bounds=",scatter.get_aabb()," material=",str(material)," overlaps=",overlap_count," sample=",examples)
+ print("STAIR_MULTIMESH_DIAG_COMPLETE count=",checked)
  print("STAIR_RENDER_DIAG_COMPLETE center_count=",count," meshes=",all_nodes.size())
  game.queue_free()
  await process_frame
