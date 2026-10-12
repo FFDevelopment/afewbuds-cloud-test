@@ -740,7 +740,7 @@ func add_box_collision(body:StaticBody3D,bounds:AABB) -> void:
 def clip_house_stairwell_terrain(source: str) -> str:
     # Original neighborhood ground is a MultiMeshInstance3D after batching,
     # so the regular MeshInstance3D slab cutter cannot remove it.
-    candidates = [line for line in source.splitlines() if 'c3c3b9' in line and '117' in line and 'exterior_box' in line]
+    candidates = [line for line in source.splitlines() if 'c3c3b9' in line and '117' in line and '_box(' in line]
     assert len(candidates) == 1, ("Terrain source drift", [line for line in source.splitlines() if 'c3c3b9' in line][:20])
     original = candidates[0]
     prefix = original[:len(original) - len(original.lstrip())]
@@ -755,7 +755,7 @@ def clip_house_stairwell_terrain(source: str) -> str:
         prefix + "\tRect2(Vector2(stairwell_hole.position.x,stairwell_hole.end.y),Vector2(stairwell_hole.size.x,terrain_ground.end.y-stairwell_hole.end.y))",
         prefix + "]",
         prefix + "for slab in terrain_slices:",
-        prefix + '\texterior_box(Vector3(slab.get_center().x,-0.20,slab.get_center().y),Vector3(slab.size.x,0.20,slab.size.y),"c3c3b9",5)'
+        prefix + '\t_box(Vector3(slab.get_center().x,-0.20,slab.get_center().y),Vector3(slab.size.x,0.20,slab.size.y),"c3c3b9",5)'
     ])
     assert source.count(original) == 1
     return source.replace(original,replacement,1)
