@@ -64,9 +64,11 @@ func run()->void:
  game.products["Street Green"]["listed"]=false
  game._set_product_listed("Street Green",true)
  check(bool(game.products["Street Green"].listed),"Listing remains possible with no grams in the primary storage")
- check(inv.put_storage("apartment","Street Green",50),"Manufactured product can deposit into installed multi-storage capacity")
+ var primary_space:int=inv.free_space(primary,"product|Street Green")
+ var deposit:int=primary_space+10
+ check(inv.put_storage("apartment","Street Green",deposit),"Manufactured product can deposit into combined installed storage capacity")
  check(int(inv.contents(primary).get("product|Street Green",0))==inv.capacity(primary,"product|Street Green"),"Additional grams fill first shelf only up to its physical limit")
- check(inv.storage_stock("apartment","Street Green")==69 and int(inv.contents(secondary).get("product|Street Green",0))==29,"Overflow from first shelf is deposited into second shelf exactly once")
+ check(inv.storage_stock("apartment","Street Green")==19+deposit and int(inv.contents(secondary).get("product|Street Green",0))==29,"Overflow from first shelf is deposited into second shelf exactly once")
  # House is independent and remote calls must not mutate apartment's active adapter.
  var house_primary:String="house:storage"
  var house_extra:String="house:storage@fixture_house_extra"
@@ -76,10 +78,10 @@ func run()->void:
  inv.state.containers[house_extra]={"product|Street Green":15}
  inv.state.product_metadata={"house":{"Street Green":{"stock":0,"reserved":4,"listed":true,"price":14}}}
  check(inv.storage_stock("house","Street Green")==22 and inv.storage_available("house","Street Green")==18,"Remote house listing sees both house units, minus house-only reserves")
- check(inv.storage_stock("apartment","Street Green")==69 and game._available_amount("Street Green")==63,"Apartment totals stay separate from house storage")
+ check(inv.storage_stock("apartment","Street Green")==19+deposit and game._available_amount("Street Green")==13+deposit,"Apartment totals stay separate from house storage")
  check(inv.take_storage("house","Street Green",18) and inv.storage_stock("house","Street Green")==4,"Remote property debit spans house shelves without affecting apartment")
  check(not inv.take_storage("house","Street Green",1),"Reserved house grams cannot be spent")
- check(inv.storage_stock("apartment","Street Green")==69,"Remote house sale never subtracts apartment stock")
+ check(inv.storage_stock("apartment","Street Green")==19+deposit,"Remote house sale never subtracts apartment stock")
  var overview:int=game.neighborhood.location_ops.computer_stock_total("apartment","storage","product|")
  check(overview==game._total_stored_stock(),"Property overview stock includes all apartment storage units")
  var snapshot:Dictionary=JSON.parse_string(JSON.stringify(game.location_state))
