@@ -29,6 +29,7 @@ jobs:
           timeout 65s "$GODOT" --headless --path "${RUNNER_TEMP}/candidate/candidate" --script "${GITHUB_WORKSPACE}/tools/map_integration_v1/stairwell_inventory.gd" 2>&1 | tee "${RUNNER_TEMP}/stair-render.log"
           grep -q 'STAIR_RENDER_DIAG_COMPLETE' "${RUNNER_TEMP}/stair-render.log"
       - name: Capture rendered stairwell with OpenGL / Xvfb
+        if: false # Keep fast read-only geometry diagnostics while locating the source.
         run: |
           set -euo pipefail
           GODOT=/tmp/godot/Godot_v4.7.2-stable_linux.x86_64

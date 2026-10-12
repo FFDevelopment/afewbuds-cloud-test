@@ -68,6 +68,20 @@ func run()->void:
     overlap_count+=1
     if examples.size()<8:examples.append(str(idx)+":"+str(t.origin)+"/"+str(world_bounds.size))
   print("STAIR_MULTIMESH path=",scatter.get_path()," count=",mm.instance_count," visible=",mm.visible_instance_count," base_bounds=",bb," world_bounds=",scatter.get_aabb()," material=",str(material)," overlaps=",overlap_count," sample=",examples)
+  if mm.instance_count==1:
+   var transform:Transform3D=mm.get_instance_transform(0)
+   print("STAIR_SINGLE_MESH node_transform=",scatter.global_transform," local_instance=",transform," derived_world_bounds=",scatter.global_transform*transform*bb)
+   var override_material:Material=scatter.material_override
+   print("STAIR_SINGLE_MATERIAL class=",str(override_material.get_class()) if override_material else "<null>"," id=",str(override_material))
+   if override_material is ShaderMaterial:
+    var sm:ShaderMaterial=override_material as ShaderMaterial
+    print("STAIR_SINGLE_SHADER path=",str(sm.shader.resource_path)," finish=",str(sm.get_shader_parameter("finish"))," tint=",str(sm.get_shader_parameter("tint")))
+   var source:String=world.get_script().source_code
+   var cursor:int=source.find("MultiMesh")
+   while cursor>=0:
+    print("STAIR_MULTIMESH_SOURCE ",source.substr(maxi(0,cursor-500),min(1150,source.length()-maxi(0,cursor-500))))
+    cursor=source.find("MultiMesh",cursor+9)
+
  print("STAIR_MULTIMESH_DIAG_COMPLETE count=",checked)
  print("STAIR_RENDER_DIAG_COMPLETE center_count=",count," meshes=",all_nodes.size())
  game.queue_free()
