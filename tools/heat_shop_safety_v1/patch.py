@@ -15,7 +15,7 @@ def patch_main(source):
     source=exactly(source,
         '\t\tvar head: HBoxContainer = HBoxContainer.new()\n\t\trow.add_child(head)',
         '''\t\t# Compact web layouts stack the product name above a full-width LIST action.
-\t\tvar compact:bool=OS.has_feature("web") or get_viewport().get_visible_rect().size.x<680.0
+\t\tvar compact:bool=OS.has_feature("web") or get_viewport().get_visible_rect().size.x<680.0 or get_window().size.x<680
 \t\tvar head: BoxContainer=VBoxContainer.new() if compact else HBoxContainer.new()
 \t\thead.add_theme_constant_override("separation",8)
 \t\trow.add_child(head)''',
