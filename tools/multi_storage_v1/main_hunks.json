@@ -1,0 +1,121 @@
+[
+  {
+    "oldLine": 5864,
+    "deleted": 5,
+    "added": 2,
+    "before": "\t\t\tvar store_amount: int = mini(PRODUCTION_WORKER_BATCH_SIZE, mini(available_store, free_capacity))\n\t\t\tif store_amount > 0:\n\t\t\t\tbagged_inventory[strain_name] = available_store - store_amount\n\t\t\t\t_ensure_product_exists(strain_name)\n\t\t\t\tvar data: Dictionary = products[strain_name]\n\t\t\t\tdata[\"stock\"] = int(data.get(\"stock\", 0)) + store_amount\n\t\t\t\tproducts[strain_name] = data\n\t\t\telif free_capacity <= 0 and _dealer_locker_free_capacity() > 0:\n\t\t\t\tvar overflow_amount: int = mini(PRODUCTION_WORKER_BATCH_SIZE, mini(available_store, _dealer_locker_free_capacity()))",
+    "after": "\t\t\tvar store_amount: int = mini(PRODUCTION_WORKER_BATCH_SIZE, mini(available_store, free_capacity))\n\t\t\tif store_amount > 0:\n\t\t\t\tif _storage_put_stock(strain_name,store_amount):\n\t\t\t\t\tbagged_inventory[strain_name] = available_store - store_amount\n\t\t\telif free_capacity <= 0 and _dealer_locker_free_capacity() > 0:\n\t\t\t\tvar overflow_amount: int = mini(PRODUCTION_WORKER_BATCH_SIZE, mini(available_store, _dealer_locker_free_capacity()))"
+  },
+  {
+    "oldLine": 5913,
+    "deleted": 5,
+    "added": 2,
+    "before": "\t\tif moved <= 0:\n\t\t\tbreak\n\t\tbagged_inventory[strain_name] = amount - moved\n\t\t_ensure_product_exists(strain_name)\n\t\tvar data: Dictionary = products[strain_name]\n\t\tdata[\"stock\"] = int(data.get(\"stock\", 0)) + moved\n\t\tproducts[strain_name] = data\n\tif bagging_panel != null and bagging_panel.visible:\n\t\t_refresh_bagging_panel()",
+    "after": "\t\tif moved <= 0:\n\t\t\tbreak\n\t\tif _storage_put_stock(strain_name,moved):\n\t\t\tbagged_inventory[strain_name] = amount - moved\n\tif bagging_panel != null and bagging_panel.visible:\n\t\t_refresh_bagging_panel()"
+  },
+  {
+    "oldLine": 5933,
+    "deleted": 6,
+    "added": 3,
+    "before": "\t\t\tvar moved: int = mini(PRODUCTION_WORKER_BATCH_SIZE, mini(amount, free_capacity))\n\t\t\tif moved > 0:\n\t\t\t\tbagged_inventory[strain_name] = amount - moved\n\t\t\t\t_ensure_product_exists(strain_name)\n\t\t\t\tvar data: Dictionary = products[strain_name]\n\t\t\t\tdata[\"stock\"] = int(data.get(\"stock\", 0)) + moved\n\t\t\t\tproducts[strain_name] = data\n\t\t\treturn\n\tfor name_variant in trimmed_inventory.keys():\n\t\tvar strain_name: String = str(name_variant)",
+    "after": "\t\t\tvar moved: int = mini(PRODUCTION_WORKER_BATCH_SIZE, mini(amount, free_capacity))\n\t\t\tif moved > 0:\n\t\t\t\tif _storage_put_stock(strain_name,moved):\n\t\t\t\t\tbagged_inventory[strain_name] = amount - moved\n\t\t\t\t\treturn\n\tfor name_variant in trimmed_inventory.keys():\n\t\tvar strain_name: String = str(name_variant)"
+  },
+  {
+    "oldLine": 6248,
+    "deleted": 0,
+    "added": 19,
+    "before": "\t\t_refresh_phone()\n\nfunc _dealer_locker_add_from_storage(strain_name: String, requested_amount: int) -> int:\n\tif dealer_locker_level <= 0 or not products.has(strain_name):",
+    "after": "\t\t_refresh_phone()\n\nfunc _property_storage_stock(strain_name:String)->int:\n if inventory_system!=null:return inventory_system.storage_stock(inventory_system.operation(),strain_name)\n return maxi(0,int(products.get(strain_name,{}).get(\"stock\",0)))\n\nfunc _storage_take_stock(strain_name:String,amount:int)->bool:\n if amount<=0:return amount==0\n if inventory_system!=null:return inventory_system.take_storage(inventory_system.operation(),strain_name,amount)\n if amount>_available_amount(strain_name):return false\n products[strain_name][\"stock\"]=int(products[strain_name].get(\"stock\",0))-amount\n return true\n\nfunc _storage_put_stock(strain_name:String,amount:int)->bool:\n if amount<=0:return amount==0\n _ensure_product_exists(strain_name)\n if inventory_system!=null:return inventory_system.put_storage(inventory_system.operation(),strain_name,amount)\n if amount>maxi(0,_storage_capacity()-_total_stored_stock()):return false\n products[strain_name][\"stock\"]=int(products[strain_name].get(\"stock\",0))+amount\n return true\n\nfunc _dealer_locker_add_from_storage(strain_name: String, requested_amount: int) -> int:\n\tif dealer_locker_level <= 0 or not products.has(strain_name):"
+  },
+  {
+    "oldLine": 6258,
+    "deleted": 3,
+    "added": 1,
+    "before": "\t\tstatus_label.text = \"Dealer Locker is full or that strain has no unreserved stock.\"\n\t\treturn 0\n\tvar data: Dictionary = products[strain_name]\n\tdata[\"stock\"] = maxi(0, int(data.get(\"stock\", 0)) - moved)\n\tproducts[strain_name] = data\n\tlocker_weed[strain_name] = int(locker_weed.get(strain_name, 0)) + moved\n\tstatus_label.text = \"Stocked %dg %s in Dealer Locker. Dealers can now sell it.\" % [moved, strain_name]",
+    "after": "\t\tstatus_label.text = \"Dealer Locker is full or that strain has no unreserved stock.\"\n\t\treturn 0\n\tif not _storage_take_stock(strain_name,moved):return 0\n\tlocker_weed[strain_name] = int(locker_weed.get(strain_name, 0)) + moved\n\tstatus_label.text = \"Stocked %dg %s in Dealer Locker. Dealers can now sell it.\" % [moved, strain_name]"
+  },
+  {
+    "oldLine": 6280,
+    "deleted": 7,
+    "added": 3,
+    "before": "\tif moved <= 0:\n\t\treturn 0\n\tlocker_weed[strain_name] = have - moved\n\tif int(locker_weed.get(strain_name, 0)) <= 0:\n\t\tlocker_weed.erase(strain_name)\n\t_ensure_product_exists(strain_name)\n\tvar data: Dictionary = products[strain_name]\n\tdata[\"stock\"] = int(data.get(\"stock\", 0)) + moved\n\tproducts[strain_name] = data\n\tstatus_label.text = \"Returned %dg %s from Dealer Locker to normal storage.\" % [moved, strain_name]\n\t_save_game()",
+    "after": "\tif moved <= 0:\n\t\treturn 0\n\tif not _storage_put_stock(strain_name,moved):return 0\n\tlocker_weed[strain_name] = have - moved\n\tif int(locker_weed.get(strain_name, 0)) <= 0:locker_weed.erase(strain_name)\n\tstatus_label.text = \"Returned %dg %s from Dealer Locker to normal storage.\" % [moved, strain_name]\n\t_save_game()"
+  },
+  {
+    "oldLine": 6424,
+    "deleted": 3,
+    "added": 3,
+    "before": "\telse:\n\t\tvar from_locker: int=mini(qty,maxi(0,int(locker_weed.get(product_name,0))))\n\t\tlocker_weed[product_name]=maxi(0,int(locker_weed.get(product_name,0)))-from_locker\n\t\tvar from_storage: int=mini(qty-from_locker,_available_amount(product_name))\n\t\tproducts[product_name][\"stock\"]=int(products[product_name].get(\"stock\",0))-from_storage\n\t\tvar from_bench: int=qty-from_locker-from_storage\n\t\tbagged_inventory[product_name]=maxi(0,int(bagged_inventory.get(product_name,0)))-from_bench",
+    "after": "\telse:\n\t\tvar from_locker: int=mini(qty,maxi(0,int(locker_weed.get(product_name,0))))\n\t\tvar from_storage: int=mini(qty-from_locker,_available_amount(product_name))\n\t\tif from_storage>0 and not _storage_take_stock(product_name,from_storage):return false\n\t\tlocker_weed[product_name]=maxi(0,int(locker_weed.get(product_name,0)))-from_locker\n\t\tvar from_bench: int=qty-from_locker-from_storage\n\t\tbagged_inventory[product_name]=maxi(0,int(bagged_inventory.get(product_name,0)))-from_bench"
+  },
+  {
+    "oldLine": 6643,
+    "deleted": 8,
+    "added": 4,
+    "before": "\t\tstatus_label.text = \"Storage is full. Upgrade in Central Market checkout (up to the 400g AFB vault).\"\n\t\treturn\n\tbagged_inventory[strain_name] = amount - moved\n\t_ensure_product_exists(strain_name)\n\tvar data: Dictionary = products[strain_name]\n\tvar old_stock: int = int(data.get(\"stock\", 0))\n\tdata[\"stock\"] = old_stock + moved\n\tif tutorial_active and tutorial_step == 8 and strain_name == tutorial_harvest_strain:\n\t\tdata[\"listed\"] = false\n\tproducts[strain_name] = data\n\t_increment_advancement_stat(\"grams_stored\", moved)\n\t_tutorial_record(\"store\", -1, strain_name)",
+    "after": "\t\tstatus_label.text = \"Storage is full. Upgrade in Central Market checkout (up to the 400g AFB vault).\"\n\t\treturn\n\tif not _storage_put_stock(strain_name,moved):return\n\tbagged_inventory[strain_name] = amount - moved\n\tif tutorial_active and tutorial_step == 8 and strain_name == tutorial_harvest_strain:\n\t\tproducts[strain_name][\"listed\"]=false\n\t_increment_advancement_stat(\"grams_stored\", moved)\n\t_tutorial_record(\"store\", -1, strain_name)"
+  },
+  {
+    "oldLine": 6905,
+    "deleted": 8,
+    "added": 13,
+    "before": "\tcapacity_header.modulate = Color(\"aeb9c0\")\n\tstorage_list.add_child(capacity_header)\n\tvar total: int = 0\n\tfor name_variant in products.keys():\n\t\tvar strain_name: String = str(name_variant)\n\t\tvar data: Dictionary = products[strain_name]\n\t\tvar stock: int = int(data.get(\"stock\", 0))\n\t\tif stock <= 0:\n\t\t\tcontinue\n\t\ttotal += stock\n\t\tvar parts: Dictionary = _make_inventory_card(\"bag\")\n\t\tvar card: PanelContainer = parts[\"card\"] as PanelContainer",
+    "after": "\tcapacity_header.modulate = Color(\"aeb9c0\")\n\tstorage_list.add_child(capacity_header)\n\tvar total:int=0\n\tvar storage_strains:Array[String]=[]\n\tfor product_name in products:storage_strains.append(str(product_name))\n\tif inventory_system!=null:\n\t\tfor extra in inventory_system.storage_strains(inventory_system.operation()):\n\t\t\tif not storage_strains.has(extra):storage_strains.append(extra)\n\tstorage_strains.sort()\n\tfor strain_name in storage_strains:\n\t\t_ensure_product_exists(strain_name)\n\t\tvar data:Dictionary=products[strain_name]\n\t\tvar stock:int=_property_storage_stock(strain_name)\n\t\tif stock<=0:continue\n\t\ttotal+=stock\n\t\tvar parts: Dictionary = _make_inventory_card(\"bag\")\n\t\tvar card: PanelContainer = parts[\"card\"] as PanelContainer"
+  },
+  {
+    "oldLine": 7440,
+    "deleted": 6,
+    "added": 12,
+    "before": "\tphone_list.add_child(intro)\n\n\tfor name_variant in products.keys():\n\t\tvar product_name: String = str(name_variant)\n\t\tvar data: Dictionary = products[product_name]\n\t\tvar stock: int = int(data.get(\"stock\", 0))\n\t\tvar reserved: int = int(data.get(\"reserved\", 0))\n\t\tvar sellable: int = maxi(0, stock - reserved)\n\t\tvar card: PanelContainer = PanelContainer.new()\n\t\tphone_list.add_child(card)",
+    "after": "\tphone_list.add_child(intro)\n\n\tvar names:Array[String]=[]\n\tfor key in products.keys():names.append(str(key))\n\tif inventory_system!=null:\n\t\tfor strain in inventory_system.storage_strains(inventory_system.operation()):\n\t\t\tif not names.has(strain):names.append(strain)\n\tnames.sort()\n\tfor product_name in names:\n\t\t_ensure_product_exists(product_name)\n\t\tvar data:Dictionary=products[product_name]\n\t\tvar stock:int=_property_storage_stock(product_name)\n\t\tvar reserved:int=int(data.get(\"reserved\",0))\n\t\tvar sellable:int=maxi(0,stock-reserved)\n\t\tvar card: PanelContainer = PanelContainer.new()\n\t\tphone_list.add_child(card)"
+  },
+  {
+    "oldLine": 8496,
+    "deleted": 5,
+    "added": 1,
+    "before": "\t\t\tcontinue\n\t\tvar product: Dictionary = products[favorite]\n\t\tvar stock: int = int(product.get(\"stock\", 0))\n\t\tif stock <= 0 or _available_amount(favorite) <= 0:\n\t\t\tcontinue\n\t\tproduct[\"stock\"] = stock - 1\n\t\tproducts[favorite] = product\n\t\tvar paid: int = maxi(1, int(round(float(_effective_price(favorite)) * FRIEND_STAFF_PURCHASE_RATE)))\n\t\tcash += paid",
+    "after": "\t\t\tcontinue\n\t\tvar product: Dictionary = products[favorite]\n\t\tif _available_amount(favorite)<=0 or not _storage_take_stock(favorite,1):continue\n\t\tvar paid: int = maxi(1, int(round(float(_effective_price(favorite)) * FRIEND_STAFF_PURCHASE_RATE)))\n\t\tcash += paid"
+  },
+  {
+    "oldLine": 9563,
+    "deleted": 3,
+    "added": 2,
+    "before": "\t\treturn\n\tvar data: Dictionary = products[product_name]\n\tvar stock: int = int(data.get(\"stock\", 0))\n\tif stock <= 0 and listed:\n\t\treturn\n\tvar was_listed: bool = bool(data.get(\"listed\", false))\n\tdata[\"listed\"] = listed",
+    "after": "\t\treturn\n\tvar data: Dictionary = products[product_name]\n\tvar stock: int = _property_storage_stock(product_name)\n\tif stock <= 0 and listed:return\n\tvar was_listed: bool = bool(data.get(\"listed\", false))\n\tdata[\"listed\"] = listed"
+  },
+  {
+    "oldLine": 9669,
+    "deleted": 1,
+    "added": 1,
+    "before": "\t\treturn\n\tvar data: Dictionary = products[product_name]\n\tvar stock: int = int(data.get(\"stock\", 0))\n\tvar reserved: int = clampi(amount, 0, stock)\n\tdata[\"reserved\"] = reserved",
+    "after": "\t\treturn\n\tvar data: Dictionary = products[product_name]\n\tvar stock: int = _property_storage_stock(product_name)\n\tvar reserved: int = clampi(amount, 0, stock)\n\tdata[\"reserved\"] = reserved"
+  },
+  {
+    "oldLine": 9809,
+    "deleted": 3,
+    "added": 1,
+    "before": "func _storage_capacity() -> int:\n\tif inventory_system!=null and inventory_system.furniture!=null:\n\t\tvar id:String=inventory_system.operation()+\":storage\"\n\t\tif inventory_system.furniture.model.container_item(id).is_empty():return 0\n\t\treturn inventory_system.capacity(id,\"product|Street Green\")\n\tif storage_level >= 5:\n\t\treturn 1000",
+    "after": "func _storage_capacity() -> int:\n\tif inventory_system!=null and inventory_system.furniture!=null:\n\t\treturn inventory_system.storage_capacity(inventory_system.operation())\n\tif storage_level >= 5:\n\t\treturn 1000"
+  },
+  {
+    "oldLine": 9823,
+    "deleted": 5,
+    "added": 3,
+    "before": "\nfunc _total_stored_stock() -> int:\n\tvar total: int = 0\n\tfor name_variant in products.keys():\n\t\tvar product_name: String = str(name_variant)\n\t\tvar data: Dictionary = products[product_name]\n\t\ttotal += int(data.get(\"stock\", 0))\n\treturn total\n",
+    "after": "\nfunc _total_stored_stock() -> int:\n\tif inventory_system!=null:return inventory_system.storage_stock(inventory_system.operation())\n\tvar total: int = 0\n\tfor name_variant in products.keys():total+=maxi(0,int(products[name_variant].get(\"stock\",0)))\n\treturn total\n"
+  },
+  {
+    "oldLine": 11024,
+    "deleted": 4,
+    "added": 3,
+    "before": "\tif qty<=0 or not products.has(product_name) or _player_available_amount(product_name)<qty:return false\n\tvar carried:int=mini(qty,_carried_amount(\"product|\"+product_name))\n\tif carried>0:_consume_carried(\"product|\"+product_name,carried)\n\tvar data:Dictionary=products[product_name]\n\tdata[\"stock\"]=int(data.get(\"stock\",0))-(qty-carried)\n\tproducts[product_name]=data\n\treturn true\n",
+    "after": "\tif qty<=0 or not products.has(product_name) or _player_available_amount(product_name)<qty:return false\n\tvar carried:int=mini(qty,_carried_amount(\"product|\"+product_name))\n\tvar from_storage:int=qty-carried\n\tif from_storage>0 and not _storage_take_stock(product_name,from_storage):return false\n\tif carried>0:_consume_carried(\"product|\"+product_name,carried)\n\treturn true\n"
+  },
+  {
+    "oldLine": 11277,
+    "deleted": 4,
+    "added": 3,
+    "before": "\tif not products.has(product_name):\n\t\treturn 0\n\tvar data: Dictionary = products[product_name]\n\tvar stock: int = int(data.get(\"stock\", 0))\n\tvar reserved: int = int(data.get(\"reserved\", 0))\n\treturn maxi(0, stock - reserved)\n\nfunc _clear_children(parent: Node) -> void:",
+    "after": "\tif not products.has(product_name):\n\t\treturn 0\n\tif inventory_system!=null:return inventory_system.storage_available(inventory_system.operation(),product_name)\n\tvar data: Dictionary = products[product_name]\n\treturn maxi(0,int(data.get(\"stock\",0))-int(data.get(\"reserved\",0)))\n\nfunc _clear_children(parent: Node) -> void:"
+  }
+]

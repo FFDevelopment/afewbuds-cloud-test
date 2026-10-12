@@ -151,6 +151,11 @@ func contents(id:String) -> Dictionary:
  result.merge(state.containers[id].duplicate(true))
  _add_deliveries(result,id)
  if not primary_container(id):return result
+ # The active legacy primary adapter is authoritative. Its cached snapshot
+ # can contain older product counts after switching property contexts.
+ if container_kind(id)=="storage":
+  for item in result.keys():
+   if category(str(item))=="product":result.erase(item)
  match container_kind(id):
   "supply":
    _append_map(result,host.seed_inventory,"seed")
@@ -208,6 +213,97 @@ func set_amount(id:String,item:String,n:int) -> void:
     if kind=="product":host.bagged_inventory[name]=n;return
  if n==0:state.containers[id].erase(item)
  else:state.containers[id][item]=n
+# Inventory has one legacy primary storage plus zero or more separately
+# purchased stations (property:storage@asset_id). Sum installed units only:
+# packed or sold furniture must never contribute ghost inventory.
+func storage_ids(property:String)->Array[String]:
+ var ids:Array[String]=[]
+ if property not in ["apartment","house"] or furniture==null or furniture.model==null:return ids
+ var model:RefCounted=furniture.model
+ for asset in model.state.items:
+  var entry:Dictionary=model.state.items[asset]
+  if str(entry.get("property",""))!=property or not model.CATALOG.has(str(entry.get("sku",""))):continue
+  if model.station_kind(str(asset))!="storage":continue
+  var id:String=model.container_of(str(asset))
+  if id.begins_with(property+":storage") and container_kind(id)=="storage" and not ids.has(id):ids.append(id)
+ ids.sort()
+ return ids
+
+func storage_strains(property:String)->Array[String]:
+ var names:Array[String]=[]
+ for id in storage_ids(property):
+  var stock:Dictionary=contents(id)
+  for item in stock:
+   if category(str(item))!="product" or int(stock[item])<=0:continue
+   var name:String=str(item).get_slice("|",1)
+   if not names.has(name):names.append(name)
+ names.sort()
+ return names
+
+func storage_stock(property:String,strain:String="")->int:
+ var result:int=0
+ for id in storage_ids(property):
+  var stock:Dictionary=contents(id)
+  if not strain.is_empty():
+   result+=maxi(0,int(stock.get("product|"+strain,0)))
+  else:
+   for item in stock:
+    if category(str(item))=="product":result+=maxi(0,int(stock[item]))
+ return result
+
+func storage_reserved(property:String,strain:String)->int:
+ if operation()==property:
+  return maxi(0,int(host.products.get(strain,{}).get("reserved",0)))
+ var metadata:Dictionary=state.get("product_metadata",{}).get(property,{})
+ return maxi(0,int(metadata.get(strain,{}).get("reserved",0)))
+
+func storage_available(property:String,strain:String)->int:
+ return maxi(0,storage_stock(property,strain)-storage_reserved(property,strain))
+
+func storage_capacity(property:String)->int:
+ var result:int=0
+ for id in storage_ids(property):result+=maxi(0,capacity(id,"product|Street Green"))
+ return result
+
+# Commit a single sale against individual containers. A property's reserved
+# total is subtracted ONCE before the debit (not once per storage unit).
+# A failed preflight cannot partially deduct stock from another unit.
+func take_storage(property:String,strain:String,amount:int)->bool:
+ if amount<0 or amount>storage_available(property,strain):return false
+ if amount==0:return true
+ var remaining:int=amount
+ var item:String="product|"+strain
+ for id in storage_ids(property):
+  if remaining<=0:break
+  var original:int=maxi(0,int(contents(id).get(item,0)))
+  var taken:int=mini(original,remaining)
+  if taken>0:
+   set_amount(id,item,original-taken)
+   remaining-=taken
+ if remaining!=0:push_error("Inventory storage debit disagreed with stock preflight");return false
+ revision+=1
+ return true
+
+# Newly packaged product and dealer returns fill each actual unit up to its
+# own capacity. Extra shelves must not accidentally overfill the first shelf.
+func put_storage(property:String,strain:String,amount:int)->bool:
+ if amount<0:return false
+ if amount==0:return true
+ var item:String="product|"+strain
+ var room:int=0
+ for id in storage_ids(property):room+=maxi(0,free_space(id,item))
+ if amount>room:return false
+ var remaining:int=amount
+ for id in storage_ids(property):
+  if remaining<=0:break
+  var qty:int=mini(remaining,free_space(id,item))
+  if qty>0:
+   set_amount(id,item,int(contents(id).get(item,0))+qty)
+   remaining-=qty
+ if remaining!=0:push_error("Inventory storage deposit disagreed with space preflight");return false
+ revision+=1
+ return true
+
 func group(item:String) -> String:
  if category(item) in ["product","raw","trimmed"]:return "grams"
  if category(item)=="seed":return "seeds"
@@ -288,10 +384,8 @@ func free_space(id:String,item:String) -> int:
  return maxi(0,capacity(id,item)-used)
 func available(id:String,item:String) -> int:
  var value:int=int(contents(id).get(item,0))
- if id==operation()+":storage" and category(item)=="product":
-  value=mini(value,host._available_amount(item.get_slice("|",1)))
- elif id.ends_with(":storage") and category(item)=="product":
-  value-=int(state.get("product_metadata",{}).get(id.get_slice(":",0),{}).get(item.get_slice("|",1),{}).get("reserved",0))
+ if container_kind(id)=="storage" and category(item)=="product":
+  value=mini(value,storage_available(id.get_slice(":",0),item.get_slice("|",1)))
  return maxi(0,value)
 func controlled(id:String) -> bool:
  if id in ["backpack","market:orders"]:return true

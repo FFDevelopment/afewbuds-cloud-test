@@ -1,0 +1,9 @@
+[
+  {
+    "oldLine": 372,
+    "deleted": 3,
+    "added": 6,
+    "before": "func computer_stock_total(property:String,kind:String,prefix:String) -> int:\n\tif host.inventory_system==null:return 0\n\tvar amount:int=0\n\tfor key in host.inventory_system.contents(property+\":\"+kind):\n\t\tif str(key).begins_with(prefix):amount+=maxi(0,int(host.inventory_system.contents(property+\":\"+kind)[key]))\n\treturn amount\nfunc computer_due(property:String) -> int:",
+    "after": "func computer_stock_total(property:String,kind:String,prefix:String) -> int:\n\tif host.inventory_system==null:return 0\n\tvar inv:Node=host.inventory_system\n\tif kind==\"storage\" and prefix==\"product|\":return inv.storage_stock(property)\n\tvar amount:int=0\n\tvar contents:Dictionary=inv.contents(property+\":\"+kind)\n\tfor key in contents:\n\t\tif str(key).begins_with(prefix):amount+=maxi(0,int(contents[key]))\n\treturn amount\nfunc computer_due(property:String) -> int:"
+  }
+]
