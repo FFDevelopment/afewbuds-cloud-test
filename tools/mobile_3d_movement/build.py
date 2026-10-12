@@ -911,7 +911,7 @@ def main():
     updated.append(["scripts/equipment_world.gd",(ROOT/"tools/equipment_v2/equipment_world.gd").read_bytes(),0])
     updated.append(['scripts/mobile_physics_player.gd',(HERE/'mobile_physics_player.gd').read_bytes(),0])
     # Match the desktop's tested basement stairwell visual cutout on iOS/web.
-    updated.append(['visual_lab/basement.gd',(HERE/'basement.gd').read_bytes(),0])
+    updated=[['visual_lab/basement.gd',(HERE/'basement.gd').read_bytes(),flags] if name=='visual_lab/basement.gd' else [name,data,flags] for name,data,flags in updated]
 
     updated.append(['scripts/districts.gd',(HERE/'districts.gd').read_bytes(),0])
 
