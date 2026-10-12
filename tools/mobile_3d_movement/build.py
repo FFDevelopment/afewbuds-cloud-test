@@ -911,7 +911,7 @@ def main():
     updated.append(["scripts/equipment_world.gd",(ROOT/"tools/equipment_v2/equipment_world.gd").read_bytes(),0])
     updated.append(['scripts/mobile_physics_player.gd',(HERE/'mobile_physics_player.gd').read_bytes(),0])
     # Match the desktop's tested basement stairwell visual cutout on iOS/web.
-    updated=[['visual_lab/basement.gd',(HERE/'basement.gd').read_bytes(),flags] if name=='visual_lab/basement.gd' else [name,data,flags] for name,data,flags in updated]
+
 
     updated.append(['scripts/districts.gd',(HERE/'districts.gd').read_bytes(),0])
 
@@ -976,7 +976,7 @@ def main():
     build_stamp=build_sha256[:12]
     after={n:b for n,b,f in east.pack.parse(built)[1]}
     changed=[n for n in before if before[n]!=after[n]]
-    expected_changed={'scripts/east_expansion.gd','scripts/police_district.gd','scripts/client_visits.gd','scripts/interiors.gd','scripts/offline_plant_care.gd','scripts/mobile_hud.gd','scripts/crew_phone.gd','scripts/interior_door.gd','scripts/location_ops.gd','scripts/main.gd','scripts/house_controls.gd','scripts/neighborhood.gd','scripts/police_station.gd','scripts/property_opportunity.gd','visual_lab/basement.gd'}
+    expected_changed={'scripts/east_expansion.gd','scripts/police_district.gd','scripts/client_visits.gd','scripts/interiors.gd','scripts/offline_plant_care.gd','scripts/mobile_hud.gd','scripts/crew_phone.gd','scripts/interior_door.gd','scripts/location_ops.gd','scripts/main.gd','scripts/house_controls.gd','scripts/neighborhood.gd','scripts/police_station.gd','scripts/property_opportunity.gd'}
     expected_changed.update("assets/characters/"+name+".glb" for name in ["Rod","Kobi","Malik"])
     assert set(changed)==expected_changed,changed
     assert 'scripts/avatar_native_rig.gd' in after and b'AFB_MasterSkeleton' in after['scripts/avatar_native_rig.gd'], 'Native 56-bone web rig must be packed'
@@ -999,6 +999,7 @@ def main():
     assert b'WorkerTrimScissors' in after['scripts/main.gd'], 'Generic production packing animation missing'
     assert b'shop_upgrade_catalog.gd' in after['scripts/location_ops.gd'], 'Market backpack upgrade control missing'
     assert 'scripts/mobile_physics_player.gd' in after
+    assert after['visual_lab/basement.gd']==(ROOT/'tools/map_integration_v1/visual_lab/basement.gd').read_bytes(), 'Mobile stair cutout script missing from packed runtime'
     assert after['scripts/property_registry.gd']==registry_bytes
     assert after['scripts/item_registry.gd']==item_bytes
     assert 'data/item_definitions.json' in after

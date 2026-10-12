@@ -19,6 +19,34 @@ func run():
  player.set_physics_process(false)
  game._install_map_update();game._install_map_update()
  check(game.has_node("BasementExpansion") and game.get_node("MapVisuals").is_processing()==false,"Map installs once without preview processing")
+
+ # The 3D map must not draw any shallow outside ground sheet across the stair
+ # hole. Testing only floor collisions misses this phone-only visual regression.
+ var basement:Node3D=game.get_node("BasementExpansion")
+ var stair_visual_blockers:Array[String]=[]
+ for mesh_node in game.find_children("*","MeshInstance3D",true,false):
+  var m:MeshInstance3D=mesh_node as MeshInstance3D
+  if m==null or not m.visible or basement.is_ancestor_of(m):continue
+  var bb:AABB=m.global_transform*m.get_aabb()
+  if bb.size.x<.3 or bb.size.z<.3 or bb.size.y>.45:continue
+  if bb.position.y<-.5 or bb.end.y>.23:continue
+  var footprint:=Rect2(Vector2(bb.position.x,bb.position.z),Vector2(bb.size.x,bb.size.z))
+  if footprint.has_point(basement.HOLE.get_center()):stair_visual_blockers.append(str(m.get_path()))
+ check(stair_visual_blockers.is_empty(),"No terrain or house-floor mesh drawn across basement stairs",stair_visual_blockers)
+ # Specifically cover a zero-thickness nested plane, which the previous
+ # neighborhood-only BoxMesh pass ignored.
+ var overlay_parent=Node3D.new()
+ game.add_child(overlay_parent)
+ var overlay=MeshInstance3D.new()
+ var overlay_plane=PlaneMesh.new()
+ overlay_plane.size=Vector2(4,5.8)
+ overlay.mesh=overlay_plane
+ overlay.position=Vector3(42.9,0,-10.95)
+ overlay_parent.add_child(overlay)
+ var existing_count:int=basement.cut_count
+ basement.cut_upper_ground_meshes(game)
+ check(not overlay.visible and basement.cut_count>existing_count,"Nested visual-only plane is removed from stair opening")
+ overlay_parent.queue_free()
  game.session_paused=false;game.tutorial_active=false;game.daily_report_pending=false
  var inv=game.inventory_system;inv.set_process(false);var editor=inv.furniture;editor.set_process(false)
  var model=editor.model;game.cash=50000;game.packing_employee_active=false;game.production_worker_pending_action=""
