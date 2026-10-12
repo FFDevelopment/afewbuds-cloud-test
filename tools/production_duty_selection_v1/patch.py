@@ -31,22 +31,19 @@ func layout_same_floor(id:String,base_y:float)->bool:
  return absf(base_y-floor_y)<=.8
 func refresh_layout(force:bool=false) -> void:
 ''')
-        # Desktop once used a floor-height filter; the older mobile editor
-        # instead hardcoded y=0 for every furniture hitbox. Both fail on
-        # mounted basement/upper-floor utilities.
-        desktop_before='''  # Furniture on another floor must not intercept walk-around selection.
-  if absf(float(e.position[1])-placement_floor())>0.8:continue
-  var size:Vector3=model.size_of(id,int(e.get("yaw",0)))
-  var box:=AABB(Vector3(e.position[0]-size.x*.5,e.position[1],e.position[2]-size.z*.5),size)'''
-        mobile_before='''  var size:Vector3=model.size_of(id,int(e.get("yaw",0)))
-  var box:=AABB(Vector3(e.position[0]-size.x*.5,0,e.position[2]-size.z*.5),size)'''
-        replacement='''  # Raised wall equipment belongs to the viewed floor; never target across floors.
+        # Find the actual AABB builder in the staged layout method rather
+        # than assuming a particular old version of the phone adapter.
+        entry=source.find("func refresh_layout(force:bool=false) -> void:")
+        assert entry>=0,"Missing post-upgrade mobile layout method"
+        begin=source.find('  var size:Vector3=model.size_of(id,int(e.get("yaw",0)))',entry)
+        end=source.find("  var hit=box.intersects_ray(origin,direction)",begin)
+        if begin<0 or end<0 or end-begin>650 or "var box" not in source[begin:end]:
+            raise AssertionError("Unsupported mobile furniture AABB selector: "+source[entry:entry+900])
+        source=source[:begin]+'''  # Wall mounts sit above the floor, but still belong to this room.
   if not layout_same_floor(id,float(e.position[1])):continue
   var at:=Vector3(float(e.position[0]),float(e.position[1]),float(e.position[2]))
-  var box:AABB=model.occupied_box(id,at,int(e.get("yaw",0)))'''
-        if source.count(mobile_before)==1:replace_once(mobile_before,replacement)
-        elif source.count(desktop_before)==1:replace_once(desktop_before,replacement)
-        else:raise AssertionError("Mobile furniture selection source changed")
+  var box:AABB=model.occupied_box(id,at,int(e.get("yaw",0)))
+'''+source[end:]
         result.append([path,source.encode("utf-8"),flags])
         found=True
     assert found,"Mobile furniture editor is missing from staged pack"
