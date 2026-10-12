@@ -20,6 +20,7 @@ func _default()->Dictionary:
  "task":"Off duty","pending":"","slot":-1,"strain":"","target":[0.75,0.0,2.55],
  "dwell":0.0,"stall":0.0,"walk":0.0,"route":[],"route_index":0,"route_end":[0,0,0],
  "route_valid":false,"arrested":false,"bail":0,"away_service":5.0,
+ "resume_after_pay":false,"payroll_owed":0,
  "position":[0.75,0.0,2.55],"yaw":0.0}
 func _capture()->void:
  if not initialized:return
@@ -127,6 +128,10 @@ func setup(owner:Node3D)->void:
   record.dwell=0.0
   record.route=[]
   record.route_valid=false
+  # Migrate old careers where missed payroll already sent someone home.
+  if not bool(record.get("active",false)) and str(record.get("task",""))=="Off duty - unpaid" and not bool(record.get("resume_after_pay",false)):
+   record.resume_after_pay=true
+   record.payroll_owed=host.PACKER_DAILY_WAGE
   if place=="house" and record.get("position",[])==[0.75,0.0,2.55]:record.position=[35.0,0.0,1.45]
   if place=="house" and _at(record.get("target",[0,0,0])).x<25.0:record.target=[35.0,0.0,1.45]
   slots[place]=record
@@ -222,6 +227,13 @@ func recruit(name:String,place:String)->bool:
 
 func toggle(place:String)->void:
  if place in PLACES and bool(record(place).get("hired",false)):
+  var d:Dictionary=record(place)
+  if not bool(d.get("active",false)) and bool(d.get("resume_after_pay",false)):
+   resume_paid_shifts(place)
+   if not on_duty(place):
+    host.status_label.text="Unpaid production wages: $%d. This worker returns automatically once payroll and safety restrictions are clear." % maxi(host.PACKER_DAILY_WAGE,int(record(place).get("payroll_owed",0)))
+   host._refresh_phone()
+   return
   with_property(place,func():host._toggle_packing_employee())
   host._refresh_phone()
 func toggle_auto_plant(place:String)->void:
@@ -282,6 +294,7 @@ func _task_tick()->void:
   host._assign_production_worker_task()
  elif host.production_worker_node!=null:host.production_worker_node.visible=false
 func tick()->void:
+ resume_paid_shifts()
  for place in PLACES:
   if not host.inventory_system.furniture.model.controlled(place):continue
   with_property(place,func():host.inventory_system.at_property(place,_task_tick))
@@ -298,6 +311,41 @@ func update(delta:float)->void:
    continue
   with_property(place,_visual_at_current.bind(delta,place))
 
+# Production payroll is charged before the dealer drop-off is settled.
+# If cash was temporarily short, charge the owed wage once funds return and
+# automatically restore that shift. Manual time-off and heat shutdown never
+# set resume_after_pay, so neither is overridden here.
+func resume_paid_shifts(only_place:String="")->Array[String]:
+ var resumed:Array[String]=[]
+ for place in PLACES:
+  if not only_place.is_empty() and place!=only_place:continue
+  var d:Dictionary=record(place)
+  if not bool(d.get("hired",false)) or bool(d.get("active",false)) or not bool(d.get("resume_after_pay",false)):continue
+  if bool(d.get("arrested",false)) or host._staff_heat_locked() or host.game_day<host.raid_lockdown_until_day:continue
+  var owed:int=maxi(host.PACKER_DAILY_WAGE,int(d.get("payroll_owed",0)))
+  if host.cash<owed:continue
+  host.cash-=owed
+  host._record_daily_expense("Late production wage · "+place.capitalize(),owed)
+  d.active=true
+  d.resume_after_pay=false
+  d.payroll_owed=0
+  d.pending=""
+  d.slot=-1
+  d.strain=""
+  d.route=[]
+  d.route_valid=false
+  d.route_index=0
+  d.task="Clocking in"
+  d.last="Payroll caught up - back on duty"
+  resumed.append(place.capitalize())
+ if not resumed.is_empty():
+  _load(current)
+  host.status_label.text="Late production payroll paid. "+", ".join(PackedStringArray(resumed))+" worker(s) automatically back on duty."
+  host._update_cash_ui()
+  host._save_game()
+  host._refresh_phone()
+ return resumed
+
 func charge_wages()->Dictionary:
  var paid:Array[String]=[]
  var missed:Array[String]=[]
@@ -312,9 +360,11 @@ func charge_wages()->Dictionary:
    paid.append(place.capitalize()+" production worker $%d" % host.PACKER_DAILY_WAGE)
   else:
    d.active=false
+   d.resume_after_pay=true
+   d.payroll_owed=maxi(host.PACKER_DAILY_WAGE,int(d.get("payroll_owed",0)))
    d.pending=""
    d.task="Off duty - unpaid"
-   d.last=d.task
+   d.last="Unpaid $%d wage - auto-resumes when paid" % int(d.payroll_owed)
    missed.append(place.capitalize()+" production worker")
  _load("apartment")
  return {"paid":paid,"missed":missed,"spent":spent}

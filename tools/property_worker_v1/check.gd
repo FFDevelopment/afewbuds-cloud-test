@@ -37,10 +37,26 @@ func run()->void:
  var wage_before:int=game.cash
  var wages:Dictionary=service.charge_wages()
  check(game.cash==wage_before-2*game.PACKER_DAILY_WAGE and int(wages.spent)==2*game.PACKER_DAILY_WAGE,"Each working property's payroll is charged once")
+ check(service.on_duty("house") and service.on_duty("apartment"),"Adequately paid workers remain on duty after nightly wages")
+ var former_cash:int=game.cash
+ game.cash=0
+ var missed:Dictionary=service.charge_wages()
+ check(missed.missed.size()==2 and not service.on_duty("house") and not service.on_duty("apartment"),"Insufficient payroll suspends workers instead of forgetting requested duty")
+ check(int(service.record("house").get("payroll_owed",0))==game.PACKER_DAILY_WAGE and bool(service.record("house").get("resume_after_pay",false)),"Unpaid workers retain one owed shift and resume preference")
+ game.cash=game.PACKER_DAILY_WAGE-1
+ service.resume_paid_shifts()
+ check(not service.on_duty("house") and not service.on_duty("apartment"),"Missing wages never allow free production")
+ game.cash=game.PACKER_DAILY_WAGE*2
+ service.resume_paid_shifts()
+ check(service.on_duty("house") and service.on_duty("apartment") and game.cash==0,"Late dealer funds restore both shifts after paying exactly two wages")
+ check(not bool(service.record("house").get("resume_after_pay",false)) and not bool(service.record("apartment").get("resume_after_pay",false)),"Paid shift clears pending debt and automatic-resume flag")
+ game.cash=former_cash
  service.toggle_auto_plant("house")
  check(bool(service.record("house").auto_plant) and not bool(service.record("apartment").auto_plant),"House auto-plant preference cannot turn on apartment auto-plant")
  service.toggle("house")
  check(not service.on_duty("house") and service.on_duty("apartment"),"Sending house worker home does not pause apartment worker")
+ service.resume_paid_shifts()
+ check(not service.on_duty("house"),"A manually sent-home worker cannot be auto-restarted")
  check(not service.transfer("Production Worker","house"),"Cannot transfer into a second occupied production position")
  service.fire("house")
  check(service.hired_count()==1 and not bool(service.record("house").hired),"Firing house worker does not fire apartment worker")
@@ -125,6 +141,29 @@ func run()->void:
  else:check(false,"Approved Bench III model persists after moving against the opposite wall")
  furniture.cancel_placement()
  model.state.items.erase(temp)
+ game._install_map_update()
+ var mount_cases:Array=[
+  {"place":"house","sku":"water_kit","at":Vector3(44.15,1.15,-11.65),"eye":Vector3(41.0,1.75,-11.65)},
+  {"place":"house","sku":"ventilation","at":Vector3(44.15,1.05,-12.65),"eye":Vector3(41.0,1.75,-12.65)},
+  {"place":"house","sku":"water_kit","at":Vector3(40.4,-2.65,-11.3),"eye":Vector3(37.5,-2.05,-11.3)},
+  {"place":"house","sku":"ventilation","at":Vector3(40.4,-2.65,-12.5),"eye":Vector3(37.5,-2.05,-12.5)},
+  {"place":"apartment","sku":"water_kit","at":Vector3(4.2,1.15,-8.4),"eye":Vector3(2.0,1.75,-8.4)},
+  {"place":"apartment","sku":"ventilation","at":Vector3(4.2,1.05,-9.2),"eye":Vector3(2.0,1.75,-9.2)}
+ ]
+ for i in range(mount_cases.size()):
+  var spec:Dictionary=mount_cases[i]
+  var mount_id:String="fixture_selection_"+str(i)
+  var at:Vector3=spec.at
+  model.state.items[mount_id]={"sku":str(spec.sku),"property":str(spec.place),"position":[at.x,at.y,at.z],"yaw":0,"locked":false,"paid":420,"upgrades":{}}
+  game.camera.global_position=spec.eye
+  game.camera.look_at(at+Vector3.UP*model.size_of(mount_id).y*.5)
+  furniture.start_layout(str(spec.place))
+  furniture.refresh_layout(true)
+  check(furniture.layout_focus==mount_id,"Walk-around can select mounted "+str(spec.sku)+" at "+str(spec.place)+" height "+str(at.y))
+  check(not furniture.layout_move.disabled and not furniture.layout_pickup.disabled,"Mounted utility exposes move and pick-up actions")
+  furniture.layout_mode=false
+  furniture.layout_panel.hide()
+  model.state.items.erase(mount_id)
  game.queue_free()
  for i in 6:await process_frame
  print("PROPERTY_PRODUCTION_STAFF_RESULT: "+("PASS" if failures==0 else "FAIL")+" checks="+str(checks)+" failures="+str(failures))

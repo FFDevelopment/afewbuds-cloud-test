@@ -993,6 +993,8 @@ def main():
     updated=rooms_patch.apply_entries(updated)
     house_packing=module("house_packing_parity",ROOT/"tools/house_packing_parity_v1/patch.py")
     updated=house_packing.apply_entries(updated)
+    duty_mount=module("duty_mount_selection",ROOT/"tools/production_duty_selection_v1/patch.py")
+    updated=duty_mount.apply_entries(updated)
     built=east.pack.rebuild(baseline,fb,updated)
     # Every unique gameplay pack gets its own browser-visible identity.
     # This prevents development releases from silently sharing a stale URL.
@@ -1023,6 +1025,8 @@ def main():
     assert b'WorkerTrimScissors' in after['scripts/main.gd'], 'Generic production packing animation missing'
     assert b'shop_upgrade_catalog.gd' in after['scripts/location_ops.gd'], 'Market backpack upgrade control missing'
     assert 'scripts/mobile_physics_player.gd' in after
+    assert b'func layout_same_floor' in after['scripts/furniture_editor.gd'], 'Mounted equipment cannot be selected in arrangement'
+    assert b'func resume_paid_shifts' in after['scripts/property_production_crew.gd'], 'Night payroll auto-resume missing'
     assert b'stairwell_hole:Rect2' in after['scripts/neighborhood.gd'], 'MultiMesh terrain cutout not packed'
     assert after['visual_lab/basement.gd']==(ROOT/'tools/map_integration_v1/visual_lab/basement.gd').read_bytes(), 'Mobile stair cutout script missing from packed runtime'
     assert after['scripts/property_registry.gd']==registry_bytes
