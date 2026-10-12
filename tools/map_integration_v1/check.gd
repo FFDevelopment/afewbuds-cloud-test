@@ -1,8 +1,8 @@
 extends SceneTree
 var failures:=0
 func _initialize():call_deferred("run")
-func check(ok:bool,message:String):
- if not ok:failures+=1;push_error(message)
+func check(ok:bool,message:String,details:Variant=null):
+ if not ok:failures+=1;push_error(message+" "+str(details))
  else:print("PASS ",message)
 func run():
  var desktop:=ResourceLoader.exists("res://prototype/apartment.tscn")
