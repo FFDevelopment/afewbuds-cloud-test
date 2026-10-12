@@ -997,6 +997,8 @@ def main():
     updated=duty_mount.apply_entries(updated)
     multi_storage=module("multi_storage",ROOT/"tools/multi_storage_v1/patch.py")
     updated=multi_storage.apply_entries(updated)
+    heat_shop=module("heat_shop_safety",ROOT/"tools/heat_shop_safety_v1/patch.py")
+    updated=heat_shop.apply_entries(updated)
     built=east.pack.rebuild(baseline,fb,updated)
     # Every unique gameplay pack gets its own browser-visible identity.
     # This prevents development releases from silently sharing a stale URL.
@@ -1026,6 +1028,9 @@ def main():
     assert b'packing.start(chosen)' in after['scripts/container_inventory.gd'], 'House physical trim and bag bridge missing'
     assert b'WorkerTrimScissors' in after['scripts/main.gd'], 'Generic production packing animation missing'
     assert b'shop_upgrade_catalog.gd' in after['scripts/location_ops.gd'], 'Market backpack upgrade control missing'
+    assert b'func owner_control' in after['scripts/property_shop.gd'], 'Owner emergency shutdown not included in the mobile pack'
+    assert b'product_listing_toggle' in after['scripts/main.gd'], 'Narrow mobile LIST/UNLIST action fix missing'
+    assert b'OWNER SAFETY CONTROLS' in after['scripts/property_shop.gd'], 'No shop closure without crew'
     assert b'func storage_ids' in after['scripts/container_inventory.gd'], 'Installed multi-unit storage index missing from packed mobile inventory'
     assert b'func _storage_take_stock' in after['scripts/main.gd'], 'Retail/dealer stock debit not using physical storage units'
     assert 'scripts/mobile_physics_player.gd' in after
