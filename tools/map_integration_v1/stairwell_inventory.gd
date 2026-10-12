@@ -84,6 +84,20 @@ func run()->void:
 
  print("STAIR_MULTIMESH_DIAG_COMPLETE count=",checked)
  print("STAIR_RENDER_DIAG_COMPLETE center_count=",count," meshes=",all_nodes.size())
+ var terrain_sections:int=0
+ for node in world.get_children():
+  if not node is MultiMeshInstance3D:continue
+  var multimesh:MultiMeshInstance3D=node as MultiMeshInstance3D
+  var shader:ShaderMaterial=multimesh.material_override as ShaderMaterial
+  if shader==null or not shader.get_shader_parameter("tint") is Color:continue
+  var tint:Color=shader.get_shader_parameter("tint")
+  if tint.is_equal_approx(Color("c3c3b9")):
+   terrain_sections=multimesh.multimesh.instance_count
+ if terrain_sections!=4:
+  push_error("Exterior terrain must have four sections around basement stairs; got "+str(terrain_sections))
+  quit(1)
+  return
+ print("STAIRWELL_INVENTORY_RESULT: PASS")
  game.queue_free()
  await process_frame
  quit()
