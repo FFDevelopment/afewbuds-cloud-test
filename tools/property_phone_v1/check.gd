@@ -88,9 +88,9 @@ func run():
  shop.command("Hired Dealer 1","reopen")
  check(game.business_open and game.grow_lights_on and game.ventilation_on and not game.floor_lamp_on,"Apartment equipment restores with off switches preserved")
  game.production_crew.toggle("house");shop.command(worker,"close")
- check(not shop.is_open("house"),"Off-duty employees can still close the remote shop in a Heat emergency")
-  shop.command(worker,"open")
-  check(not shop.is_open("house"),"Off-duty employees cannot reopen the remote shop")
+ check(not shop.is_open("house"),"Off-duty employees can still close a remote property for safety")
+ shop.command(worker,"open")
+ check(not shop.is_open("house"),"Off-duty employee cannot reopen the shop")
  for cat in ["equipment|Grow Tent","delivery|Paid Tent","furniture|legacy_sofa"]:
   check(not inv.accepts("apartment:storage",cat) and not inv.accepts("house:storage",cat),"Both properties reject "+cat)
  # Every supported tent size uses its own slot membership; never adjacent tents.
