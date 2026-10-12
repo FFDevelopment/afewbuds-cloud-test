@@ -35,6 +35,7 @@ func run()->void:
  game.products["Street Green"]["reserved"]=0
  game.products["Street Green"]["listed"]=false
  inv.set_amount(primary,"product|Street Green",12)
+ inv.set_amount(primary,"product|Purple Dream",0)
  inv.set_amount("backpack","product|Street Green",0)
  check(inv.storage_ids("apartment").size()==2,"Two placed apartment storage units recognized")
  check(inv.storage_stock("apartment","Street Green")==39,"Listing stock combines 12g primary and 27g secondary")
