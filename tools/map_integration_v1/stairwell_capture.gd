@@ -23,15 +23,8 @@ func metric(a:PackedFloat32Array,b:PackedFloat32Array)->float:
  var result:=0.0
  for i in a.size():result+=absf(a[i]-b[i])
  return result
-func describe(n:MeshInstance3D)->String:
- var bb:AABB=n.global_transform*n.get_aabb()
- var mat:Material=n.material_override
- if mat==null and n.mesh.get_surface_count()>0:mat=n.mesh.surface_get_material(0)
- var info:="null" if mat==null else mat.get_class()
- if mat is ShaderMaterial:
-  var shader_mat:ShaderMaterial=mat as ShaderMaterial
-  info+=" finish="+str(shader_mat.get_shader_parameter("finish"))+" tint="+str(shader_mat.get_shader_parameter("tint"))
- return str(n.get_path())+" bounds="+str(bb)+" material="+info
+func describe(n:Node3D)->String:
+ return str(n.get_path())+" class="+str(n.get_class())+" children="+str(n.get_child_count())
 func run()->void:
  var game:Node3D=load("res://scenes/main.tscn").instantiate()
  root.add_child(game)
@@ -56,22 +49,22 @@ func run()->void:
  game.camera.look_at(Vector3(42.9,-3.5,-10.95),Vector3.BACK)
  var baseline:PackedFloat32Array=vector_signature(await grab(game))
  await snapshot(game,"baseline")
- var meshes:Array[MeshInstance3D]=[]
+ var meshes:Array[Node3D]=[]
  for n in world.get_children():
-  if n is MeshInstance3D and n.visible:meshes.append(n)
- print("STAIR_BINARY_BEGIN world_direct_meshes=",meshes.size())
+  if n is Node3D and not n is MeshInstance3D and not n is Light3D and n.visible:meshes.append(n)
+ print("STAIR_BINARY_BEGIN world_direct_groups=",meshes.size())
  for n in meshes:n.visible=false
  var invisible:PackedFloat32Array=vector_signature(await grab(game))
  print("STAIR_BINARY_DIRECT_DELTA=",metric(baseline,invisible))
- await snapshot(game,"hide_world_direct_meshes")
+ await snapshot(game,"hide_world_direct_groups")
  for n in meshes:n.visible=true
  var candidates:=meshes.duplicate()
  if metric(baseline,invisible)>.25:
   for iteration in 17:
    if candidates.size()<=1:break
    var half:int=int(candidates.size()*.5)
-   var left:Array[MeshInstance3D]=candidates.slice(0,half)
-   var right:Array[MeshInstance3D]=candidates.slice(half)
+   var left:Array[Node3D]=candidates.slice(0,half)
+   var right:Array[Node3D]=candidates.slice(half)
    for n in meshes:n.visible=true
    for n in left:n.visible=false
    var result:PackedFloat32Array=vector_signature(await grab(game))
