@@ -36,10 +36,48 @@ func run()->void:
  game.camera.environment=world.outdoor_environment
  game.camera.global_position=Vector3(40.3,1.75,-7.35)
  game.camera.look_at(Vector3(43.0,-0.8,-10.85),Vector3.UP)
- await snapshot(game,"stair_angled")
  game.camera.global_position=Vector3(42.9,3.4,-10.95)
  game.camera.look_at(Vector3(42.9,-3.5,-10.95),Vector3.BACK)
- await snapshot(game,"stair_topdown")
+ await snapshot(game,"baseline")
+ var shader_mats:Array[ShaderMaterial]=[]
+ for item in game.find_children("*","MeshInstance3D",true,false):
+  var n:MeshInstance3D=item as MeshInstance3D
+  var mat:Material=n.material_override
+  if mat is ShaderMaterial and (mat as ShaderMaterial).get_shader_parameter("finish")==4 and mat not in shader_mats:
+   shader_mats.append(mat)
+ var tint_before:Array[Color]=[]
+ for mat in shader_mats:
+  tint_before.append(mat.get_shader_parameter("tint"))
+  mat.set_shader_parameter("tint",Color.MAGENTA)
+ print("STAIR_RENDER_PASS gravel_materials=",shader_mats.size())
+ await snapshot(game,"pink_gravel")
+ for i in shader_mats.size():shader_mats[i].set_shader_parameter("tint",tint_before[i])
+ var basement:Node3D=game.get_node("BasementExpansion")
+ var lower_floor:Array[MeshInstance3D]=[]
+ for item in basement.get_children():
+  if not item is MeshInstance3D:continue
+  var n:MeshInstance3D=item as MeshInstance3D
+  var b:AABB=n.global_transform*n.get_aabb()
+  if b.position.y< -3.95 and b.size.x>10 and b.size.z>10:
+   lower_floor.append(n)
+   n.visible=false
+ print("STAIR_RENDER_PASS lower_floor_meshes=",lower_floor.size())
+ await snapshot(game,"no_lower_floor")
+ for n in lower_floor:n.visible=true
+ world.visible=false
+ await snapshot(game,"no_neighborhood")
+ world.visible=true
+ var all_ground:Array[MeshInstance3D]=[]
+ for item in basement.get_children():
+  if not item is MeshInstance3D:continue
+  var n:MeshInstance3D=item as MeshInstance3D
+  var b:AABB=n.global_transform*n.get_aabb()
+  if b.size.y<=.4 and b.size.x>1.8 and b.size.z>1.0 and b.position.y> -4.2 and b.position.y<.1:
+   all_ground.append(n)
+   n.visible=false
+ print("STAIR_RENDER_PASS structural_floor_meshes=",all_ground.size())
+ await snapshot(game,"no_basement_floor_panels")
+ for n in all_ground:n.visible=true
  game.queue_free()
  await process_frame
  quit()
