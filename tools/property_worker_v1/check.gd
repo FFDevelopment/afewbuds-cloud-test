@@ -159,6 +159,9 @@ func run()->void:
   game.camera.look_at(at+Vector3.UP*model.size_of(mount_id).y*.5)
   furniture.start_layout(str(spec.place))
   furniture.refresh_layout(true)
+  var test_ray:Vector3=-game.camera.global_basis.z
+  var test_hit:Variant=model.occupied_box(mount_id,at,0).intersects_ray(game.camera.global_position,test_ray)
+  print("MOUNT_DIAG idx=",i," property=",spec.place," room=",game.neighborhood.location_ops.placement_room(str(spec.place),game.camera.global_position)," controlled=",model.controlled(str(spec.place))," layout=",furniture.layout_mode," floor=",furniture.layout_floor()," focus=",furniture.layout_focus," expected=",mount_id," ray_hit=",test_hit," camera=",game.camera.global_position)
   check(furniture.layout_focus==mount_id,"Walk-around can select mounted "+str(spec.sku)+" at "+str(spec.place)+" height "+str(at.y))
   check(not furniture.layout_move.disabled and not furniture.layout_pickup.disabled,"Mounted utility exposes move and pick-up actions")
   furniture.layout_mode=false
