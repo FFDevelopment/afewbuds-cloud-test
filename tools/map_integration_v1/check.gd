@@ -20,6 +20,20 @@ func run():
  game._install_map_update();game._install_map_update()
  check(game.has_node("BasementExpansion") and game.get_node("MapVisuals").is_processing()==false,"Map installs once without preview processing")
 
+ # The original map's gravel sheet must be pre-cut *before* its optimized
+ # MultiMesh batches are created. Ordinary MeshInstance-only clipping misses it.
+ var split_terrain_batches:int=0
+ for entry in game.neighborhood.get_children():
+  if not entry is MultiMeshInstance3D:continue
+  var multi:MultiMeshInstance3D=entry as MultiMeshInstance3D
+  var material:Material=multi.material_override
+  if not material is ShaderMaterial:continue
+  var tint:Variant=(material as ShaderMaterial).get_shader_parameter("tint")
+  if tint is Color and (tint as Color).is_equal_approx(Color("c3c3b9")):
+   if multi.multimesh!=null and multi.multimesh.instance_count>=4:
+    split_terrain_batches+=1
+ check(split_terrain_batches>=1,"Optimized neighborhood terrain is partitioned around house basement stairwell")
+
  # The 3D map must not draw any shallow outside ground sheet across the stair
  # hole. Testing only floor collisions misses this phone-only visual regression.
  var basement:Node3D=game.get_node("BasementExpansion")

@@ -737,6 +737,28 @@ func add_box_collision(body:StaticBody3D,bounds:AABB) -> void:
     assert 'StationStructure' in source and 'StairRamp' in source
     return source
 
+def clip_house_stairwell_terrain(source: str) -> str:
+    # The first exterior ground sheet is batched as a *MultiMeshInstance3D*,
+    # not a MeshInstance3D. The basement's regular slab cutter cannot remove
+    # this renderer object, so it was still drawn over the walkable stairs.
+    # Split only this one original ground into four boxes before batching.
+    original = '\\texterior_box(Vector3(20.5,-0.20,1.5),Vector3(117,0.20,87),"c3c3b9",5)'
+    original = original.replace('\\t','\\x09')
+    assert source.count(original) == 1, 'Mobile original exterior terrain source drift'
+    split = """\\t# Leave the existing house basement stairwell visually open in the batched
+\\t# exterior terrain. Physics, stairs and everything outside the hole are intact.
+\\tvar terrain_ground:Rect2=Rect2(-38.0,-42.0,117.0,87.0)
+\\tvar stairwell_hole:Rect2=Rect2(41.15,-13.6,3.5,5.3)
+\\tvar terrain_slices:Array[Rect2]=[
+\\t Rect2(terrain_ground.position,Vector2(stairwell_hole.position.x-terrain_ground.position.x,terrain_ground.size.y)),
+\\t Rect2(Vector2(stairwell_hole.end.x,terrain_ground.position.y),Vector2(terrain_ground.end.x-stairwell_hole.end.x,terrain_ground.size.y)),
+\\t Rect2(Vector2(stairwell_hole.position.x,terrain_ground.position.y),Vector2(stairwell_hole.size.x,stairwell_hole.position.y-terrain_ground.position.y)),
+\\t Rect2(Vector2(stairwell_hole.position.x,stairwell_hole.end.y),Vector2(stairwell_hole.size.x,terrain_ground.end.y-stairwell_hole.end.y))
+\\t]
+\\tfor slab in terrain_slices:
+\\t\texterior_box(Vector3(slab.get_center().x,-0.20,slab.get_center().y),Vector3(slab.size.x,0.20,slab.size.y),"c3c3b9",5)"""
+    return source.replace(original,split.replace('\\t','\\x09'),1)
+
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument('--output-dir',required=True)
@@ -803,6 +825,7 @@ def main():
     main_script=main_script.replace(save_hook,save_hook+'\n\tif OS.has_feature("web") and last_save_ok:\n\t\tJavaScriptBridge.eval("(()=>{const id=window.AFB_SAVE_SERIAL=(window.AFB_SAVE_SERIAL||0)+1;window.AFB_QUIT_SAVE_STATE=\'pending\';window.AFB_CLOUD.pushFromGame("+JSON.stringify(JSON.stringify(data))+").then(()=>{if(id===window.AFB_SAVE_SERIAL)window.AFB_QUIT_SAVE_STATE=\'saved\';}).catch(()=>{if(id===window.AFB_SAVE_SERIAL)window.AFB_QUIT_SAVE_STATE=\'failed\';});})();",true)',1)
     main_script=main_script.replace('brand_label.text = "AFewBuds"', 'if neighborhood != null and neighborhood.mobile_hud != null:\n\t\t\tneighborhood.mobile_hud.update_location()\n\t\telse: brand_label.text = load("res://scripts/districts.gd").heading(camera.position)')
     neighborhood=equipment_patch.patch_neighborhood(patch_neighborhood(before['scripts/neighborhood.gd'].decode()))
+    neighborhood=clip_house_stairwell_terrain(neighborhood)
     neighborhood=neighborhood.replace('action.visible=not target.is_empty()', 'action.visible=not target.is_empty() and not (host.inventory_system!=null and host.inventory_system.native_station_target(target))')
     neighborhood=neighborhood.replace('func _open_station(id: String) -> void:\n', 'func _open_station(id: String) -> void:\n\tif host.inventory_system!=null and host.inventory_system.native_station_target(id):\n\t\thost.inventory_system.open_container(host.inventory_system.native_container(id))\n\t\treturn\n')
     station=patch_station((ROOT/'tools/police_station_v1/station.gd').read_text())
@@ -999,6 +1022,7 @@ def main():
     assert b'WorkerTrimScissors' in after['scripts/main.gd'], 'Generic production packing animation missing'
     assert b'shop_upgrade_catalog.gd' in after['scripts/location_ops.gd'], 'Market backpack upgrade control missing'
     assert 'scripts/mobile_physics_player.gd' in after
+    assert b'stairwell_hole:Rect2' in after['scripts/neighborhood.gd'], 'MultiMesh terrain cutout not packed'
     assert after['visual_lab/basement.gd']==(ROOT/'tools/map_integration_v1/visual_lab/basement.gd').read_bytes(), 'Mobile stair cutout script missing from packed runtime'
     assert after['scripts/property_registry.gd']==registry_bytes
     assert after['scripts/item_registry.gd']==item_bytes
