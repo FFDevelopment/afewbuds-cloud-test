@@ -44,6 +44,12 @@ func refresh_layout(force:bool=false) -> void:
   var at:=Vector3(float(e.position[0]),float(e.position[1]),float(e.position[2]))
   var box:AABB=model.occupied_box(id,at,int(e.get("yaw",0)))
 '''+source[end:]
+        # The earlier shop/bench parity layer prepends this obsolete filter.
+        # It used the *placement* floor and discarded every raised wall item.
+        # Remove it only after installing layout_same_floor above.
+        replace_once('''  # Ignore furniture on the opposite house floor during look selection.
+  if absf(float(e.position[1])-placement_floor())>0.8:continue
+''','')
         result.append([path,source.encode("utf-8"),flags])
         found=True
     assert found,"Mobile furniture editor is missing from staged pack"
