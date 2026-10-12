@@ -60,6 +60,13 @@ jobs:
             if grep -E 'SCRIPT ERROR|^ERROR:' /tmp/afb-game-check.log; then exit 1; fi
           done
 
+      - name: Inspect house stairwell render surfaces
+        run: |
+          set -euo pipefail
+          GODOT=/tmp/godot/Godot_v4.7.2-stable_linux.x86_64
+          timeout 75s "$GODOT" --headless --path "${RUNNER_TEMP}/mobile3d/candidate" --script "${GITHUB_WORKSPACE}/tools/map_integration_v1/stairwell_inventory.gd" 2>&1 | tee "${RUNNER_TEMP}/stairwell-inventory.log"
+          grep -q 'STAIR_DEBUG_END' "${RUNNER_TEMP}/stairwell-inventory.log"
+
       - name: Commit validated baseline runtime
         if: github.ref == 'refs/heads/main'
         run: |
