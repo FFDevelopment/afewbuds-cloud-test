@@ -995,6 +995,8 @@ def main():
     updated=house_packing.apply_entries(updated)
     duty_mount=module("duty_mount_selection",ROOT/"tools/production_duty_selection_v1/patch.py")
     updated=duty_mount.apply_entries(updated)
+    physical_customer=module("physical_customer",ROOT/"tools/physical_customer_v1/patch.py")
+    updated=physical_customer.apply_entries(updated)
     built=east.pack.rebuild(baseline,fb,updated)
     # Every unique gameplay pack gets its own browser-visible identity.
     # This prevents development releases from silently sharing a stale URL.
@@ -1025,6 +1027,8 @@ def main():
     assert b'WorkerTrimScissors' in after['scripts/main.gd'], 'Generic production packing animation missing'
     assert b'shop_upgrade_catalog.gd' in after['scripts/location_ops.gd'], 'Market backpack upgrade control missing'
     assert 'scripts/mobile_physics_player.gd' in after
+    assert b'var customer_encounters:Node' in after['scripts/main.gd'], 'Physical customer controller missing from mobile runtime'
+    assert b'func conclude_visit' in after['scripts/customer_encounters.gd'], 'NPC departure and smoke interaction missing'
     assert b'func layout_same_floor' in after['scripts/furniture_editor.gd'], 'Mounted equipment cannot be selected in arrangement'
     assert b'func resume_paid_shifts' in after['scripts/property_production_crew.gd'], 'Night payroll auto-resume missing'
     assert b'stairwell_hole:Rect2' in after['scripts/neighborhood.gd'], 'MultiMesh terrain cutout not packed'

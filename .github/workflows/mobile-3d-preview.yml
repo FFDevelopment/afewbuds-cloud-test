@@ -2,7 +2,7 @@ name: Build mobile baseline
 
 on:
   push:
-    branches: [main, feature/friend-characters-20261010, feature/door-staff-substitutions-20261010, feature/house-npc-paths-v1, feature/door-dealer-natural-movement-20261010, feature/pause-graphics-presets-20261010, fix/starter-landing-collision-unstuck-20261011, feature/player-avatar-creator-v1-20261011, fix/avatar-preview-invisible-20261011, fix/avatar-ios-native-rig-20261011, feature/avatar-art-v2-tailored-20261011, hotfix/house-furniture-dev-parity-20261011, feature/placed-equipment-upgrades-and-tight-fit-20261011, feature/production-staff-unlocks-bench-fit-20261011, fix/house-packing-bench-flush-20261011, hotfix/house-physical-room-bounds-20261011, hotfix/testers-house-packing-basement-parity-20261011]
+    branches: [main, feature/friend-characters-20261010, feature/door-staff-substitutions-20261010, feature/house-npc-paths-v1, feature/door-dealer-natural-movement-20261010, feature/pause-graphics-presets-20261010, fix/starter-landing-collision-unstuck-20261011, feature/player-avatar-creator-v1-20261011, fix/avatar-preview-invisible-20261011, fix/avatar-ios-native-rig-20261011, feature/avatar-art-v2-tailored-20261011, hotfix/house-furniture-dev-parity-20261011, feature/placed-equipment-upgrades-and-tight-fit-20261011, feature/production-staff-unlocks-bench-fit-20261011, fix/house-packing-bench-flush-20261011, hotfix/house-physical-room-bounds-20261011, hotfix/testers-house-packing-basement-parity-20261011, feature/physical-customer-encounters-20261012]
   workflow_dispatch:
 
 permissions:
@@ -47,6 +47,14 @@ jobs:
           timeout 120s "${GODOT}" --headless --path "${RUNNER_TEMP}/mobile3d/candidate" --script "${GITHUB_WORKSPACE}/tools/progression_v1/check.gd" 2>&1 | tee "${RUNNER_TEMP}/progression-v1-check.log"
           grep -q "PROGRESSION_V1_TEST_RESULT: PASS" "${RUNNER_TEMP}/progression-v1-check.log"
           if grep -E 'SCRIPT ERROR|^ERROR:' "${RUNNER_TEMP}/progression-v1-check.log"; then exit 1; fi
+
+      - name: Test real doorstep customers and social interaction
+        run: |
+          set -euo pipefail
+          GODOT=/tmp/godot/Godot_v4.7.2-stable_linux.x86_64
+          XDG_DATA_HOME="$(mktemp -d)" timeout 120s "${GODOT}" --headless --path "${RUNNER_TEMP}/mobile3d/candidate" --script "${GITHUB_WORKSPACE}/tools/physical_customer_v1/check.gd" 2>&1 | tee "${RUNNER_TEMP}/physical-customer-check.log"
+          grep -q "CUSTOMER_ENCOUNTER_RESULT: PASS" "${RUNNER_TEMP}/physical-customer-check.log"
+          if grep -E 'SCRIPT ERROR|^ERROR:' "${RUNNER_TEMP}/physical-customer-check.log"; then exit 1; fi
 
       - name: Test property ownership, inventory, Reeves and gameplay safety
         run: |
