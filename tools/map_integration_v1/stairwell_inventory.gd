@@ -1,41 +1,55 @@
 extends SceneTree
-# Temporary diagnosis of mobile basement visual meshes.
+## Read-only inventory of actively rendered geometry above the house stairwell.
 func _initialize()->void:call_deferred("run")
 func run()->void:
  var game:Node3D=load("res://scenes/main.tscn").instantiate()
  root.add_child(game)
- for i in 18:await process_frame
+ for i in 20:await process_frame
+ var world:Node3D=game.neighborhood
+ world.active=true
+ world.visible=true
+ game.session_paused=false
+ game.tutorial_active=false
+ game.daily_report_pending=false
  if not game.has_node("BasementExpansion"):game._install_map_update()
- for i in 6:await process_frame
  var basement:Node=game.get_node("BasementExpansion")
- var opening:Rect2=basement.HOLE
- print("STAIR_DEBUG_BEGIN opening=",opening," cut_count=",basement.cut_count)
- var all_nodes:Array[Node]=game.find_children("*","MeshInstance3D",true,false)
- var relevant:int=0
- var active:int=0
- var by_level:Array[String]=[]
- for thing in all_nodes:
-  var n:MeshInstance3D=thing as MeshInstance3D
+ if world.physics_body!=null:
+  world.physics_body.stop()
+  world.physics_body.global_position=Vector3(43.8,0.03,-7.9)
+ game.camera.global_position=Vector3(40.3,1.55,-7.35)
+ game.camera.look_at(Vector3(43,-0.7,-10.75))
+ for i in 6:await process_frame
+ var hole:Rect2=basement.HOLE
+ var center:=hole.get_center()
+ print("STAIR_VIEW house=",world.active," neighborhood_visible=",world.visible," neighborhood_transform=",world.global_transform," hole=",hole," cut_count=",basement.cut_count)
+ var count:=0
+ var center_materials:Array[String]=[]
+ var all_nodes:Array[Node]=root.find_children("*","MeshInstance3D",true,false)
+ for v in all_nodes:
+  var n:MeshInstance3D=v as MeshInstance3D
   if n==null or n.mesh==null:continue
-  var b:AABB=n.global_transform*n.get_aabb()
-  var footprint:=Rect2(Vector2(b.position.x,b.position.z),Vector2(b.size.x,b.size.z))
-  if not footprint.intersects(opening.grow(.15)):continue
-  relevant+=1
-  var shown:bool=n.is_visible_in_tree() and ((n.layers & game.camera.cull_mask)!=0)
-  if shown:active+=1
-  var mat:Material=n.material_override
-  if mat==null and n.mesh.get_surface_count()>0:mat=n.mesh.surface_get_material(0)
-  var description:="null" if mat==null else mat.get_class()
-  if mat is ShaderMaterial:
-   var sm:ShaderMaterial=mat as ShaderMaterial
-   description+=" finish="+str(sm.get_shader_parameter("finish"))+" tint="+str(sm.get_shader_parameter("tint"))
-  elif mat is StandardMaterial3D:
-   description+=" color="+str((mat as StandardMaterial3D).albedo_color)
-  if b.end.y < -4.1 or b.position.y > 2.5:continue
-  by_level.append("STAIR_ENTRY shown="+str(shown)+" name="+str(n.name)+" path="+str(n.get_path())+" bounds="+str(b)+" layers="+str(n.layers)+" material="+description)
- by_level.sort()
- for line in by_level:print(line)
- print("STAIR_DEBUG_END count=",relevant," drawn=",active)
+  var bb:=n.global_transform*n.get_aabb()
+  var fp:=Rect2(Vector2(bb.position.x,bb.position.z),Vector2(bb.size.x,bb.size.z))
+  var in_hole:bool=fp.intersects(hole)
+  var huge:bool=bb.size.x>8.0 and bb.size.z>8.0 and bb.position.y<1.0 and bb.end.y> -5.0
+  if not in_hole and not huge:continue
+  var rendered:bool=n.is_visible_in_tree() and ((n.layers & game.camera.cull_mask)!=0)
+  var material:Material=n.material_override
+  if material==null and n.mesh.get_surface_count()>0:material=n.mesh.surface_get_material(0)
+  var mat_desc:="null" if material==null else material.get_class()
+  if material is ShaderMaterial:
+   var m:ShaderMaterial=material as ShaderMaterial
+   mat_desc+=" finish="+str(m.get_shader_parameter("finish"))+" tint="+str(m.get_shader_parameter("tint"))
+  elif material is StandardMaterial3D:
+   var m:StandardMaterial3D=material as StandardMaterial3D
+   mat_desc+=" color="+str(m.albedo_color)
+  var item:="shown="+str(rendered)+" name="+str(n.name)+" bounds="+str(bb)+" layers="+str(n.layers)+" material="+mat_desc+" parent="+str(n.get_parent().name)
+  if huge:print("STAIR_HUGE ",item)
+  if in_hole and fp.has_point(center) and bb.position.y<1 and bb.end.y> -5:
+   center_materials.append("STAIR_CENTER "+item)
+   count+=1
+ for s in center_materials:print(s)
+ print("STAIR_RENDER_DIAG_COMPLETE center_count=",count," meshes=",all_nodes.size())
  game.queue_free()
  await process_frame
  quit()
