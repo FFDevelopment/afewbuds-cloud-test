@@ -80,8 +80,8 @@ const BUILD_VERSION: String = "0.7.9-beta.19"
 const SAVE_SCHEMA_VERSION: int = 2
 const FRAME_GAP_PAUSE_MSEC: int = 2000
 const SEED_ORDER: Array[String] = ["Street Green", "Purple Dream", "Citrus Rush", "Blue Frost", "Velvet Haze", "Frozen Purple", "Golden Ember", "Cherry Glow", "Neon Berry", "Moon Cake", "Midnight Crown", "Black Cherry", "Aurora Reserve", "Solar Frost", "Citrus Velvet", "Cherry Frost", "Ember Berry", "Crown Cake"]
-const SUPPLY_SEED_CAPACITY_BY_LEVEL: Array[int] = [0, 12, 24, 48]
-const SUPPLY_FERTILIZER_CAPACITY_BY_LEVEL: Array[int] = [0, 20, 40, 80]
+const SUPPLY_SEED_CAPACITY_BY_LEVEL: Array[int] = [0, 12, 24, 48, 96]
+const SUPPLY_FERTILIZER_CAPACITY_BY_LEVEL: Array[int] = [0, 20, 40, 80, 160]
 
 var cash: int = START_CASH
 var current_view: String = "main_grow_door"
@@ -2085,10 +2085,10 @@ func _total_seed_inventory() -> int:
 	return total
 
 func _supply_seed_capacity() -> int:
-	return SUPPLY_SEED_CAPACITY_BY_LEVEL[clampi(supply_shelf_level, 1, 3)]
+	return SUPPLY_SEED_CAPACITY_BY_LEVEL[clampi(supply_shelf_level, 1, 4)]
 
 func _supply_fertilizer_capacity() -> int:
-	return SUPPLY_FERTILIZER_CAPACITY_BY_LEVEL[clampi(supply_shelf_level, 1, 3)]
+	return SUPPLY_FERTILIZER_CAPACITY_BY_LEVEL[clampi(supply_shelf_level, 1, 4)]
 
 func _supply_can_add_seeds(amount: int) -> bool:
 	return _total_seed_inventory() + maxi(0, amount) <= _supply_seed_capacity()
@@ -8385,6 +8385,23 @@ func _sync_chapter_four_story() -> bool:
 func _story_checkmark(done: bool, text_value: String) -> String:
 	return "%s %s" % ["[x]" if done else "[ ]", text_value]
 
+func _chapter_five_started() -> bool:
+	return bool(property_opportunity_state.get("first_entry", false))
+
+func _chapter_five_state() -> Dictionary:
+	if not location_state.get("chapter_five", {}) is Dictionary:
+		return {}
+	return location_state.get("chapter_five", {}) as Dictionary
+
+func _chapter_five_stage() -> int:
+	return clampi(int(_chapter_five_state().get("stage", 0)), 0, 9)
+
+func _chapter_five_complete() -> bool:
+	return _chapter_five_stage() >= 9
+
+func _chapter_five_objective_line(index: int, text_value: String) -> String:
+	return _story_checkmark(_chapter_five_stage() > index, text_value)
+
 func _build_story_progress_section() -> void:
 	var story_card: PanelContainer = PanelContainer.new()
 	story_card.custom_minimum_size.x = 0.0
@@ -8402,6 +8419,8 @@ func _build_story_progress_section() -> void:
 	var chapter_two_done: bool = _story_chapter_two_complete()
 	var chapter_three_done: bool = _story_chapter_three_complete()
 	var chapter_four_done: bool = _story_chapter_four_complete()
+	var chapter_five_started: bool = _chapter_five_started()
+	var chapter_five_done: bool = _chapter_five_complete()
 
 	var chapter_title: Label = Label.new()
 	if not chapter_one_done:
@@ -8412,6 +8431,10 @@ func _build_story_progress_section() -> void:
 		chapter_title.text = "STORY\nCHAPTER 3 - GETTING NOTICED"
 	elif not chapter_four_done:
 		chapter_title.text = "STORY\nCHAPTER 4 - OUTGROWING THE APARTMENT"
+	elif chapter_five_started and not chapter_five_done:
+		chapter_title.text = "STORY\nCHAPTER 5 - BUILDING AN OPERATION"
+	elif chapter_five_done:
+		chapter_title.text = "STORY\nCHAPTER 5 COMPLETE\nJOINT JUNCTION NEXT"
 	else:
 		chapter_title.text = "STORY\nCHAPTER 4 COMPLETE\nEXPANSION OPPORTUNITY UNLOCKED"
 	chapter_title.custom_minimum_size.x = 0.0
@@ -8465,8 +8488,23 @@ func _build_story_progress_section() -> void:
 			_story_checkmark(_story_chapter_four_operation_complete(), "Proven Operation - Grower 10 + 3 hybrid batches + 250g moved into storage")
 		])
 		objectives.text += "\n\nFINALE: prove the apartment can no longer support the operation and unlock your first house opportunity."
+	elif chapter_five_started and not chapter_five_done:
+		objectives.text = "\n".join([
+			_chapter_five_objective_line(0, "Make It Yours - place and lock two house furniture pieces"),
+			_chapter_five_objective_line(1, "Put Money Into the Walls - install $2,500 of house furniture or equipment"),
+			_chapter_five_objective_line(2, "Backroom Reserve - install 400g of house storage"),
+			_chapter_five_objective_line(3, "Room to Grow - place a house tent and harvest three plants"),
+			_chapter_five_objective_line(4, "A Consistent Batch - trim 30g and seal five bags"),
+			_chapter_five_objective_line(5, "House Regulars - five personal sales and two dealer sales"),
+			_chapter_five_objective_line(6, "Crew Has a Place - three staff roles and 60 production tasks"),
+			_chapter_five_objective_line(7, "Keep the Lights On - pay house utilities and clear overdue balances"),
+			_chapter_five_objective_line(8, "Open House, Quiet Business - $3,500 new revenue, twelve sales, Heat <= 25, then meet Rod")
+		])
+		objectives.text += "\n\nNEXT: Joint Junction."
+	elif chapter_five_done:
+		objectives.text = "✓ CHAPTER 5 COMPLETE\nThe house operation is established.\n\nNext story chapter: Joint Junction."
 	else:
-		objectives.text = "✓ Apartment operation maxed\n✓ Distribution proven\n✓ Crew proven\n✓ Demand proven\n✓ Operation proven\n\nEXPANSION OPPORTUNITY UNLOCKED\nRod found a residential operation property with RENT, LEASE-TO-OWN and PURCHASE options.\n\nThe property becomes the next major AFewBuds progression step."
+		objectives.text = "✓ Apartment operation maxed\n✓ Distribution proven\n✓ Crew proven\n✓ Demand proven\n✓ Operation proven\n\nEXPANSION OPPORTUNITY UNLOCKED\nRod found a residential operation property with RENT, LEASE-TO-OWN and PURCHASE options.\n\nSTORY ROADMAP\nChapter 5 - Building an Operation\nChapter 6 - Joint Junction\nChapter 7 - Distribution Pressure\nChapter 8 - Citywide Brand"
 
 	objectives.custom_minimum_size.x = 0.0
 	objectives.size_flags_horizontal = Control.SIZE_EXPAND_FILL

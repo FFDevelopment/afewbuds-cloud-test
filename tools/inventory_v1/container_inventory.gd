@@ -324,7 +324,7 @@ func capacity(id:String,item:String) -> int:
   if not asset.is_empty():
    var spec:Dictionary=furniture.model.CATALOG[furniture.model.state.items[asset].sku]
    var kind:String=spec.get("kind","");var tier:int=int(spec.get("tier",1))
-   if kind=="supply":return [12,24,48][clampi(tier-1,0,2)] if group(item)=="seeds" else [20,40,80][clampi(tier-1,0,2)]
+   if kind=="supply":return [12,24,48,96][clampi(tier-1,0,3)] if group(item)=="seeds" else [20,40,80,160][clampi(tier-1,0,3)]
    if kind=="packing":return 2000
    return 12 if group(item)=="equipment" else int(spec.get("capacity",40))
  if item=="cash":return 2000000000

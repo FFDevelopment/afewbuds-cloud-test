@@ -1,4 +1,86 @@
 {
   "schema": 1,
-  "items": {}
+  "items": {
+    "tent_6": {
+      "name": "House Canopy Tent · 6 plants",
+      "shop": "grow",
+      "price": 2800,
+      "size": [5.65, 2.95, 1.65],
+      "grow_only": true,
+      "plants": 6,
+      "tier": 5,
+      "weight": 24,
+      "allowed_room_uses": ["grow"],
+      "style_tags": ["afewbuds_house", "walnut_canvas", "matte_green"],
+      "npc_use": {
+        "work_points": [{"name": "plant_care", "offset": [0, 0, 1.15], "facing": 180, "animation": "tend_plants"}],
+        "clearance": [6.1, 2.2]
+      }
+    },
+    "bench_4": {
+      "name": "Sealing Station IV",
+      "shop": "equipment",
+      "price": 1800,
+      "size": [2.45, 1.35, 0.95],
+      "kind": "packing",
+      "tier": 4,
+      "weight": 34,
+      "allowed_room_uses": ["packing", "production"],
+      "style_tags": ["afewbuds_house", "walnut_black_metal", "scale_station"],
+      "npc_use": {
+        "work_points": [
+          {"name": "trim", "offset": [-0.55, 0, 0.72], "facing": 180, "animation": "trim"},
+          {"name": "seal", "offset": [0.55, 0, 0.72], "facing": 180, "animation": "seal_bags"}
+        ],
+        "clearance": [2.9, 1.8]
+      }
+    },
+    "shelf_4": {
+      "name": "Grow Supply Cabinet IV",
+      "shop": "equipment",
+      "price": 1600,
+      "size": [1.8, 2.45, 0.78],
+      "kind": "supply",
+      "tier": 4,
+      "weight": 24,
+      "allowed_room_uses": ["grow", "storage", "production"],
+      "style_tags": ["afewbuds_house", "dark_glass", "matte_green"],
+      "npc_use": {
+        "work_points": [{"name": "shelf_reach", "offset": [0, 0, 0.7], "facing": 180, "animation": "reach_shelf"}],
+        "clearance": [2.2, 1.45]
+      }
+    },
+    "storage_6": {
+      "name": "House Cold Room Storage",
+      "shop": "equipment",
+      "price": 7200,
+      "size": [2.35, 2.35, 1.05],
+      "kind": "storage",
+      "tier": 6,
+      "capacity": 1800,
+      "weight": 52,
+      "allowed_room_uses": ["storage", "packing", "production"],
+      "style_tags": ["afewbuds_house", "cold_room", "stainless_green"],
+      "npc_use": {
+        "work_points": [{"name": "store_product", "offset": [0, 0, 0.85], "facing": 180, "animation": "stock_shelf"}],
+        "clearance": [2.8, 1.9]
+      }
+    },
+    "dealer_5": {
+      "name": "Dealer Dispatch Cabinet V",
+      "shop": "equipment",
+      "price": 2600,
+      "size": [1.85, 2.45, 0.9],
+      "kind": "dealer",
+      "tier": 5,
+      "capacity": 650,
+      "weight": 34,
+      "allowed_room_uses": ["storage", "packing", "production"],
+      "style_tags": ["afewbuds_house", "numbered_bins", "matte_black_green"],
+      "npc_use": {
+        "work_points": [{"name": "dealer_pickup", "offset": [0, 0, 0.82], "facing": 180, "animation": "locker_pickup"}],
+        "clearance": [2.3, 1.65]
+      }
+    }
+  }
 }

@@ -273,7 +273,7 @@ func _process(_delta:float) -> void:
  tick_timer+=_delta
  if tick_timer>=.5:
   tick_timer=0;chapter.tick()
-  if chapter.stage()==5 and chapter.started() and rod==null:
+  if chapter.stage()==chapter.STEPS.size()-1 and chapter.started() and rod==null:
    rod=host.neighborhood.location_ops.crew.character_instance("Rod");host.add_child(rod);rod.position=Vector3(29,0,0)
   var nearby:bool=rod!=null and not chapter.complete() and host.camera.global_position.distance_to(rod.global_position+Vector3.UP)<3.0
   rod_button.visible=nearby and not host._any_modal_open() and not host.session_paused

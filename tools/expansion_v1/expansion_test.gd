@@ -79,10 +79,18 @@ func run():
  check(game.camera.global_transform.is_equal_approx(move_end),"Cancel preserves new player viewpoint")
  m.state.items.erase(movable)
  var story=inv.furniture.chapter
- game.advancement_stats.harvests=100;game.advancement_stats.grams_trimmed=1000;game.advancement_stats.bags_sealed=50;game.advancement_stats.sales=100;game.advancement_stats.dealer_sales=20
+ game.advancement_stats.harvests=100;game.advancement_stats.grams_trimmed=1000;game.advancement_stats.bags_sealed=50;game.advancement_stats.sales=100;game.advancement_stats.dealer_sales=20;game.advancement_stats.worker_tasks=100
  story.tick()
  check(story.stage()==1,"Furniture milestone advances once")
  check(not story.ready(),"Old career harvest totals do not complete new chapter")
+ var house_storage:String=m.own("storage_4")
+ var house_computer:String=m.own("computer")
+ check(m.place(house_storage,"house",Vector3(38.4,0,-3.2),0),"Purchased house vault placed")
+ check(m.place(house_computer,"house",Vector3(31.5,0,-2.8),0),"Purchased house computer desk placed")
+ story.tick()
+ check(story.stage()==2,"House investment milestone advances")
+ story.tick()
+ check(story.stage()==3,"House storage milestone advances")
  for i in range(game.plant_slots.size()):game.plant_slots[i]=game._empty_plant_slot()
  m.lock("legacy_tent_0",false)
  if not desktop:
@@ -125,14 +133,16 @@ func run():
  check(tent_spots>0,"Actual house grow room has valid tent placement")
  editor.close();m.lock("legacy_tent_0",true)
  game.advancement_stats.harvests+=3;story.tick()
- check(story.stage()==2,"House harvest milestone advances")
+ check(story.stage()==4,"House harvest milestone advances")
  game.advancement_stats.grams_trimmed+=30;game.advancement_stats.bags_sealed+=5;story.tick()
- check(story.stage()==3,"Craft milestone advances")
+ check(story.stage()==5,"Craft milestone advances")
  game.advancement_stats.sales+=7;game.advancement_stats.dealer_sales+=2;story.tick()
- check(story.stage()==4,"Customer milestone advances")
+ check(story.stage()==6,"Customer milestone advances")
+ game.packing_employee_hired=true;game.dealer_count=2;story.tick()
+ check(story.stage()==7,"Crew milestone advances")
  game.location_state.house_bills_paid=1;story.tick()
- check(story.stage()==5,"House bills milestone advances")
- game.lifetime_revenue+=2500;game.advancement_stats.sales+=5;game.heat=26
+ check(story.stage()==8,"House bills milestone advances")
+ game.lifetime_revenue+=3500;game.advancement_stats.sales+=7;game.heat=26
  check(not story.meet_rod(),"Finale requires low heat")
  game.heat=20
  check(story.meet_rod() and story.complete(),"Chapter 5 can complete")

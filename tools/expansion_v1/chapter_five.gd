@@ -1,11 +1,14 @@
 extends RefCounted
 const STEPS=[
  {"id":"settle","title":"Make It Yours","detail":"Place and lock two pieces of furniture in the house.","reward":150,"text":"Rod: Keys do not make a home. Set the rooms up for how you actually work."},
- {"id":"grow","title":"Room to Grow","detail":"Place a tent in the house grow room, then harvest three plants.","reward":200,"text":"Rod: Now give the grow room a proper setup. Let the first house harvest prove the move was worth it."},
- {"id":"craft","title":"A Consistent Batch","detail":"Trim 30g and seal five bags after setting up the house.","reward":250,"text":"Kobi: More space is useful. Consistency is what people come back for. Show me five clean batches."},
- {"id":"customers","title":"House Regulars","detail":"Make five personal sales and two dealer sales from the new operation.","reward":300,"text":"Malik: Keep your regulars looked after while the crew finds its rhythm. Nobody needs a crowd at the front door."},
- {"id":"balance","title":"Keep the Lights On","detail":"Pay a house electric or water bill and clear overdue property balances.","reward":200,"text":"Rod: A bigger place comes with real bills. Stay square before you promise anybody more."},
- {"id":"finale","title":"Open House, Quiet Business","detail":"Reach $2,500 new revenue, ten personal sales and Heat at or below 25; meet Rod to finish.","reward":500,"text":"Rod: The house runs, the customers come back, and the bills are covered. Come see me when things are quiet. I want to talk about what comes next."}]
+ {"id":"invest","title":"Put Money Into the Walls","detail":"Install at least $2,500 of house furniture or equipment.","reward":125,"text":"Rod: Spend on the place like it is part of the business. Cheap setup, cheap results."},
+ {"id":"storage","title":"Backroom Reserve","detail":"Install house storage worth at least 400g total capacity.","reward":175,"text":"Kobi: More room means nothing if product is still stacked wherever it fits. Build real storage."},
+ {"id":"grow","title":"Room to Grow","detail":"Place a tent in the house grow room, then harvest three plants.","reward":225,"text":"Rod: Now give the grow room a proper setup. Let the first house harvest prove the move was worth it."},
+ {"id":"craft","title":"A Consistent Batch","detail":"Trim 30g and seal five bags after setting up the house.","reward":275,"text":"Kobi: More space is useful. Consistency is what people come back for. Show me five clean batches."},
+ {"id":"customers","title":"House Regulars","detail":"Make five personal sales and two dealer sales from the new operation.","reward":325,"text":"Malik: Keep your regulars looked after while the crew finds its rhythm. Nobody needs a crowd at the front door."},
+ {"id":"crew","title":"Crew Has a Place","detail":"Have three staff roles covered and 60 total production-worker tasks completed.","reward":350,"text":"Rod: A house operation needs people who know their lane. Make the place work without you touching everything."},
+ {"id":"balance","title":"Keep the Lights On","detail":"Pay a house electric or water bill and clear overdue property balances.","reward":250,"text":"Rod: A bigger place comes with real bills. Stay square before you promise anybody more."},
+ {"id":"finale","title":"Open House, Quiet Business","detail":"Reach $3,500 new revenue, twelve personal sales and Heat at or below 25; meet Rod to finish.","reward":650,"text":"Rod: The house runs, the customers come back, and the bills are covered. Come see me when things are quiet. I want to talk about what comes next."}]
 var host:Node
 var state:Dictionary
 var furniture:RefCounted
@@ -18,6 +21,9 @@ func snapshot() -> Dictionary:
  var out:Dictionary=host.advancement_stats.duplicate(true)
  out["revenue"]=host.lifetime_revenue
  out["house_bills"]=int(host.location_state.get("house_bills_paid",0))
+ out["house_investment"]=house_investment()
+ out["house_storage_capacity"]=house_storage_capacity()
+ out["staff_roles"]=host._staff_count()
  return out
 func progress(key:String) -> int:
  return maxi(0,int(snapshot().get(key,0))-int(state.get("baseline",{}).get(key,0)))
@@ -34,18 +40,34 @@ func placed(tents:bool) -> int:
  for e in furniture.state.items.values():
   if e.get("player_placed",false) and e.get("property","")=="house" and bool(e.get("locked",false)) and furniture.is_tent(e)==tents:total+=1
  return total
+func house_investment() -> int:
+ var total:=0
+ for e in furniture.state.items.values():
+  if e.get("property","")=="house" and bool(e.get("locked",false)):
+   total+=maxi(0,int(e.get("paid",0)))
+ return total
+func house_storage_capacity() -> int:
+ var total:=0
+ for id in furniture.state.items:
+  var e:Dictionary=furniture.state.items[id]
+  if e.get("property","")=="house" and furniture.station_kind(id)=="storage":
+   total+=maxi(0,int(furniture.CATALOG[e.sku].get("capacity",0)))
+ return total
 func ready() -> bool:
  if not state.has("baseline") or complete():return false
  match stage():
   0:return placed(false)>=2
-  1:return placed(true)>=1 and progress("harvests")>=3
-  2:return progress("grams_trimmed")>=30 and progress("bags_sealed")>=5
-  3:return progress("sales")-progress("dealer_sales")>=5 and progress("dealer_sales")>=2
-  4:return progress("house_bills")>=1 and not host.neighborhood.location_ops._apartment_overdue() and not host.neighborhood.location_ops._house_overdue()
-  5:return progress("revenue")>=2500 and progress("sales")-progress("dealer_sales")>=10 and host.heat<=25
+  1:return house_investment()>=2500
+  2:return house_storage_capacity()>=400
+  3:return placed(true)>=1 and progress("harvests")>=3
+  4:return progress("grams_trimmed")>=30 and progress("bags_sealed")>=5
+  5:return progress("sales")-progress("dealer_sales")>=5 and progress("dealer_sales")>=2
+  6:return host._staff_count()>=3 and int(host.advancement_stats.get("worker_tasks",0))>=60
+  7:return progress("house_bills")>=1 and not host.neighborhood.location_ops._apartment_overdue() and not host.neighborhood.location_ops._house_overdue()
+  8:return progress("revenue")>=3500 and progress("sales")-progress("dealer_sales")>=12 and host.heat<=25
  return false
 func meet_rod() -> bool:
- if stage()!=5 or not ready() or host._simulation_blocked():return false
+ if stage()!=STEPS.size()-1 or not ready() or host._simulation_blocked():return false
  advance();return true
 func advance() -> void:
  var entry:Dictionary=STEPS[stage()]
